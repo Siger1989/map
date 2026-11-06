@@ -100,6 +100,8 @@ class NativeMapController internal constructor(
     private val encodedKey = URLEncoder.encode(key, "UTF-8")
     private val callbackOwner = NativeCallbackOwner(this)
     private val rasterGeneration: () -> Long? = callbackOwner.let { owner -> { owner.get()?.tileDemandGeneration } }
+    private val rasterCssPixelScale: () -> Float = callbackOwner.let { owner -> { owner.get()?.bridgeMarkerCssScale?.toFloat() ?: 1f } }
+    private val rasterFeatherBacking = NativeRasterFeatherBackingStore()
     private val rasterTileUrl: (String, Int, Int, Int) -> String = encodedKey.let { token ->
         { layer, x, y, z -> tiandituTileUrl(layer, x, y, z, token) }
     }
@@ -151,7 +153,7 @@ class NativeMapController internal constructor(
         NativeCartographyLayers(
             worldWindow, { sourceKey }, sharedNetwork = network,
             tileIdentityFor = { source, layer, z, x, y, style -> owner.get()?.tileIdentityAndRegister(source, layer, z, x, y, style) },
-            viewId = { owner.get()?.tileViewId }, generation = rasterGeneration,
+            viewId = { owner.get()?.tileViewId }, generation = rasterGeneration, cssPixelScale = rasterCssPixelScale,
         ) { status ->
             owner.get()?.let { controller ->
                 if (status.message.isNotBlank()) controller.reportStatus(status.message)
@@ -413,6 +415,9 @@ class NativeMapController internal constructor(
     internal fun frameCostWallNanosSnapshot(): Map<String, Long?> = frameCostTelemetry.frameSnapshot()
     /** Successful base-image bitmap decodes for this controller's current source generation. */
     internal fun bridgeRasterTileSnapshot(): Long = bridgeRasterLoads.decodedTiles()
+    internal fun rasterFeatherDiagnostics(): Map<String, Long> = rasterFeatherBacking.snapshotCounters().toMutableMap().apply {
+        cartography.imageryRasterFeatherCounters().forEach { (key, value) -> put("selectedImagery_$key", value) }
+    }
     /** This map's selected source work, including its requests queued in the shared network pool. */
     internal fun bridgeRasterPendingLoads(): Int = bridgeRasterLoads.pendingLoads()
     /** Enables exact visible-tile accounting for an isolated print renderer only. */
@@ -484,6 +489,7 @@ class NativeMapController internal constructor(
         }
         if (!visible) {
             baseLayer.clearRenderables()
+            rasterFeatherBacking.clear()
             labelLayer.clearRenderables()
             fixedDetailLayer.sync(null, null)
             if (customSource == null) {
@@ -681,6 +687,7 @@ class NativeMapController internal constructor(
         cartography.close()
         pickGeneration++;pickScope.cancel()
         fixedDetailLayer.close()
+        synchronized(worldWindow.engine.renderResourceCache) { rasterFeatherBacking.clear() }
         networkLease?.close()
         terrainOverlayGeneration++
         terrainBasemapRenderer?.close(); terrainBasemapRenderer = null
@@ -744,6 +751,7 @@ class NativeMapController internal constructor(
         selectedSource = null
         selectedSourceId = null
         baseLayer.clearRenderables(); labelLayer.clearRenderables()
+        rasterFeatherBacking.clear()
         fixedDetailLayer.sync(null, null)
         worldWindow.requestRedraw()
     }
@@ -848,6 +856,7 @@ class NativeMapController internal constructor(
         mainHandler.post {
             if (disposed) return@post
             baseLayer.clearRenderables()
+            rasterFeatherBacking.clear()
             labelLayer.clearRenderables()
             labelLayer.opacity = rasterLabelOpacity
             labelLayer.isEnabled = legacyRasterLayersVisible && rasterLabelOpacity > 0f
@@ -1880,7 +1889,8 @@ class NativeMapController internal constructor(
             val coverage = bridgePrintRasterFrameCoverage
             if (coverage != null) NativePrintTrackedMercatorSurfaceImage.build(factory, coverage, transparent, maxZoom, minZoom, tileSize)
             else MercatorTiledImageLayer.buildTiledSurfaceImage(factory, transparent, tileSize = tileSize, maxZoom = maxZoom, minZoom = minZoom)
-        } else MercatorTiledImageLayer.buildTiledSurfaceImage(factory, transparent, tileSize = tileSize, maxZoom = maxZoom, minZoom = minZoom)
+        } else NativeRasterFeatherMercatorSurfaceImage.build(factory, transparent, maxZoom = maxZoom, minZoom = minZoom,
+            tileSize = tileSize, backing = if (!transparent) rasterFeatherBacking else null, cssPixelScale = rasterCssPixelScale)
         return image.apply {
             // Keep rendering the closest available source tile when descendants exceed source coverage.
             useAncestorTileTexture = true

@@ -35,7 +35,14 @@ internal data class NativeContourSegment(
     val elevationMeters: Int,
 )
 
-internal data class NativeContourLabel(val x: Float, val y: Float, val elevationMeters: Int, val rotationDegrees: Float = 0f)
+internal data class NativeContourLabel(
+    val x: Float,
+    val y: Float,
+    val elevationMeters: Int,
+    val rotationDegrees: Float = 0f,
+    val pathIndex: Int = -1,
+    val distanceAlongPath: Double = Double.NaN,
+)
 internal data class NativeContourPath(val elevationMeters: Int, val points: List<Pair<Float, Float>>)
 
 /** CPU-side DEM overlay renderer. Missing DEM values remain transparent and break contour cells. */
@@ -193,6 +200,43 @@ internal object NativeTerrainOverlayMath {
                 )
                 distance += spacingPixels
             }
+        }
+        return labels
+    }
+
+    /** One label per sufficiently long major path; its curve is projected by the SDK each frame. */
+    fun contourMidpointLabels(
+        paths: List<NativeContourPath>,
+        interval: Int,
+        ensureActive: () -> Unit = {},
+    ): List<NativeContourLabel> {
+        require(interval in INTERVALS)
+        val labels = ArrayList<NativeContourLabel>()
+        paths.forEachIndexed { pathIndex, contour ->
+            ensureActive()
+            if (!isMajor(contour.elevationMeters, interval) || contour.points.size < 2) return@forEachIndexed
+            val cumulative = DoubleArray(contour.points.size)
+            for (i in 1 until contour.points.size) {
+                if ((i and 255) == 0) ensureActive()
+                cumulative[i] = cumulative[i - 1] + hypot(
+                    (contour.points[i].first - contour.points[i - 1].first).toDouble(),
+                    (contour.points[i].second - contour.points[i - 1].second).toDouble(),
+                )
+            }
+            val length = cumulative.last()
+            if (length < 84.0) return@forEachIndexed
+            val distance = length * 0.5
+            val index = cumulative.indexOfFirst { it >= distance }.coerceAtLeast(1)
+            val a = contour.points[index - 1]
+            val b = contour.points[index]
+            val fraction = ((distance - cumulative[index - 1]) / (cumulative[index] - cumulative[index - 1]).coerceAtLeast(1e-9)).toFloat()
+            labels += NativeContourLabel(
+                a.first + (b.first - a.first) * fraction,
+                a.second + (b.second - a.second) * fraction,
+                contour.elevationMeters,
+                pathIndex = pathIndex,
+                distanceAlongPath = distance,
+            )
         }
         return labels
     }

@@ -76,7 +76,7 @@ class NativeRoadStyleTest {
         assertEquals(1f, NativeRoadStyle.opacityScale(NativeRoadStyle.Group.LOCAL, 16.0), .0001f)
     }
 
-    @Test fun `existing backbone rail river widths and opacity rules remain unchanged`() {
+    @Test fun `street widths stop scaling beyond maximum source geometry zoom`() {
         for (group in listOf(NativeRoadStyle.Group.MAIN, NativeRoadStyle.Group.MAIN_OUTLINE,
                 NativeRoadStyle.Group.RAIL, NativeRoadStyle.Group.RIVER)) {
             val near = NativeRoadStyle.currentZoomStyle(group, 16.0)
@@ -95,7 +95,17 @@ class NativeRoadStyleTest {
         assertEquals(.18f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.SECONDARY, 6.0), .0001f)
         assertEquals(.42f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.PRIMARY, 10.0), .0001f)
         assertEquals(.68f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.PRIMARY_OUTLINE, 10.0), .0001f)
-        assertEquals(2f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.TERTIARY, 16.0), .0001f)
+        assertEquals(14, NativeRoadStyle.SOURCE_MAX_ZOOM)
+        assertEquals(NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 14.0),
+            NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 16.0), .0001f)
+        assertEquals(NativeRoadStyle.widthCss(NativeRoadStyle.Group.MAIN_OUTLINE, 14.0),
+            NativeRoadStyle.widthCss(NativeRoadStyle.Group.MAIN_OUTLINE, 16.0), .0001f)
+        assertEquals(NativeRoadStyle.widthCss(NativeRoadStyle.Group.TERTIARY, 14.0),
+            NativeRoadStyle.widthCss(NativeRoadStyle.Group.TERTIARY, 16.0), .0001f)
+        assertEquals(2f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 16.0), .0001f)
+        assertEquals(2.025f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.MAIN_OUTLINE, 16.0), .0001f)
+        assertEquals(1.33f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.TERTIARY, 16.0), .0001f)
+        assertEquals(1f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.LOCAL, 16.0), .0001f)
         assertEquals(1f, NativeRoadStyle.opacityScale(NativeRoadStyle.Group.TERTIARY, 16.0), .0001f)
         assertEquals(.24f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.LOCAL, 12.0), .0001f)
         assertEquals(.94f, NativeRoadStyle.opacityScale(NativeRoadStyle.Group.LOCAL, 15.0), .0001f)

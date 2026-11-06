@@ -1542,6 +1542,18 @@ function makeHandle(
       const viewport = runtime.viewport?.cssRect;
       return viewport ? geometryCoordinate({ x: viewport.width / 2, y: viewport.height / 2 }) : null;
     },
+    centerCoordinateAsync: async () => {
+      const viewport = runtime.viewport?.cssRect;
+      if (!runtime.created || !viewport) return null;
+      const generation = runtime.generation;
+      const result = await request('unproject', { point: { x: viewport.width / 2, y: viewport.height / 2 } }, { timeoutMs: 2000 });
+      if (generation !== runtime.generation || !runtime.created) return null;
+      const point = (result as { coordinates?: unknown[] } | null)?.coordinates?.[0];
+      return Array.isArray(point) && point.length >= 2 &&
+        typeof point[0] === 'number' && Number.isFinite(point[0]) && Math.abs(point[0]) <= 180 &&
+        typeof point[1] === 'number' && Number.isFinite(point[1]) && Math.abs(point[1]) <= 90
+        ? [point[0], point[1]] : null;
+    },
     offlineRegionBounds: (visible = false) => {
       const camera = runtime.camera, rect = runtime.viewport?.cssRect;
       if (!camera || !rect) return null;

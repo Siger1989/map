@@ -55,6 +55,7 @@ class NativeImageryBasemap internal constructor(
     private val tileIdentityFor: (String, Int, Int, Int, String) -> TileRequestIdentity? = { _, _, _, _, _ -> null },
     private val viewId: () -> String? = { null },
     private val demandGeneration: () -> Long? = { null },
+    private val cssPixelScale: () -> Float = { 1f },
 ) : AutoCloseable {
     /** Insert below the normal map base; contains only the original low-resolution z0-z5 local imagery. */
     val underlayLayer = RenderableLayer("EOxCloudless low-resolution global underlay")
@@ -75,6 +76,7 @@ class NativeImageryBasemap internal constructor(
     private var latestJob: Job? = null
     private var currentStatus = NativeImageryStatus()
     private val renderedTileCount = AtomicLong()
+    private val selectedFeatherBacking = NativeRasterFeatherBackingStore()
     private val callbackOwner = NativeCallbackOwner(this)
     private val identityToken = Any()
     private val generationForFactories: () -> Long? = run {
@@ -134,6 +136,7 @@ class NativeImageryBasemap internal constructor(
         val expected = generation
         underlayLayer.clearRenderables()
         baseRenderLayer.clearRenderables()
+        selectedFeatherBacking.clear()
         if (underlay) underlayLayer.addRenderable(overview)
         val active = when (sourceId) {
             "sentinel-detail" -> surface("EOxCloudless Sentinel-2 2025", rasterZoomCap ?: 14) { x, y, z ->
@@ -164,6 +167,7 @@ class NativeImageryBasemap internal constructor(
     fun status(): NativeImageryStatus = currentStatus
     /** Successful imagery bitmap fetches for readiness checks; never includes capability/date probes. */
     fun renderedTileCount(): Long = renderedTileCount.get()
+    fun rasterFeatherCounters(): Map<String, Long> = selectedFeatherBacking.snapshotCounters()
 
     private fun onSentinelTileLoaded() {
         renderedTileCount.incrementAndGet()
@@ -249,7 +253,8 @@ class NativeImageryBasemap internal constructor(
             override val contentType = name
             override fun getImageSource(x: Int, y: Int, z: Int): ImageSource = source(x, y, z)
         }
-        return MercatorTiledImageLayer.buildTiledSurfaceImage(factory, true, minZoom = 0, maxZoom = maxZoom, tileSize = 256)
+        return NativeRasterFeatherMercatorSurfaceImage.build(factory, true, minZoom = 0, maxZoom = maxZoom,
+            tileSize = 256, allowFeather = true, backing = selectedFeatherBacking, cssPixelScale = cssPixelScale)
     }
 
     private fun publish(status: NativeImageryStatus) { currentStatus = status; onStatus(status) }
@@ -259,6 +264,7 @@ class NativeImageryBasemap internal constructor(
         callbackOwner.detach()
         closed = true; generation++; main.removeCallbacks(viewportTick); scope.cancel(); http.close()
         underlayLayer.clearRenderables(); baseRenderLayer.clearRenderables()
+        selectedFeatherBacking.clear()
         underlayLayer.isEnabled = false; baseRenderLayer.isEnabled = false; latestDate = null
     }
 

@@ -1,0 +1,59 @@
+{
+  "format": "shantu-raster-feather-controlled-integration-v1",
+  "baseline": "172 current source; no protected app/controller/host files changed by this task",
+  "rootCauseStatus": "171 regression is narrowed to the custom batch/shader interaction, but no unique faulty line is proven. This controlled build removes cross-child batching only for actual LOD edge pairs so root can run same-camera A/B.",
+  "sourceFiles": [
+    {
+      "from": "experiments/native-map/raster-feather-unreleased-20261106/controlled/NativeRasterFeatherPolicy.kt",
+      "to": "mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeRasterFeatherPolicy.kt"
+    },
+    {
+      "from": "experiments/native-map/raster-feather-unreleased-20261106/controlled/NativeRasterFeatherProgram.kt",
+      "to": "mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeRasterFeatherProgram.kt"
+    },
+    {
+      "from": "experiments/native-map/raster-feather-unreleased-20261106/controlled/NativeRasterFeatherDrawable.kt",
+      "to": "mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeRasterFeatherDrawable.kt"
+    },
+    {
+      "from": "experiments/native-map/raster-feather-unreleased-20261106/controlled/NativeRasterFeatherPolicyTest.kt",
+      "to": "mobile-native/app/src/test/java/com/shantu/nativeapp/map/NativeRasterFeatherPolicyTest.kt"
+    },
+    {
+      "from": "experiments/native-map/raster-feather-unreleased-20261106/NativeRasterFeatherBackingStore.kt",
+      "to": "mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeRasterFeatherBackingStore.kt"
+    },
+    {
+      "from": "experiments/native-map/raster-feather-unreleased-20261106/NativeRasterFeatherMercatorSurfaceImage.kt",
+      "to": "mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeRasterFeatherMercatorSurfaceImage.kt"
+    },
+    {
+      "from": "experiments/native-map/raster-feather-unreleased-20261106/NativeRasterFeatherSurfaceImage.kt",
+      "to": "mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeRasterFeatherSurfaceImage.kt"
+    },
+    {
+      "from": "experiments/native-map/raster-feather-unreleased-20261106/NativeRasterFeatherDiagnostics.kt",
+      "to": "mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeRasterFeatherDiagnostics.kt"
+    }
+  ],
+  "controlledBehavior": {
+    "ordinaryTiles": "Use SDK DrawableSurfaceTexture and SurfaceTextureProgram four-slot batching. In the Mercator wrapper, only a tile with own child texture, nonzero actual LOD edge mask, and resident ancestor texture gets NativeRasterFeatherDrawable.",
+    "pairDraw": "One draw per boundary drawable; slot 0/unit 0 samples parent and slot 1/unit 5 samples child. Pair shader uses each slot's official texScaleTrans, texRect and texOpacity, then premultiplied RGBA mix. It does not apply Mercator-specific shader uniforms because WorldWind 2.1.1 has none; MercatorImageTile CPU reprojects decoded rows and SurfaceTextureProgram consumes the resulting coordTransform plus tile sector matrix.",
+    "fallback": "No edge or no parent stays on SDK batching and opaque own image. If child binding fails after queueing, draw cached parent only for that tile; if parent bind fails, draw own child only. No extra fetch or CPU bitmap copy.",
+    "fixedSurface": "NativeRasterFeatherSurfaceImage uses super.doRender when edge mask is zero or resident parent is missing; only a real fixed-detail pair enters controlled shader. NativeRasterDetailLayer remains unwired in this integration phase.",
+    "pixelScale": "No process-global ratio. Each drawable carries cssPixelScale; its MercatorSurfaceImage receives a per-view provider and writes that value into the shader for that pair. Provider must be the map view's physical-pixels-per-CSS-pixel value from its own viewport, not a shared static or assumed Android density. The width targets 6 CSS px and clamps to 1/16 of tile UV span. Default ratio 1 is only a safe fallback until viewport scale is supplied."
+  },
+  "minimalAppWiring": {
+    "NativeMapController": "Keep existing print-tracked branch unchanged. In the ordinary Mercator raster branch of makeTileSurfaceImage, construct NativeRasterFeatherMercatorSurfaceImage instead of MercatorTiledImageLayer.buildTiledSurfaceImage; pass a provider backed by a new per-controller raster CSS ratio updated by a dedicated setter.",
+    "NativeCartographyLayers": "Add optional cssPixelScale provider to constructor and forward it to NativeImageryBasemap. Each instance is per WorldWindow, so primary and comparison panes retain independent values.",
+    "NativeImageryBasemap": "Add optional cssPixelScale provider and use NativeRasterFeatherMercatorSurfaceImage in its private surface factory for overview and selected raster imagery; pass provider and backing=null. Its Mercator addTile already exposes the actual same-frame ancestor Texture, so base-LOD feather needs no separate cache or fetch.",
+    "HostViewport": "When a map's viewport payload computes its own cssScale, call that map controller's dedicated setRasterCssPixelScale(cssScale). Do not reuse a global cssScale; do not assume displayMetrics.density equals CSS scale."
+  },
+  "legacyCompatibility": {
+    "verifiedCompile": "PASS: the 3 new classes compiled together with the prior 4 BackingStore/MercatorSurfaceImage/SurfaceImage/Diagnostics classes against original WorldWind Android 2.1.1 AAR and Android API 35, Kotlin 2.4.10 / JVM 17.",
+    "diagnosticsApi": "New drawable retains edges, backingTexture, backingMatrix, diagnostics, preparedSequence and calls diagnostics.submitted(sequence,pair). This matches old Mercator/SurfaceImage references.",
+    "test": "NativeRasterFeatherPolicyTest.kt: 14 JUnit tests pass; includes actual shader source pair slot/mask/opacity assertions and existing LOD policy cases.",
+    "validationBoundary": "No Gradle, APK, device, shader-driver, same-camera screenshot, main/dual-map or coverage verification was run. Root must do those before visual acceptance.",
+    "sourceClassesJarSha256": "80b7c4433ba7a80670f9e1a383b2dd3bb5bc34b35f8932cd07cbc0868dcf5348"
+  }
+}

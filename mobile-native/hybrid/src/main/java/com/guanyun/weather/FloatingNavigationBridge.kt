@@ -9,10 +9,8 @@ import android.provider.Settings
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import com.shantu.nativeapp.floating.FloatingNavigationService
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.Closeable
-import kotlin.math.abs
 
 /** Narrow, foreground-only bridge for the optional floating navigation service. */
 class FloatingNavigationBridge(
@@ -28,13 +26,13 @@ class FloatingNavigationBridge(
     @JavascriptInterface
     fun status(): String {
         if (!trustedPage()) return JSONObject().put("available", false).put("enabled", false)
-            .put("visible", false).put("mode", JSONObject.NULL).put("message", "仅山兔前台页面可读取悬浮导航状态")
+            .put("visible", false).put("mode", JSONObject.NULL).put("kind", JSONObject.NULL).put("message", "仅山兔前台页面可读取悬浮导航状态")
             .put("locationAllowed", false).put("notificationAllowed", false).put("overlayAllowed", false).toString()
         return try {
             statusJson().toString()
         } catch (_: Exception) {
             JSONObject().put("available", true).put("enabled", false).put("visible", false)
-                .put("mode", JSONObject.NULL).put("message", "悬浮导航状态暂不可用")
+                .put("mode", JSONObject.NULL).put("kind", JSONObject.NULL).put("message", "悬浮导航状态暂不可用")
                 .put("locationAllowed", hasLocationPermission()).put("notificationAllowed", hasNotificationPermission())
                 .put("overlayAllowed", canDrawOverlays()).toString()
         }
@@ -122,13 +120,19 @@ class FloatingNavigationBridge(
             return
         }
         try {
+            // A direct user start should reveal the requested overlay even while
+            // the host Activity remains on screen. Returning to the app uses the
+            // overlay button and restores this flag through onHostResume().
+            FloatingNavigationService.setAppVisible(false)
             FloatingNavigationService.start(activity, payload)
             pendingStart = null
             message = "悬浮导航已启动"
         } catch (_: SecurityException) {
+            FloatingNavigationService.setAppVisible(true)
             pendingStart = null
             message = "系统未允许启动悬浮导航，请检查定位、通知和悬浮窗权限"
         } catch (_: Exception) {
+            FloatingNavigationService.setAppVisible(true)
             pendingStart = null
             message = "启动悬浮导航失败，请稍后重试"
         }
@@ -145,7 +149,7 @@ class FloatingNavigationBridge(
         }
         try {
             FloatingNavigationService.update(activity, payload)
-            message = "悬浮导航路线已更新"
+            message = "悬浮小地图会话已更新"
         } catch (_: Exception) {
             message = "更新悬浮导航失败，请重试"
         }
@@ -155,24 +159,9 @@ class FloatingNavigationBridge(
     private fun validatePayload(raw: String?): JSONObject {
         require(raw != null && raw.toByteArray(Charsets.UTF_8).size <= MAX_PAYLOAD_BYTES) { "路线数据超过4 MiB或为空" }
         val input = try { JSONObject(raw) } catch (_: Exception) { throw IllegalArgumentException("悬浮导航数据格式无效") }
-        require(input.optInt("version", -1) == 1) { "悬浮导航数据版本不受支持" }
-        val mode = input.optString("mode", "")
-        require(mode == "north" || mode == "motion") { "导航模式无效" }
-        val label = input.optString("label", "")
-        require(label.length <= MAX_LABEL_LENGTH) { "路线名称过长" }
-        val points = input.optJSONArray("coordinates")
-            ?: throw IllegalArgumentException("缺少路线坐标")
-        require(points.length() in 2..MAX_ROUTE_POINTS) { "路线至少需要两个点，且点数不能超过$MAX_ROUTE_POINTS" }
-        for (i in 0 until points.length()) {
-            val pair = points.optJSONArray(i)
-            require(pair != null && pair.length() == 2) { "路线坐标格式无效" }
-            val lon = pair.optDouble(0, Double.NaN)
-            val lat = pair.optDouble(1, Double.NaN)
-            require(lon.isFinite() && lat.isFinite() && abs(lon) <= 180.0 && abs(lat) <= 90.0) { "路线坐标超出有效范围" }
-        }
-        // Copy only the documented v1 contract; never forward arbitrary JS fields.
-        return JSONObject().put("version", 1).put("mode", mode).put("label", label)
-            .put("coordinates", JSONArray(points.toString()))
+        return try { FloatingNavigationService.validatePayload(input) }
+        catch (e: IllegalArgumentException) { throw e }
+        catch (_: Exception) { throw IllegalArgumentException("悬浮导航数据格式无效") }
     }
 
     private fun statusJson(): JSONObject {
@@ -185,13 +174,14 @@ class FloatingNavigationBridge(
             .put("enabled", enabled)
             .put("visible", service.optBoolean("visible", false))
             .put("mode", service.optString("mode").takeIf { it == "north" || it == "motion" } ?: JSONObject.NULL)
+            .put("kind", service.optString("kind").takeIf { it == "position" || it == "route" } ?: JSONObject.NULL)
             .put("message", serviceMessage.ifBlank { localMessage })
             .put("locationAllowed", hasLocationPermission())
             .put("notificationAllowed", hasNotificationPermission())
             .put("overlayAllowed", canDrawOverlays())
         // Whitelist non-sensitive service state only. Route, coordinates, labels,
         // URLs, and keys are intentionally never returned to JavaScript here.
-        listOf("permissionRequired", "lastErrorCode").forEach { key ->
+        listOf("zoom", "widthDp", "heightDp", "windowBounds", "permissionRequired", "lastErrorCode").forEach { key ->
             if (service.has(key)) root.put(key, service.opt(key))
         }
         return root

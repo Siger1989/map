@@ -199,6 +199,7 @@ class NativeCartographyLayers internal constructor(
     private val tileIdentityFor: (String, String, Int, Int, Int, String) -> TileRequestIdentity? = { _, _, _, _, _, _ -> null },
     private val viewId: () -> String? = { null },
     private val generation: () -> Long? = { null },
+    private val cssPixelScale: () -> Float = { 1f },
     private val onImageryStatus: (NativeImageryStatus) -> Unit = {},
 ) : AutoCloseable {
     private val vectorTileBudget = NativeRenderMemoryBudget.vectorTileCount(Runtime.getRuntime().maxMemory())
@@ -224,7 +225,7 @@ class NativeCartographyLayers internal constructor(
     private val imagery = NativeImageryBasemap(
         window.context, window, onImageryStatus, sharedNetwork,
         tileIdentityFor = { source, z, x, y, style -> tileIdentityFor(source, "imagery", z, x, y, style) },
-        viewId = viewId, demandGeneration = generation,
+        viewId = viewId, demandGeneration = generation, cssPixelScale = cssPixelScale,
     )
     /** Mount above the controller's standard basemap for explicitly selected Sentinel/GIBS imagery. */
     val baseRenderLayer: RenderableLayer get() = imagery.baseRenderLayer
@@ -295,6 +296,7 @@ class NativeCartographyLayers internal constructor(
 
     fun imageryStatus(): NativeImageryStatus = imagery.status()
     fun imageryRenderedTileCount(): Long = imagery.renderedTileCount()
+    fun imageryRasterFeatherCounters(): Map<String, Long> = imagery.rasterFeatherCounters()
     fun retryLatestImagery() = imagery.retryLatest()
 
     /** Explicit diagnostics snapshot: normal-render wall ns and bounded predecode queue counts. */

@@ -129,6 +129,8 @@ export type MapHandle = {
   syncCameraHash: () => void;
   groundElevation: (coordinates: Coordinate) => number | null;
   centerCoordinate: () => Coordinate | null;
+  /** Resolve against the native renderer when the local DEM cache is not ready. */
+  centerCoordinateAsync?: () => Promise<Coordinate | null>;
   offlineRegionBounds: (visible?: boolean) => [number, number, number, number] | null;
   watchObjectProjection: WatchProjection;
   sectionCenter: () => {

@@ -301,6 +301,7 @@ class NativeReactMapHost(
                 .put("actualFrames", entry.actualFrameCount.get())
                 .put("lastFrameAgeMs", if (lastFrame > 0L) (android.os.SystemClock.elapsedRealtime() - lastFrame).coerceAtLeast(0L) else JSONObject.NULL)
                 .put("rasterBitmapDecodes", entry.controller.bridgeRasterTileSnapshot())
+                .put("rasterFeather", JSONObject(entry.controller.rasterFeatherDiagnostics()))
                 .put("tileDemand", JSONObject(entry.controller.tileDemandPerformanceSnapshot()))
                 .put("renderCacheCapacityBytes", cache.capacity)
                 .put("renderCacheUsedBytes", cache.usedCapacity)
@@ -855,9 +856,9 @@ class NativeReactMapHost(
         )
         val explicitBase = activeCustom || sourceId != "terrain"
         map.configureCartography(cartographySettings, activeCustom, explicitBase, boundedRasterCap)
-        if (settings.has("geologyEnabled") || settings.has("geologySource")) {
+        if (settings.has("geologyEnabled") || settings.has("geology") || settings.has("geologySource")) {
             val source = if (settings.optString("geologySource", "world") == "geocloud20w") com.shantu.nativeapp.geology.NativeGeologySource.GEO_CLOUD_200K else com.shantu.nativeapp.geology.NativeGeologySource.WORLD
-            map.setGeology(settings.optBoolean("geologyEnabled"), source, settings.optDouble("geologyOpacity", .85))
+            map.setGeology(NativeGeologySettings.enabled(settings), source, settings.optDouble("geologyOpacity", .85))
         }
     }
 

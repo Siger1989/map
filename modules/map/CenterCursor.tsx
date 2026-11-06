@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapPinPlus } from 'lucide-react';
 import type { Coordinate } from '../navigation/types';
 import type { MapHandle } from './TerrainMap';
@@ -19,23 +19,47 @@ export function CenterMarkButton({
   target?: Coordinate;
 }) {
   const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
+  const flight = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   return (
     <>
       <button
         className="position-dock-button center-add glass"
         aria-label={target ? '在所选路线点添加标记' : '在地图中心准星处添加标记'}
-        onClick={() => {
-          const coordinate = target ?? map()?.centerCoordinate();
-          if (!coordinate) {
-            setError('准星下暂无可选地面，请移动地图后重试');
-            return;
-          }
+        aria-busy={pending}
+        disabled={pending}
+        onClick={async () => {
+          if (flight.current) return;
+          flight.current = true;
+          setPending(true);
           setError('');
-          onAdd(coordinate);
+          const handle = map();
+          try {
+            // The renderer already has ground even when its WebView DEM snapshot
+            // has not arrived. Ask that renderer rather than guessing a camera/GPS point.
+            const coordinate = target ?? (handle?.centerCoordinateAsync
+              ? await handle.centerCoordinateAsync() : handle?.centerCoordinate());
+            if (!mounted.current || (!target && handle !== map())) return;
+            if (!coordinate) {
+              setError('准星下暂无可选地面，请移动地图后重试');
+              return;
+            }
+            onAdd(coordinate);
+          } catch {
+            if (mounted.current) setError('地图地面尚未就绪，请稍后重试');
+          } finally {
+            flight.current = false;
+            if (mounted.current) setPending(false);
+          }
         }}
       >
         <MapPinPlus size={18} />
-        <small>标记</small>
+        <small>{pending ? '选点中' : '标记'}</small>
       </button>
       {error && (
         <button

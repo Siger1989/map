@@ -448,34 +448,20 @@ class NativeTerrainOverlaysTest {
 
     @Test
     fun `contour label CSS size uses bridge scale independently from SDK LOD density`() {
-        val layer = NativeContourLayer(30, 11) { _, _, _ -> null }
-        val label = Label(earth.worldwind.geom.Position.fromDegrees(0.0, 0.0, 0.0), "4350 m",
-            earth.worldwind.shape.TextAttributes().apply { font = earth.worldwind.render.Font(11f) })
-        val geometry = NativeContourSharedGeometry(listOf(label), null, 0, 0, Sector(), 256)
-        val store = NativeContourGeometryStore<NativeContourGeometryKey, NativeContourSharedGeometry>()
-        val lease = store.acquireOrCreate(NativeContourGeometryKey.fromSamples(8, 800, 410, 30, doubleArrayOf(1.0))) { geometry }
-        val content = NativeContourTileContent(lease)
-        val context = selectionContext(10, insideTile(10, 800, 410)).apply {
-            densityFactor = 9f
-            // Reject the point before text/GPU allocation; the production styling branch still runs.
-            projection.setToIdentity()
-            modelview.setToTranslation(0.0, 0.0, 10.0)
-        }
-        try {
-            layer.setViewportStyle(11.9, 3.2f)
-            NativeContourLayer::class.java.getDeclaredMethod("renderTileContent", RenderContext::class.java,
-                NativeContourTileContent::class.java).apply { isAccessible = true }.invoke(layer, context, content)
-            assertEquals(3.2, label.attributes.scale, 1e-6)
-            assertEquals(11f, label.attributes.font.size, 0f)
-            content.discard(context)
-            // A late SDK cut can race layer close; released wrappers must quietly skip drawing.
-            NativeContourLayer::class.java.getDeclaredMethod("renderTileContent", RenderContext::class.java,
-                NativeContourTileContent::class.java).apply { isAccessible = true }.invoke(layer, context, content)
-            assertEquals(3.2, label.attributes.scale, 1e-6)
-        } finally {
-            content.discard(context)
-            layer.close()
-        }
+        val label = NativeContourCurvedLabel(
+            earth.worldwind.geom.Position.fromDegrees(0.0, 0.0, 0.0),
+            doubleArrayOf(0.0, 0.0, 0.01, 0.0), "4350 m", FloatArray(6) { 1f }, 6f,
+        )
+        label.setCssScale(3.2f)
+        assertEquals(3.2f, label.cssScale, 1e-6f)
+        assertEquals(1, label.delegateCacheCount)
+        label.setCssScale(3.2f)
+        assertEquals("same-pane redraw must reuse its curved label delegate", 1, label.delegateCacheCount)
+        label.setCssScale(2.0f)
+        label.setCssScale(3.2f)
+        assertEquals("main/dual pane scales must coexist without per-frame reconstruction", 2, label.delegateCacheCount)
+        assertEquals(7.5f, NativeContourVectorGeometry.LABEL_SIZE, 0f)
+        assertEquals(0.8f, NativeContourVectorGeometry.LABEL_HALO_WIDTH, 0f)
     }
 
     @Test
@@ -610,7 +596,7 @@ class NativeTerrainOverlaysTest {
         val values = DoubleArray(size * size) { index -> (index / size) * 40.0 }
         val renderables = NativeContourVectorTileBuilder.build(values, 12, 2048, 1400, 50)
         val batches = renderables.filterIsInstance<MvtBatchedLineTile>()
-        val labels = renderables.filterIsInstance<Label>()
+        val labels = renderables.filterIsInstance<NativeContourCurvedLabel>()
         val originalPaths = NativeTerrainOverlayMath.contourPaths(NativeTerrainOverlayMath.contourSegments(values, size, 50))
 
         // Every contour level spans one connected horizontal path, rather than
@@ -628,19 +614,22 @@ class NativeTerrainOverlaysTest {
         assertTrue(features.all { it.coords.isEmpty() }) // Pre-assembled coordinates are released, not duplicated.
         assertTrue(renderables.byteWeight >= batches.single().gpuByteEstimate)
         assertTrue(labels.isNotEmpty())
-        assertTrue(labels.all { it.text?.endsWith(" m") == true && it.attributes.scale == 1.0 })
-        assertTrue(labels.all { it.attributes.outlineWidth == 2.8f && !it.attributes.isDepthTest })
-        assertTrue(labels.all { kotlin.math.abs(it.position.latitude.inDegrees) < 90.0 })
+        assertTrue(labels.all { it.text.endsWith(" m") && it.cssScale.isNaN() })
+        assertEquals(7.5f, NativeContourVectorGeometry.LABEL_SIZE, 0f)
+        assertEquals(0.8f, NativeContourVectorGeometry.LABEL_HALO_WIDTH, 0f)
+        assertTrue(labels.all { kotlin.math.abs(it.anchor.latitude.inDegrees) < 90.0 })
 
         batches.forEach { NativeContourVectorTileBuilder.applyScreenDensity(it, 2f) }
-        labels.forEach { NativeContourVectorTileBuilder.applyScreenDensity(it, 2f) }
+        labels.forEach { it.setCssScale(2f) }
         assertEquals(2f, batches.single().widthScale, 0.0f)
+        assertTrue(labels.all { it.cssScale == 2f && it.delegateCacheCount == 1 })
         // Repeated density application is idempotent and does not mutate shared base styles.
         batches.forEach { NativeContourVectorTileBuilder.applyScreenDensity(it, 2f) }
+        labels.forEach { it.setCssScale(2f) }
         assertEquals(2f, batches.single().widthScale, 0.0f)
         assertTrue(features.any { it.attributes.outlineWidth == 1.05f })
         assertTrue(features.any { it.attributes.outlineWidth == 0.45f })
-        assertTrue(labels.all { it.attributes.scale == 2.0 })
+        assertTrue(labels.all { it.cssScale == 2f })
     }
 
     @Test
@@ -718,9 +707,10 @@ class NativeTerrainOverlaysTest {
             assertEquals(null, withTimeout(1_000) { stale.await() })
             assertEquals(1, queue.activeCount) // active IO is neither canceled nor released
             assertEquals(1, queue.pendingCount)
-            assertTrue(queue.dispatch { null }.isEmpty()) // Active permit still owns the sole slot.
+            assertTrue(queue.dispatch { null }.isEmpty()) // Unknown projection rank cannot start work.
             activePermit.close()
-            assertEquals(listOf("current-visible"), queue.dispatch { null })
+            assertTrue(queue.dispatch { null }.isEmpty()) // Null ranks remain pending, even with a free permit.
+            assertEquals(listOf("current-visible"), queue.dispatch { 0.0 })
             val visiblePermit = withTimeout(1_000) { requireNotNull(visible.await()) }
             assertEquals(1, queue.activeCount)
             visiblePermit.close()

@@ -62,6 +62,7 @@ val prepareHybridAssets by tasks.registering(Sync::class) {
             include("LICENSE", "NOTICE")
             into("licenses/worldwind-labels")
         }
+        from(rootProject.file("raster-feather-NOTICE")) { into("licenses/raster-feather") }
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     into(mergedAssets)
@@ -114,6 +115,8 @@ val prepareHybridContractTests by tasks.registering(Sync::class) {
         include("com/shantu/nativeapp/map/NativeRasterDetailPlanTest.kt")
         include("com/shantu/nativeapp/map/NativeRasterDetailRetirementTest.kt")
         include("com/shantu/nativeapp/map/NativeTerrainOverlaysTest.kt")
+        include("com/shantu/nativeapp/map/NativeContourSeamGeometryTest.kt")
+        include("com/shantu/nativeapp/map/NativeRasterFeatherPolicyTest.kt")
         include("com/shantu/nativeapp/map/NativeMissingTileFallbackTest.kt")
         include("com/shantu/nativeapp/map/NativeModelTerrainInputTest.kt")
         include("com/shantu/nativeapp/map/NativeBrowserCacheFallbackTest.kt")

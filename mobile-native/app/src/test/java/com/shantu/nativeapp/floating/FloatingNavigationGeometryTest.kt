@@ -51,4 +51,39 @@ class FloatingNavigationGeometryTest {
         assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.validate("north", "x", listOf(origin, FloatingCoordinate(181.0, 0.0))) }
         assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.validatePayloadBytes(ByteArray(FloatingNavigationGeometry.MAX_PAYLOAD_BYTES + 1)) }
     }
+
+    @Test fun positionSessionNeedsNoRouteAndZoomIsBounded() {
+        FloatingNavigationGeometry.validateSession("position", "north", "定位小地图", 0, 14)
+        FloatingNavigationGeometry.validateSession("route", "motion", "路线", 2, 18)
+        assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.validateSession("position", "north", "定位小地图", 2) }
+        assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.validateSession("route", "north", "路线", 0) }
+        assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.validateSession("position", "north", "定位小地图", 0, 19) }
+    }
+
+    @Test fun tinyScreensNeverInvertWindowClampBounds() {
+        val size = FloatingNavigationGeometry.windowSize(184f, 216f, 150f, 170f)
+        assertEquals(134f, size.widthDp, 0f)
+        assertEquals(154f, size.heightDp, 0f)
+        val normal = FloatingNavigationGeometry.windowSize(500f, 500f, 390f, 780f)
+        assertEquals(320f, normal.widthDp, 0f)
+        assertEquals(400f, normal.heightDp, 0f)
+    }
+
+    @Test fun overzoomPreservesRouteToMvtPixelScale() {
+        for (zoom in 14..18) {
+            val tileScale = 256f * FloatingNavigationGeometry.overzoomScale(zoom).toFloat()
+            val point = FloatingNavigationGeometry.projectTileAligned(origin, around(100.0, 0.0), 14, 92f, 70f, tileScale)
+            val base = FloatingNavigationGeometry.projectTileAligned(origin, around(100.0, 0.0), 14, 92f, 70f, 256f)
+            assertEquals(92f + (base.x - 92f) * FloatingNavigationGeometry.overzoomScale(zoom).toFloat(), point.x, .01f)
+        }
+    }
+
+    @Test fun routeColorIsOptionalStrictHexAndNeverPositionStyle() {
+        assertEquals(0xffbaff42.toInt(), FloatingNavigationGeometry.parseRouteColor("route", false, null))
+        assertEquals(0xffa1b2c3.toInt(), FloatingNavigationGeometry.parseRouteColor("route", true, "#A1b2C3"))
+        assertEquals("#A1B2C3", FloatingNavigationGeometry.formatRouteColor(0xffa1b2c3.toInt()))
+        assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.parseRouteColor("route", true, "red") }
+        assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.parseRouteColor("route", true, "#12345") }
+        assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.parseRouteColor("position", true, "#a1b2c3") }
+    }
 }

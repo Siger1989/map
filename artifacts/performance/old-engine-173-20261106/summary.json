@@ -1,0 +1,41 @@
+{
+  "bytes": 165271953,
+  "sha256": "2700fdf14a6da94d5fa6dcdd10b02d5f249c565ed3e2ee8b4e61fc8430fae249",
+  "crc": true,
+  "privateSeedsMatch": true,
+  "seedCount": 39,
+  "freshWebAssetCount": 1925,
+  "version": "0.2.173-test",
+  "versionCode": 180,
+  "package": "com.shantu.oldengine",
+  "status": "BUILT_AND_SCOPED_COMPUTER_QA_NOT_FOUR_NEW_REQUIREMENTS",
+  "nativeTests": 109,
+  "nodeTests": 21,
+  "tsc": true,
+  "signature": "original",
+  "zipAlignment16KiB": true,
+  "phoneVerified": false,
+  "filament": false,
+  "privateApkPublishedToGitHub": false,
+  "qa": {
+    "navigation390": "PASS",
+    "navigation360": "PASS",
+    "routeColorWidth": "PASS",
+    "floatingNorthMotionSwitchZoomResizeAndClose": "PASS",
+    "positionOnly390": "PASS",
+    "markerSingaporeGround": "PASS",
+    "pausedDraftFollowPreserves2Points": "PASS",
+    "mainLodFeatherRenderedPairs": 30,
+    "mainLodFeatherNo171StretchInComparedScene": true,
+    "contourCurveLabelScene360": "REVIEWED_SPARSE_ONLY",
+    "worldGeologyLayer": "ACTUAL_GEOMETRY_VISIBLE",
+    "cloudGeology": "AUTHORIZATION_BLOCKED_NO_CONFIG",
+    "dual173": "NOT_STRESS_VERIFIED"
+  },
+  "limits": [
+    "Road and river tile seams and hard joins are unresolved",
+    "Fixed detail imagery feathering is not wired in173",
+    "No phone/OEM background/lockscreen or real motion validation",
+    "Four new W697 requirements are next scope, not achieved by173"
+  ]
+}

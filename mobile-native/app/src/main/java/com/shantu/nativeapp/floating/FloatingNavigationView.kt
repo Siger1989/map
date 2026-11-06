@@ -15,14 +15,20 @@ internal data class FloatingTileGeometry(val z: Int, val x: Int, val y: Int, val
 /** Small non-GL overlay. Geometry is supplied by a bounded service cache and drawn only when invalidated. */
 internal class FloatingNavigationView(context: Context) : View(context) {
     var route: List<FloatingCoordinate> = emptyList(); set(value) { if (field !== value) { field = value; routePath = null; invalidate() } }
+    var kind: String = "route"
+    var routeColor: Int = FloatingNavigationGeometry.DEFAULT_ROUTE_COLOR; set(value) { if (field != value) { field = value; invalidate() } }
+    var zoom: Int = 14; set(value) { if (field != value) { field = value; routePath = null; invalidate() } }
     var center: FloatingCoordinate? = null; set(value) {
         if (field != value) {
             val prior = routePathCenter
-            if (value == null || prior == null || worldPixelDistance(prior, value) > .75) routePath = null
+            if (value == null || prior == null || worldPixelDistance(prior, value) > .75 / FloatingNavigationGeometry.overzoomScale(zoom)) routePath = null
             field = value; invalidate()
         }
     }
     var hasRealLocation: Boolean = false; set(value) { field = value; invalidate() }
+    /** Bearing used only to rotate the motion-up map; it may remain at the last trusted course. */
+    var mapBearing: Double? = null; set(value) { if (field != value) { field = value; invalidate() } }
+    /** Fresh direction for the location glyph. Never reuse this as camera state. */
     var heading: Double? = null; set(value) { field = value; invalidate() }
     var mode: String = "north"; set(value) { field = value; invalidate() }
     var stateText: String = "等待定位"; set(value) { field = value; invalidate() }
@@ -34,12 +40,15 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     var onReturn: (() -> Unit)? = null
     var onClose: (() -> Unit)? = null
     var onDrag: ((Float, Float) -> Unit)? = null
+    var onResize: ((Float, Float) -> Unit)? = null
+    var onZoom: ((Int) -> Unit)? = null
 
     private val density = resources.displayMetrics.density
     private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND }
+    private val arrowPath = Path().apply { moveTo(0f, -1f); lineTo(.58f, .72f); lineTo(0f, .43f); lineTo(-.58f, .72f); close() }
     private val round = density * 8f
-    private var downX = 0f; private var downY = 0f; private var dragging = false
+    private var downX = 0f; private var downY = 0f; private var dragging = false; private var resizing = false
     private var routePath: Path? = null
     private var routePathCenter: FloatingCoordinate? = null
     private fun px(dp: Float) = dp * density
@@ -64,30 +73,66 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         canvas.save(); canvas.clipRect(left, top, right, bottom)
         val navCenter = center
         if (navCenter != null) {
-            val bearing = heading?.takeIf { it.isFinite() && it in 0.0..<360.0 }
+            val bearing = mapBearing?.takeIf { it.isFinite() && it in 0.0..<360.0 }
             val cX = (left + right) / 2f; val cY = (top + bottom) / 2f
             canvas.save(); if (mode == "motion" && bearing != null) canvas.rotate(-bearing.toFloat(), cX, cY)
             drawTiles(canvas, navCenter, cX, cY)
             drawRoute(canvas, navCenter, cX, cY)
             // The center glyph is shown only when supplied by a real current location.
             if (hasRealLocation && heading != null) {
-                canvas.save(); canvas.rotate(heading!!.toFloat(), cX, cY)
-                val arrow = Path().apply { moveTo(cX, cY - px(9f)); lineTo(cX + px(5f), cY + px(6f)); lineTo(cX, cY + px(3f)); lineTo(cX - px(5f), cY + px(6f)); close() }
-                p.color = 0xffe9f3eb.toInt(); canvas.drawPath(arrow, p); p.color = 0xffbdff54.toInt(); canvas.drawCircle(cX, cY, px(1.8f), p)
+                canvas.save(); canvas.translate(cX, cY); canvas.rotate(heading!!.toFloat()); canvas.scale(px(11.5f), px(11.5f))
+                p.color = 0x5537dfff.toInt(); canvas.drawCircle(0f, 0f, .92f, p)
+                p.color = 0xaa37dfff.toInt(); canvas.drawCircle(0f, 0f, .68f, p)
+                p.color = 0xff8af0f3.toInt(); canvas.drawPath(arrowPath, p)
+                p.color = 0xff21bdd0.toInt(); canvas.drawCircle(0f, .24f, .15f, p)
                 canvas.restore()
-            } else if (hasRealLocation) { p.color = 0xffbdff54.toInt(); canvas.drawCircle(cX, cY, px(3f), p) }
+            } else if (hasRealLocation) {
+                p.color = 0x3337dfff; canvas.drawCircle(cX, cY, px(13f), p)
+                p.color = 0x7737dfff.toInt(); canvas.drawCircle(cX, cY, px(9f), p)
+                p.color = 0xff45dbe7.toInt(); canvas.drawCircle(cX, cY, px(5f), p)
+            }
             canvas.restore()
         } else {
             text(canvas, "等待定位", (left + right) / 2f, (top + bottom) / 2f, 12f, 0xffbdff54.toInt(), Paint.Align.CENTER)
         }
+        drawZoomControls(canvas, left, top)
         canvas.restore()
         p.color = 0xff10251a.toInt(); canvas.drawRect(px(2f), height - footer, width - px(2f), height - px(2f), p)
-        val routeStatus = if (routeOffRoute) "偏离路线" else routeRemainingMeters?.let { "剩余 ${if (it >= 1000) String.format(java.util.Locale.ROOT, "%.1fkm", it / 1000.0) else "${it.roundToInt()}m"}" }
+        val routeStatus = if (kind == "route") (if (routeOffRoute) "偏离路线" else routeRemainingMeters?.let { "剩余 ${if (it >= 1000) String.format(java.util.Locale.ROOT, "%.1fkm", it / 1000.0) else "${it.roundToInt()}m"}" }) else null
         text(canvas, routeStatus?.let { "$stateText · $it" } ?: stateText, px(8f), height - px(30f), 8f, if (routeOffRoute) 0xffffca73.toInt() else 0xffbdff54.toInt())
         text(canvas, "OpenFreeMap · © OpenMapTiles", px(8f), height - px(17f), 7f, 0xffc1cfc5.toInt())
         text(canvas, "© OpenStreetMap", px(8f), height - px(5f), 7f, 0xffc1cfc5.toInt())
         // Direction reference; never substitute route direction when heading is absent.
-        text(canvas, if (mode == "north" || heading == null) "N ↑" else "↑", width - px(17f), (top + bottom) / 2f + px(4f), 10f, 0xffe9f3eb.toInt(), Paint.Align.CENTER)
+        drawNorthReference(canvas, width - px(19f), (top + bottom) / 2f)
+        drawResizeGrip(canvas)
+    }
+
+    private fun drawNorthReference(canvas: Canvas, x: Float, y: Float) {
+        text(canvas, "N", x - px(9f), y + px(3f), 8f, 0xffe9f3eb.toInt(), Paint.Align.CENTER, px(10f))
+        val cameraBearing = if (mode == "motion") mapBearing?.takeIf { it.isFinite() && it in 0.0..<360.0 } ?: 0.0 else 0.0
+        canvas.save()
+        canvas.translate(x + px(3f), y)
+        canvas.rotate(-cameraBearing.toFloat())
+        canvas.scale(px(6f), px(6f))
+        p.color = 0xffe9f3eb.toInt()
+        canvas.drawPath(arrowPath, p)
+        canvas.restore()
+    }
+
+    private fun drawZoomControls(canvas: Canvas, left: Float, top: Float) {
+        val size = px(30f); val gap = px(3f); val x = left + px(5f); val y = top + px(5f)
+        for (i in 0..1) {
+            val r = RectF(x, y + i * (size + gap), x + size, y + i * (size + gap) + size)
+            p.color = 0xdd10251a.toInt(); canvas.drawRoundRect(r, px(5f), px(5f), p)
+            text(canvas, if (i == 0) "+" else "−", r.centerX(), r.centerY() + px(6f), 18f, 0xffbdff54.toInt(), Paint.Align.CENTER, size)
+        }
+        text(canvas, "z$zoom", x + size + px(4f), y + px(18f), 8f, 0xffe0eadf.toInt(), Paint.Align.LEFT, px(32f))
+    }
+
+    private fun drawResizeGrip(canvas: Canvas) {
+        val right = width - px(4f); val bottom = height - px(3f)
+        line.color = 0xffbdff54.toInt(); line.strokeWidth = px(1.4f)
+        for (i in 0..2) canvas.drawLine(right - px(12f + i * 4f), bottom, right, bottom - px(12f + i * 4f), line)
     }
 
     private fun drawTiles(canvas: Canvas, center: FloatingCoordinate, cx: Float, cy: Float) {
@@ -95,9 +140,10 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         val worldX = (center.longitude + 180.0) / 360.0 * n
         val lat = Math.toRadians(center.latitude.coerceIn(-85.05112878, 85.05112878))
         val worldY = (1.0 - ln(tan(lat) + 1.0 / cos(lat)) / Math.PI) / 2.0 * n
-        val scale = px(256f)
+        val scale = px(256f * FloatingNavigationGeometry.overzoomScale(zoom).toFloat())
         var vertexBudget = 8_000
         var labelBudget = 14
+        val drawnLabels = ArrayList<RectF>()
         for (tile in tiles) {
             if (tile.z != z) continue
             var dxTile = tile.x - worldX
@@ -142,7 +188,10 @@ internal class FloatingNavigationView(context: Context) : View(context) {
                         isLabel -> {
                             val point = points.first(); val x = cx + ((dxTile + point.first.toDouble() / feature.extent) * scale).toFloat(); val y = cy + ((dyTile + point.second.toDouble() / feature.extent) * scale).toFloat()
                             val title = feature.properties["name:en"] ?: feature.properties["name"] ?: feature.properties["name:latin"]
-                            if (!title.isNullOrBlank() && x in 10f..width - 10f && y in px(47f)..height - px(47f)) canvas.drawText(title.take(14), x, y, p)
+                            if (!title.isNullOrBlank() && x in 10f..width - 10f && y in px(47f)..height - px(47f)) {
+                                val shown = title.take(14); val bounds = RectF(x - p.measureText(shown) / 2f - px(3f), y - p.textSize, x + p.measureText(shown) / 2f + px(3f), y + px(2f))
+                                if (drawnLabels.none { RectF.intersects(it, bounds) }) { canvas.drawText(shown, x, y, p); drawnLabels += bounds }
+                            }
                         }
                     }
                 }
@@ -155,13 +204,16 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         // Both MVT geometry and route use identical z14 world pixels. The motion camera rotates once outside.
         // Preserve bends with subpixel Douglas-Peucker simplification; the source route is never truncated.
         val path = cachedRoutePath(c, cx, cy)
-        line.color = 0xfff0f4ed.toInt(); line.strokeWidth = px(5f); canvas.drawPath(path, line)
-        line.color = 0xffbaff42.toInt(); line.strokeWidth = px(2.8f); canvas.drawPath(path, line)
+        // Low-alpha solid strokes give a restrained neon halo without blur filters or per-frame allocations.
+        val rgb = routeColor and 0x00ffffff
+        line.color = (0x28 shl 24) or rgb; line.strokeWidth = px(10f); canvas.drawPath(path, line)
+        line.color = (0x54 shl 24) or rgb; line.strokeWidth = px(6.5f); canvas.drawPath(path, line)
+        line.color = (0xff shl 24) or rgb; line.strokeWidth = px(3.1f); canvas.drawPath(path, line)
     }
 
     private fun cachedRoutePath(c: FloatingCoordinate, cx: Float, cy: Float): Path {
         routePath?.let { return it }
-        val points = route.map { FloatingNavigationGeometry.projectTileAligned(c, it, 14, cx, cy, px(256f)) }
+        val points = route.map { FloatingNavigationGeometry.projectTileAligned(c, it, 14, cx, cy, px(256f * FloatingNavigationGeometry.overzoomScale(zoom).toFloat())) }
         val keep = BooleanArray(points.size)
         if (points.isNotEmpty()) { keep[0] = true; keep[points.lastIndex] = true }
         val ranges = java.util.ArrayDeque<IntRange>()
@@ -199,18 +251,37 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         return hypot(dx, y(b.latitude) - y(a.latitude)) * 256.0 * px(1f)
     }
 
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) { super.onSizeChanged(w, h, oldw, oldh); routePath = null }
+    var onContentSizeChanged: (() -> Unit)? = null
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        routePath = null
+        if (w != oldw || h != oldh) post { onContentSizeChanged?.invoke() }
+    }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> { downX = event.rawX; downY = event.rawY; dragging = event.y < px(40f) && event.x in px(27f)..width - px(72f); return true }
-            MotionEvent.ACTION_MOVE -> if (dragging) { val dx = event.rawX - downX; val dy = event.rawY - downY; downX = event.rawX; downY = event.rawY; onDrag?.invoke(dx, dy); return true }
+            MotionEvent.ACTION_DOWN -> {
+                downX = event.rawX; downY = event.rawY
+                resizing = event.x >= width - px(30f) && event.y >= height - px(30f)
+                dragging = !resizing && event.y < px(40f) && event.x in px(27f)..width - px(72f)
+                return true
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val dx = event.rawX - downX; val dy = event.rawY - downY; downX = event.rawX; downY = event.rawY
+                if (dragging) { onDrag?.invoke(dx, dy); return true }
+                if (resizing) { onResize?.invoke(dx, dy); return true }
+            }
             MotionEvent.ACTION_UP -> {
                 if (dragging) return true
+                if (resizing) { resizing = false; return true }
                 val x = event.x; val y = event.y
-                if (y < px(40f) && x < px(28f)) onReturn?.invoke()
-                else if (y < px(40f) && x > width - px(28f)) onClose?.invoke()
+                val mapTop = px(40f); val mapBottom = height - px(42f)
+                if (y < px(40f) && x > width - px(28f)) onClose?.invoke()
                 else if (y < px(40f) && x > width - px(72f)) onMode?.invoke()
+                else if (y < px(40f) && x < px(28f)) onReturn?.invoke()
+                else if (x < px(40f) && y in mapTop + px(3f)..mapTop + px(33f)) onZoom?.invoke(1)
+                else if (x < px(40f) && y in mapTop + px(36f)..mapTop + px(66f)) onZoom?.invoke(-1)
                 performClick(); return true
             }
         }

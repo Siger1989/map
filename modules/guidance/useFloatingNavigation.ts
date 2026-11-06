@@ -5,11 +5,12 @@ import {
   parseFloatingNavigationStatus,
   serializeFloatingNavigationPayload,
   type FloatingNavigationMode,
+  type FloatingNavigationKind,
   type FloatingNavigationStatus,
 } from './floatingNavigation';
 
 const emptyStatus: FloatingNavigationStatus = {
-  available: false, enabled: false, visible: false, mode: 'north', message: '',
+  available: false, enabled: false, visible: false, mode: 'north', kind: 'position', message: '',
 };
 
 /** Browser UI for the native, cross-app floating navigation service. It never fabricates support. */
@@ -19,11 +20,14 @@ export function useFloatingNavigation(
 ) {
   const [status, setStatus] = useState(emptyStatus);
   const [mode, setModeState] = useState<FloatingNavigationMode>('north');
+  const [selectedKind, setKindState] = useState<FloatingNavigationKind | null>(null);
+  const kind = selectedKind ?? (session ? 'route' : 'position');
   const [localMessage, setLocalMessage] = useState('');
   const [foregroundEpoch, setForegroundEpoch] = useState(0);
-  const lastSent = useRef<{ coordinates: GuidanceSession['route']['coordinates']; label: string; mode: FloatingNavigationMode } | null>(null);
+  const lastSent = useRef<{ coordinates: GuidanceSession['route']['coordinates'] | null; label: string; color: string; mode: FloatingNavigationMode; kind: FloatingNavigationKind } | null>(null);
   const stopRequested = useRef(false);
-  const hadSession = useRef(session !== null);
+  const requestedKind = useRef<FloatingNavigationKind | null>(null);
+  const observedNativeChoice = useRef('');
 
   const refresh = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -32,7 +36,16 @@ export function useFloatingNavigation(
     try {
       const next = parseFloatingNavigationStatus(bridge.status());
       setStatus(next ?? { ...emptyStatus, message: '悬浮导航状态暂不可读' });
-      if (next?.enabled) setModeState(next.mode);
+      if (next?.enabled) {
+        const choice = `${next.kind}/${next.mode}`;
+        if (choice !== observedNativeChoice.current) {
+          observedNativeChoice.current = choice;
+          setModeState(next.mode);
+          setKindState(next.kind);
+        }
+      } else {
+        observedNativeChoice.current = '';
+      }
     } catch {
       setStatus({ ...emptyStatus, message: '无法读取悬浮导航状态' });
     }
@@ -63,16 +76,18 @@ export function useFloatingNavigation(
     };
   }, [options.observe, refresh]);
 
-  const send = useCallback((kind: 'start' | 'update', nextMode = mode) => {
-    if (!session || typeof window === 'undefined') return false;
+  const send = useCallback((action: 'start' | 'update', nextMode = mode, nextKind = kind) => {
+    if (typeof window === 'undefined') return false;
     const bridge = window.ShantuFloatingNavigation;
     if (!bridge) { setLocalMessage('此平台不支持跨App悬浮导航'); return false; }
     try {
-      const payload = buildFloatingNavigationPayload(session, nextMode);
+      const payload = buildFloatingNavigationPayload(session, nextMode, nextKind);
       const serialized = serializeFloatingNavigationPayload(payload);
-      bridge[kind](serialized);
-      lastSent.current = { coordinates: session.route.coordinates, label: payload.label, mode: nextMode };
+      bridge[action](serialized);
+      requestedKind.current = nextKind;
+      lastSent.current = { coordinates: nextKind === 'route' ? session!.route.coordinates : null, label: payload.label, color: payload.color ?? '', mode: nextMode, kind: nextKind };
       setModeState(nextMode);
+      setKindState(nextKind);
       setLocalMessage('');
       refresh();
       return true;
@@ -81,7 +96,7 @@ export function useFloatingNavigation(
       refresh();
       return false;
     }
-  }, [mode, refresh, session]);
+  }, [kind, mode, refresh, session]);
 
   const start = useCallback((nextMode = mode) => {
     stopRequested.current = false;
@@ -92,44 +107,57 @@ export function useFloatingNavigation(
     try { window.ShantuFloatingNavigation?.stop(); }
     catch { setLocalMessage('关闭悬浮导航失败'); }
     lastSent.current = null;
+    requestedKind.current = null;
     refresh();
   }, [refresh]);
   const setMode = useCallback((nextMode: FloatingNavigationMode) => {
     setModeState(nextMode);
     setLocalMessage('');
-    if (status.enabled && session) send('update', nextMode);
-  }, [send, session, status.enabled]);
+    if (status.enabled) send('update', nextMode);
+  }, [send, status.enabled]);
+  const setKind = useCallback((nextKind: FloatingNavigationKind) => {
+    if (nextKind === 'route' && !session) return;
+    setKindState(nextKind);
+    setLocalMessage('');
+    if (status.enabled) send('update', mode, nextKind);
+  }, [mode, send, session, status.enabled]);
 
   // Route edits/reroutes refresh the overlay, while location fixes never trigger route resends.
   useEffect(() => {
-    if (options.manageSession === false || !status.enabled || !session || document.visibilityState !== 'visible') return;
-    const label = session.route.stops?.at(-1)?.name?.trim() || '导航路线';
+    if (options.manageSession === false || !status.enabled || (kind === 'route' && !session) || document.visibilityState !== 'visible') return;
+    const label = kind === 'route' ? session!.route.stops?.at(-1)?.name?.trim() || '导航路线' : '定位小地图';
+    const color = kind === 'route' ? session!.route.style?.color?.toUpperCase() ?? '' : '';
     const previous = lastSent.current;
-    if (previous?.coordinates === session.route.coordinates && previous.label === label && previous.mode === mode) return;
+    if (previous?.coordinates === (kind === 'route' ? session!.route.coordinates : null) && previous.label === label && previous.color === color && previous.mode === mode && previous.kind === kind) return;
     send('update', mode);
-  }, [foregroundEpoch, mode, options.manageSession, send, session, status.enabled, session?.route.coordinates, session?.route.stops]);
+  }, [foregroundEpoch, kind, mode, options.manageSession, send, session, status.enabled, session?.route.coordinates, session?.route.stops, session?.route.style?.color]);
 
   // A null session means navigation ended. Component unmount alone intentionally does not stop it,
   // because the card can temporarily disappear while panels are open or the app is backgrounded.
   useEffect(() => {
-    if (session) {
-      hadSession.current = true;
-      return;
+    if (session || options.manageSession === false) return;
+    if (requestedKind.current === 'route' || (status.enabled && status.kind === 'route')) {
+      if (!stopRequested.current) {
+        stop();
+        setKindState(null);
+      }
     }
-    if (options.manageSession !== false && hadSession.current) {
-      hadSession.current = false;
-      if (!stopRequested.current) stop();
-    }
-  }, [options.manageSession, session, stop]);
+  }, [options.manageSession, session, status.enabled, status.kind, stop]);
 
   return {
     enabled: status.enabled,
     supported: status.available,
     visible: status.visible,
     mode,
+    kind,
+    hasRoute: session !== null,
+    zoom: status.zoom,
+    widthDp: status.widthDp,
+    heightDp: status.heightDp,
     message: localMessage || status.message,
     start,
     stop,
     setMode,
+    setKind,
   };
 }

@@ -1,7 +1,7 @@
 import { isLayoutInteraction } from '../uiLayout/events';
 import { useDockClearance } from '../tracks/useDockClearance';
 import { FullscreenButton } from './FullscreenButton';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Route,
   MapPinPlus,
@@ -15,6 +15,7 @@ import {
   Ruler,
   NotebookPen,
   PanelsTopLeft,
+  PictureInPicture2,
 } from 'lucide-react';
 import { DocumentTextIcon, MapIcon as SolidMapIcon, PencilIcon, StarIcon, BriefcaseIcon } from '@heroicons/react/24/solid';
 
@@ -63,6 +64,7 @@ export function ControlDock({
   showRecordingEntry = true,
   keepOpenOnMapInteraction = false,
   mapPicking = false,
+  floatingNavigation,
 }: {
   active: ControlPanel;
   onActive: (panel: ControlPanel) => void;
@@ -84,7 +86,12 @@ export function ControlDock({
   showRecordingEntry?: boolean;
   keepOpenOnMapInteraction?: boolean;
   mapPicking?: boolean;
+  floatingNavigation?: ReactNode;
 }) {
+  const [floatingOpen, setFloatingOpen] = useState(false);
+  const floatingSubview = active === 'tools' && floatingOpen && !!floatingNavigation;
+  const panelBack: typeof back = floatingSubview ? { label: '返回工具', onClick: () => setFloatingOpen(false) } : back;
+  useEffect(() => { setFloatingOpen(false); }, [active]);
   const root = useRef<HTMLElement>(null);
   const panelDock = useDockClearance('--operation-info-clearance', active);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -126,7 +133,7 @@ export function ControlDock({
           // The parent owns cancelling a map-pick operation without closing its panel.
           if (mapPicking) return;
           event.preventDefault();
-          if (back && !back.disabled) back.onClick();
+          if (panelBack && !panelBack.disabled) panelBack.onClick();
           else close();
         }
       }}
@@ -140,21 +147,21 @@ export function ControlDock({
           ref={panelDock}
         >
           <div className="dock-heading">
-            {back && onHide && <button className="dock-hide" onClick={onHide} aria-label={`${hideLabel}地图对象`}>{hideLabel}</button>}
-            {back && (
+            {panelBack && onHide && <button className="dock-hide" onClick={onHide} aria-label={`${hideLabel}地图对象`}>{hideLabel}</button>}
+            {panelBack && (
               <button
                 className="dock-back"
-                aria-label={back.label}
-                title={back.label}
-                disabled={back.disabled}
-                onClick={back.onClick}
+                aria-label={panelBack.label}
+                title={panelBack.label}
+                disabled={panelBack.disabled}
+                onClick={panelBack.onClick}
               >
                 <ChevronLeft size={16} aria-hidden="true" />
                 返回
               </button>
             )}
             <h2 id="dock-title">
-              {titleContent ?? title ??
+              {floatingSubview ? '悬浮小地图' : titleContent ?? title ??
                 (active === 'about'
                   ? '关于山兔'
                   : active === 'annotations'
@@ -167,7 +174,7 @@ export function ControlDock({
                             ? '路线规划'
                             : PANELS.find((p) => p.id === active)?.label)}
             </h2>
-            {!back && onHide && <button className="dock-hide" onClick={onHide} aria-label={`${hideLabel}地图对象`}>{hideLabel}</button>}
+            {!panelBack && onHide && <button className="dock-hide" onClick={onHide} aria-label={`${hideLabel}地图对象`}>{hideLabel}</button>}
             <button
               ref={closeButton}
               className="icon-button"
@@ -178,7 +185,7 @@ export function ControlDock({
             </button>
           </div>
           <div className="dock-content" key={active}>
-            {active === 'tools' ? (
+            {floatingSubview ? floatingNavigation : active === 'tools' ? (
               <div className="tool-grid">
                 {onSection && (
                   <button
@@ -206,6 +213,7 @@ export function ControlDock({
                 )}
                 {onCompare && <button onClick={onCompare}><PanelsTopLeft size={18} />双图源对比</button>}
                 {onArea && <button onClick={onArea}>▱ 划区域</button>}
+                {floatingNavigation && <button onClick={() => setFloatingOpen(true)}><PictureInPicture2 size={18} />悬浮小地图</button>}
                 {industryEnabled && <button onClick={() => onActive('industry')} aria-label="行业工具">行业工具</button>}
               </div>
             ) : (

@@ -5,11 +5,15 @@ import kotlin.math.*
 internal data class FloatingCoordinate(val longitude: Double, val latitude: Double)
 internal data class FloatingPoint(val x: Float, val y: Float)
 internal data class FloatingRouteProjection(val segmentIndex: Int, val fraction: Double, val distanceMeters: Double, val remainingMeters: Double, val offRoute: Boolean)
+internal data class FloatingWindowSize(val widthDp: Float, val heightDp: Float)
 
 /** Pure, bounded input and Web-Mercator geometry used by the compact overlay. */
 internal object FloatingNavigationGeometry {
     const val MAX_ROUTE_POINTS = 100_000
     const val MAX_PAYLOAD_BYTES = 4 * 1024 * 1024
+    const val MIN_ZOOM = 14
+    const val MAX_ZOOM = 18
+    const val DEFAULT_ROUTE_COLOR = -4_522_174 // 0xffbaff42
     private const val EARTH_RADIUS = 6_378_137.0
     private const val MAX_MERCATOR_LAT = 85.0511287798066
 
@@ -22,6 +26,44 @@ internal object FloatingNavigationGeometry {
         require(label.length <= 160) { "路线名称过长" }
         require(points.size in 2..MAX_ROUTE_POINTS) { "路线点数必须为2至100000" }
         require(points.all { it.longitude.isFinite() && it.longitude in -180.0..180.0 && it.latitude.isFinite() && it.latitude in -90.0..90.0 }) { "路线坐标无效" }
+    }
+
+    fun validateSession(kind: String, mode: String, label: String, pointCount: Int, zoom: Int? = null) {
+        require(kind == "position" || kind == "route") { "悬浮窗会话类型无效" }
+        require(mode == "north" || mode == "motion") { "方向模式无效" }
+        require(label.length <= 160) { "路线名称过长" }
+        if (kind == "position") require(pointCount == 0) { "定位小窗不能包含规划路线" }
+        else require(pointCount in 2..MAX_ROUTE_POINTS) { "路线点数必须为2至100000" }
+        if (zoom != null) require(zoom in MIN_ZOOM..MAX_ZOOM) { "地图缩放级别必须为14至18" }
+    }
+
+    fun validateCoordinate(longitude: Double, latitude: Double) {
+        require(longitude.isFinite() && longitude in -180.0..180.0 && latitude.isFinite() && latitude in -90.0..90.0) { "路线坐标无效" }
+    }
+
+    /** Optional v1 route color; position payloads must never carry route styling. */
+    fun parseRouteColor(kind: String, fieldPresent: Boolean, value: String?): Int {
+        if (!fieldPresent) return DEFAULT_ROUTE_COLOR
+        require(kind == "route") { "定位小地图不接受路线颜色" }
+        require(value != null && value.matches(Regex("^#[0-9A-Fa-f]{6}$"))) { "路线颜色必须是#RRGGBB" }
+        return (0xff000000L or value.substring(1).toLong(16)).toInt()
+    }
+
+    fun formatRouteColor(color: Int): String = "#" + (color and 0x00ffffff).toString(16).padStart(6, '0').uppercase()
+
+    /** Clamp to screen-safe dp limits even when the device is smaller than the nominal minimum. */
+    fun windowSize(widthDp: Float, heightDp: Float, screenWidthDp: Float, screenHeightDp: Float): FloatingWindowSize {
+        require(widthDp.isFinite() && heightDp.isFinite() && screenWidthDp.isFinite() && screenHeightDp.isFinite())
+        val maxWidth = min(320f, (screenWidthDp - 16f).coerceAtLeast(1f))
+        val maxHeight = min(400f, (screenHeightDp - 16f).coerceAtLeast(1f))
+        val minWidth = min(160f, maxWidth)
+        val minHeight = min(180f, maxHeight)
+        return FloatingWindowSize(widthDp.coerceIn(minWidth, maxWidth), heightDp.coerceIn(minHeight, maxHeight))
+    }
+
+    fun overzoomScale(zoom: Int): Double {
+        require(zoom in MIN_ZOOM..MAX_ZOOM)
+        return 2.0.pow(zoom - MIN_ZOOM)
     }
 
     /** Projects local east/north metres to pixels. Motion bearing (clockwise from north) points to screen-up. */

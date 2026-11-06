@@ -7,6 +7,7 @@ package com.shantu.nativeapp.map
 
 import earth.worldwind.geom.Location
 import earth.worldwind.geom.Matrix3
+import earth.worldwind.draw.DrawableSurfaceTexture
 import earth.worldwind.layer.mercator.MercatorSector
 import earth.worldwind.layer.mercator.MercatorTileFactory
 import earth.worldwind.layer.mercator.MercatorTiledSurfaceImage
@@ -25,6 +26,7 @@ internal class NativeRasterFeatherMercatorSurfaceImage(
     levels: LevelSet,
     private val featherOpaque: Boolean = true,
     private val backing: NativeRasterFeatherBackingStore? = null,
+    private val cssPixelScale: () -> Float = { 1f },
 ) : MercatorTiledSurfaceImage(factory, levels) {
     private class Leaf {
         var tile: ImageTile? = null
@@ -97,25 +99,40 @@ internal class NativeRasterFeatherMercatorSurfaceImage(
                 val parent = leaf.parent
                 val ancestor = leaf.parentTexture
                 val texture = own ?: ancestor ?: continue
-                val drawable = NativeRasterFeatherDrawable.obtain(pool)
-                drawable.diagnostics = backing?.diagnostics
-                drawable.preparedSequence = backing?.diagnostics?.sequence() ?: 0L
                 if (leaf.potentialEdges != 0) {
                     boundaries++
                     if (leaf.edges != 0) featherChildren++ else noParent++
                 }
-                if (own == null && parent != null) {
+            val canFeather = own != null && leaf.edges != 0 && parent != null && ancestor != null
+            if (!canFeather) {
+                // Keep ordinary tiles on the SDK's four-texture batch path; only real boundary pairs split.
+                val standard = DrawableSurfaceTexture.obtain(rc.getDrawablePool(DrawableSurfaceTexture.KEY))
+                if (own != null) {
+                    standard.set(SurfaceTextureProgram.get(rc), tile.sector, opacity, own,
+                        own.coordTransform, rc.globe.offset)
+                } else if (parent != null) {
                     parentMatrix.copy(texture.coordTransform).multiplyByTileTransform(tile.sector, parent.sector)
-                    drawable.set(program, tile.sector, opacity, texture, parentMatrix, rc.globe.offset)
+                    standard.set(SurfaceTextureProgram.get(rc), tile.sector, opacity, texture,
+                        parentMatrix, rc.globe.offset)
                 } else {
-                    drawable.set(program, tile.sector, opacity, texture, texture.coordTransform, rc.globe.offset)
-                    if (leaf.edges != 0 && parent != null && ancestor != null) {
-                        drawable.edges = leaf.edges
-                        drawable.backingTexture = ancestor
-                        backing?.diagnostics?.queuedPair()
-                        drawable.backingMatrix.copy(ancestor.coordTransform).multiplyByTileTransform(tile.sector, parent.sector)
-                    }
+                    standard.set(SurfaceTextureProgram.get(rc), tile.sector, opacity, texture,
+                        texture.coordTransform, rc.globe.offset)
                 }
+                rc.offerSurfaceDrawable(standard, zOrder)
+                continue
+                }
+            val drawable = NativeRasterFeatherDrawable.obtain(pool)
+            drawable.diagnostics = backing?.diagnostics
+            drawable.preparedSequence = backing?.diagnostics?.sequence() ?: 0L
+            drawable.cssPixelScale = cssPixelScale().takeIf { it.isFinite() }?.coerceIn(0.5f, 8f) ?: 1f
+            val childTexture = checkNotNull(own)
+            val parentTile = checkNotNull(parent)
+            val parentTexture = checkNotNull(ancestor)
+            drawable.set(program, tile.sector, opacity, childTexture, childTexture.coordTransform, rc.globe.offset)
+            drawable.edges = leaf.edges
+            drawable.backingTexture = parentTexture
+            backing?.diagnostics?.queuedPair()
+            drawable.backingMatrix.copy(parentTexture.coordTransform).multiplyByTileTransform(tile.sector, parentTile.sector)
                 rc.offerSurfaceDrawable(drawable, zOrder)
             }
             backing?.diagnostics?.recordLeaves(count, boundaries, featherChildren, noParent)
@@ -138,11 +155,11 @@ internal class NativeRasterFeatherMercatorSurfaceImage(
         if (count >= NativeRasterFeatherPolicy.MAX_LEAVES) {
             val chosen = texture ?: if (validFallback) parentTexture else null
             if (chosen != null) {
-                val drawable = NativeRasterFeatherDrawable.obtain(rc.getDrawablePool(NativeRasterFeatherDrawable.KEY))
+                val drawable = DrawableSurfaceTexture.obtain(rc.getDrawablePool(DrawableSurfaceTexture.KEY))
                 if (texture == null && parent != null) {
                     parentMatrix.copy(chosen.coordTransform).multiplyByTileTransform(tile.sector, parent.sector)
-                    drawable.set(activeProgram, tile.sector, rc.currentLayer.opacity, chosen, parentMatrix, rc.globe.offset)
-                } else drawable.set(activeProgram, tile.sector, rc.currentLayer.opacity, chosen, chosen.coordTransform, rc.globe.offset)
+                    drawable.set(SurfaceTextureProgram.get(rc), tile.sector, rc.currentLayer.opacity, chosen, parentMatrix, rc.globe.offset)
+                } else drawable.set(SurfaceTextureProgram.get(rc), tile.sector, rc.currentLayer.opacity, chosen, chosen.coordTransform, rc.globe.offset)
                 rc.offerSurfaceDrawable(drawable, zOrder)
             }
             return
@@ -165,7 +182,7 @@ internal class NativeRasterFeatherMercatorSurfaceImage(
     override fun clone() = NativeRasterFeatherMercatorSurfaceImage(tileFactory, with(levelSet) {
         LevelSet(MercatorSector.fromSector(sector), MercatorSector.fromSector(tileOrigin), firstLevelDelta,
             numLevels, tileWidth, tileHeight, levelOffset, firstLevel.levelNumber)
-    }, featherOpaque).also {
+    }, featherOpaque, backing, cssPixelScale).also {
         // A clone can belong to a print window/context; do not share frame backing state across windows.
         it.imageOptions = imageOptions; it.detailControl = detailControl
         it.useAncestorTileTexture = useAncestorTileTexture; it.retrieveTopLevelTiles = retrieveTopLevelTiles
@@ -174,11 +191,12 @@ internal class NativeRasterFeatherMercatorSurfaceImage(
     companion object {
         fun build(factory: MercatorTileFactory, transparent: Boolean = false, maxZoom: Int = 21,
                   minZoom: Int = 1, tileSize: Int = 256, backing: NativeRasterFeatherBackingStore? = null,
-                  allowFeather: Boolean = !transparent): NativeRasterFeatherMercatorSurfaceImage {
+                  allowFeather: Boolean = !transparent,
+                  cssPixelScale: () -> Float = { 1f }): NativeRasterFeatherMercatorSurfaceImage {
             val sector = MercatorSector(); val origin = MercatorSector()
             val delta = Location(origin.deltaLatitude, origin.deltaLongitude)
             return NativeRasterFeatherMercatorSurfaceImage(factory,
-                LevelSet(sector, origin, delta, maxZoom + 1, tileSize, tileSize, minZoom), allowFeather, backing).apply {
+                LevelSet(sector, origin, delta, maxZoom + 1, tileSize, tileSize, minZoom), allowFeather, backing, cssPixelScale).apply {
                 if (!transparent) imageOptions = ImageOptions(ImageConfig.RGB_565)
             }
         }

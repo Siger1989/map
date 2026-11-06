@@ -35,10 +35,12 @@ public final class Native171FloatingNavigationRegression {
     private String failedStage = "setup";
     private boolean fullyVerified;
     private boolean appInBackground;
+    private final boolean positionOnly;
 
-    private Native171FloatingNavigationRegression(Native149Instrumentation parent) { this.parent = parent; }
+    private Native171FloatingNavigationRegression(Native149Instrumentation parent, boolean positionOnly) { this.parent = parent; this.positionOnly = positionOnly; }
 
-    public static JSONObject run(Native149Instrumentation parent) { return new Native171FloatingNavigationRegression(parent).run(); }
+    public static JSONObject run(Native149Instrumentation parent) { return new Native171FloatingNavigationRegression(parent, false).run(); }
+    public static JSONObject runPosition(Native149Instrumentation parent) { return new Native171FloatingNavigationRegression(parent, true).run(); }
 
     private JSONObject run() {
         try {
@@ -62,14 +64,23 @@ public final class Native171FloatingNavigationRegression {
                 return report;
             }
 
-            failedStage = "expand-navigation-details";
-            if (elementExists(".guidance-card button[aria-label='展开导航详情']")) {
-                tapElement(".guidance-card button[aria-label='展开导航详情']");
-                waitForVisible(".guidance-card .guidance-content", 3_000L);
-            }
+            failedStage = "open-tools-floating-subview";
+            tapElement(".home-bottom-nav button[data-panel-toggle='tools']");
+            waitForVisible(".control-popover .tool-grid", 3_000L);
+            tapButtonByText(".control-popover .tool-grid", "悬浮小地图");
             waitForVisible(CONTROLS, 4_000L);
-            captureScreenshot("guidance-controls-expanded");
-            steps.put(new JSONObject().put("step", "real-navigation-details-expanded").put("status", "PASS"));
+            captureScreenshot("tools-floating-map-controls");
+            steps.put(new JSONObject().put("step", "tools-subpage-opened-by-real-ui-taps").put("status", "PASS"));
+
+            failedStage = "select-session-kind";
+            String kind = positionOnly ? "position" : "route";
+            if (!positionOnly && elementExists(CONTROLS + "__kinds button:last-child:disabled"))
+                throw new IllegalStateException("route floating-map regression requires an active guidance route");
+            String kindButton = CONTROLS + "__kinds button" + (positionOnly ? ":first-child" : ":last-child");
+            tapElement(kindButton);
+            if (!elementExists(kindButton + "[aria-pressed='true']"))
+                throw new IllegalStateException("floating map kind was not selected by touch");
+            steps.put(new JSONObject().put("step", "floating-map-kind-selected").put("status", "PASS").put("kind", kind));
 
             failedStage = "select-north-mode";
             tapElement(CONTROLS + "__modes button:first-child");
@@ -81,9 +92,40 @@ public final class Native171FloatingNavigationRegression {
             tapButtonByText(CONTROLS + "__action", "开启悬浮");
             JSONObject northStarted = waitBridgeEnabled(true, 8_000L);
             if (!"north".equals(northStarted.optString("mode"))) throw new IllegalStateException("foreground bridge did not report north mode");
+            if (!kind.equals(northStarted.optString("kind"))) throw new IllegalStateException("foreground bridge reported the wrong floating-map kind");
             captureScreenshot("foreground-floating-north-enabled");
             steps.put(new JSONObject().put("step", "floating-navigation-started-from-real-ui-tap")
-                .put("status", "PASS").put("enabled", true).put("mode", "north"));
+                .put("status", "PASS").put("enabled", true).put("mode", "north").put("kind", kind));
+
+            failedStage = "real-overlay-zoom-and-resize";
+            JSONObject visibleNow = waitServiceState(true, true, "north", 6_000L);
+            OverlayWindow controlWindow = waitForOverlayWindow(4_000L);
+            if (controlWindow == null) controlWindow = overlayWindowFromStatus(visibleNow);
+            if (controlWindow == null) throw new StatusUnavailableException();
+            JSONObject layoutResult = exerciseZoomAndResize(controlWindow, visibleNow);
+            steps.put(new JSONObject().put("step", "overlay-zoom-and-resize-by-real-touch").put("status", "PASS")
+                .put("kind", kind).put("layout", layoutResult));
+
+            if (positionOnly) {
+                failedStage = "position-session-background";
+                goHome();
+                JSONObject background = waitServiceState(true, true, "north", 6_000L);
+                if (!"position".equals(background.optString("kind"))) throw new IllegalStateException("position session kind changed in background");
+                steps.put(new JSONObject().put("step", "position-only-session-remains-active").put("status", "PASS")
+                    .put("serviceStatus", safeStatus(background)));
+                captureScreenshot("background-position-only-overlay");
+                failedStage = "position-window-close";
+                OverlayWindow closeWindow = overlayWindowFromStatus(background);
+                if (closeWindow == null) throw new StatusUnavailableException();
+                tapOverlayClose(closeWindow);
+                JSONObject closed = waitServiceState(false, false, null, 8_000L);
+                returnToApp();
+                steps.put(new JSONObject().put("step", "position-window-close-stops-position-session").put("status", "PASS")
+                    .put("serviceStatus", safeStatus(closed)).put("gpsInjected", false));
+                fullyVerified = true;
+                report.put("testState", "PASS").put("positionOnly", true).put("enabledAfterClose", false);
+                return report;
+            }
 
             failedStage = "background-north-overlay";
             goHome();
@@ -140,6 +182,10 @@ public final class Native171FloatingNavigationRegression {
 
             failedStage = "guidance-remains-active";
             returnToApp();
+            // The entry now lives under Tools. Its open panel intentionally hides
+            // the main guidance card; return to the map before checking that card.
+            if (elementExists(".control-popover button[aria-label='关闭面板']"))
+                tapElement(".control-popover button[aria-label='关闭面板']");
             JSONObject guidance = waitGuidanceActive(6_000L);
             captureScreenshot("foreground-guidance-remains-active");
             steps.put(new JSONObject().put("step", "closing-floating-window-preserves-main-guidance")
@@ -229,6 +275,8 @@ public final class Native171FloatingNavigationRegression {
         // Keep only the documented status contract; never read route data.
         JSONObject safe = new JSONObject().put("enabled", raw.optBoolean("enabled"))
             .put("visible", raw.optBoolean("visible")).put("mode", raw.optString("mode"))
+            .put("kind", raw.optString("kind")).put("zoom", raw.optInt("zoom"))
+            .put("widthDp", raw.optDouble("widthDp")).put("heightDp", raw.optDouble("heightDp"))
             .put("message", raw.optString("message"));
         JSONObject bounds = raw.optJSONObject("windowBounds");
         if (bounds != null) safe.put("windowBounds", new JSONObject().put("x", bounds.optInt("x"))
@@ -285,6 +333,92 @@ public final class Native171FloatingNavigationRegression {
             SystemClock.sleep(160L);
         }
         return null;
+    }
+
+    private JSONObject exerciseZoomAndResize(OverlayWindow window, JSONObject status) throws Exception {
+        int initialZoom = status.optInt("zoom", -1);
+        if (initialZoom < 14 || initialZoom > 18) throw new IllegalStateException("service did not expose a valid zoom level");
+        int direction = initialZoom < 18 ? 1 : -1;
+        tapOverlayAt(window, 20f, direction > 0 ? 60f : 93f);
+        JSONObject changedZoom = waitForZoom(initialZoom + direction, 3_000L);
+        OverlayWindow zoomedWindow = overlayWindowFromStatus(changedZoom);
+        if (zoomedWindow == null) throw new StatusUnavailableException();
+        tapOverlayAt(zoomedWindow, 20f, direction > 0 ? 93f : 60f);
+        JSONObject restoredZoom = waitForZoom(initialZoom, 3_000L);
+
+        double oldWidth = restoredZoom.optDouble("widthDp", -1);
+        double oldHeight = restoredZoom.optDouble("heightDp", -1);
+        OverlayWindow resizeWindow = overlayWindowFromStatus(restoredZoom);
+        if (resizeWindow == null || oldWidth < 150 || oldHeight < 170) throw new StatusUnavailableException();
+        float deltaDp = oldWidth < 300 && oldHeight < 380 ? 18f : -18f;
+        float startX = resizeWindow.bounds.right - 5f * density;
+        float startY = resizeWindow.bounds.bottom - 5f * density;
+        dragScreen(startX, startY, startX + deltaDp * density, startY + deltaDp * density, 360L);
+        JSONObject resized = waitForSizeChange(oldWidth, oldHeight, deltaDp, 4_000L);
+        OverlayWindow enlargedWindow = overlayWindowFromStatus(resized);
+        if (enlargedWindow == null) throw new StatusUnavailableException();
+        float restoreX = enlargedWindow.bounds.right - 5f * density;
+        float restoreY = enlargedWindow.bounds.bottom - 5f * density;
+        dragScreen(restoreX, restoreY, restoreX + (float)(oldWidth - resized.optDouble("widthDp")) * density,
+            restoreY + (float)(oldHeight - resized.optDouble("heightDp")) * density, 360L);
+        long restoreUntil = SystemClock.elapsedRealtime() + 4_000L;
+        JSONObject restoredSize = new JSONObject();
+        while (SystemClock.elapsedRealtime() < restoreUntil) {
+            restoredSize = serviceStatus();
+            if (Math.abs(restoredSize.optDouble("widthDp") - oldWidth) < .6 &&
+                Math.abs(restoredSize.optDouble("heightDp") - oldHeight) < .6) break;
+            SystemClock.sleep(80L);
+        }
+        if (Math.abs(restoredSize.optDouble("widthDp") - oldWidth) >= .6 ||
+            Math.abs(restoredSize.optDouble("heightDp") - oldHeight) >= .6)
+            throw new IllegalStateException("window dimensions were not restored after resize roundtrip");
+        return new JSONObject().put("zoomBefore", initialZoom).put("zoomAfterRoundTrip", restoredZoom.optInt("zoom", -1))
+            .put("widthBeforeDp", oldWidth).put("heightBeforeDp", oldHeight)
+            .put("widthAfterDp", resized.optDouble("widthDp")).put("heightAfterDp", resized.optDouble("heightDp"))
+            .put("windowBoundsAfterPx", resized.optJSONObject("windowBounds"))
+            .put("widthRestoredDp", restoredSize.optDouble("widthDp")).put("heightRestoredDp", restoredSize.optDouble("heightDp"));
+    }
+
+    private JSONObject waitForZoom(int zoom, long timeoutMs) throws Exception {
+        long until = SystemClock.elapsedRealtime() + timeoutMs;
+        JSONObject last = new JSONObject();
+        while (SystemClock.elapsedRealtime() < until) {
+            last = serviceStatus();
+            if (last.optBoolean("enabled") && last.optInt("zoom", -1) == zoom) return last;
+            SystemClock.sleep(80L);
+        }
+        throw new IllegalStateException("real overlay zoom control did not update service status");
+    }
+
+    private JSONObject waitForSizeChange(double oldWidth, double oldHeight, float deltaDp, long timeoutMs) throws Exception {
+        long until = SystemClock.elapsedRealtime() + timeoutMs;
+        JSONObject last = new JSONObject();
+        while (SystemClock.elapsedRealtime() < until) {
+            last = serviceStatus();
+            double width = last.optDouble("widthDp", oldWidth), height = last.optDouble("heightDp", oldHeight);
+            boolean changed = deltaDp > 0 ? width > oldWidth + 5 && height > oldHeight + 5 : width < oldWidth - 5 && height < oldHeight - 5;
+            if (last.optBoolean("visible") && changed && last.optJSONObject("windowBounds") != null) return last;
+            SystemClock.sleep(80L);
+        }
+        throw new IllegalStateException("real overlay resize handle did not update window bounds and dp size");
+    }
+
+    private void tapOverlayAt(OverlayWindow window, float xDp, float yDp) throws Exception {
+        invoke(parent, "tap", window.bounds.left + xDp * density, window.bounds.top + yDp * density);
+        SystemClock.sleep(120L);
+    }
+
+    private void dragScreen(float x1, float y1, float x2, float y2, long durationMs) {
+        long down = android.os.SystemClock.uptimeMillis();
+        int count = Math.max(5, (int)(durationMs / 40));
+        injectMotion(android.view.MotionEvent.ACTION_DOWN, down, down, x1, y1);
+        for (int i = 1; i <= count; i++) {
+            SystemClock.sleep(Math.max(1L, durationMs / count));
+            float f = i / (float)count;
+            injectMotion(android.view.MotionEvent.ACTION_MOVE, down, android.os.SystemClock.uptimeMillis(),
+                x1 + (x2 - x1) * f, y1 + (y2 - y1) * f);
+        }
+        injectMotion(android.view.MotionEvent.ACTION_UP, down, android.os.SystemClock.uptimeMillis(), x2, y2);
     }
 
     private boolean waitForNoOverlayWindow(long timeoutMs) throws Exception {
@@ -444,7 +578,10 @@ public final class Native171FloatingNavigationRegression {
     private JSONObject safeStatus(JSONObject status) throws JSONException {
         return new JSONObject().put("available", status.optBoolean("available"))
             .put("enabled", status.optBoolean("enabled")).put("visible", status.optBoolean("visible"))
-            .put("mode", status.optString("mode")).put("message", status.optString("message"))
+            .put("mode", status.optString("mode")).put("kind", status.optString("kind"))
+            .put("zoom", status.optInt("zoom")).put("widthDp", status.optDouble("widthDp"))
+            .put("heightDp", status.optDouble("heightDp")).put("windowBounds", status.optJSONObject("windowBounds"))
+            .put("message", status.optString("message"))
             .put("locationAllowed", status.optBoolean("locationAllowed"))
             .put("overlayAllowed", status.optBoolean("overlayAllowed"))
             .put("notificationAllowed", status.optBoolean("notificationAllowed"));
@@ -463,7 +600,7 @@ public final class Native171FloatingNavigationRegression {
         JSONObject bounds = status.optJSONObject("windowBounds");
         if (bounds == null) return null;
         int x = bounds.optInt("x"), y = bounds.optInt("y"), width = bounds.optInt("width"), height = bounds.optInt("height");
-        if (width < 120 * density || height < 140 * density || width > 260 * density || height > 300 * density) return null;
+        if (width < 120 * density || height < 140 * density || width > 330 * density || height > 410 * density) return null;
         return new OverlayWindow(new Rect(x, y, x + width, y + height), -1, density);
     }
 
@@ -512,7 +649,7 @@ public final class Native171FloatingNavigationRegression {
         JSONObject toJson() throws JSONException {
             return new JSONObject().put("x", bounds.left).put("y", bounds.top).put("width", bounds.width())
                 .put("height", bounds.height()).put("windowType", type)
-                .put("expectedWidthDp", 184).put("expectedHeightDp", 216);
+                .put("actualWidthDp", bounds.width() / density).put("actualHeightDp", bounds.height() / density);
         }
     }
 

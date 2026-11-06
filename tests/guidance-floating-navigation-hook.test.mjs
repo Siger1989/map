@@ -42,6 +42,7 @@ test('session end stops pending floating start and a later start is not suppress
     return null;
   }
   const root = createRoot(document.getElementById('root'));
+  t.after(async () => { await React.act(async () => root.unmount()); });
   const act = React.act;
   await act(async () => root.render(React.createElement(Probe, { session: null })));
   assert.equal(calls.stops, 0, 'initial null session does not send an unnecessary stop');
@@ -57,5 +58,14 @@ test('session end stops pending floating start and a later start is not suppress
   await act(async () => { controls.start(); });
   await act(async () => root.render(React.createElement(Probe, { session: null })));
   assert.equal(calls.stops, 2, 'a later start clears the previous stop guard');
+
+  await act(async () => { controls.setKind('position'); });
+  await act(async () => { controls.start(); });
+  assert.equal(calls.starts, 3, 'ordinary positioning can start without a route');
+  await act(async () => root.render(React.createElement(Probe, { session })));
+  await act(async () => root.render(React.createElement(Probe, { session: null })));
+  assert.equal(calls.stops, 2, 'ending a main navigation does not stop a position-only overlay');
+  await act(async () => { controls.stop(); });
+  assert.equal(calls.stops, 3, 'position overlay can still be stopped explicitly');
   await act(async () => root.unmount());
 });

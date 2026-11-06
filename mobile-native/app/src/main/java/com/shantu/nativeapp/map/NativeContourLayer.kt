@@ -1,10 +1,8 @@
 package com.shantu.nativeapp.map
 
-import earth.worldwind.geom.Angle
 import earth.worldwind.WorldWind
 import earth.worldwind.geom.AltitudeMode
 import earth.worldwind.geom.Location
-import earth.worldwind.geom.Offset
 import earth.worldwind.geom.Position
 import earth.worldwind.geom.Sector
 import earth.worldwind.geom.Vec3
@@ -13,15 +11,15 @@ import earth.worldwind.layer.mercator.MercatorImageTile
 import earth.worldwind.layer.mercator.MercatorSector
 import earth.worldwind.layer.mercator.SlippyTiles
 import earth.worldwind.layer.mvt.MvtBatchedLineTile
+import earth.worldwind.layer.mvt.MvtCurvedLineLabel
 import earth.worldwind.render.AbstractRenderable
 import earth.worldwind.render.Color
 import earth.worldwind.render.Font
 import earth.worldwind.render.RenderContext
 import earth.worldwind.render.Renderable
-import earth.worldwind.shape.Label
-import earth.worldwind.shape.OrientationMode
 import earth.worldwind.shape.ShapeAttributes
 import earth.worldwind.shape.TextAttributes
+import android.graphics.Paint
 import earth.worldwind.util.Level
 import earth.worldwind.util.LevelSet
 import earth.worldwind.util.Tile
@@ -32,7 +30,10 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.CancellationException
 import java.util.Collections
 import java.util.IdentityHashMap
+import java.util.LinkedHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.PI
 import kotlin.math.atan
 import kotlin.math.atan2
@@ -52,9 +53,9 @@ internal object NativeContourVectorGeometry {
     const val MINOR_WIDTH = 0.45f
     const val MAJOR_WIDTH = 1.05f
     const val LINE_OPACITY = 0.8f
-    const val LABEL_SIZE = 11f
-    const val LABEL_HALO_WIDTH = 2.8f
-    const val LABEL_SPACING_PIXELS = 210f
+    const val LABEL_SIZE = 7.5f
+    const val LABEL_HALO_WIDTH = 0.8f
+    const val LABEL_SPACING_PIXELS = 900f
     const val MAX_VISIBLE_LABELS = 80
 
     fun levelSet(): LevelSet {
@@ -129,6 +130,17 @@ internal class NativeContourLayer(
     // Tracks each pane's wrapper until eviction/close even when the SDK has no latest RenderContext.
     private val owned = Collections.newSetFromMap(IdentityHashMap<NativeContourTileContent, Boolean>())
     private val prepared = Collections.newSetFromMap(IdentityHashMap<NativeContourTileContent, Boolean>())
+    private val loadedContourTiles = LinkedHashMap<NativeContourTileKey, NativeContourTileContent>()
+    private data class SeamPair(val first: NativeContourTileKey, val second: NativeContourTileKey)
+    // At most every unordered pair among the bounded loaded-tile set; the byte budget controls GPU memory.
+    private val seamBatches = LinkedHashMap<SeamPair, MvtBatchedLineTile?>(128, 0.75f, true)
+    private var seamBatchBytes = 0L
+    private val seamLock = Any()
+    private val pendingSeamReleases = ConcurrentLinkedQueue<MvtBatchedLineTile>()
+    private val renderedThisFrame = HashSet<NativeContourTileKey>()
+    private val drawnSeamsThisFrame = HashSet<SeamPair>()
+    private val seamBudgetRejections = AtomicLong()
+    internal fun seamBudgetRejectionCount(): Long = seamBudgetRejections.get()
     private val forcedRefinements = NativeContourRefinementState<TileRequest>()
     // Filled only by the SDK's current visible quadtree walk. Pending, unstarted jobs outside
     // this set are obsolete; active work and resident content are deliberately unaffected.
@@ -241,7 +253,8 @@ internal class NativeContourLayer(
                             }
                         }
                         try {
-                            NativeContourTileContent(lease) { permit.close() }
+                            val edgeSamples = NativeContourTileEdges.fromSamples(samples, kotlin.math.sqrt(samples.size.toDouble()).toInt())
+                            NativeContourTileContent(lease, NativeContourTileKey(z, x, sourceY), edgeSamples) { permit.close() }
                         } catch (failure: Throwable) {
                             lease.release()
                             throw failure
@@ -260,6 +273,14 @@ internal class NativeContourLayer(
                         try {
                             owned += content
                             prepared += content
+                            synchronized(seamLock) {
+                                val key = content.tileKey
+                                val previous = if (key == null) null else loadedContourTiles.put(key, content)
+                                if (key != null && previous != null && previous !== content) {
+                                    val stale = seamBatches.keys.filter { it.first == key || it.second == key }
+                                    stale.forEach { evictSeamPairLocked(it) }
+                                }
+                            }
                             true
                         } catch (failure: Throwable) {
                             owned.remove(content)
@@ -291,7 +312,10 @@ internal class NativeContourLayer(
     }
 
     override fun beginFrame(rc: RenderContext) {
+        drainPendingSeamReleases(rc)
         visitedThisFrame.clear()
+        renderedThisFrame.clear()
+        drawnSeamsThisFrame.clear()
         labelCollision.beginFrame()
     }
 
@@ -353,24 +377,157 @@ internal class NativeContourLayer(
             if (!content.ownsGeometry(geometry)) return
             val cssScale = viewStyle.cssScale
             geometry.renderables.forEach { renderable ->
-                NativeContourVectorTileBuilder.applyScreenDensity(renderable, cssScale)
-                if (renderable is Label) {
-                    rc.geographicToCartesian(renderable.position, AltitudeMode.CLAMP_TO_GROUND, cartesian)
+                if (renderable is NativeContourCurvedLabel) {
+                    rc.geographicToCartesian(renderable.anchor, AltitudeMode.CLAMP_TO_GROUND, cartesian)
                     if (!rc.projectWithDepth(cartesian, 0.0, screen)) return@forEach
                     val density = cssScale.coerceAtLeast(0.1f)
-                    val width = (renderable.text.orEmpty().length * NativeContourVectorGeometry.LABEL_SIZE * 0.62f + 10f) * density
-                    val height = 22f * density
+                    val width = (renderable.text.length * NativeContourVectorGeometry.LABEL_SIZE * 0.66f + 5f) * density
+                    val height = 12f * density
                     if (screen.x < rc.viewport.x || screen.x > rc.viewport.x + rc.viewport.width ||
                         screen.y < rc.viewport.y || screen.y > rc.viewport.y + rc.viewport.height ||
                         !labelCollision.accept(screen.x.toFloat(), screen.y.toFloat(), width, height)) return@forEach
+                    renderable.setCssScale(density)
+                } else {
+                    NativeContourVectorTileBuilder.applyScreenDensity(renderable, cssScale)
                 }
                 renderable.render(rc)
             }
+            renderSeamsFor(rc, content)
         }
     }
 
+    private fun renderSeamsFor(rc: RenderContext, content: NativeContourTileContent) {
+        val key = content.tileKey ?: return
+        val edges = content.edges ?: return
+        val neighbors = synchronized(seamLock) {
+            loadedContourTiles.entries.mapNotNull { (otherKey, otherContent) ->
+                if (otherKey == key || !NativeContourSeamGeometry.areAdjacent(key, otherKey)) return@mapNotNull null
+                val isVisible = visitedThisFrame.any { it.z == otherKey.z && it.x == otherKey.x && it.sourceY == otherKey.y }
+                if (!isVisible || otherKey !in renderedThisFrame) return@mapNotNull null
+                Triple(otherKey, otherContent, otherContent.edges ?: return@mapNotNull null)
+            }
+        }
+        neighbors.forEach { (otherKey, otherContent, otherEdges) ->
+            val geometry = content.geometryIfActive() ?: return@forEach
+            val otherGeometry = otherContent.geometryIfActive() ?: return@forEach
+            if (!content.ownsGeometry(geometry) || !otherContent.ownsGeometry(otherGeometry)) return@forEach
+            val pair = canonicalSeamPair(key, otherKey)
+            if (!drawnSeamsThisFrame.add(pair)) return@forEach
+            val batch = seamBatch(rc, pair, key, edges, otherKey, otherEdges) ?: return@forEach
+            NativeContourVectorTileBuilder.applyScreenDensity(batch, viewStyle.cssScale)
+            batch.render(rc)
+        }
+        renderedThisFrame += key
+    }
+
+    private fun seamBatch(
+        rc: RenderContext,
+        pair: SeamPair,
+        key: NativeContourTileKey,
+        edges: NativeContourTileEdges,
+        otherKey: NativeContourTileKey,
+        otherEdges: NativeContourTileEdges,
+    ): MvtBatchedLineTile? = synchronized(seamLock) {
+        if (seamBatches.containsKey(pair)) return@synchronized seamBatches[pair]
+        val lines = NativeContourSeamGeometry.between(key, edges, otherKey, otherEdges, interval)
+        val attributes = HashMap<Int, ShapeAttributes>()
+        val features = NativeContourSeamGeometry.independentLines(lines).map { line ->
+            MvtBatchedLineTile.BatchLineFeature(
+                line.coordinates,
+                attributes.getOrPut(line.elevationMeters) { contourLineAttributes(line.elevationMeters) },
+            )
+        }
+        var minLatitude = Double.POSITIVE_INFINITY
+        var maxLatitude = Double.NEGATIVE_INFINITY
+        var minLongitude = Double.POSITIVE_INFINITY
+        var maxLongitude = Double.NEGATIVE_INFINITY
+        lines.forEach { segment ->
+            val lat1 = Math.toDegrees(atan(sinh(PI * (1.0 - 2.0 * segment.y1))))
+            val lat2 = Math.toDegrees(atan(sinh(PI * (1.0 - 2.0 * segment.y2))))
+            val lon1 = segment.x1 * 360.0 - 180.0
+            val lon2 = segment.x2 * 360.0 - 180.0
+            minLatitude = minOf(minLatitude, lat1, lat2)
+            maxLatitude = maxOf(maxLatitude, lat1, lat2)
+            minLongitude = minOf(minLongitude, lon1, lon2)
+            maxLongitude = maxOf(maxLongitude, lon1, lon2)
+        }
+        val created = if (features.isEmpty()) null else MvtBatchedLineTile(
+            features,
+            Sector.fromDegrees(
+                minLatitude,
+                minLongitude,
+                maxLatitude - minLatitude,
+                maxLongitude - minLongitude,
+            ), "等高线接缝补线",
+        ).apply { isPickEnabled = false; assemble(null) }
+        val maxPairs = NativeContourVectorGeometry.TILE_CACHE_SIZE * (NativeContourVectorGeometry.TILE_CACHE_SIZE - 1) / 2
+        val createdBytes = created?.gpuByteEstimate?.toLong() ?: 0L
+        val budgetBytes = 2L * 1024L * 1024L
+        var admitted = createdBytes <= budgetBytes
+        if (admitted) {
+            while (seamBatchBytes + createdBytes > budgetBytes) {
+                val victim = seamBatches.keys.firstOrNull { it != pair && it !in drawnSeamsThisFrame } ?: break
+                evictSeamPairLocked(victim, rc)
+            }
+            admitted = seamBatchBytes + createdBytes <= budgetBytes
+        }
+        while (admitted && seamBatches.size >= maxPairs && pair !in seamBatches) {
+            val victim = seamBatches.keys.firstOrNull { it != pair && it !in drawnSeamsThisFrame } ?: break
+            evictSeamPairLocked(victim, rc)
+            admitted = seamBatches.size < maxPairs
+        }
+        if (admitted) {
+            seamBatches[pair] = created
+            seamBatchBytes += createdBytes
+            created
+        } else {
+            seamBudgetRejections.incrementAndGet()
+            created?.releaseRenderResources(rc)
+            // Keep a zero-byte sentinel until either source tile is replaced/evicted.
+            // Otherwise a rejected patch would be rebuilt on every render frame.
+            seamBatches[pair] = null
+            null
+        }
+    }
+
+    /** Caller holds seamLock. Active-cut pairs are protected for this frame. */
+    private fun evictSeamPairLocked(pair: SeamPair, rc: RenderContext? = null) {
+        if (!seamBatches.containsKey(pair)) return
+        val removed = seamBatches.remove(pair)
+        if (removed != null) {
+            seamBatchBytes = (seamBatchBytes - removed.gpuByteEstimate).coerceAtLeast(0L)
+            if (rc == null) pendingSeamReleases.add(removed) else removed.releaseRenderResources(rc)
+        }
+    }
+
+    private fun drainPendingSeamReleases(rc: RenderContext) {
+        while (true) (pendingSeamReleases.poll() ?: return).releaseRenderResources(rc)
+    }
+
+    private fun contourLineAttributes(elevation: Int): ShapeAttributes = ShapeAttributes().apply {
+        isDrawInterior = false
+        isDrawOutline = true
+        isDrawVerticals = false
+        isDepthTest = false
+        isPickOutline = false
+        outlineColor = NativeContourVectorGeometry.contourColor(elevation, interval)
+        outlineWidth = NativeContourVectorGeometry.contourWidth(elevation, interval)
+    }
+
+    private fun canonicalSeamPair(a: NativeContourTileKey, b: NativeContourTileKey): SeamPair {
+        val compare = compareValuesBy(a, b, NativeContourTileKey::z, NativeContourTileKey::y, NativeContourTileKey::x)
+        return if (compare <= 0) SeamPair(a, b) else SeamPair(b, a)
+    }
+
     override fun onContentEvicted(rc: RenderContext, content: NativeContourTileContent) {
-        synchronized(prepared) { owned.remove(content) }
+        synchronized(prepared) {
+            owned.remove(content)
+        }
+        synchronized(seamLock) {
+            content.tileKey?.let { if (loadedContourTiles[it] === content) loadedContourTiles.remove(it) }
+            val keys = seamBatches.keys.filter { it.first == content.tileKey || it.second == content.tileKey }
+            keys.forEach { evictSeamPairLocked(it, rc) }
+        }
         content.admitted()
         content.releaseGeometry(rc)
     }
@@ -380,6 +537,20 @@ internal class NativeContourLayer(
         visitedThisFrame.clear()
         forcedRefinements.clear()
         generationQueue.close()
+        val seamResources = synchronized(seamLock) {
+            val resources = seamBatches.values.filterNotNull().toMutableList()
+            while (true) {
+                val pending = pendingSeamReleases.poll() ?: break
+                resources += pending
+            }
+            seamBatches.clear()
+            seamBatchBytes = 0L
+            loadedContourTiles.clear()
+            renderedThisFrame.clear()
+            drawnSeamsThisFrame.clear()
+            resources
+        }
+        latestRc?.let { rc -> seamResources.forEach { it.releaseRenderResources(rc) } }
         synchronized(prepared) {
             val outstanding = owned.toList()
             owned.clear()
@@ -416,9 +587,12 @@ internal object NativeContourSharedGeometryStore {
 
 internal class NativeContourTileContent(
     private val geometryLease: NativeContourGeometryStore.Lease<NativeContourSharedGeometry>,
+    val tileKey: NativeContourTileKey? = null,
+    val edges: NativeContourTileEdges? = null,
     private val releasePrepared: () -> Unit = {},
 ) : AbstractList<Renderable>() {
-    private val cachedByteWeight = geometryLease.value.byteWeight
+    private val cachedByteWeight = (geometryLease.value.byteWeight.toLong() + (edges?.byteSize ?: 0))
+        .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     override val size: Int get() = geometryLease.value.renderables.size
     override fun get(index: Int): Renderable = geometryLease.value.renderables[index]
     val geometry get() = geometryLease.value
@@ -482,7 +656,6 @@ internal object NativeContourVectorTileBuilder {
         if (!densityFactor.isFinite() || densityFactor <= 0f) return
         when (renderable) {
             is MvtBatchedLineTile -> renderable.widthScale = densityFactor
-            is Label -> renderable.attributes.scale = densityFactor.toDouble()
         }
     }
 
@@ -496,7 +669,7 @@ internal object NativeContourVectorTileBuilder {
         if (segments.isEmpty()) return NativeContourSharedGeometry(emptyList(), null, 0, 0, Sector(), 256)
         val paths = NativeTerrainOverlayMath.contourPaths(segments, ensureActive)
         val logicalVertices = NativeContourGeometryBudget.preflight(paths, ensureActive)
-        val labels = NativeTerrainOverlayMath.contourLabelsForPaths(paths, interval, NativeContourVectorGeometry.LABEL_SPACING_PIXELS, ensureActive)
+        val labels = NativeTerrainOverlayMath.contourMidpointLabels(paths, interval, ensureActive)
         val output = ArrayList<Renderable>(1 + labels.size)
         val features = ArrayList<MvtBatchedLineTile.BatchLineFeature>(paths.size)
         var minLatitude = Double.POSITIVE_INFINITY
@@ -539,27 +712,24 @@ internal object NativeContourVectorTileBuilder {
         NativeContourGeometryTelemetry.accepted(logicalVertices)
         output += batch
         labels.forEach { point ->
-                val attributes = TextAttributes().apply {
-                    font = Font(NativeContourVectorGeometry.LABEL_SIZE)
-                    textOffset = Offset.center()
-                    textColor = Color(0xfffff1c9.toInt())
-                    outlineColor = Color(0xff1a3034.toInt())
-                    outlineWidth = NativeContourVectorGeometry.LABEL_HALO_WIDTH
-                    isOutlineEnabled = true
-                    isDepthTest = false
-                }
-                output += Label(
-                    NativeContourVectorGeometry.tilePixelPosition(z, x, y, point.x.toDouble(), point.y.toDouble(), size),
-                    "${point.elevationMeters} m",
-                    attributes,
-                ).apply {
-                    altitudeMode = AltitudeMode.CLAMP_TO_GROUND
-                    rotation = Angle.fromDegrees(point.rotationDegrees.toDouble())
-                    rotationMode = OrientationMode.RELATIVE_TO_GLOBE
-                    isAlwaysOnTop = true
-                    isPickEnabled = false
-                }
+            ensureActive()
+            val path = paths.getOrNull(point.pathIndex) ?: return@forEach
+            val curve = contourLabelCurve(path.points, point.distanceAlongPath, 42.0) ?: return@forEach
+            val coordinates = DoubleArray(curve.size * 2)
+            curve.forEachIndexed { index, local ->
+                val position = NativeContourVectorGeometry.tilePixelPosition(z, x, y, local.first.toDouble(), local.second.toDouble(), size)
+                coordinates[index * 2] = position.longitude.inDegrees
+                coordinates[index * 2 + 1] = position.latitude.inDegrees
             }
+            val text = "${point.elevationMeters} m"
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = NativeContourVectorGeometry.LABEL_SIZE }
+            val widths = FloatArray(text.length)
+            paint.getTextWidths(text, widths)
+            output += NativeContourCurvedLabel(
+                NativeContourVectorGeometry.tilePixelPosition(z, x, y, point.x.toDouble(), point.y.toDouble(), size),
+                coordinates, text, widths, paint.measureText(text),
+            )
+        }
         // SDK arrays are exact after assembly. Account conservatively for retained feature,
         // style and label objects as well as those arrays, rather than counting dense tiles as one.
         val byteWeight = (batch.gpuByteEstimate.toLong() + features.size * 192L + labels.size * 1536L + 512L)
@@ -569,4 +739,74 @@ internal object NativeContourVectorTileBuilder {
         )
         return NativeContourSharedGeometry(output, batch, features.size, sourcePointCount, geometryBounds, byteWeight)
     }
+}
+
+/** Uses the complete projected local contour tangent through the SDK's curved glyph renderer. */
+internal class NativeContourCurvedLabel(
+    val anchor: Position,
+    private val coords: DoubleArray,
+    val text: String,
+    private val charWidths: FloatArray,
+    private val textWidth: Float,
+) : AbstractRenderable("等高线数值") {
+    private val delegates = LinkedHashMap<Float, MvtCurvedLineLabel>(4, 0.75f, true)
+    private var activeScale = Float.NaN
+    private var activeDelegate: MvtCurvedLineLabel? = null
+    internal val cssScale: Float get() = activeScale
+    internal val delegateCacheCount: Int get() = delegates.size
+
+    fun setCssScale(value: Float) {
+        val scale = (kotlin.math.round(value.coerceIn(0.1f, 10f) * 1000f) / 1000f)
+        if (activeScale == scale && activeDelegate != null) return
+        activeScale = scale
+        delegates[scale]?.let { cached ->
+            activeDelegate = cached
+            return
+        }
+        val attributes = TextAttributes().apply {
+            font = Font(NativeContourVectorGeometry.LABEL_SIZE)
+            this.scale = scale.toDouble()
+            textColor = Color(0xfffff1c9.toInt())
+            outlineColor = Color(0xff1a3034.toInt())
+            outlineWidth = NativeContourVectorGeometry.LABEL_HALO_WIDTH
+            isOutlineEnabled = true
+            isDepthTest = false
+        }
+        val created = MvtCurvedLineLabel(
+            coords, text, attributes, charWidths, textWidth, NativeContourVectorGeometry.LABEL_SIZE.toInt().coerceAtLeast(1),
+            repeatGapPx = 1_000_000f, displayName = "等高线数值",
+        )
+        delegates[scale] = created
+        activeDelegate = created
+        if (delegates.size > 2) {
+            val eldest = delegates.entries.iterator()
+            eldest.next()
+            eldest.remove()
+        }
+    }
+
+    override fun doRender(rc: RenderContext) { activeDelegate?.render(rc) }
+}
+
+/** Small fixed arc around the label anchor bounds retained coordinates and SDK projection work. */
+private fun contourLabelCurve(points: List<Pair<Float, Float>>, distance: Double, halfSpan: Double): List<Pair<Float, Float>>? {
+    if (points.size < 2) return null
+    val cumulative = DoubleArray(points.size)
+    for (i in 1 until points.size) cumulative[i] = cumulative[i - 1] + kotlin.math.hypot(
+        (points[i].first - points[i - 1].first).toDouble(), (points[i].second - points[i - 1].second).toDouble(),
+    )
+    val start = (distance - halfSpan).coerceAtLeast(0.0)
+    val end = (distance + halfSpan).coerceAtMost(cumulative.last())
+    if (end - start < 8.0) return null
+    fun sample(at: Double): Pair<Float, Float> {
+        val index = cumulative.indexOfFirst { it >= at }.coerceAtLeast(1)
+        val t = ((at - cumulative[index - 1]) / (cumulative[index] - cumulative[index - 1]).coerceAtLeast(1e-9)).toFloat()
+        val a = points[index - 1]; val b = points[index]
+        return (a.first + (b.first - a.first) * t) to (a.second + (b.second - a.second) * t)
+    }
+    val result = ArrayList<Pair<Float, Float>>()
+    result += sample(start)
+    for (i in points.indices) if (cumulative[i] > start && cumulative[i] < end) result += points[i]
+    result += sample(end)
+    return result.takeIf { it.size >= 2 }
 }

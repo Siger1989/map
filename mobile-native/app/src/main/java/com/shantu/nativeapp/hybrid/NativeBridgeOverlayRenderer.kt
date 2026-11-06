@@ -33,6 +33,7 @@ class NativeBridgeOverlayRenderer(
         val baseWidthCss: Double,
         val baseColor: String,
         val baseOpacity: Double,
+        val role: String,
         val dash: JSONArray?,
         var dashFactor: Int? = null,
     )
@@ -78,7 +79,7 @@ class NativeBridgeOverlayRenderer(
                     val baseOpacity = properties.optDouble("opacity", 1.0)
                     val dash = properties.optJSONArray("dash")?.let { JSONArray(it.toString()) }
                     routeStrokes[id] = rendered.filterIsInstance<Path>().map { path ->
-                        RouteStroke(path, path.attributes.outlineWidth, baseWidthCss, baseColor, baseOpacity, dash)
+                        RouteStroke(path, path.attributes.outlineWidth, baseWidthCss, baseColor, baseOpacity, role.orEmpty(), dash)
                     }
                     applyRouteAppearance(routeWidthScale, routeOpacityScale, routeStrokes[id].orEmpty())
                 }
@@ -106,7 +107,8 @@ class NativeBridgeOverlayRenderer(
     private fun applyRouteAppearance(widthScale: Double, opacityScale: Double, strokes: List<RouteStroke>) {
         strokes.forEach { stroke ->
             stroke.path.attributes.outlineWidth = stroke.baseWidthPixels * widthScale.toFloat()
-            stroke.path.attributes.outlineColor = NativeOverlayStyle.color(stroke.baseColor, stroke.baseOpacity * opacityScale)
+            stroke.path.attributes.outlineColor = NativeOverlayStyle.color(stroke.baseColor,
+                NativeOverlayStyle.routeStrokeOpacity(stroke.baseOpacity, opacityScale, stroke.role))
             stroke.dash?.let { dash ->
                 NativeOverlayStyle.dashStyle(dash, stroke.baseWidthCss * widthScale, cssScale)?.let {
                     if (stroke.dashFactor != it.factor) {

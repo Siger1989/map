@@ -37,8 +37,14 @@ internal object NativeOverlayStyle {
     fun routeOpacityScale(zoom: Double): Double = scaleAtZoom(zoom, routeOpacityZoomStops)
 
     fun routeFeatureOpacity(baseOpacity: Double, zoom: Double): Double {
+        return routeStrokeOpacity(baseOpacity, routeOpacityScale(zoom), "")
+    }
+
+    /** Keep the user's selected stroke color stable; only auxiliary halos fade with zoom. */
+    fun routeStrokeOpacity(baseOpacity: Double, zoomOpacityScale: Double, role: String): Double {
         val safeOpacity = baseOpacity.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 1.0
-        return safeOpacity * routeOpacityScale(zoom)
+        val selectedColor = role in setOf("routePath", "track", "selectedEdge", "guidance", "ribbon")
+        return safeOpacity * if (selectedColor) 1.0 else zoomOpacityScale.coerceIn(0.0, 1.0)
     }
 
     fun scalesRouteAppearance(role: String): Boolean = role in zoomScaledLineRoles

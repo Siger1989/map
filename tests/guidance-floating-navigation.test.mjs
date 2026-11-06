@@ -15,7 +15,7 @@ const session = {
 
 test('floating navigation payload uses the live route, destination label, and selected direction', () => {
   const payload = buildFloatingNavigationPayload(session, 'motion');
-  assert.deepEqual(payload, { version: 1, mode: 'motion', label: '目的地', coordinates });
+  assert.deepEqual(payload, { version: 1, kind: 'route', mode: 'motion', label: '目的地', coordinates });
   assert.deepEqual(JSON.parse(serializeFloatingNavigationPayload(payload)).coordinates, coordinates);
 });
 
@@ -41,8 +41,28 @@ test('serialized payload stays under the 4 MiB native bridge bound', () => {
 
 test('native status parsing exposes only concrete fields and tolerates malformed status', () => {
   assert.deepEqual(parseFloatingNavigationStatus('{"available":true,"enabled":true,"visible":false,"mode":"motion","message":"权限待确认"}'), {
-    available: true, enabled: true, visible: false, mode: 'motion', message: '权限待确认',
+    available: true, enabled: true, visible: false, mode: 'motion', kind: 'route', message: '权限待确认',
   });
   assert.equal(parseFloatingNavigationStatus('{broken'), null);
   assert.equal(parseFloatingNavigationStatus(null), null);
+});
+
+test('ordinary positioning has no route dependency or fabricated route coordinates', () => {
+  const payload = buildFloatingNavigationPayload(null, 'north');
+  assert.deepEqual(payload, { version: 1, kind: 'position', mode: 'north', label: '定位小地图', coordinates: [] });
+  assert.deepEqual(JSON.parse(serializeFloatingNavigationPayload(payload)), payload);
+  assert.throws(() => buildFloatingNavigationPayload(null, 'north', 'route'), /请先开始导航/);
+  assert.throws(() => validateFloatingNavigationInput('north', 'x', coordinates, 'position'), /不应包含路线/);
+  assert.deepEqual(parseFloatingNavigationStatus({ available: true, kind: 'position', zoom: 17, widthDp: 240, heightDp: 260 }), {
+    available: true, enabled: false, visible: false, mode: 'north', kind: 'position', message: '', zoom: 17, widthDp: 240, heightDp: 260,
+  });
+});
+
+test('floating route carries the actual selected route color and rejects invalid colors', () => {
+  const colored = { route: { ...session.route, style: { color: '#ffbb00', width: 4 } } };
+  const payload = buildFloatingNavigationPayload(colored, 'north');
+  assert.equal(payload.color, '#FFBB00');
+  assert.equal(JSON.parse(serializeFloatingNavigationPayload(payload)).color, '#FFBB00');
+  assert.throws(() => serializeFloatingNavigationPayload({ ...payload, color: 'orange' }), /六位/);
+  assert.throws(() => serializeFloatingNavigationPayload({ ...payload, kind: 'position', coordinates: [] }), /仅导航/);
 });

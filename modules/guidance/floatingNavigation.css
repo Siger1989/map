@@ -4,19 +4,21 @@
   flex-wrap: wrap;
   gap: 4px;
   min-width: 0;
-  padding-top: 4px;
-  border-top: 1px solid var(--ui-line);
   color: var(--ui-ink);
   font-size: 12px;
 }
 
 .floating-navigation-controls__title,
+.floating-navigation-controls__kinds,
 .floating-navigation-controls__action,
 .floating-navigation-controls__modes {
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
+
+.floating-navigation-controls__kinds { flex-basis: 100%; }
+.floating-navigation-controls button:disabled { opacity: .45; cursor: default; }
 
 .floating-navigation-controls__title {
   color: var(--ui-muted);

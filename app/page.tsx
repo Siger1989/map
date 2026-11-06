@@ -66,6 +66,7 @@ import { useSearchQuickNavigation } from '@/modules/navigation/useSearchQuickNav
 import { createSearchNavigationDraft } from '@/modules/navigation/searchNavigationDraft';
 import { useGuidance } from '@/modules/guidance/useGuidance';
 import { useFloatingNavigation } from '@/modules/guidance/useFloatingNavigation';
+import { FloatingNavigationControls } from '@/modules/guidance/FloatingNavigationControls';
 import { navigationStartPlace } from '@/modules/guidance/routeStart';
 import { RouteDisconnectedError, RouteEndpointRequiredError, trackNavigation } from '@/modules/guidance/savedRoute';
 import { useGuidanceWorkflow } from '@/modules/workbench/useGuidanceWorkflow';
@@ -622,7 +623,7 @@ export default function Home() {
       !!editor.session ||
       measurement.active ||
       survey.active ||
-      tracks.editing ||
+      tracks.drawing ||
       !!annotations.picking ||
       navigation.picking !== null ||
       !!featureMove ||
@@ -2975,7 +2976,6 @@ export default function Home() {
           <>
           {guidance.session && <GuidanceProgressRail session={guidance.session} />}
           <GuidanceCard
-              floatingNavigation={floatingNavigation}
               positionAssessment={guidance.session?.positionAssessment}
               displayPanel={navigationDisplayOpen && !panel && !quickAdd && !measurement.active
                 ? <RouteDisplaySettings display={routeDisplay} embedded navigating onClose={() => setNavigationDisplayOpen(false)} /> : undefined}
@@ -3268,6 +3268,7 @@ export default function Home() {
               })
           )}
         <ControlDock
+          floatingNavigation={floatingNavigation.supported ? <FloatingNavigationControls controls={floatingNavigation} /> : undefined}
           industryEnabled={showIndustryToolsEntry(INDUSTRY_TOOLS_ENABLED)}
           showRecordingEntry={!desktopShell}
           onArea={TERRAIN_SECTION_ENABLED ? startArea : undefined}

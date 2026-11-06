@@ -16,6 +16,8 @@ import earth.worldwind.shape.Path
 
 /** Native road presentation in the UI's CSS/512 zoom convention; route styling is separate. */
 internal object NativeRoadStyle {
+    /** OpenFreeMap MVT detail stops at z14; do not enlarge line strokes past that geometry level. */
+    const val SOURCE_MAX_ZOOM = 14
     enum class Group {
         RIVER,
         MAIN_OUTLINE, MAIN,
@@ -50,21 +52,31 @@ internal object NativeRoadStyle {
         else -> 1f
     }
 
-    fun widthCss(group: Group, uiZoom: Double): Float = when (group) {
-        Group.RIVER -> interpolate(uiZoom, 7.0 to .5f, 13.0 to 1.5f, 16.0 to 3f)
-        // Draped strokes can occupy more screen space on near terrain. Keep the
-        // casing narrow as well as the fill, especially in a distant overview.
-        // At close zooms preserve the previous widths and retain continuous interpolation.
-        Group.MAIN_OUTLINE -> interpolate(uiZoom, 6.0 to .4f, 10.0 to .68f, 12.0 to 1.05f, 16.0 to 3f)
-        Group.PRIMARY_OUTLINE -> interpolate(uiZoom, 6.0 to .4f, 10.0 to .68f, 12.0 to 1.05f, 16.0 to 3f)
-        Group.SECONDARY_OUTLINE, Group.TERTIARY_OUTLINE ->
-            interpolate(uiZoom, 6.0 to .4f, 10.0 to .68f, 12.0 to 1.05f, 16.0 to 3f)
-        Group.MAIN -> interpolate(uiZoom, 6.0 to .18f, 10.0 to .42f, 12.0 to .66f, 16.0 to 2f)
-        Group.PRIMARY -> interpolate(uiZoom, 6.0 to .18f, 10.0 to .42f, 12.0 to .66f, 16.0 to 2f)
-        Group.SECONDARY, Group.TERTIARY ->
-            interpolate(uiZoom, 6.0 to .18f, 10.0 to .42f, 12.0 to .66f, 16.0 to 2f)
-        Group.LOCAL -> interpolate(uiZoom, 12.0 to .24f, 16.0 to 1f)
-        Group.RAIL -> interpolate(uiZoom, 9.0 to .25f, 12.0 to .4f, 16.0 to .9f)
+    fun widthCss(group: Group, uiZoom: Double): Float {
+        val widthZoom = when (group) {
+            Group.RIVER,
+            Group.MAIN_OUTLINE, Group.MAIN,
+            Group.PRIMARY_OUTLINE, Group.PRIMARY,
+            Group.SECONDARY_OUTLINE, Group.SECONDARY,
+            Group.TERTIARY_OUTLINE, Group.TERTIARY -> uiZoom.coerceAtMost(SOURCE_MAX_ZOOM.toDouble())
+            else -> uiZoom
+        }
+        return when (group) {
+            Group.RIVER -> interpolate(widthZoom, 7.0 to .5f, 13.0 to 1.5f, 16.0 to 3f)
+            // Draped strokes can occupy more screen space on near terrain. Keep the
+            // casing narrow as well as the fill, especially in a distant overview.
+            // At close zooms preserve the previous widths and retain continuous interpolation.
+            Group.MAIN_OUTLINE -> interpolate(widthZoom, 6.0 to .4f, 10.0 to .68f, 12.0 to 1.05f, 16.0 to 3f)
+            Group.PRIMARY_OUTLINE -> interpolate(widthZoom, 6.0 to .4f, 10.0 to .68f, 12.0 to 1.05f, 16.0 to 3f)
+            Group.SECONDARY_OUTLINE, Group.TERTIARY_OUTLINE ->
+                interpolate(widthZoom, 6.0 to .4f, 10.0 to .68f, 12.0 to 1.05f, 16.0 to 3f)
+            Group.MAIN -> interpolate(widthZoom, 6.0 to .18f, 10.0 to .42f, 12.0 to .66f, 16.0 to 2f)
+            Group.PRIMARY -> interpolate(widthZoom, 6.0 to .18f, 10.0 to .42f, 12.0 to .66f, 16.0 to 2f)
+            Group.SECONDARY, Group.TERTIARY ->
+                interpolate(widthZoom, 6.0 to .18f, 10.0 to .42f, 12.0 to .66f, 16.0 to 2f)
+            Group.LOCAL -> interpolate(uiZoom, 12.0 to .24f, 16.0 to 1f)
+            Group.RAIL -> interpolate(uiZoom, 9.0 to .25f, 12.0 to .4f, 16.0 to .9f)
+        }
     }
 
     /** Fade only controllable vector strokes at distant zooms; river color/strength stays intact. */
@@ -206,7 +218,7 @@ internal object NativeRoadStyle {
 
 /** One SDK tile cache/source; its cached content contains independently drawable style groups. */
 internal class NativeRoadVectorLayer(source: TileSource, tileBudget: Int) : NativeTimedMvtLayer(
-    source, minZoom = 0, maxZoom = 14, maxLoadedTiles = tileBudget,
+    source, minZoom = 0, maxZoom = NativeRoadStyle.SOURCE_MAX_ZOOM, maxLoadedTiles = tileBudget,
     maxConcurrentFetches = 2, maxConcurrentAssembly = 1,
     style = NativeRoadStyle.style, displayName = "Roads and waterways", metricPrefix = "roads",
 ) {

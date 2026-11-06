@@ -11,6 +11,18 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class NativeOverlayStyleTest {
+    @Test fun selectedRouteColorDoesNotFadeWithZoomButExplicitOpacityAndHaloArePreserved() {
+        for (role in listOf("routePath", "track", "selectedEdge", "guidance", "ribbon")) {
+            assertEquals(1.0, NativeOverlayStyle.routeStrokeOpacity(1.0, .55, role), .0001)
+            assertEquals(.4, NativeOverlayStyle.routeStrokeOpacity(.4, .85, role), .0001)
+            val actual = NativeOverlayStyle.color("#ffbb00", NativeOverlayStyle.routeStrokeOpacity(1.0, .85, role))
+            assertEquals(1f, actual.red, .0001f)
+            assertEquals(187f / 255f, actual.green, .0001f)
+            assertEquals(0f, actual.blue, .0001f)
+            assertEquals(1f, actual.alpha, .0001f)
+        }
+        assertEquals(.85, NativeOverlayStyle.routeStrokeOpacity(1.0, .85, "routeOutline"), .0001)
+    }
     @Test fun cssWidthIsConvertedFromCssPixelsToNativePhysicalPixels() {
         assertEquals(8f, NativeOverlayStyle.widthInPixels(2.0, 4.0), 0.001f)
         assertEquals(0.5f, NativeOverlayStyle.widthInPixels(0.5, 1.0), 0.001f)

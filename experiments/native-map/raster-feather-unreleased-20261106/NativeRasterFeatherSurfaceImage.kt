@@ -18,31 +18,35 @@ internal class NativeRasterFeatherSurfaceImage(
     private val x: Int,
     private val xyzY: Int,
     private val backing: NativeRasterFeatherBackingStore?,
+    private val cssPixelScale: () -> Float = { 1f },
 ) : SurfaceImage(sector, imageSource) {
     @Volatile var featherEdges: Int = 0
 
     override fun doRender(rc: RenderContext) {
-        if (rc.isPickMode) {
+        if (rc.isPickMode || featherEdges == 0) {
             super.doRender(rc); return
         }
-        val parent = if (featherEdges != 0) backing?.find(rc, level, x, xyzY) else null
+        val parent = backing?.find(rc, level, x, xyzY)
         val parentTexture = parent?.texture
+        if (parentTexture == null) {
+            backing?.diagnostics?.recordFixedChild(false)
+            super.doRender(rc); return
+        }
         terrainSector.copy(sector)
         if (terrainSector.isEmpty || !terrainSector.intersect(rc.terrain.sector) || !getExtent(rc).intersectsFrustum(rc.frustum)) return
         val own = texture ?: imageSource?.let { rc.getTexture(it, imageOptions) } ?: return
-        if (featherEdges != 0) backing?.diagnostics?.recordFixedChild(parentTexture != null)
+        backing?.diagnostics?.recordFixedChild(true)
         val pool = rc.getDrawablePool(NativeRasterFeatherDrawable.KEY)
         val drawable = NativeRasterFeatherDrawable.obtain(pool)
         drawable.diagnostics = backing?.diagnostics
         drawable.preparedSequence = backing?.diagnostics?.sequence() ?: 0L
+        drawable.cssPixelScale = cssPixelScale().takeIf { it.isFinite() }?.coerceIn(0.5f, 8f) ?: 1f
         drawable.set(NativeRasterFeatherProgram.get(rc), sector, rc.currentLayer.opacity, own,
             own.coordTransform, rc.globe.offset, terrainSector)
-        if (parentTexture != null) {
-            drawable.edges = featherEdges
-            drawable.backingTexture = parentTexture
-            backing?.diagnostics?.queuedPair()
-            drawable.backingMatrix.copy(parentTexture.coordTransform).multiplyByTileTransform(sector, parent.sector)
-        }
+        drawable.edges = featherEdges
+        drawable.backingTexture = parentTexture
+        backing?.diagnostics?.queuedPair()
+        drawable.backingMatrix.copy(parentTexture.coordTransform).multiplyByTileTransform(sector, checkNotNull(parent).sector)
         rc.offerSurfaceDrawable(drawable, zOrder)
     }
 }

@@ -219,6 +219,16 @@ public final class Native149Instrumentation extends Instrumentation {
                                 reply = new JSONObject().put("ok", true).put("floatingNavigation", Native171FloatingNavigationRegression.run(this));
                                 writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
+                            if ("floating-position-regression".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("floatingNavigation", Native171FloatingNavigationRegression.runPosition(this));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("interaction-status".equals(action)) {
+                                String script = "(()=>{const b=document.querySelector('.position-locate-button'),c=document.querySelector('.center-add'),p=document.querySelector('.floating-navigation-controls'),r=p?.getBoundingClientRect();return JSON.stringify({followButton:{present:!!b,title:b?.title||'',pressed:b?.getAttribute('aria-pressed'),disabled:!!b?.disabled},centerMarker:{busy:c?.getAttribute('aria-busy')==='true',error:document.querySelector('.center-error')?.textContent?.trim()||''},floatingControls:p?{width:r.width,height:r.height,scrollWidth:p.scrollWidth,clientWidth:p.clientWidth,scrollHeight:p.scrollHeight,clientHeight:p.clientHeight,buttons:Array.from(p.querySelectorAll('button')).map(e=>({text:e.textContent.trim(),disabled:e.disabled,pressed:e.getAttribute('aria-pressed'),height:e.getBoundingClientRect().height}))}:null})})()";
+                                reply = new JSONObject().put("ok", true).put("interaction", new JSONObject(evalJs(script)))
+                                    .put("drawing", inspectDrawingMagnifier());
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
                             if ("native163-projection-alignment".equals(action)) {
                                 reply = new JSONObject().put("ok", true).put("comparison",
                                     Native163DrawingRegression.compareProjection(this, request.optJSONArray("coordinates")));

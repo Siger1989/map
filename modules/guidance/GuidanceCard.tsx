@@ -4,9 +4,6 @@ import { formatDistance, TRAVEL_MODES } from '../navigation/types';
 import type { GuidanceState } from './useGuidance';
 import { maneuverKind } from './maneuverPresentation';
 import { freshFix } from './session';
-import { FloatingNavigationControls } from './FloatingNavigationControls';
-import { useFloatingNavigation } from './useFloatingNavigation';
-import type { FloatingNavigationControlsState } from './FloatingNavigationControls';
 import './guidance.css';
 
 /** Share the rendered height with the adjacent weather rail, including wrapped status text. */
@@ -40,7 +37,6 @@ export function GuidanceCard({
   viewNotice,
   cameraWaiting = false,
   positionAssessment,
-  floatingNavigation: sharedFloatingNavigation,
 }: {
   guidance: GuidanceState;
   onStop: () => void;
@@ -60,15 +56,9 @@ export function GuidanceCard({
   viewNotice?: string;
   cameraWaiting?: boolean;
   positionAssessment?: { kind: 'uncertain' | 'parallel' | 'away'; message: string };
-  floatingNavigation?: FloatingNavigationControlsState;
 }) {
   const [expanded, setExpanded] = useState(false);
   const s = g.session;
-  const localFloatingNavigation = useFloatingNavigation(s, {
-    manageSession: !sharedFloatingNavigation,
-    observe: !sharedFloatingNavigation,
-  });
-  const floatingNavigation = sharedFloatingNavigation ?? localFloatingNavigation;
   if (!s) return null;
   const status = s.departurePending
     ? g.loading
@@ -259,7 +249,6 @@ export function GuidanceCard({
             {!s.arrived && <button onClick={() => void g.replan()} disabled={g.replanning}>{g.replanning ? '重新规划中…' : '当前位置重规划'}</button>}
             <button onClick={onShare} disabled={s.departurePending}>分享</button>
             {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(true); onDisplay(); }}>路线显示</button>}
-            {!s.arrived && <FloatingNavigationControls controls={floatingNavigation} />}
             {!s.arrived && <button onClick={onFollow}>
               <LocateFixed size={16} />
               {following ? '当前位置' : '继续导航'}
@@ -281,7 +270,7 @@ export function GuidanceCard({
                 )}
               </button>
             )}
-            <button type="button" onClick={() => { floatingNavigation.stop(); onStop(); }}>结束导航</button>
+            <button type="button" onClick={onStop}>结束导航</button>
           </div>
         {s.gap && (
           <p className="guidance-note">定位中断或精度不足期间未累加距离。</p>
