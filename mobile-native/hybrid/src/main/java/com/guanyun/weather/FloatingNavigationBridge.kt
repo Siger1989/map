@@ -29,6 +29,7 @@ class FloatingNavigationBridge(
         if (!trustedPage()) return JSONObject().put("available", false).put("enabled", false)
             .put("visible", false).put("mode", JSONObject.NULL).put("kind", JSONObject.NULL).put("message", "仅山兔前台页面可读取悬浮导航状态")
             .put("windowEnabled", false).put("lockscreenEnabled", false).put("energySaving", false).put("lockscreenKeepOn", false)
+            .put("outdoorContours", false)
             .put("locationAllowed", false).put("notificationAllowed", false).put("overlayAllowed", false).toString()
         return try {
             statusJson().toString()
@@ -36,6 +37,7 @@ class FloatingNavigationBridge(
             JSONObject().put("available", true).put("enabled", false).put("visible", false)
                 .put("mode", JSONObject.NULL).put("kind", JSONObject.NULL).put("message", "悬浮导航状态暂不可用")
                 .put("windowEnabled", false).put("lockscreenEnabled", false).put("energySaving", false).put("lockscreenKeepOn", false)
+                .put("outdoorContours", false)
                 .put("locationAllowed", hasLocationPermission()).put("notificationAllowed", hasNotificationPermission())
                 .put("overlayAllowed", canDrawOverlays()).toString()
         }
@@ -58,7 +60,7 @@ class FloatingNavigationBridge(
             try {
                 require(payload.toByteArray(Charsets.UTF_8).size <= 4096) { "悬浮地图设置过大" }
                 val input = JSONObject(payload)
-                val allowed = setOf("windowEnabled", "lockscreenEnabled", "mode", "energySaving", "lockscreenKeepOn")
+                val allowed = setOf("windowEnabled", "lockscreenEnabled", "mode", "energySaving", "lockscreenKeepOn", "outdoorContours")
                 val keys = input.keys()
                 while (keys.hasNext()) require(keys.next() in allowed) { "悬浮地图设置字段无效" }
                 val windowEnabled = if (input.has("windowEnabled")) {
@@ -79,7 +81,11 @@ class FloatingNavigationBridge(
                     require(input.opt("lockscreenKeepOn") is Boolean) { "lockscreenKeepOn 必须是布尔值" }
                     input.getBoolean("lockscreenKeepOn")
                 } else null
-                FloatingNavigationService.setOptions(activity, windowEnabled, lockscreenEnabled, mode, energySaving, lockscreenKeepOn)
+                val outdoorContours = if (input.has("outdoorContours")) {
+                    require(input.opt("outdoorContours") is Boolean) { "outdoorContours 必须是布尔值" }
+                    input.getBoolean("outdoorContours")
+                } else null
+                FloatingNavigationService.setOptions(activity, windowEnabled, lockscreenEnabled, mode, energySaving, lockscreenKeepOn, outdoorContours)
                 val state = FloatingNavigationService.status(activity)
                 pendingStart?.let { pendingStart = mergeNativeOptions(it, state) }
                 if (!state.optBoolean("windowEnabled", true) && !state.optBoolean("lockscreenEnabled", true)) {
@@ -224,7 +230,7 @@ class FloatingNavigationBridge(
             guideShowing = true
             android.app.AlertDialog.Builder(activity)
                 .setTitle("悬浮地图与锁屏地图")
-                .setMessage("切换到其他应用后可显示普通小窗；锁屏亮屏时可单独启用黑底渐隐地图，解锁后按普通小窗开关恢复。两个开关分别保存，并记住上次选择；关闭小窗不会结束定位或记录。锁屏地图会显示当前位置和路线，请注意隐私。锁屏地图不会主动唤醒屏幕，也不会保持屏幕常亮。\n\n部分系统可能限制锁屏地图自动打开，可点常驻通知返回地图。定位记录仍须精确定位权限。\n\n地图数据：OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors（ODbL），图源说明保留在工具页。")
+                .setMessage("切换到其他应用后可显示普通小窗；锁屏亮屏时可单独启用黑底渐隐地图，解锁后按普通小窗开关恢复。两个开关分别保存，并记住上次选择；关闭小窗不会结束定位或记录。锁屏地图会显示当前位置和路线，请注意隐私。地图不会主动唤醒屏幕；可选的常亮设置只在锁屏地图显示时生效，仍可按电源键熄屏。\n\n部分系统可能限制锁屏地图自动打开，可点常驻通知返回地图。定位记录仍须精确定位权限。\n\n地图数据：OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors（ODbL），图源说明保留在工具页。")
                 .setPositiveButton("知道了，开启") { _, _ ->
                     guideShowing = false
                     preferences.edit().putBoolean("lock_map_v1", true).apply()
@@ -280,6 +286,7 @@ class FloatingNavigationBridge(
         put("lockscreenEnabled", if (preferPersisted) state.optBoolean("lockscreenEnabled", true) else optBoolean("lockscreenEnabled", state.optBoolean("lockscreenEnabled", true)))
         put("energySaving", if (preferPersisted) state.optBoolean("energySaving", false) else optBoolean("energySaving", state.optBoolean("energySaving", false)))
         put("lockscreenKeepOn", if (preferPersisted) state.optBoolean("lockscreenKeepOn", false) else optBoolean("lockscreenKeepOn", state.optBoolean("lockscreenKeepOn", false)))
+        put("outdoorContours", if (preferPersisted) state.optBoolean("outdoorContours", false) else optBoolean("outdoorContours", state.optBoolean("outdoorContours", false)))
     }
 
     private fun validatePayload(raw: String?): JSONObject {
@@ -303,6 +310,7 @@ class FloatingNavigationBridge(
             .put("lockscreenEnabled", service.optBoolean("lockscreenEnabled", true))
             .put("energySaving", service.optBoolean("energySaving", false))
             .put("lockscreenKeepOn", service.optBoolean("lockscreenKeepOn", false))
+            .put("outdoorContours", service.optBoolean("outdoorContours", false))
             .put("mode", service.optString("mode").takeIf { it in setOf("north", "motion", "compass") } ?: JSONObject.NULL)
             .put("kind", service.optString("kind").takeIf { it == "position" || it == "route" } ?: JSONObject.NULL)
             .put("message", serviceMessage.ifBlank { localMessage })

@@ -178,6 +178,7 @@ export type MapHandle = {
 };
 export type NavigationCameraRequest = {
   forward: boolean;
+  outdoorContours?: boolean;
   heading?: number | null;
   path?: Coordinate[];
   progress?: number;
@@ -822,6 +823,7 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             progress: request.progress,
             height,
             forward: request.forward,
+            outdoorContours: request.outdoorContours,
             animate: request.animate,
             close: request.close,
             travelMode: request.travelMode,

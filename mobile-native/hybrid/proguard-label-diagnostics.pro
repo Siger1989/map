@@ -30,6 +30,15 @@
     public void setRouteRemainingMeters(java.lang.Double);
     public void setLabel(java.lang.String);
     public void setTiles(java.util.List);
+    public void setOutdoorContours(boolean);
+    public void setTerrainScene(com.shantu.nativeapp.floating.FloatingTerrainScene);
+    public void setTerrainLoading(boolean);
+}
+-keep class com.shantu.nativeapp.floating.FloatingTerrainTile {
+    public <init>(int, int, int, int, double[]);
+}
+-keep class com.shantu.nativeapp.floating.FloatingTerrainScene {
+    public <init>(java.util.List, long);
 }
 -keep class com.shantu.nativeapp.floating.FloatingCoordinate {
     public <init>(double, double);

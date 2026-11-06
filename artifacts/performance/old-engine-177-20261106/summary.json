@@ -1,0 +1,9 @@
+{
+  "version": "0.2.177-test",
+  "versionCode": 184,
+  "sha256": "38b4a49038d3a5c8b88e3996db71b7c07ad47bb4f9846519a52b4434e81806e6",
+  "bytes": 165311201,
+  "role": "main-map research checkpoint; user clarified primary target is floating/lockscreen",
+  "runtime": "API34 real DEM black/yellow-green contours visible, centered neutral location dot; low-density distant aliasing observed; real phone not verified",
+  "formal166Unchanged": true
+}

@@ -16,11 +16,20 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import java.util.LinkedHashMap
 
+private val OUTDOOR_BLACK_TILE_SOURCE: ImageSource by lazy {
+    val size = NativeTerrainOverlays.TILE_SIZE
+    val pixels = NativeTerrainOverlayMath.outdoorBlackPixels(size)
+    ImageSource.fromBitmap(Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888).apply {
+        setPixels(pixels, 0, size, 0, 0, size, size)
+    })
+}
+
 internal data class NativeTerrainOverlayOptions(
     val contoursEnabled: Boolean,
     val elevationColorsEnabled: Boolean,
     val contourIntervalMeters: Int = 30,
     val elevationColorsOpacity: Double = 1.0,
+    val outdoorContours: Boolean = false,
 ) {
     init {
         require(contourIntervalMeters in NativeTerrainOverlayMath.INTERVALS) { "等高线间隔仅支持30、50、100或200米" }
@@ -301,6 +310,11 @@ internal object NativeTerrainOverlayMath {
         return Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888).apply { setPixels(pixels, 0, size, 0, 0, size, size) }
     }
 
+    fun outdoorBlackPixels(size: Int): IntArray {
+        require(size > 0)
+        return IntArray(size * size) { Color.BLACK }
+    }
+
     fun renderContours(values: DoubleArray, size: Int, interval: Int): Bitmap {
         val segments = contourSegments(values, size, interval)
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
@@ -461,6 +475,23 @@ internal class NativeTerrainOverlays(private val coverage: NativeTerrariumCovera
     }
 
     fun renderables(options: NativeTerrainOverlayOptions): List<Renderable> = buildList {
+        if (options.outdoorContours) {
+            add(createOutdoorBlackSurface())
+            val layer = NativeContourLayer(
+                intervalMeters = options.contourIntervalMeters,
+                minimumZoom = NativeTerrainOverlayMath.contourMinimumZoom(options.contourIntervalMeters),
+                elevationFillEnabled = false,
+                loadSamples = stableSampleFunction,
+                outdoorContoursEnabled = true,
+            )
+            NativeContourLayerRenderable(layer).also {
+                it.setViewportStyle(uiZoom, cssScale)
+                it.setPriorityFocus(priorityFocus)
+                contourLayers += it
+                add(it)
+            }
+            return@buildList
+        }
         if (options.elevationColorsEnabled && options.elevationColorsOpacity > 0.0) {
             add(createSurfaceImage(options.elevationColorsOpacity))
         }
@@ -469,7 +500,7 @@ internal class NativeTerrainOverlays(private val coverage: NativeTerrariumCovera
                 options.contourIntervalMeters,
                 NativeTerrainOverlayMath.contourMinimumZoom(options.contourIntervalMeters),
                 options.elevationColorsEnabled && options.elevationColorsOpacity > 0.0,
-                stableSampleFunction,
+                loadSamples = stableSampleFunction,
             )
             NativeContourLayerRenderable(layer).also {
                 it.setViewportStyle(uiZoom, cssScale)
@@ -489,6 +520,16 @@ internal class NativeTerrainOverlays(private val coverage: NativeTerrariumCovera
         }
         return MercatorTiledImageLayer.buildTiledSurfaceImage(
             factory, true, tileSize = TILE_SIZE, maxZoom = 13, minZoom = 0,
+        ).apply { detailControl = 1.0 }
+    }
+
+    private fun createOutdoorBlackSurface(): MercatorTiledSurfaceImage {
+        val factory = object : MercatorTileFactory {
+            override val contentType = "Shantu outdoor opaque black terrain surface"
+            override fun getImageSource(x: Int, y: Int, z: Int): ImageSource = OUTDOOR_BLACK_TILE_SOURCE
+        }
+        return MercatorTiledImageLayer.buildTiledSurfaceImage(
+            factory, false, maxZoom = 13, minZoom = 0, tileSize = TILE_SIZE,
         ).apply { detailControl = 1.0 }
     }
 

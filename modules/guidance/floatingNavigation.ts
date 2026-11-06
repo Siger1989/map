@@ -12,6 +12,7 @@ export type FloatingNavigationStatus = {
   lockscreenEnabled: boolean;
   energySaving: boolean;
   lockscreenKeepOn: boolean;
+  outdoorContours: boolean;
   mode: FloatingNavigationMode;
   message: string;
   kind: FloatingNavigationKind;
@@ -34,9 +35,10 @@ export type FloatingNavigationPayload = {
   lockscreenEnabled?: boolean;
   energySaving?: boolean;
   lockscreenKeepOn?: boolean;
+  outdoorContours?: boolean;
 };
 
-export type FloatingNavigationOptions = Partial<Pick<FloatingNavigationStatus, 'windowEnabled' | 'lockscreenEnabled' | 'energySaving' | 'lockscreenKeepOn' | 'mode'>>;
+export type FloatingNavigationOptions = Partial<Pick<FloatingNavigationStatus, 'windowEnabled' | 'lockscreenEnabled' | 'energySaving' | 'lockscreenKeepOn' | 'outdoorContours' | 'mode'>>;
 
 export type FloatingNavigationBridge = {
   status(): string;
@@ -61,9 +63,13 @@ export function buildFloatingNavigationPayload(
   session: GuidanceSession | null,
   mode: FloatingNavigationMode,
   kind: FloatingNavigationKind = session ? 'route' : 'position',
-  options?: Pick<FloatingNavigationOptions, 'windowEnabled' | 'lockscreenEnabled'>,
+  options?: Pick<FloatingNavigationOptions, 'windowEnabled' | 'lockscreenEnabled' | 'outdoorContours'>,
 ): FloatingNavigationPayload {
-  const displayOptions = options ? { windowEnabled: options.windowEnabled, lockscreenEnabled: options.lockscreenEnabled } : {};
+  const displayOptions = options ? {
+    ...(typeof options.windowEnabled === 'boolean' ? { windowEnabled: options.windowEnabled } : {}),
+    ...(typeof options.lockscreenEnabled === 'boolean' ? { lockscreenEnabled: options.lockscreenEnabled } : {}),
+    ...(typeof options.outdoorContours === 'boolean' ? { outdoorContours: options.outdoorContours } : {}),
+  } : {};
   if (kind === 'position') return { version: 1, kind, mode, label: '定位小地图', coordinates: [], ...displayOptions };
   if (!session) throw new Error('无导航路线时悬浮地图自动使用定位模式');
   const coordinates = session.route.coordinates;
@@ -76,11 +82,14 @@ export function buildFloatingNavigationPayload(
 
 export function serializeFloatingNavigationOptions(options: FloatingNavigationOptions) {
   if (!Object.keys(options).length) throw new Error('悬浮地图设置为空');
+  const allowed = new Set(['windowEnabled', 'lockscreenEnabled', 'energySaving', 'lockscreenKeepOn', 'outdoorContours', 'mode']);
+  if (Object.keys(options).some((key) => !allowed.has(key))) throw new Error('悬浮地图设置字段无效');
   if (options.mode !== undefined && !(['north', 'motion', 'compass'] as string[]).includes(options.mode)) throw new Error('方向模式无效');
   if (options.windowEnabled !== undefined && typeof options.windowEnabled !== 'boolean') throw new Error('windowEnabled必须为布尔值');
   if (options.lockscreenEnabled !== undefined && typeof options.lockscreenEnabled !== 'boolean') throw new Error('lockscreenEnabled必须为布尔值');
   if (options.energySaving !== undefined && typeof options.energySaving !== 'boolean') throw new Error('energySaving必须为布尔值');
   if (options.lockscreenKeepOn !== undefined && typeof options.lockscreenKeepOn !== 'boolean') throw new Error('lockscreenKeepOn必须为布尔值');
+  if (options.outdoorContours !== undefined && typeof options.outdoorContours !== 'boolean') throw new Error('outdoorContours必须为布尔值');
   return JSON.stringify(options);
 }
 
@@ -115,6 +124,9 @@ export function serializeFloatingNavigationPayload(payload: FloatingNavigationPa
   if (payload.lockscreenEnabled !== undefined && typeof payload.lockscreenEnabled !== 'boolean') throw new Error('lockscreenEnabled必须为布尔值');
   if (payload.energySaving !== undefined && typeof payload.energySaving !== 'boolean') throw new Error('energySaving必须为布尔值');
   if (payload.lockscreenKeepOn !== undefined && typeof payload.lockscreenKeepOn !== 'boolean') throw new Error('lockscreenKeepOn必须为布尔值');
+  if (payload.outdoorContours !== undefined && typeof payload.outdoorContours !== 'boolean') throw new Error('outdoorContours必须为布尔值');
+  const allowed = new Set(['version', 'mode', 'label', 'coordinates', 'kind', 'color', 'windowEnabled', 'lockscreenEnabled', 'energySaving', 'lockscreenKeepOn', 'outdoorContours']);
+  if (Object.keys(payload).some((key) => !allowed.has(key))) throw new Error('悬浮地图数据字段无效');
   const serialized = JSON.stringify(payload);
   validateFloatingNavigationPayloadBytes(serialized);
   return serialized;
@@ -142,6 +154,7 @@ export function parseFloatingNavigationStatus(raw: unknown): FloatingNavigationS
     lockscreenEnabled: status.lockscreenEnabled !== false,
     energySaving: status.energySaving === true,
     lockscreenKeepOn: status.lockscreenKeepOn === true,
+    outdoorContours: status.outdoorContours === true,
     mode: status.mode === 'motion' || status.mode === 'compass' ? status.mode : 'north',
     message: typeof status.message === 'string' ? status.message : '',
     kind: status.kind === 'position' ? 'position' : 'route',

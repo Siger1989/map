@@ -82,7 +82,7 @@ import {
 } from '@/modules/routeShare/data';
 import { GuidanceCard } from '@/modules/guidance/GuidanceCard';
 import { GuidanceProgressRail } from '@/modules/guidance/GuidanceProgressRail';
-import { navigationCloseZoom } from '@/modules/guidance/forwardCamera';
+import { navigationCloseZoom, OUTDOOR_CONTOUR_PITCH } from '@/modules/guidance/forwardCamera';
 import type { NavigationCueInput } from '@/modules/guidance/navigationCueGeometry';
 import { navigationReferenceJoinProgress } from '@/modules/guidance/navigationCueGeometry';
 import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
@@ -312,6 +312,9 @@ export default function Home() {
     useState<MapSourcesNavigation | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [view, setView] = useState<ViewState>(INITIAL_VIEW);
+  const [mapReadyEpoch, setMapReadyEpoch] = useState(0);
+  const outdoorCameraApplied = useRef(false);
+  const outdoorCameraRestore = useRef<{ pitch: number; bearing: number; mode: 'forward' | 'top'; direction: DirectionMode } | null>(null);
   const [navigationCameraMode, setNavigationCameraMode] = useState<'forward' | 'top'>('top');
   const [navigationViewNotice, setNavigationViewNotice] = useState('');
   const [routePreviewMode, setRoutePreviewMode] = useState<'forward' | 'top' | null>(null);
@@ -598,12 +601,12 @@ export default function Home() {
         : position.fix;
   const manualNavigationPose = useRef<{ pitch: number; bearing: number } | null>(null);
   const manualAngleGesture = useRef(false);
-  const motionHeading = useMotionHeading(cameraFix, guidance.active || position.direction === 'motion');
+  const motionHeading = useMotionHeading(cameraFix, guidance.active || position.direction === 'motion' || layers.outdoorContours === true);
   const directionHeading = position.direction === 'motion' ? motionHeading.heading : position.heading;
   const gpsDirectionFix = cameraFix && canFollow(cameraFix) && cameraFix.source !== 'network' && cameraFix.provider !== 'ip';
   const gpsCourse = gpsDirectionFix ? reliableGpsCourse(cameraFix) : null;
   const actualMotionHeading = gpsDirectionFix ? motionHeading.heading : null;
-  const markerHeading = guidance.active ? actualMotionHeading : position.direction === 'device' ? position.heading :
+  const markerHeading = guidance.active || layers.outdoorContours ? actualMotionHeading : position.direction === 'device' ? position.heading :
     position.direction === 'motion' ? actualMotionHeading : gpsCourse;
   const navigationSession = guidance.session;
   const navigationPath = guidance.rejoin?.route.coordinates ??
@@ -616,6 +619,7 @@ export default function Home() {
     ? motionHeading.heading : null;
   const followGuidanceCamera = (coordinates: Coordinate, animate: boolean, mode = navigationCameraMode, close = false) => map.current?.followNavigation(coordinates, {
     forward: mode === 'forward',
+    outdoorContours: layers.outdoorContours === true,
     heading: reliableMotionHeading,
     path: navigationPath,
     progress: navigationProgress,
@@ -646,7 +650,7 @@ export default function Home() {
         skipNextFollowKey.current = '';
         return true;
       }
-      if (guidance.active) {
+      if (guidance.active || layers.outdoorContours) {
         setNavigationViewNotice('');
         return followGuidanceCamera(coordinates, true, navigationCameraMode, initial);
       }
@@ -730,6 +734,13 @@ export default function Home() {
   const focusOnReliablePosition = (fix: NonNullable<typeof cameraFix>) => {
     cancelStartupCamera();
     pendingPositionFocus.current = false;
+    if (layers.outdoorContours) {
+      manualNavigationPose.current = null;
+      position.motion();
+      followGuidanceCamera(fix.coordinates, true, 'forward', false);
+      follow.resume();
+      return;
+    }
     focusLock.adoptMode(true, 'north');
     position.north();
     const zoom = Math.max(16, map.current?.cameraSnapshot()?.zoom ?? view.zoom);
@@ -793,6 +804,39 @@ export default function Home() {
       position.locate();
     }
   };
+  useEffect(() => {
+    // The style switch changes the view pose once, never the user's source, zoom or saved lines.
+    if (typeof window.ShantuNativeMap?.postMessage !== 'function') return;
+    const enabled = layers.outdoorContours === true;
+    if (enabled === outdoorCameraApplied.current) return;
+    const camera = map.current?.cameraSnapshot();
+    if (!camera) return; // onReady retries persisted mode after the native map is created.
+    outdoorCameraApplied.current = enabled;
+    manualNavigationPose.current = null;
+    if (enabled) {
+      outdoorCameraRestore.current = { pitch: camera.pitch, bearing: camera.bearing, mode: navigationCameraMode, direction: position.direction };
+      setNavigationCameraMode('forward');
+      position.motion();
+      map.current?.view(OUTDOOR_CONTOUR_PITCH, reliableMotionHeading ?? camera.bearing, false);
+      if (!follow.blocked) {
+        follow.resume();
+        if (canFollow(cameraFix)) followGuidanceCamera(cameraFix.coordinates, false, 'forward', false);
+        else position.locate();
+      }
+    } else {
+      const saved = outdoorCameraRestore.current;
+      outdoorCameraRestore.current = null;
+      if (saved) {
+        setNavigationCameraMode(saved.mode);
+        if (position.direction === 'motion' && saved.direction !== 'motion') {
+          if (saved.direction === 'device') void position.device();
+          else if (saved.direction === 'north') position.north();
+          else position.free();
+        }
+        map.current?.view(saved.pitch, saved.bearing, false);
+      }
+    }
+  }, [layers.outdoorContours, mapReadyEpoch]);
   useEffect(() => {
     if (pendingPositionFocus.current && !follow.blocked && canFollow(cameraFix))
       focusOnReliablePosition(cameraFix);
@@ -1287,14 +1331,14 @@ export default function Home() {
     : selectedTrack?.name || (selectedDraft ? '路线草稿' : '');
   useEffect(() => {
     if (
-      !guidance.active &&
+      !guidance.active && !layers.outdoorContours &&
       !manualNavigationPose.current &&
       (position.direction === 'device' || (position.direction === 'motion' && follow.following)) &&
       directionHeading !== null &&
       !follow.blocked
     )
       map.current?.view(view.pitch, directionHeading, false);
-  }, [guidance.active, position.direction, directionHeading, follow.following, follow.blocked]);
+  }, [guidance.active, layers.outdoorContours, position.direction, directionHeading, follow.following, follow.blocked]);
   const {
     savedNavigationError,
     savedNavigationGap,
@@ -1365,7 +1409,7 @@ export default function Home() {
       routePreviewInitialCamera.current = false;
       routePreviewId.current = null;
       setRoutePreviewMode(null);
-      setNavigationCameraMode(routePreviewMode ?? 'top');
+      setNavigationCameraMode(layers.outdoorContours ? 'forward' : routePreviewMode ?? 'top');
     }
     if (wasGuiding.current && !guidance.active) {
       setNavigationViewNotice('');
@@ -1375,8 +1419,8 @@ export default function Home() {
       routePreviewInitialCamera.current = false;
       routePreviewId.current = null;
       setRoutePreviewMode(null);
-      setNavigationCameraMode('top');
-      if (camera) {
+      setNavigationCameraMode(layers.outdoorContours ? 'forward' : 'top');
+      if (camera && !layers.outdoorContours) {
         const current = map.current?.cameraSnapshot();
         map.current?.restoreCamera({
           ...camera,
@@ -1529,6 +1573,10 @@ export default function Home() {
       setNavigationDisplayOpen(false);
   }, [guidance.active, panel, quickAdd, editor.session, measurement.active, sectionEditing]);
   const update = (patch: Partial<LayerSettings>) => {
+    if (patch.terrain === false && layers.outdoorContours) {
+      patch = { ...patch, outdoorContours: false };
+      if (outdoorCameraRestore.current) outdoorCameraRestore.current = { ...outdoorCameraRestore.current, pitch: 0 };
+    }
     if (patch.contourInterval !== undefined) saveContourInterval(patch.contourInterval);
     if (patch.terrain !== undefined) map.current?.setTerrainMode(patch.terrain);
     setLayers((current) => applyLayerPatch(current, patch));
@@ -2089,6 +2137,7 @@ export default function Home() {
           },
         }}>
         <TerrainMap
+          onReady={() => setMapReadyEpoch((epoch) => epoch + 1)}
           mapSource={mapSources.source}
           onSourceStatus={mapSources.setStatus}
           ref={map}
@@ -3152,7 +3201,7 @@ export default function Home() {
               setPanelPrepared('annotations');
             }
           }} /> : undefined}
-          elevationControl={layers.elevationColors ? <ElevationLegend interval={layers.contourInterval ?? 30} /> : undefined}
+          elevationControl={layers.elevationColors && !layers.outdoorContours ? <ElevationLegend interval={layers.contourInterval ?? 30} /> : undefined}
           layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.round(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256)) + ((layers.rasterQuality ?? 'high') === 'high' ? 1 : 0)))} onLevel={rasterLevel => update({ rasterLevel })} quality={layers.rasterQuality ?? 'high'} onQuality={rasterQuality => update({ rasterQuality })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
           viewControl={
             <CameraGizmo
@@ -3219,7 +3268,7 @@ export default function Home() {
             );
           }}
           sectionActive={sectionEditing || survey.active}
-          terrain={layers.terrain}
+          terrain={layers.terrain || layers.outdoorContours === true}
           bearing={view.bearing}
           onZoom={(amount) => {
             cancelStartupCamera();
@@ -3252,7 +3301,7 @@ export default function Home() {
           }}
           direction={position.direction}
           onDimension={() => {
-            const terrain = !layers.terrain;
+            const terrain = !(layers.terrain || layers.outdoorContours);
             manualNavigationPose.current = { pitch: terrain ? 62 : 0, bearing: view.bearing };
             update({ terrain });
             const camera = map.current?.cameraSnapshot();

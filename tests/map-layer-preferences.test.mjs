@@ -17,6 +17,7 @@ test('map layer preferences round-trip actual user selections', () => {
       terrain: false, satellite: true, satelliteProvider: 'tianditu', tiandituBase: 'ter',
       tiandituLabels: 'vector', tiandituBoundaries: false, imageryMode: 'latest',
       roads: false, labels: false,
+      outdoorContours: true,
       geology: true, geologySource: 'geocloud20w', geologyOpacity: 0.45,
       contours: true, contourInterval: 100, elevationColors: true,
       elevationColorsOpacity: 0.35, exaggeration: 1.6,
@@ -61,6 +62,16 @@ test('legacy weather preferences and patches are ignored without losing other se
 test('geology and elevation colours remain mutually exclusive', () => {
   assert.equal(applyLayerPatch(DEFAULT_LAYERS, { geology: true }).elevationColors, false);
   assert.equal(applyLayerPatch({ ...DEFAULT_LAYERS, geology: true }, { elevationColors: true }).geology, false);
+});
+
+test('outdoor contour presentation is an independent persisted preference defaulting off', () => {
+  assert.equal(DEFAULT_LAYERS.outdoorContours, false);
+  const off = parseLayerPreferences(JSON.stringify({ version: 1, layers: { ...DEFAULT_LAYERS } }));
+  const on = parseLayerPreferences(JSON.stringify({ version: 1, layers: { ...DEFAULT_LAYERS, outdoorContours: true } }));
+  assert.equal(off.outdoorContours, false);
+  assert.equal(on.outdoorContours, true);
+  const malformed = parseLayerPreferences(JSON.stringify({ version: 1, layers: { outdoorContours: 'yes' } }));
+  assert.equal(malformed.outdoorContours, false);
 });
 
 test('legacy detailed geology preference migrates to world while preserving neighboring settings', () => {

@@ -667,11 +667,13 @@ class NativeReactMapHost(
         // as the read-only snapshot for frame/touch/DEM callbacks instead of serializing and
         // reparsing the full (potentially multi-megabyte) render state on hot paths.
         val input = state
+        val incomingSettings = input.optJSONObject("settings")
+        NativeOutdoorContoursSetting.parse(incomingSettings)
         if (input.has("offlineDisplayPolicy")) applyOfflineDisplayPolicy(input.optJSONObject("offlineDisplayPolicy"))
         val viewport = input.optJSONObject("mapViewport")
         if (viewport != null && viewport.toString() != entry.viewport?.toString()) setViewport(mapId, viewport, "${requestId}:viewport")
         val previous = entry.renderState
-        val settings = input.optJSONObject("settings")
+        val settings = incomingSettings
         val effectiveSettings = NativeBridgeSectionTerrain.effective(settings ?: JSONObject(), input.optJSONObject("section"))
         val previousEffectiveSettings = NativeBridgeSectionTerrain.effective(previous.optJSONObject("settings") ?: JSONObject(), previous.optJSONObject("section"))
         val nextRenderExaggeration = effectiveSettings.optDouble("exaggeration", 1.0).takeIf { it.isFinite() } ?: 1.0
@@ -1783,10 +1785,12 @@ class NativeReactMapHost(
     }
 
     private fun syncTerrainOverlay(entry: MapEntry, settings: JSONObject, zoom: Double) {
+        val outdoorContours = NativeOutdoorContoursSetting.parse(settings)
         val rawInterval = settings.opt("contourInterval")
         val interval = com.shantu.nativeapp.map.NativeContourIntervalPolicy.resolve(rawInterval, zoom)
         entry.contourAuto = rawInterval?.toString()?.equals("auto", ignoreCase = true) == true
         entry.contourIntervalMeters = interval
+        entry.controller.setOutdoorContours(outdoorContours)
         entry.controller.setTerrainOverlay(
             contoursEnabled = settings.optBoolean("contours"),
             elevationColorsEnabled = settings.optBoolean("elevationColors"),
@@ -2451,6 +2455,17 @@ class NativeReactMapHost(
         private const val DEM_TILE_SIZE = 64
         private const val WORLD_CIRCUMFERENCE = 40_075_016.68557849
         private val ID_PATTERN = Regex("^[A-Za-z0-9._:-]{1,96}$")
+    }
+}
+
+/** Optional render-state setting; omitted legacy payloads always select the standard terrain mode. */
+internal object NativeOutdoorContoursSetting {
+    fun parse(settings: JSONObject?): Boolean {
+        if (settings == null || !settings.has("outdoorContours")) return false
+        return when (val raw = settings.opt("outdoorContours")) {
+            is Boolean -> raw
+            else -> throw IllegalArgumentException("outdoorContours必须为Boolean")
+        }
     }
 }
 

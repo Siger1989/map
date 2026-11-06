@@ -1,0 +1,642 @@
+{
+  "package": {
+    "version": "0.2.180-test",
+    "versionCode": 187,
+    "package": "com.shantu.oldengine",
+    "sha256": "d5a80db7f61e9319874c3ac1181513a3389ed66f6e90112c95e5fa29d452c3f3",
+    "bytes": 165344425,
+    "originalSignature": true,
+    "identity": true,
+    "seedCount": 39,
+    "privateSeedsMatch": true,
+    "tiandituKeyPresentAndUnchanged": true,
+    "freshWebAssetCount": 1925,
+    "crcAndUniqueEntries": true,
+    "zipalign16KiB": true
+  },
+  "engine": "Existing WorldWind main map and native Canvas floating map; not Filament",
+  "primaryScope": "Real DEM perspective contours in floating window and lockscreen",
+  "nativeUnitTests": {
+    "total": 38,
+    "failed": 0
+  },
+  "nodeTests": {
+    "total": 45,
+    "failed": 0
+  },
+  "typeScript": "PASS",
+  "optimizedBuild": "PASS",
+  "rendering": {
+    "testState": "PASS_SYNTHETIC_WITH_GLYPH_OCCLUSION",
+    "syntheticOnly": true,
+    "cases": [
+      {
+        "case": "north",
+        "view": "floatingWindow",
+        "canvasPx": {
+          "width": 220,
+          "height": 240
+        },
+        "mode": "north",
+        "mapBearingDeg": null,
+        "trustedSyntheticHeadingDeg": 45,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 829,
+        "routeColorPixels": 48,
+        "yellowRecordedTrackPixels": 64,
+        "centerArrowPixels": 159,
+        "yellowRecordedTrackPixelsWithoutGlyph": null,
+        "trackOccludedByLocationGlyph": false,
+        "glyphOcclusionVerified": false,
+        "withoutGlyphImage": null,
+        "waitingDirectionTextPixels": 21,
+        "pass": true,
+        "image": "window-north.png",
+        "syntheticSoftwareDrawMillis": 318.8404
+      },
+      {
+        "case": "motion-45",
+        "view": "floatingWindow",
+        "canvasPx": {
+          "width": 220,
+          "height": 240
+        },
+        "mode": "motion",
+        "mapBearingDeg": 45,
+        "trustedSyntheticHeadingDeg": 45,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 1106,
+        "routeColorPixels": 141,
+        "yellowRecordedTrackPixels": 104,
+        "centerArrowPixels": 151,
+        "yellowRecordedTrackPixelsWithoutGlyph": null,
+        "trackOccludedByLocationGlyph": false,
+        "glyphOcclusionVerified": false,
+        "withoutGlyphImage": null,
+        "waitingDirectionTextPixels": 15,
+        "pass": true,
+        "image": "window-motion-45.png",
+        "syntheticSoftwareDrawMillis": 90.2273
+      },
+      {
+        "case": "motion-90",
+        "view": "floatingWindow",
+        "canvasPx": {
+          "width": 220,
+          "height": 240
+        },
+        "mode": "motion",
+        "mapBearingDeg": 90,
+        "trustedSyntheticHeadingDeg": 90,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 1085,
+        "routeColorPixels": 199,
+        "yellowRecordedTrackPixels": 107,
+        "centerArrowPixels": 152,
+        "yellowRecordedTrackPixelsWithoutGlyph": null,
+        "trackOccludedByLocationGlyph": false,
+        "glyphOcclusionVerified": false,
+        "withoutGlyphImage": null,
+        "waitingDirectionTextPixels": 18,
+        "pass": true,
+        "image": "window-motion-90.png",
+        "syntheticSoftwareDrawMillis": 55.271
+      },
+      {
+        "case": "compass-90",
+        "view": "floatingWindow",
+        "canvasPx": {
+          "width": 220,
+          "height": 240
+        },
+        "mode": "compass",
+        "mapBearingDeg": 90,
+        "trustedSyntheticHeadingDeg": 90,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 1085,
+        "routeColorPixels": 199,
+        "yellowRecordedTrackPixels": 107,
+        "centerArrowPixels": 152,
+        "yellowRecordedTrackPixelsWithoutGlyph": null,
+        "trackOccludedByLocationGlyph": false,
+        "glyphOcclusionVerified": false,
+        "withoutGlyphImage": null,
+        "waitingDirectionTextPixels": 18,
+        "pass": true,
+        "image": "window-compass-90.png",
+        "syntheticSoftwareDrawMillis": 1.006
+      },
+      {
+        "case": "compass-180",
+        "view": "floatingWindow",
+        "canvasPx": {
+          "width": 220,
+          "height": 240
+        },
+        "mode": "compass",
+        "mapBearingDeg": 180,
+        "trustedSyntheticHeadingDeg": 180,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 1267,
+        "routeColorPixels": 48,
+        "yellowRecordedTrackPixels": 0,
+        "centerArrowPixels": 150,
+        "yellowRecordedTrackPixelsWithoutGlyph": 28,
+        "trackOccludedByLocationGlyph": true,
+        "glyphOcclusionVerified": true,
+        "withoutGlyphImage": "window-compass-180-without-glyph.png",
+        "waitingDirectionTextPixels": 72,
+        "pass": true,
+        "image": "window-compass-180.png",
+        "syntheticSoftwareDrawMillis": 35.9711
+      },
+      {
+        "case": "compass-waiting",
+        "view": "floatingWindow",
+        "canvasPx": {
+          "width": 220,
+          "height": 240
+        },
+        "mode": "compass",
+        "mapBearingDeg": null,
+        "trustedSyntheticHeadingDeg": null,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 0,
+        "routeColorPixels": 0,
+        "yellowRecordedTrackPixels": 0,
+        "centerArrowPixels": 0,
+        "yellowRecordedTrackPixelsWithoutGlyph": null,
+        "trackOccludedByLocationGlyph": false,
+        "glyphOcclusionVerified": false,
+        "withoutGlyphImage": null,
+        "waitingDirectionTextPixels": 158,
+        "pass": true,
+        "image": "window-compass-waiting.png",
+        "syntheticSoftwareDrawMillis": 1.5708
+      },
+      {
+        "case": "north",
+        "view": "lockscreenPresentation",
+        "canvasPx": {
+          "width": 390,
+          "height": 520
+        },
+        "mode": "north",
+        "mapBearingDeg": null,
+        "trustedSyntheticHeadingDeg": 45,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 1473,
+        "routeColorPixels": 130,
+        "yellowRecordedTrackPixels": 200,
+        "centerArrowPixels": 159,
+        "yellowRecordedTrackPixelsWithoutGlyph": null,
+        "trackOccludedByLocationGlyph": false,
+        "glyphOcclusionVerified": false,
+        "withoutGlyphImage": null,
+        "waitingDirectionTextPixels": 26,
+        "pass": true,
+        "image": "lockscreen-north.png",
+        "syntheticSoftwareDrawMillis": 35.4655
+      },
+      {
+        "case": "motion-45",
+        "view": "lockscreenPresentation",
+        "canvasPx": {
+          "width": 390,
+          "height": 520
+        },
+        "mode": "motion",
+        "mapBearingDeg": 45,
+        "trustedSyntheticHeadingDeg": 45,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 1859,
+        "routeColorPixels": 359,
+        "yellowRecordedTrackPixels": 292,
+        "centerArrowPixels": 151,
+        "yellowRecordedTrackPixelsWithoutGlyph": null,
+        "trackOccludedByLocationGlyph": false,
+        "glyphOcclusionVerified": false,
+        "withoutGlyphImage": null,
+        "waitingDirectionTextPixels": 23,
+        "pass": true,
+        "image": "lockscreen-motion-45.png",
+        "syntheticSoftwareDrawMillis": 42.3983
+      },
+      {
+        "case": "motion-90",
+        "view": "lockscreenPresentation",
+        "canvasPx": {
+          "width": 390,
+          "height": 520
+        },
+        "mode": "motion",
+        "mapBearingDeg": 90,
+        "trustedSyntheticHeadingDeg": 90,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 1810,
+        "routeColorPixels": 517,
+        "yellowRecordedTrackPixels": 316,
+        "centerArrowPixels": 151,
+        "yellowRecordedTrackPixelsWithoutGlyph": null,
+        "trackOccludedByLocationGlyph": false,
+        "glyphOcclusionVerified": false,
+        "withoutGlyphImage": null,
+        "waitingDirectionTextPixels": 35,
+        "pass": true,
+        "image": "lockscreen-motion-90.png",
+        "syntheticSoftwareDrawMillis": 53.7566
+      },
+      {
+        "case": "compass-90",
+        "view": "lockscreenPresentation",
+        "canvasPx": {
+          "width": 390,
+          "height": 520
+        },
+        "mode": "compass",
+        "mapBearingDeg": 90,
+        "trustedSyntheticHeadingDeg": 90,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 1810,
+        "routeColorPixels": 517,
+        "yellowRecordedTrackPixels": 316,
+        "centerArrowPixels": 151,
+        "yellowRecordedTrackPixelsWithoutGlyph": null,
+        "trackOccludedByLocationGlyph": false,
+        "glyphOcclusionVerified": false,
+        "withoutGlyphImage": null,
+        "waitingDirectionTextPixels": 35,
+        "pass": true,
+        "image": "lockscreen-compass-90.png",
+        "syntheticSoftwareDrawMillis": 1.5319
+      },
+      {
+        "case": "compass-180",
+        "view": "lockscreenPresentation",
+        "canvasPx": {
+          "width": 390,
+          "height": 520
+        },
+        "mode": "compass",
+        "mapBearingDeg": 180,
+        "trustedSyntheticHeadingDeg": 180,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 2389,
+        "routeColorPixels": 134,
+        "yellowRecordedTrackPixels": 42,
+        "centerArrowPixels": 150,
+        "yellowRecordedTrackPixelsWithoutGlyph": null,
+        "trackOccludedByLocationGlyph": false,
+        "glyphOcclusionVerified": false,
+        "withoutGlyphImage": null,
+        "waitingDirectionTextPixels": 159,
+        "pass": true,
+        "image": "lockscreen-compass-180.png",
+        "syntheticSoftwareDrawMillis": 22.9573
+      },
+      {
+        "case": "compass-waiting",
+        "view": "lockscreenPresentation",
+        "canvasPx": {
+          "width": 390,
+          "height": 520
+        },
+        "mode": "compass",
+        "mapBearingDeg": null,
+        "trustedSyntheticHeadingDeg": null,
+        "pixelSampleRegion": "full map content; excludes toolbar, resize grip, and lock-screen attribution",
+        "greenContourPixels": 0,
+        "routeColorPixels": 0,
+        "yellowRecordedTrackPixels": 0,
+        "centerArrowPixels": 0,
+        "yellowRecordedTrackPixelsWithoutGlyph": null,
+        "trackOccludedByLocationGlyph": false,
+        "glyphOcclusionVerified": false,
+        "withoutGlyphImage": null,
+        "waitingDirectionTextPixels": 158,
+        "pass": true,
+        "image": "lockscreen-compass-waiting.png",
+        "syntheticSoftwareDrawMillis": 0.6795
+      }
+    ],
+    "phoneOrLiveGpsProven": false,
+    "note": "A short 220m recording is fully behind the central arrow in one 220x240 case; same scene without the glyph has 28 yellow pixels. Original zero count retained."
+  },
+  "settingsUi": [
+    {
+      "available": true,
+      "viewport": {
+        "width": 390,
+        "height": 673
+      },
+      "panel": {
+        "x": 8,
+        "y": 370.625,
+        "width": 300,
+        "height": 238.375
+      },
+      "computed": {
+        "width": "300px",
+        "minHeight": "0px",
+        "maxHeight": "300px",
+        "padding": "4px 8px",
+        "boxSizing": "border-box"
+      },
+      "content": {
+        "x": 17,
+        "y": 405.625,
+        "width": 282,
+        "height": 198.375,
+        "clientHeight": 198,
+        "scrollHeight": 198,
+        "overflowY": "auto"
+      },
+      "controls": {
+        "x": 17,
+        "y": 405.625,
+        "width": 282,
+        "height": 198.375
+      },
+      "options": [
+        {
+          "label": "\u60ac\u6d6e\u5c0f\u7a97",
+          "checked": true,
+          "rect": {
+            "x": 17,
+            "y": 405.625,
+            "width": 64.015625,
+            "height": 21
+          }
+        },
+        {
+          "label": "\u9501\u5c4f\u5730\u56fe",
+          "checked": true,
+          "rect": {
+            "x": 85.015625,
+            "y": 405.625,
+            "width": 64.015625,
+            "height": 21
+          }
+        },
+        {
+          "label": "\u6237\u5916\u7b49\u9ad8\u7ebf3D",
+          "checked": true,
+          "rect": {
+            "x": 17,
+            "y": 430.625,
+            "width": 282,
+            "height": 28
+          }
+        },
+        {
+          "label": "\u7184\u5c4f\u4f4e\u9891\u8282\u80fd",
+          "checked": false,
+          "rect": {
+            "x": 17,
+            "y": 462.625,
+            "width": 88.015625,
+            "height": 21
+          }
+        },
+        {
+          "label": "\u9501\u5c4f\u5730\u56fe\u5e38\u4eae",
+          "checked": false,
+          "rect": {
+            "x": 109.015625,
+            "y": 462.625,
+            "width": 88.015625,
+            "height": 21
+          }
+        }
+      ],
+      "actions": [
+        {
+          "label": "\u6307\u5317",
+          "rect": {
+            "x": 151,
+            "y": 487.625,
+            "width": 32,
+            "height": 36
+          }
+        },
+        {
+          "label": "\u8fd0\u52a8\u671d\u4e0a",
+          "rect": {
+            "x": 187,
+            "y": 487.625,
+            "width": 54,
+            "height": 36
+          }
+        },
+        {
+          "label": "\u624b\u673a\u7f57\u76d8",
+          "rect": {
+            "x": 245,
+            "y": 487.625,
+            "width": 54,
+            "height": 36
+          }
+        }
+      ],
+      "webViewOriginPx": {
+        "x": 0,
+        "y": 136
+      }
+    },
+    {
+      "available": true,
+      "viewport": {
+        "width": 360,
+        "height": 608
+      },
+      "panel": {
+        "x": 8,
+        "y": 283.625,
+        "width": 282,
+        "height": 260.375
+      },
+      "computed": {
+        "width": "282px",
+        "minHeight": "0px",
+        "maxHeight": "300px",
+        "padding": "4px 8px",
+        "boxSizing": "border-box"
+      },
+      "content": {
+        "x": 17,
+        "y": 318.625,
+        "width": 264,
+        "height": 220.375,
+        "clientHeight": 220,
+        "scrollHeight": 220,
+        "overflowY": "auto"
+      },
+      "controls": {
+        "x": 17,
+        "y": 318.625,
+        "width": 264,
+        "height": 220.375
+      },
+      "options": [
+        {
+          "label": "\u60ac\u6d6e\u5c0f\u7a97",
+          "checked": true,
+          "rect": {
+            "x": 17,
+            "y": 318.625,
+            "width": 64.015625,
+            "height": 21
+          }
+        },
+        {
+          "label": "\u9501\u5c4f\u5730\u56fe",
+          "checked": true,
+          "rect": {
+            "x": 85.015625,
+            "y": 318.625,
+            "width": 64.015625,
+            "height": 21
+          }
+        },
+        {
+          "label": "\u6237\u5916\u7b49\u9ad8\u7ebf3D",
+          "checked": true,
+          "rect": {
+            "x": 17,
+            "y": 343.625,
+            "width": 264,
+            "height": 28
+          }
+        },
+        {
+          "label": "\u7184\u5c4f\u4f4e\u9891\u8282\u80fd",
+          "checked": false,
+          "rect": {
+            "x": 17,
+            "y": 375.625,
+            "width": 88.015625,
+            "height": 21
+          }
+        },
+        {
+          "label": "\u9501\u5c4f\u5730\u56fe\u5e38\u4eae",
+          "checked": false,
+          "rect": {
+            "x": 109.015625,
+            "y": 375.625,
+            "width": 88.015625,
+            "height": 21
+          }
+        }
+      ],
+      "actions": [
+        {
+          "label": "\u6307\u5317",
+          "rect": {
+            "x": 17,
+            "y": 422.625,
+            "width": 32,
+            "height": 36
+          }
+        },
+        {
+          "label": "\u8fd0\u52a8\u671d\u4e0a",
+          "rect": {
+            "x": 53,
+            "y": 422.625,
+            "width": 54,
+            "height": 36
+          }
+        },
+        {
+          "label": "\u624b\u673a\u7f57\u76d8",
+          "rect": {
+            "x": 111,
+            "y": 422.625,
+            "width": 54,
+            "height": 36
+          }
+        }
+      ],
+      "webViewOriginPx": {
+        "x": 0,
+        "y": 124
+      }
+    }
+  ],
+  "terrainServiceSample": {
+    "enabled": true,
+    "visible": true,
+    "mode": "compass",
+    "kind": "position",
+    "zoom": 14,
+    "outdoorContours": true,
+    "windowEnabled": true,
+    "lockscreenEnabled": true,
+    "terrain": {
+      "enabled": true,
+      "screenOn": true,
+      "visibleMap": true,
+      "loading": false,
+      "allTilesLoaded": true,
+      "hasElevation": true,
+      "visibleTiles": 9,
+      "expectedTiles": 9,
+      "missingTiles": 0,
+      "validSamples": 9801,
+      "sampleSlots": 9801,
+      "revision": 11
+    },
+    "lockscreen": {
+      "screenOn": true,
+      "locked": false,
+      "launchPending": false,
+      "attached": false,
+      "launchAttempted": false
+    }
+  },
+  "phone": {
+    "device": "OPPO Find X8",
+    "connected": false,
+    "androidAndColorOsVersion": "unknown",
+    "verified": false
+  },
+  "formal166ApkShaUnchanged": true,
+  "runtimeException": {
+    "wholeAvdProcessExited": true,
+    "apkCrashProven": false,
+    "cause": "unknown; adb and emulator process disappeared; not recorded as successful long-run stability",
+    "recheck": "PASS scoped checks after fresh read-only AVD restart; earlier whole-emulator exit remains unexplained"
+  },
+  "limitations": [
+    "Real phone compass/lockscreen/background stability/power are unverified",
+    "Sparse or unavailable DEM remains blank; no fabricated terrain",
+    "Actual route navigation and outdoor GPS motion are not proven by synthetic View rendering",
+    "No AOD or HarmonyOS native package"
+  ],
+  "runtimeRecheck": {
+    "avd": "ShantuPerf34",
+    "androidApi": 34,
+    "readOnly": true,
+    "noGpsInjected": true,
+    "freshBootSystemUiAnr": "System UI (not target app) showed ANR; Wait chosen and UI recovered",
+    "coldHomeTerrainReadyMs": 6860,
+    "lockViewFirstAttachMs": 1531,
+    "lockTerrainReadyMs": 5765,
+    "lockModeWasAlwaysCompass": true,
+    "sensorFirstTrustedSampleLatencyMeasured": false,
+    "screenOffReleasesTerrain": true,
+    "unlockRestoresWindow": true,
+    "zoom14To15To14": true,
+    "resizeOperationScreenshot": "floating-180-resize-android34.png",
+    "returnAppHidesWindowButKeepsService": true,
+    "homeShowsWindowAgain": true,
+    "physicalPhoneVerified": false,
+    "homeWindowRetainedSeconds": 345.93700000003446,
+    "targetProcessLogMarkers": {
+      "FATAL EXCEPTION": false,
+      "OutOfMemoryError": false,
+      "ANR in com.shantu.oldengine": false
+    }
+  }
+}

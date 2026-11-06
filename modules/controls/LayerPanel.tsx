@@ -43,6 +43,13 @@ const ITEMS = [
     color: 'amber',
   },
   {
+    key: 'outdoorContours',
+    label: '户外等高线',
+    detail: '黑底细黄绿线 · 保留原图层设置',
+    icon: Mountain,
+    color: 'green',
+  },
+  {
     key: 'geology',
     label: '地质图投射',
     detail: '岩性 · 地层年代 · 构造线',
@@ -82,6 +89,7 @@ export function LayerPanel({
   presets?: ReactNode;
 }) {
   const domestic = usesTianditu(settings, basemapConfiguration().domestic);
+  const nativeMapAvailable = typeof window !== 'undefined' && typeof window.ShantuNativeMap?.postMessage === 'function';
   return (
     <section className="layer-panel" aria-label="地图图层">
       {onOpenSources && (
@@ -125,6 +133,13 @@ export function LayerPanel({
                           ? `影像日期 ${satelliteDate}`
                           : '正在获取最新可用日期'
                       : detail}
+                  </p>
+                )}
+                {key === 'outdoorContours' && settings.outdoorContours && (
+                  <p>
+                    {nativeMapAvailable
+                        ? '放大后查看真实等高线；高程未加载处暂时留空。切回后恢复原图层显示。'
+                      : '此模式仅由 Android 原生地图支持；网页不模拟绘制，也不生成虚假地形。'}
                   </p>
                 )}
               </div>

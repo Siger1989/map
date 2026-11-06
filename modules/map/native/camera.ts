@@ -55,6 +55,7 @@ export function nativeNavigationCamera(
     progress: request.progress,
     height,
     forward: request.forward,
+    outdoorContours: request.outdoorContours,
     animate: request.animate,
     close: request.close,
     travelMode: request.travelMode,

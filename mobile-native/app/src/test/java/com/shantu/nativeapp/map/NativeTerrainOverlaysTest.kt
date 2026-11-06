@@ -113,6 +113,52 @@ class NativeTerrainOverlaysTest {
     }
 
     @Test
+    fun `outdoor terrain surface is opaque black and contour style is uniform yellow green`() {
+        val pixels = NativeTerrainOverlayMath.outdoorBlackPixels(4)
+        assertEquals(16, pixels.size)
+        assertTrue(pixels.all { it == Color.BLACK })
+        assertEquals(0xff000000.toInt(), pixels.first())
+
+        val range = earth.worldwind.render.Color(0.1f, 0.2f, 0.3f, 0.65f)
+        NativeContourVectorGeometry.applyOutdoorColor(range)
+        assertEquals(0xc8 / 255f, range.red, 1e-6f)
+        assertEquals(0xe9 / 255f, range.green, 1e-6f)
+        assertEquals(0x78 / 255f, range.blue, 1e-6f)
+        assertEquals(0.65f, range.alpha, 1e-6f)
+    }
+
+    @Test
+    fun `outdoor position arrow uses stable approximately thirty css pixels`() {
+        assertEquals(30.0, nativeOutdoorArrowScale(1.0) * 32.0, 1e-6)
+        assertEquals(45.0, nativeOutdoorArrowScale(1.5) * 32.0, 1e-6)
+        assertEquals(14.0, nativeOutdoorDotScale(1.0) * 32.0, 1e-6)
+    }
+
+    @Test
+    fun `outdoor mask restores prior layers and captures source label and road changes`() {
+        val base = Any()
+        val labels = Any()
+        val roads = Any()
+        val snapshot = NativeOutdoorLayerStateSnapshot<Any>()
+        snapshot.capture(listOf(base to true, labels to true, roads to true))
+
+        // The mode masks all three layers, but a source/label/road update first restores
+        // their saved states before applying and capturing the new user-visible settings.
+        val unmasked = listOf(base, labels, roads).associateWith { snapshot.state(it)!! }.toMutableMap()
+        assertEquals(mapOf(base to true, labels to true, roads to true), unmasked)
+        unmasked[base] = true // selected source changed, imagery remains enabled outside mode
+        unmasked[labels] = false // label opacity changed to zero
+        unmasked[roads] = false // cartography road visibility changed off
+        snapshot.capture(unmasked.entries.map { it.key to it.value })
+        val masked = unmasked.keys.associateWith { false }
+        assertTrue(masked.values.all { !it })
+
+        assertEquals(true, snapshot.state(base))
+        assertEquals(false, snapshot.state(labels))
+        assertEquals(false, snapshot.state(roads))
+    }
+
+    @Test
     fun `marching squares creates real 50 meter contours and skips nodata cells`() {
         val size = 8
         val ramp = DoubleArray(size * size) { index -> (index / size) * 50.0 }

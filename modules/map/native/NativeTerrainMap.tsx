@@ -41,6 +41,7 @@ import { nextSnapGeometryState } from './snapGeometryState.ts';
 import { ProjectedPointIndex } from './projectedPointIndex.ts';
 import type { NativeMapPhoto, NativeMapRenderState, NativeMapViewport, NativeProjectionFrame } from './types.ts';
 import { INITIAL_VIEW } from '../types.ts';
+import { serializeNativeLayerSettings } from './layerPayload.ts';
 import { readLastView, saveLastView } from '../lastView.ts';
 import type { MapHandle, NavigationCameraRequest, TerrainMapProps } from '../TerrainMap.tsx';
 import type { CameraSnapshot } from '../../controls/useMapFocusLock.ts';
@@ -633,7 +634,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
     }));
     const state = {
       revision: ++runtime.stateRevision,
-      settings: current.settings,
+      settings: serializeNativeLayerSettings(current.settings),
       mapSource: source,
       routeOverlay: current.routeOverlay,
       guidanceOverlay: current.guidanceOverlay ?? null,
@@ -1732,7 +1733,7 @@ async function buildCurrentState(runtime: Runtime, signal: AbortSignal): Promise
   }));
   const state = {
     revision: ++runtime.stateRevision,
-    settings: current.settings, mapSource, routeOverlay: current.routeOverlay,
+    settings: serializeNativeLayerSettings(current.settings), mapSource, routeOverlay: current.routeOverlay,
     guidanceOverlay: current.guidanceOverlay ?? null, navigationCues: current.navigationCues ?? null,
     trackOverlay: { ...current.trackOverlay, preview: runtime.previewTrackOverride ? runtime.previewTrack : current.trackOverlay.preview ?? null },
     areaOverlay: current.areaOverlay, annotations: current.annotations, annotationSelected: current.annotationSelected,

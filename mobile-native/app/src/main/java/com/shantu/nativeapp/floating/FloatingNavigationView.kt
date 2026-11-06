@@ -51,6 +51,10 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     var routeRemainingMeters: Double? = null; set(value) { field = value; invalidate() }
     var routeOffRoute: Boolean = false; set(value) { field = value; invalidate() }
     var label: String = "路线"; set(value) { field = value; invalidate() }
+    var outdoorContours: Boolean = false; set(value) { field = value; invalidate() }
+    var terrainScene: FloatingTerrainScene? = null; set(value) { field = value; invalidate() }
+    var terrainLoading: Boolean = false; set(value) { field = value; invalidate() }
+    private val contourTerrainRenderer = FloatingContourTerrainRenderer()
     var tiles: List<FloatingTileGeometry> = emptyList(); set(value) {
         field = value
         rebuildTileSummaries(value)
@@ -63,6 +67,7 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     var onResize: ((Float, Float) -> Unit)? = null
     var onZoom: ((Int) -> Unit)? = null
     var onRecordAction: ((String) -> Unit)? = null
+    var onContentSizeChanged: (() -> Unit)? = null
 
     private val density = resources.displayMetrics.density
     private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
@@ -118,7 +123,7 @@ internal class FloatingNavigationView(context: Context) : View(context) {
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        p.color = if (lockscreenPresentation) android.graphics.Color.BLACK else 0xff07130e.toInt()
+        p.color = if (lockscreenPresentation || outdoorContours) android.graphics.Color.BLACK else 0xff07130e.toInt()
         if (lockscreenPresentation) canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), p)
         else canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), round, round, p)
         val header = if (lockscreenPresentation) 0f else px(32f)
@@ -127,7 +132,7 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         val top = header
         val right = width - left
         val bottom = height.toFloat()
-        p.color = if (lockscreenPresentation) android.graphics.Color.BLACK else 0xff0a1a12.toInt()
+        p.color = if (lockscreenPresentation || outdoorContours) android.graphics.Color.BLACK else 0xff0a1a12.toInt()
         canvas.drawRect(left, top, right, bottom, p)
         canvas.save(); canvas.clipRect(left, top, right, bottom)
         mapLabels.clear()
@@ -135,41 +140,83 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         if (navCenter != null) {
             val bearing = mapBearing?.takeIf { it.isFinite() && it in 0.0..<360.0 }
             val cX = (left + right) / 2f; val cY = (top + bottom) / 2f
-            canvas.save(); if ((mode == "motion" || mode == "compass") && bearing != null) canvas.rotate(-bearing.toFloat(), cX, cY)
-            drawTiles(canvas, navCenter, cX, cY)
-            drawRoute(canvas, navCenter, cX, cY)
-            drawRecordedTrack(canvas, navCenter, cX, cY)
-            // The center glyph is shown only when supplied by a real current location.
-            if (hasRealLocation && heading != null) {
-                canvas.save(); canvas.translate(cX, cY); canvas.rotate(heading!!.toFloat()); canvas.scale(px(11.5f), px(11.5f))
-                p.color = 0x5537dfff.toInt(); canvas.drawCircle(0f, 0f, .92f, p)
-                p.color = 0xaa37dfff.toInt(); canvas.drawCircle(0f, 0f, .68f, p)
-                p.color = 0xff8af0f3.toInt(); canvas.drawPath(arrowPath, p)
-                p.color = 0xff21bdd0.toInt(); canvas.drawCircle(0f, .24f, .15f, p)
+            if (mode == "compass" && bearing == null) {
+                renderCounters = FloatingTileRenderCounters()
+                text(canvas, stateText.ifBlank { "等待罗盘方向" }, cX, top + (bottom - top) * .72f,
+                    10f, 0xffb7c59c.toInt(), Paint.Align.CENTER)
+                drawPositionGlyph(canvas, cX, cY, null)
+            } else if (outdoorContours) {
+                val cameraBearing = if (mode == "north") 0.0 else bearing ?: 0.0
+                renderCounters = FloatingTileRenderCounters()
+                val scene = terrainScene
+                if (scene != null && scene.tiles.isNotEmpty()) {
+                    contourTerrainRenderer.draw(canvas, RectF(left, top, right, bottom), scene, navCenter, zoom,
+                        cameraBearing, route, recordedSegments, routeColor)
+                    if (!contourTerrainRenderer.lastFrameHasTerrain) {
+                        text(canvas, if (terrainLoading) "正在加载真实高程" else "当前位置高程暂不可用", cX,
+                            top + (bottom - top) * .72f, 10f, 0xff9bb477.toInt(), Paint.Align.CENTER)
+                    }
+                } else {
+                    text(canvas, if (terrainLoading) "正在加载真实高程" else "当前高程暂不可用", cX,
+                        top + (bottom - top) * .72f, 10f, 0xff9bb477.toInt(), Paint.Align.CENTER)
+                }
+                drawPositionGlyph(canvas, cX, cY, heading?.minus(cameraBearing))
+            } else {
+                canvas.save(); if ((mode == "motion" || mode == "compass") && bearing != null) canvas.rotate(-bearing.toFloat(), cX, cY)
+                drawTiles(canvas, navCenter, cX, cY)
+                drawRoute(canvas, navCenter, cX, cY)
+                drawRecordedTrack(canvas, navCenter, cX, cY)
+                // The center glyph is shown only when supplied by a real current location.
+                if (hasRealLocation && heading != null) {
+                    canvas.save(); canvas.translate(cX, cY); canvas.rotate(heading!!.toFloat()); canvas.scale(px(11.5f), px(11.5f))
+                    p.color = 0x5537dfff.toInt(); canvas.drawCircle(0f, 0f, .92f, p)
+                    p.color = 0xaa37dfff.toInt(); canvas.drawCircle(0f, 0f, .68f, p)
+                    p.color = 0xff8af0f3.toInt(); canvas.drawPath(arrowPath, p)
+                    p.color = 0xff21bdd0.toInt(); canvas.drawCircle(0f, .24f, .15f, p)
+                    canvas.restore()
+                } else if (hasRealLocation) {
+                    p.color = 0x3337dfff; canvas.drawCircle(cX, cY, px(13f), p)
+                    p.color = 0x7737dfff.toInt(); canvas.drawCircle(cX, cY, px(9f), p)
+                    p.color = 0xff45dbe7.toInt(); canvas.drawCircle(cX, cY, px(5f), p)
+                }
                 canvas.restore()
-            } else if (hasRealLocation) {
-                p.color = 0x3337dfff; canvas.drawCircle(cX, cY, px(13f), p)
-                p.color = 0x7737dfff.toInt(); canvas.drawCircle(cX, cY, px(9f), p)
-                p.color = 0xff45dbe7.toInt(); canvas.drawCircle(cX, cY, px(5f), p)
+                drawMapLabels(canvas, left, top, right, bottom)
             }
-            canvas.restore()
-            drawMapLabels(canvas, left, top, right, bottom)
         } else {
             renderCounters = FloatingTileRenderCounters()
             text(canvas, "等待定位", (left + right) / 2f, (top + bottom) / 2f, 12f, 0xffbdff54.toInt(), Paint.Align.CENTER)
         }
         canvas.restore()
-        drawNorthReference(canvas, (left + right) / 2f, (top + bottom) / 2f,
-            min(right - left, bottom - top) * .32f)
+        if (mode != "compass" || mapBearing?.let { it.isFinite() && it in 0.0..<360.0 } == true) {
+            drawNorthReference(canvas, (left + right) / 2f, (top + bottom) / 2f,
+                min(right - left, bottom - top) * .32f)
+        }
         if (lockscreenPresentation) {
             // The activity fades the complete drawing, including text, into pure black.
             // Attribution remains available in Tools source details.
-            text(canvas, if (kind == "route") "山兔导航 · $label" else "山兔定位", width / 2f, height * .28f,
+            text(canvas, if (kind == "route") "山兔导航 · $label" else "山兔定位", width / 2f, height * .18f,
                 12f, 0xffbdff54.toInt(), Paint.Align.CENTER, width * .6f)
             return
         }
         // Direction reference; never substitute route direction when heading is absent.
         drawResizeGrip(canvas)
+    }
+
+    /** Screen-space direction stays readable; route geometry never supplies a heading. */
+    private fun drawPositionGlyph(canvas: Canvas, x: Float, y: Float, relativeHeading: Double?) {
+        if (!hasRealLocation) return
+        if (relativeHeading != null && relativeHeading.isFinite()) {
+            canvas.save()
+            canvas.translate(x, y)
+            canvas.rotate(relativeHeading.toFloat())
+            canvas.scale(px(14f), px(14f))
+            p.color = 0x4437dfff; canvas.drawCircle(0f, 0f, 1.05f, p)
+            p.color = 0xff9af7ff.toInt(); canvas.drawPath(arrowPath, p)
+            canvas.restore()
+        } else {
+            p.color = 0x5537dfff; canvas.drawCircle(x, y, px(10f), p)
+            p.color = 0xff45dbe7.toInt(); canvas.drawCircle(x, y, px(5f), p)
+        }
     }
 
     private fun drawNorthReference(canvas: Canvas, cx: Float, cy: Float, radius: Float) {
@@ -480,12 +527,10 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         return hypot(dx, y(b.latitude) - y(a.latitude)) * 256.0 * px(1f)
     }
 
-    var onContentSizeChanged: (() -> Unit)? = null
-
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         routePath = null; recordedPath = null
-        if (w != oldw || h != oldh) post { onContentSizeChanged?.invoke() }
+        if (w > 0 && h > 0 && (w != oldw || h != oldh)) post { onContentSizeChanged?.invoke() }
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {

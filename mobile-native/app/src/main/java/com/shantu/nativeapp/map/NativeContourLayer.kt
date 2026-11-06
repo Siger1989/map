@@ -59,12 +59,23 @@ internal object NativeContourVectorGeometry {
     const val LABEL_HALO_WIDTH = 0.8f
     const val LABEL_SPACING_PIXELS = 900f
     const val MAX_VISIBLE_LABELS = 80
+    const val OUTDOOR_CONTOUR_HEX = 0xc8e978
     private val linearSrgb = DoubleArray(256) { encoded ->
         val channel = encoded / 255.0
         if (channel <= 0.04045) channel / 12.92 else Math.pow((channel + 0.055) / 1.055, 2.4)
     }
     /** Stable, non-capturing callback shared by contour batches while a pane renders. */
     val contrastColorTransform: (Color) -> Unit = ::applyContrastColor
+    val outdoorColorTransform: (Color) -> Unit = ::applyOutdoorColor
+
+    fun applyOutdoorColor(color: Color) {
+        color.set(
+            ((OUTDOOR_CONTOUR_HEX shr 16) and 0xff) / 255f,
+            ((OUTDOOR_CONTOUR_HEX shr 8) and 0xff) / 255f,
+            (OUTDOOR_CONTOUR_HEX and 0xff) / 255f,
+            color.alpha,
+        )
+    }
 
     fun levelSet(): LevelSet {
         val world = MercatorSector()
@@ -125,10 +136,17 @@ internal object NativeContourVectorGeometry {
 private object NativeContourBatchColorHook {
     private val setter = MvtBatchedLineTile::class.java.getMethod("setOutlineColorTransform", Function1::class.java)
 
-    fun apply(batch: MvtBatchedLineTile, enabled: Boolean) {
-        setter.invoke(batch, if (enabled) NativeContourVectorGeometry.contrastColorTransform else null)
+    fun apply(batch: MvtBatchedLineTile, style: NativeContourDisplayStyle) {
+        val transform = when (style) {
+            NativeContourDisplayStyle.NORMAL -> null
+            NativeContourDisplayStyle.ELEVATION_FILL -> NativeContourVectorGeometry.contrastColorTransform
+            NativeContourDisplayStyle.OUTDOOR -> NativeContourVectorGeometry.outdoorColorTransform
+        }
+        setter.invoke(batch, transform)
     }
 }
+
+internal enum class NativeContourDisplayStyle { NORMAL, ELEVATION_FILL, OUTDOOR }
 
 /** A WorldWind vector layer using the same bounded DEM sampler as terrain/elevation colors. */
 internal class NativeContourLayer(
@@ -136,6 +154,7 @@ internal class NativeContourLayer(
     /** UI zoom visibility, not the SDK's source-level fetch floor. */
     private val minimumZoom: Int,
     private val elevationFillEnabled: Boolean = false,
+    private val outdoorContoursEnabled: Boolean = false,
     private val loadSamples: suspend (z: Int, x: Int, y: Int) -> DoubleArray?,
 ) : TiledVectorLayer<NativeContourTileContent>(
     levelSet = NativeContourVectorGeometry.levelSet(),
@@ -180,6 +199,12 @@ internal class NativeContourLayer(
     private val screen = Vec3()
 
     init { require(minimumZoom in 0..24) }
+
+    private fun contourDisplayStyle(): NativeContourDisplayStyle = when {
+        outdoorContoursEnabled -> NativeContourDisplayStyle.OUTDOOR
+        elevationFillEnabled -> NativeContourDisplayStyle.ELEVATION_FILL
+        else -> NativeContourDisplayStyle.NORMAL
+    }
 
     override val coarseAncestorFallback get() = false
 
@@ -237,7 +262,7 @@ internal class NativeContourLayer(
     }
 
     /** Clone configuration only; every copy owns a fresh SDK tile cache, scope and fetch jobs. */
-    override fun clone(): NativeContourLayer = NativeContourLayer(interval, minimumZoom, elevationFillEnabled, loadSamples).also { copy ->
+    override fun clone(): NativeContourLayer = NativeContourLayer(interval, minimumZoom, elevationFillEnabled, outdoorContoursEnabled, loadSamples).also { copy ->
         copy.displayName = displayName
         copy.isEnabled = isEnabled
         copy.isPickEnabled = isPickEnabled
@@ -405,10 +430,11 @@ internal class NativeContourLayer(
         synchronized(geometry.renderLock) {
             // Close/eviction may win between taking the snapshot and entering this lock.
             if (!content.ownsGeometry(geometry)) return
-            geometry.applyContourFillStyle(elevationFillEnabled)
+            geometry.applyDisplayStyle(contourDisplayStyle())
             val cssScale = viewStyle.cssScale
             geometry.renderables.forEach { renderable ->
                 if (renderable is NativeContourCurvedLabel) {
+                    if (outdoorContoursEnabled) return@forEach
                     rc.geographicToCartesian(renderable.anchor, AltitudeMode.CLAMP_TO_GROUND, cartesian)
                     if (!rc.projectWithDepth(cartesian, 0.0, screen)) return@forEach
                     val density = cssScale.coerceAtLeast(0.1f)
@@ -446,6 +472,7 @@ internal class NativeContourLayer(
             if (!drawnSeamsThisFrame.add(pair)) return@forEach
             val batch = seamBatch(rc, pair, key, edges, otherKey, otherEdges) ?: return@forEach
             NativeContourVectorTileBuilder.applyScreenDensity(batch, viewStyle.cssScale)
+            NativeContourBatchColorHook.apply(batch, contourDisplayStyle())
             batch.render(rc)
         }
         renderedThisFrame += key
@@ -492,7 +519,7 @@ internal class NativeContourLayer(
             ), "等高线接缝补线",
         ).apply {
             isPickEnabled = false
-            NativeContourBatchColorHook.apply(this, elevationFillEnabled)
+            NativeContourBatchColorHook.apply(this, contourDisplayStyle())
             assemble(null)
         }
         val maxPairs = NativeContourVectorGeometry.TILE_CACHE_SIZE * (NativeContourVectorGeometry.TILE_CACHE_SIZE - 1) / 2
@@ -614,13 +641,13 @@ internal class NativeContourSharedGeometry(
 ) : List<Renderable> by renderables {
     /** SDK batch and Label style fields are mutable per frame; panes serialize their use here. */
     val renderLock = Any()
-    private var appliedContourFillStyle: Boolean? = null
+    private var appliedDisplayStyle: NativeContourDisplayStyle? = null
 
     /** The batch is shared between panes; callers must hold renderLock while switching styles. */
-    fun applyContourFillStyle(enabled: Boolean) {
-        if (appliedContourFillStyle == enabled) return
-        batch?.let { NativeContourBatchColorHook.apply(it, enabled) }
-        appliedContourFillStyle = enabled
+    fun applyDisplayStyle(style: NativeContourDisplayStyle) {
+        if (appliedDisplayStyle == style) return
+        batch?.let { NativeContourBatchColorHook.apply(it, style) }
+        appliedDisplayStyle = style
     }
 }
 

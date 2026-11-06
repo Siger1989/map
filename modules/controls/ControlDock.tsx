@@ -140,7 +140,7 @@ export function ControlDock({
     >
       {active && (
         <section
-          className="control-popover glass"
+          className={`control-popover glass${floatingSubview ? ' control-popover--floating-map' : ''}`}
           role="region"
           aria-labelledby="dock-title"
           id="map-control-panel"

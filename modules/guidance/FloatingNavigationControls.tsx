@@ -11,6 +11,10 @@ export function FloatingNavigationControls({ controls }: { controls: FloatingNav
       <label><input type="checkbox" checked={controls.windowEnabled} onChange={(event) => controls.setWindowEnabled(event.currentTarget.checked)} />悬浮小窗</label>
       <label><input type="checkbox" checked={controls.lockscreenEnabled} onChange={(event) => controls.setLockscreenEnabled(event.currentTarget.checked)} />锁屏地图</label>
     </div>
+    <label className="floating-navigation-controls__detail-option floating-navigation-controls__primary-option">
+      <input type="checkbox" checked={controls.outdoorContours} onChange={(event) => controls.setOutdoorContours(event.currentTarget.checked)} />
+      户外等高线3D
+    </label>
     <div className="floating-navigation-controls__kinds" role="group" aria-label="节能与常亮">
       <label><input type="checkbox" checked={controls.energySaving} onChange={(event) => controls.setEnergySaving(event.currentTarget.checked)} />熄屏低频节能</label>
       <label><input type="checkbox" checked={controls.lockscreenKeepOn} onChange={(event) => controls.setLockscreenKeepOn(event.currentTarget.checked)} />锁屏地图常亮</label>
@@ -30,7 +34,8 @@ export function FloatingNavigationControls({ controls }: { controls: FloatingNav
       <button className="floating-navigation-controls__action" type="button" onClick={() => controls.start()}>
         授权并启用
       </button>}
-    <details className="floating-navigation-controls__message"><summary>地图数据与锁屏说明</summary>
+    <details className="floating-navigation-controls__message"><summary>显示选项与地图说明</summary>
+      <p>小窗与锁屏地图共用真实高程；路线、实走轨迹和中央实际方向继续显示。缺少高程的区域暂时留黑，不补画地形。</p>
       <p>节能仅在熄屏时降低浮窗定位频率；屏幕亮起恢复高频定位。启用常亮时会调暗锁屏地图，但不能承诺整机省电。锁屏地图需已开启；不会主动唤醒屏幕或绕过解锁。</p>
       <p>罗盘使用手机传感器；若精度不足会提示校准，不会拿路线方向代替罗盘。</p>
       <p>锁屏亮屏时自动尝试显示地图，解锁恢复小窗；部分系统需允许后台弹出界面。锁屏不显示信息栏。</p>

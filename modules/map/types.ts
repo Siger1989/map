@@ -9,6 +9,8 @@ export type LayerSettings = {
   tiandituBoundaries?: boolean;
   offlineMaxZoom?: number | null;
   contours: boolean;
+  /** Native black-background outdoor contour presentation; leaves other layer preferences intact. */
+  outdoorContours?: boolean;
   contourInterval?: import('../terrain/contourInterval').ContourInterval;
   elevationColors: boolean;
   elevationColorsOpacity: number;
@@ -29,6 +31,7 @@ export const DEFAULT_LAYERS: LayerSettings = {
   satellite: false,
   satelliteProvider: 'sentinel',
   contours: false,
+  outdoorContours: false,
   contourInterval: 30,
   elevationColors: false,
   elevationColorsOpacity: 1,

@@ -79,6 +79,7 @@ public final class Native149Instrumentation extends Instrumentation {
                 JSONObject report = "native163-cache-scope".equals(mode) ? Native163CacheScope.run(this, arguments)
                     : "native174-floating-render".equals(mode) ? Native174FloatingDiagnostics.render(this)
                     : "native174-floating-state".equals(mode) ? Native174FloatingDiagnostics.state(this)
+                    : "native178-floating-terrain-render".equals(mode) ? Native178FloatingTerrainDiagnostics.render(this)
                     : "native-regression".equals(mode) ? runRegression()
                     : "interactive-preview".equals(mode) ? runInteractivePreview()
                     : "raster-diagnostics".equals(mode) ? runRasterDiagnostics()
@@ -233,6 +234,10 @@ public final class Native149Instrumentation extends Instrumentation {
                                 reply = new JSONObject().put("ok", true).put("floatingState", Native174FloatingDiagnostics.state(this));
                                 writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
+                            if ("native178-floating-terrain-render".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("floatingTerrainDiagnostics", Native178FloatingTerrainDiagnostics.render(this));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
                             if ("interaction-status".equals(action)) {
                                 String script = "(()=>{const b=document.querySelector('.position-locate-button'),c=document.querySelector('.center-add'),p=document.querySelector('.floating-navigation-controls'),r=p?.getBoundingClientRect();return JSON.stringify({followButton:{present:!!b,title:b?.title||'',pressed:b?.getAttribute('aria-pressed'),disabled:!!b?.disabled},centerMarker:{busy:c?.getAttribute('aria-busy')==='true',error:document.querySelector('.center-error')?.textContent?.trim()||''},floatingControls:p?{width:r.width,height:r.height,scrollWidth:p.scrollWidth,clientWidth:p.clientWidth,scrollHeight:p.scrollHeight,clientHeight:p.clientHeight,buttons:Array.from(p.querySelectorAll('button')).map(e=>({text:e.textContent.trim(),disabled:e.disabled,pressed:e.getAttribute('aria-pressed'),height:e.getBoundingClientRect().height}))}:null})})()";
                                 reply = new JSONObject().put("ok", true).put("interaction", new JSONObject(evalJs(script)))
@@ -267,7 +272,7 @@ public final class Native149Instrumentation extends Instrumentation {
                             if ("ui-overview".equals(action)) {
                                 String script = "(()=>{const selectors=['#map-control-panel','.control-popover','.map-layer-panel','.track-tools','.route-edit-toolbar','.pin-editor','.marker-workspace','.guidance-card','.collection-workbench','.record-console','.selection-tools','.survey-tools','.area-tools','[role=dialog]','dialog[open]'];const panels=[];const seen=new Set();for(const selector of selectors)for(const e of document.querySelectorAll(selector)){if(seen.has(e))continue;seen.add(e);const s=getComputedStyle(e),r=e.getBoundingClientRect();if(s.display==='none'||s.visibility==='hidden'||Number(s.opacity)===0||r.width<=0||r.height<=0||r.bottom<=0||r.top>=innerHeight)continue;panels.push({selector,title:e.getAttribute('aria-label')||e.querySelector('h2,h3,header strong')?.textContent?.trim()||'',x:r.x,y:r.y,width:r.width,height:r.height})}return JSON.stringify({viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},panels})})()";
                                 reply = new JSONObject().put("ok", true).put("targetVersion", targetVersionProof())
-                                    .put("ui", new JSONObject(evalJs(script))).put("visibleControls", readVisibleControls());
+                                    .put("ui", new JSONObject(evalJs(script))).put("floatingLayout", inspectFloatingLayout()).put("visibleControls", readVisibleControls());
                                 writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
                             if ("selection-panel".equals(action)) {
@@ -579,6 +584,14 @@ public final class Native149Instrumentation extends Instrumentation {
             0, 0, 1, 1, 0, 0, android.view.InputDevice.SOURCE_TOUCHSCREEN, 0);
         try { sendPointerSync(event); } finally { event.recycle(); }
         previewX = centerX - radius; previewY = centerY; previewLastInput = now;
+    }
+
+    private JSONObject inspectFloatingLayout() throws Exception {
+        String script = "(()=>{const p=document.querySelector('#map-control-panel.control-popover--floating-map'),c=p?.querySelector('.dock-content'),f=p?.querySelector('.floating-navigation-controls');if(!p||!c||!f)return JSON.stringify({available:false});const rect=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}};const s=getComputedStyle(p);return JSON.stringify({available:true,viewport:{width:innerWidth,height:innerHeight},panel:rect(p),computed:{width:s.width,minHeight:s.minHeight,maxHeight:s.maxHeight,padding:s.padding,boxSizing:s.boxSizing},content:{...rect(c),clientHeight:c.clientHeight,scrollHeight:c.scrollHeight,overflowY:getComputedStyle(c).overflowY},controls:rect(f),options:[...f.querySelectorAll('label')].map(e=>({label:e.textContent.trim(),checked:e.querySelector('input')?.checked,rect:rect(e)})),actions:[...f.querySelectorAll('button')].map(e=>({label:e.textContent.trim(),rect:rect(e)}))})})()";
+        JSONObject result = new JSONObject(evalJs(script));
+        int[] origin = new int[2];
+        runOnMainSync(() -> webView.getLocationOnScreen(origin));
+        return result.put("webViewOriginPx", new JSONObject().put("x", origin[0]).put("y", origin[1]));
     }
 
     private JSONObject inspect() throws Exception {

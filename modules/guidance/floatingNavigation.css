@@ -66,6 +66,26 @@
   line-height: 1.35;
 }
 
+.floating-navigation-controls__message p { margin: 4px 0; }
+.floating-navigation-controls__detail-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  color: var(--ui-ink);
+  cursor: pointer;
+}
+.floating-navigation-controls__detail-option input { margin: 0; accent-color: var(--ui-accent); }
+.floating-navigation-controls__primary-option { flex-basis: 100%; }
+
+/* The display settings include first-use authorization; keep that action reachable. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel.control-popover--floating-map {
+  --map-panel-max-width: 300px;
+  --map-panel-max-height: min(300px, calc(100dvh - var(--home-top) - var(--home-footer) - 24px));
+  width: min(300px, calc(100% - var(--home-left) - var(--home-right) - 62px));
+  max-height: min(300px, calc(100dvh - var(--home-top) - var(--home-footer) - 24px));
+}
+
 @media (max-width: 360px) {
   .floating-navigation-controls__title { flex-basis: 100%; }
   .floating-navigation-controls__title { margin-right: 0; }

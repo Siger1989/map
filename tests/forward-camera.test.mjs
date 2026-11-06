@@ -34,6 +34,22 @@ test('forward camera uses the real center, reliable heading, safe positive offse
   assert.equal('gps' in options, false);
 });
 
+test('outdoor contour camera centers the position, keeps zoom, and never invents travel direction from a route', () => {
+  const base = { center: [104.1, 30.6], height: 857, forward: true, outdoorContours: true,
+    bearing: 35, usableRect: { top: 120, bottom: 760 }, path: [[104.1, 30.6], [104.2, 30.6]], close: true };
+  const waiting = navigationCameraOptions(base);
+  assert.equal(waiting.bearing, 35, 'no reliable course preserves the camera instead of reading the eastbound route');
+  assert.equal(waiting.pitch, 72);
+  assert.equal(waiting.offset[1] + base.height / 2, (120 + 760) / 2);
+  assert.equal('zoom' in waiting, false, 'entering the outdoor view does not silently change detail level');
+  const moving = navigationCameraOptions({ ...base, heading: 83 });
+  assert.equal(moving.bearing, 83);
+  assert.deepEqual(moving.center, base.center);
+  const adjusted = navigationCameraOptions({ ...base, heading: 83, pose: { pitch: 48, bearing: 12 } });
+  assert.equal(adjusted.pitch, 48);
+  assert.equal(adjusted.bearing, 12);
+});
+
 test('a reliable heading does not inspect or rebuild the route path', () => {
   let reads = 0;
   const points = new Proxy([[104.1, 30.6], [104.2, 30.6]], {

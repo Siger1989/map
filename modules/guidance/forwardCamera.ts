@@ -10,6 +10,8 @@ export type NavigationCameraOptionsInput = {
   /** Height of the usable map viewport, in CSS pixels. */
   height: number;
   forward: boolean;
+  /** Black contour navigation keeps the live puck centered and uses real movement only. */
+  outdoorContours?: boolean;
   animate?: boolean;
   /** Current map bearing, used only as a safe fallback and to unwrap the shortest turn. */
   bearing?: number;
@@ -32,6 +34,7 @@ export type NavigationCameraOptions = {
 };
 
 const FORWARD_PITCH = 60;
+export const OUTDOOR_CONTOUR_PITCH = 72;
 export const navigationCloseZoom = (mode?: TravelMode) => mode === 'pedestrian' ? 18.2 : mode === 'bicycle' ? 17.8 : 17.4;
 const FORWARD_OFFSET_MARGIN = 8;
 const FORWARD_PUCK_CLEARANCE = 32;
@@ -107,7 +110,7 @@ function routeHeading(
   return bearingBetween(from, to);
 }
 
-function viewportOffset(height: number, usableRect: NavigationCameraOptionsInput['usableRect'], forward: boolean): number {
+function viewportOffset(height: number, usableRect: NavigationCameraOptionsInput['usableRect'], forward: boolean, centered = false): number {
   if (!Number.isFinite(height) || height <= 0) return 0;
   const rawTop = usableRect?.top ?? 0;
   const rawBottom = usableRect?.bottom ?? height;
@@ -115,11 +118,11 @@ function viewportOffset(height: number, usableRect: NavigationCameraOptionsInput
   const top = Math.max(0, Math.min(height, rawTop));
   const bottom = Math.max(0, Math.min(height, rawBottom));
   const safeTop = top + FORWARD_OFFSET_MARGIN;
-  const safeBottom = bottom - (forward ? FORWARD_PUCK_CLEARANCE : FORWARD_OFFSET_MARGIN);
+  const safeBottom = bottom - (forward && !centered ? FORWARD_PUCK_CLEARANCE : FORWARD_OFFSET_MARGIN);
   const usableHeight = safeBottom - safeTop;
   if (usableHeight <= 0) return 0;
   // Keep space behind the puck as well as ahead, including when chrome is hidden.
-  const preferredY = forward ? safeTop + usableHeight * 0.68 : height / 2;
+  const preferredY = centered ? safeTop + usableHeight / 2 : forward ? safeTop + usableHeight * 0.68 : height / 2;
   const targetY = Math.max(safeTop, Math.min(safeBottom, preferredY));
   return Math.max(safeTop - height / 2, Math.min(safeBottom - height / 2, targetY - height / 2));
 }
@@ -134,17 +137,17 @@ export function navigationCameraOptions(input: NavigationCameraOptionsInput): Na
 
   const heading = finiteAngle(input.heading)
     ? input.heading
-    : routeHeading(center, asPath(input.path), input.progress);
+    : input.outdoorContours ? undefined : routeHeading(center, asPath(input.path), input.progress);
   const bearing = heading === undefined
     ? fallbackBearing
     : fallbackBearing === undefined ? normalizeHeading(heading) : unwrapNear(heading, fallbackBearing);
 
   return {
     center,
-    pitch: input.pose ? Math.max(0, Math.min(80, input.pose.pitch)) : FORWARD_PITCH,
-    ...(input.close ? { zoom: navigationCloseZoom(input.travelMode) } : {}),
+    pitch: input.pose ? Math.max(0, Math.min(80, input.pose.pitch)) : input.outdoorContours ? OUTDOOR_CONTOUR_PITCH : FORWARD_PITCH,
+    ...(input.close && !input.outdoorContours ? { zoom: navigationCloseZoom(input.travelMode) } : {}),
     ...(input.pose ? { bearing: input.pose.bearing } : bearing === undefined ? {} : { bearing }),
-    offset: [0, viewportOffset(input.height, input.usableRect, true)],
+    offset: [0, viewportOffset(input.height, input.usableRect, true, input.outdoorContours)],
     duration: input.animate ? 650 : 0,
   };
 }

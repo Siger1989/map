@@ -14,6 +14,15 @@ import {
 
 const current = { center: [104, 30], zoom: 12.5, pitch: 32, bearing: 27 };
 
+test('native outdoor contour camera retains real position and zoom with a centered, forward pose', () => {
+  const camera = nativeNavigationCamera(current, { forward: true, outdoorContours: true, heading: 80, close: true }, [104.01, 30.01], 857, { top: 100, bottom: 760 });
+  assert.deepEqual(camera.center, [104.01, 30.01]);
+  assert.equal(camera.zoom, current.zoom);
+  assert.equal(camera.pitch, 72);
+  assert.equal(camera.bearing, 80);
+  assert.equal(camera.offset[1] + 857 / 2, 430);
+});
+
 test('native focus preserves zoom and view pose unless the caller requests changes', () => {
   const focused = nativeFocusCamera(current, [105, 31]);
   assert.deepEqual(focused, { center: [105, 31], zoom: 12.5, pitch: 32, bearing: 27, duration: 700 });

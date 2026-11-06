@@ -23,7 +23,7 @@ export function parseLayerPreferences(raw: string | null, fallback: LayerSetting
     if (envelope.version !== 1 || !envelope.layers || typeof envelope.layers !== 'object' || Array.isArray(envelope.layers)) return null;
     const value = envelope.layers as Record<string, unknown>;
     const result = withoutRetiredWeather(fallback) as LayerSettings & Record<string, unknown>;
-    const booleans = ['terrain', 'satellite', 'offlineBasemap', 'tiandituBoundaries', 'contours', 'elevationColors', 'geology', 'roads', 'labels'] as const;
+    const booleans = ['terrain', 'satellite', 'offlineBasemap', 'tiandituBoundaries', 'contours', 'outdoorContours', 'elevationColors', 'geology', 'roads', 'labels'] as const;
     for (const key of booleans) if (typeof value[key] === 'boolean') Object.assign(result, { [key]: value[key] });
     if (value.satelliteProvider === 'sentinel' || value.satelliteProvider === 'tianditu') result.satelliteProvider = value.satelliteProvider;
     if (value.tiandituBase === 'vec' || value.tiandituBase === 'img' || value.tiandituBase === 'ter') result.tiandituBase = value.tiandituBase;

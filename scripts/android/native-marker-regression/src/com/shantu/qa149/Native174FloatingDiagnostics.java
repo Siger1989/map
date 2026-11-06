@@ -65,9 +65,22 @@ public final class Native174FloatingDiagnostics {
             JSONObject safe = new JSONObject()
                 .put("enabled", raw.optBoolean("enabled"))
                 .put("visible", raw.optBoolean("visible"))
-                .put("mode", safeEnum(raw.optString("mode"), "north", "motion"))
+                .put("mode", safeEnum(raw.optString("mode"), "north", "motion", "compass"))
                 .put("kind", safeEnum(raw.optString("kind"), "position", "route"))
-                .put("zoom", raw.optInt("zoom", -1));
+                .put("zoom", raw.optInt("zoom", -1))
+                .put("outdoorContours", raw.optBoolean("outdoorContours"))
+                .put("windowEnabled", raw.optBoolean("windowEnabled"))
+                .put("lockscreenEnabled", raw.optBoolean("lockscreenEnabled"));
+            JSONObject diagnostics = raw.optJSONObject("diagnostics");
+            JSONObject terrain = diagnostics == null ? null : diagnostics.optJSONObject("terrain");
+            if (terrain != null) {
+                JSONObject safeTerrain = new JSONObject();
+                for (String name : new String[]{"enabled", "screenOn", "visibleMap", "loading", "allTilesLoaded", "hasElevation"})
+                    safeTerrain.put(name, terrain.optBoolean(name));
+                for (String name : new String[]{"visibleTiles", "expectedTiles", "missingTiles", "validSamples", "sampleSlots", "revision"})
+                    safeTerrain.put(name, terrain.optLong(name));
+                safe.put("terrain", safeTerrain);
+            }
             JSONObject lockscreen = raw.optJSONObject("lockscreen");
             if (lockscreen != null) {
                 safe.put("lockscreen", new JSONObject()

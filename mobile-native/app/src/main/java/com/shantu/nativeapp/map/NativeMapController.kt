@@ -18,6 +18,7 @@ import earth.worldwind.geom.Position
 import earth.worldwind.geom.LookAt
 import earth.worldwind.geom.Vec2
 import earth.worldwind.layer.BackgroundLayer
+import earth.worldwind.layer.Layer
 import earth.worldwind.layer.RenderableLayer
 import earth.worldwind.layer.mercator.MercatorTiledImageLayer
 import earth.worldwind.layer.mercator.MercatorTileFactory
@@ -42,6 +43,7 @@ import kotlin.math.pow
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.WeakHashMap
+import java.util.IdentityHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -51,6 +53,38 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 private val NO_RASTER_DECODE_CALLBACK: () -> Unit = {}
 private val NO_RASTER_LOAD_CALLBACK: () -> Unit = {}
+
+internal fun nativeOutdoorArrowScale(cssScale: Double): Double =
+    30.0 / 32.0 * (cssScale.takeIf { it.isFinite() && it > 0.0 } ?: 1.0)
+
+internal fun nativeOutdoorDotScale(cssScale: Double): Double =
+    14.0 / 32.0 * (cssScale.takeIf { it.isFinite() && it > 0.0 } ?: 1.0)
+
+private fun nativeOutdoorPositionDotImage(): ImageSource = ArgbImage(32, 32, IntArray(32 * 32).also { pixels ->
+    val cx = 15.5; val cy = 15.5
+    for (y in 0 until 32) for (x in 0 until 32) {
+        val dx = x - cx; val dy = y - cy; val d2 = dx * dx + dy * dy
+        pixels[y * 32 + x] = when {
+            d2 <= 6.0 * 6.0 -> 0xff62e7ff.toInt()
+            d2 <= 10.0 * 10.0 -> 0x9454dcff.toInt()
+            d2 <= 14.0 * 14.0 -> 0x4054dcff.toInt()
+            else -> 0
+        }
+    }
+}).toImageSource()
+
+/** Tracks each pane-local style layer's desired state while the outdoor mode masks it off. */
+internal class NativeOutdoorLayerStateSnapshot<L : Any> {
+    private val states = IdentityHashMap<L, Boolean>()
+
+    fun capture(layers: Iterable<Pair<L, Boolean>>) {
+        layers.forEach { (layer, enabled) -> states[layer] = enabled }
+    }
+
+    fun state(layer: L): Boolean? = states[layer]
+
+    fun clear() = states.clear()
+}
 
 private data class NativeTileDemandFrame(
     val matrix: DoubleArray,
@@ -169,6 +203,10 @@ class NativeMapController internal constructor(
         ImageSource.fromBitmap(Bitmap.createBitmap(1, 1, Bitmap.Config.RGB_565).apply { eraseColor(0xFF203B3F.toInt()) }),
         ImageOptions(ImageConfig.RGB_565),
     ).apply { isEnabled = false }
+    private val outdoorSkyBackgroundLayer = BackgroundLayer(
+        ImageSource.fromBitmap(Bitmap.createBitmap(1, 1, Bitmap.Config.RGB_565).apply { eraseColor(0xFF000000.toInt()) }),
+        ImageOptions(ImageConfig.RGB_565),
+    ).apply { isEnabled = false }
     private val terrainBasemapLayer: RenderableLayer = RenderableLayer("Native DEM terrain base")
     private val terrainOverlayLayer: RenderableLayer = RenderableLayer("Terrain overlays")
     private val labelLayer: RenderableLayer = RenderableLayer("Tianditu labels")
@@ -186,10 +224,7 @@ class NativeMapController internal constructor(
         if (safe == bridgeMarkerCssScale) return
         bridgeMarkerCssScale = safe
         setBridgeMarkerPresentation(bridgeMarkerZoom, bridgeSelectedMarker)
-        if (positionArrowVisible) {
-            positionRenderables.filterIsInstance<Placemark>().forEach { it.attributes.imageScale = nativePositionArrowScale(safe) }
-            worldWindow.requestRedraw()
-        }
+        if (lastPositionState != null) lastPositionState?.let(::setPosition)
     }
     internal fun setBridgeMarkerPresentation(zoom: Double, selectedId: String?) {
         bridgeMarkerZoom = zoom
@@ -216,21 +251,36 @@ class NativeMapController internal constructor(
         return markerDocuments.values.toList().filter(NativeModelTerrainInput::needsTerrainRefresh).map(::renderMarker)
     }
     internal fun modelPlacementRevision()=NativeModelTerrainInput.Stamp(
-        worldWindow.engine.globe.elevationModel.timestamp,terrainEnabled,worldWindow.engine.globe.verticalExaggeration)
+        worldWindow.engine.globe.elevationModel.timestamp,terrainEffectiveEnabled(),worldWindow.engine.globe.verticalExaggeration)
     private val positionLayer: RenderableLayer = RenderableLayer("Current position")
     private val photoLayer=NativePhotoLayer()
     internal fun replacePhotos(photos:org.json.JSONArray){photoLayer.replace(photos);worldWindow.requestRedraw()}
     private var geology:com.shantu.nativeapp.geology.NativeGeologyLayer?=null
     internal fun configureGeology(provider:com.shantu.nativeapp.geology.NativeGeologyCredentialProvider,onState:(com.shantu.nativeapp.geology.NativeGeologyState)->Unit){
+        if (outdoorContoursEnabled) unmaskOutdoorStyleLayersForMutation()
         geology?.let { worldWindow.engine.layers.removeLayer(it.renderLayer);worldWindow.engine.layers.removeLayer(it.cloudRenderLayer);it.close() }
         geology=com.shantu.nativeapp.geology.NativeGeologyLayer(worldWindow,onState,com.shantu.nativeapp.geology.NativeGeologyCloudClient(provider)).also {
             worldWindow.engine.layers.addLayer(1,it.renderLayer);worldWindow.engine.layers.addLayer(2,it.cloudRenderLayer)
         }
+        if (outdoorContoursEnabled) {
+            captureOutdoorStyleLayers()
+            suppressOutdoorStyleLayers()
+        }
     }
-    internal fun setGeology(enabled:Boolean,source:com.shantu.nativeapp.geology.NativeGeologySource,opacity:Double){geology?.setSource(source);geology?.setOpacity(opacity);geology?.setEnabled(enabled)}
+    internal fun setGeology(enabled:Boolean,source:com.shantu.nativeapp.geology.NativeGeologySource,opacity:Double){
+        if (outdoorContoursEnabled) unmaskOutdoorStyleLayersForMutation()
+        geology?.setSource(source);geology?.setOpacity(opacity);geology?.setEnabled(enabled)
+        if (outdoorContoursEnabled) {
+            captureOutdoorStyleLayers()
+            suppressOutdoorStyleLayers()
+        }
+    }
     internal fun retryGeology(){geology?.retry()}
     internal fun selectGeology(key:String){geology?.selectFeature(key)}
     private var positionRenderables: List<Renderable> = emptyList()
+    private var lastPositionState: NativePositionState? = null
+    private val outdoorPositionDotImage = nativeOutdoorPositionDotImage()
+    private val outdoorPositionArrowImage = nativePositionArrowImage()
     private val routeLayer: RenderableLayer = RenderableLayer("Routes")
     private val areaLayer: RenderableLayer = RenderableLayer("Areas")
     private val markers = linkedMapOf<String, List<Renderable>>()
@@ -248,6 +298,8 @@ class NativeMapController internal constructor(
     private var rasterLabelOpacity = 1f
     private var legacyRasterLayersVisible = true
     private var terrainEnabled = false
+    private var outdoorContoursEnabled = false
+    private val outdoorSavedLayerStates = NativeOutdoorLayerStateSnapshot<Layer>()
     private var terrainCoverage: NativeTerrariumCoverage? = null
     private var terrainCoverageAttached = false
     private var terrainBasemapRenderer: NativeTerrainBasemap? = null
@@ -400,7 +452,7 @@ class NativeMapController internal constructor(
     /** Keep an explicitly requested ground target stable while its real DEM arrives/refines. */
     internal fun refreshBridgeGroundAnchor(): Boolean {
         val anchor = bridgeGroundAnchor ?: return false
-        if (!bridgeCameraConfigured || !terrainEnabled || disposed) return false
+        if (!bridgeCameraConfigured || !terrainEffectiveEnabled() || disposed) return false
         val elevation = getElevation(anchor.latitude, anchor.longitude) ?: return false
         val exaggeration = worldWindow.engine.globe.verticalExaggeration
         if (bridgeAnchorElevation == elevation && bridgeAnchorExaggeration == exaggeration) return false
@@ -433,7 +485,7 @@ class NativeMapController internal constructor(
     private fun resetBridgeRasterEvidence(): Long = bridgeRasterLoads.reset()
 
     private fun bridgeRasterCallbacks(generation: Long): NativeRasterLoadCallbacks = bridgeRasterLoads.callbacks(generation)
-    internal fun isTerrainEnabled(): Boolean = terrainEnabled
+    internal fun isTerrainEnabled(): Boolean = terrainEffectiveEnabled()
     internal fun tileNetwork(): BoundedTileNetwork = network
     internal fun demRevision(): Long = worldWindow.engine.globe.elevationModel.timestamp
     internal fun createSectionSurfaceLayer() = com.shantu.nativeapp.section.NativeSectionSurfaceLayer(worldWindow)
@@ -446,21 +498,28 @@ class NativeMapController internal constructor(
     internal fun prepareBridgeDemCoverage(){check(Looper.myLooper()==Looper.getMainLooper());ensureTerrainCoverage()}
     internal fun configureCartography(settings:NativeCartographySettings,activeCustomSource:Boolean,baseSelectionAllowed:Boolean,maxRasterZoom:Int?=null) {
         check(Looper.myLooper()==Looper.getMainLooper())
+        if (outdoorContoursEnabled) unmaskOutdoorStyleLayersForMutation()
         cartography.apply(settings,activeCustomSource,baseSelectionAllowed,maxRasterZoom)
+        if (outdoorContoursEnabled) {
+            captureOutdoorStyleLayers()
+            suppressOutdoorStyleLayers()
+        }
         refreshTileDemand(forceGeneration = true)
         val builtInTerrainBase = !activeCustomSource &&
             (settings.sourceId == "terrain" || settings.sourceId == "offline" || settings.offlineBasemap)
         setTerrainBasemapEnabled(builtInTerrainBase)
     }
-    private fun setTerrainBasemapEnabled(enabled:Boolean) {
-        if (disposed || terrainBasemapEnabled == enabled) return
+    private fun setTerrainBasemapEnabled(enabled:Boolean, force:Boolean=false) {
+        if (disposed || terrainBasemapEnabled == enabled && !force) return
         terrainBasemapEnabled = enabled
-        val rasterCallbacks = if (enabled) bridgeRasterCallbacks(resetBridgeRasterEvidence()) else null
+        val rasterCallbacks = if (enabled && !outdoorContoursEnabled) bridgeRasterCallbacks(resetBridgeRasterEvidence()) else null
         terrainBasemapRenderer?.close(); terrainBasemapRenderer = null
         terrainBasemapLayer.clearRenderables()
-        terrainBasemapLayer.isEnabled = enabled
-        terrainBackgroundLayer.isEnabled = enabled
-        if (enabled) {
+        rememberOutdoorLayerState(terrainBasemapLayer, enabled)
+        rememberOutdoorLayerState(terrainBackgroundLayer, enabled)
+        terrainBasemapLayer.isEnabled = enabled && !outdoorContoursEnabled
+        terrainBackgroundLayer.isEnabled = enabled && !outdoorContoursEnabled
+        if (enabled && !outdoorContoursEnabled) {
             val callbacks = rasterCallbacks ?: NativeRasterLoadCallbacks(
                 NO_RASTER_DECODE_CALLBACK, NO_RASTER_LOAD_CALLBACK, NO_RASTER_LOAD_CALLBACK,
             )
@@ -469,11 +528,82 @@ class NativeMapController internal constructor(
             )
             terrainBasemapRenderer = renderer
             renderer.renderables().forEach(terrainBasemapLayer::addRenderable)
-        } else if (!terrainEnabled && !terrainOverlayOptions.contoursEnabled && !terrainOverlayOptions.elevationColorsEnabled) {
+        } else if (!terrainEffectiveEnabled() && !terrainOverlayOptions.contoursEnabled && !terrainOverlayOptions.elevationColorsEnabled) {
             terrainCoverage = null
         }
         worldWindow.requestRedraw()
     }
+
+    private fun terrainEffectiveEnabled(): Boolean = terrainEnabled || outdoorContoursEnabled
+
+    private fun outdoorStyleLayers(): List<Layer> {
+        val all = mutableListOf<Layer>().apply {
+            add(baseLayer); add(cartography.baseRenderLayer); add(cartography.underlayRenderLayer)
+            add(fixedDetailLayer.renderLayer); add(terrainBackgroundLayer); add(terrainBasemapLayer)
+            addAll(cartography.layers)
+            add(cartography.tiandituLabelRenderLayer); add(cartography.tiandituBoundaryRenderLayer)
+            add(labelLayer); add(skyLayer)
+            geology?.let { add(it.renderLayer); add(it.cloudRenderLayer) }
+        }
+        val seen = IdentityHashMap<Layer, Boolean>()
+        return all.filter { seen.put(it, true) == null }
+    }
+
+    private fun rememberOutdoorLayerState(layer: Layer, enabled: Boolean = layer.isEnabled) {
+        if (outdoorContoursEnabled) outdoorSavedLayerStates.capture(listOf(layer to enabled))
+    }
+
+    private fun captureOutdoorStyleLayers() {
+        outdoorSavedLayerStates.capture(outdoorStyleLayers().map { it to it.isEnabled })
+    }
+
+    /** Restore the normal state for one synchronous layer update, then mask again before drawing. */
+    private fun unmaskOutdoorStyleLayersForMutation() {
+        if (!outdoorContoursEnabled) return
+        outdoorStyleLayers().forEach { layer ->
+            outdoorSavedLayerStates.state(layer)?.let { layer.isEnabled = it }
+        }
+        outdoorSkyBackgroundLayer.isEnabled = true
+    }
+
+    private fun suppressOutdoorStyleLayers() {
+        if (!outdoorContoursEnabled) return
+        outdoorStyleLayers().forEach { it.isEnabled = false }
+        outdoorSkyBackgroundLayer.isEnabled = true
+    }
+
+    private fun restoreOutdoorStyleLayers() {
+        outdoorStyleLayers().forEach { layer ->
+            outdoorSavedLayerStates.state(layer)?.let { layer.isEnabled = it }
+        }
+        outdoorSavedLayerStates.clear()
+        outdoorSkyBackgroundLayer.isEnabled = false
+    }
+
+    /** First-person outdoor display is local to this WorldWindow; the twin map keeps its own style. */
+    fun setOutdoorContours(enabled: Boolean) {
+        check(Looper.myLooper() == Looper.getMainLooper()) { "Outdoor contour mode must run on the Android main thread" }
+        check(!disposed) { "Map controller is disposed" }
+        if (outdoorContoursEnabled == enabled) return
+        outdoorContoursEnabled = enabled
+        if (enabled) {
+            outdoorSavedLayerStates.clear()
+            captureOutdoorStyleLayers()
+            outdoorSkyBackgroundLayer.isEnabled = true
+        } else {
+            restoreOutdoorStyleLayers()
+        }
+        terrainCutLayer.isEnabled = terrainEffectiveEnabled()
+        syncTerrainAttachment()
+        setTerrainBasemapEnabled(terrainBasemapEnabled, force = true)
+        terrainOverlayOptions = terrainOverlayOptions.copy(outdoorContours = enabled)
+        applyTerrainOverlays(terrainOverlayOptions)
+        if (enabled) suppressOutdoorStyleLayers()
+        lastPositionState?.let(::setPosition)
+        refreshTileDemand(forceGeneration = true)
+        worldWindow.requestRedraw()
+    }
+
     /** Hides the controller's legacy TDT/custom raster stack when another effective base is selected. */
     internal fun setLegacyRasterLayersVisible(visible: Boolean) {
         check(Looper.myLooper() == Looper.getMainLooper())
@@ -483,6 +613,10 @@ class NativeMapController internal constructor(
         baseLayer.isEnabled = visible
         labelLayer.isEnabled = visible && rasterLabelOpacity > 0f
         fixedDetailLayer.renderLayer.isEnabled = visible
+        rememberOutdoorLayerState(baseLayer, visible)
+        rememberOutdoorLayerState(labelLayer, visible && rasterLabelOpacity > 0f)
+        rememberOutdoorLayerState(fixedDetailLayer.renderLayer, visible)
+        suppressOutdoorStyleLayers()
         refreshTileDemand(forceGeneration = true)
         if (!visible && !terrainBasemapEnabled) {
             resetBridgeRasterEvidence()
@@ -595,6 +729,7 @@ class NativeMapController internal constructor(
             }
             override fun reset(){frameDrawn=false}
         }
+        worldWindow.engine.layers.addLayer(outdoorSkyBackgroundLayer)
         worldWindow.engine.layers.addLayer(cartography.underlayRenderLayer)
         worldWindow.engine.layers.addLayer(baseLayer)
         worldWindow.engine.layers.addLayer(cartography.baseRenderLayer)
@@ -785,18 +920,23 @@ class NativeMapController internal constructor(
         val nextOpacity = opacity.toFloat()
         if (rasterLabelOpacity == nextOpacity) return
         rasterLabelOpacity = nextOpacity
-        mainHandler.post { if (!disposed) { labelLayer.opacity = rasterLabelOpacity; labelLayer.isEnabled = legacyRasterLayersVisible && rasterLabelOpacity > 0f; refreshTileDemand(forceGeneration = true); worldWindow.requestRedraw() } }
+        mainHandler.post { if (!disposed) {
+            labelLayer.opacity = rasterLabelOpacity
+            labelLayer.isEnabled = legacyRasterLayersVisible && rasterLabelOpacity > 0f
+            rememberOutdoorLayerState(labelLayer, labelLayer.isEnabled)
+            suppressOutdoorStyleLayers()
+            refreshTileDemand(forceGeneration = true); worldWindow.requestRedraw()
+        } }
     }
 
     /** Updates the shared GPS/heading overlay. Heading must come from trusted sensors or GPS course. */
-    private var positionArrowVisible = false
     fun setPosition(state: NativePositionState) {
         check(Looper.myLooper() == Looper.getMainLooper()) { "Position updates must run on the Android main thread" }
         if (disposed) return
+        lastPositionState = state
         val presentation = NativePositionPolicy.present(state)
         positionLayer.clearRenderables()
         positionRenderables = emptyList()
-        positionArrowVisible = false
         val fix = state.fix
         if (!presentation.visible || fix == null) { worldWindow.requestRedraw(); return }
         val lat = fix.latitude; val lon = fix.longitude
@@ -812,16 +952,24 @@ class NativeMapController internal constructor(
         val ringAttrs = ShapeAttributes().apply { isDrawInterior = false; isDrawOutline = true; outlineColor = Color(0.78f, 0.83f, 0.81f, 0.55f); outlineWidth = 1.5f; isDepthTest = true }
         val ringPath = Path(ring, ringAttrs).apply { altitudeMode = AltitudeMode.CLAMP_TO_GROUND }
         val heading = presentation.headingDegrees
-        positionArrowVisible = heading != null
         val puck = Placemark(Position(lat.degrees, lon.degrees, 0.0), PlacemarkAttributes().apply {
-            if (heading != null) imageSource = nativePositionArrowImage()
-            imageScale = if (heading != null) nativePositionArrowScale(bridgeMarkerCssScale) else 9.0
-            imageColor = Color(0.18f, 0.76f, 1f, 1f); isDrawLeader = false; isDepthTest = true
+            if (heading != null) imageSource = if (outdoorContoursEnabled) outdoorPositionArrowImage else nativePositionArrowImage()
+            else if (outdoorContoursEnabled) imageSource = outdoorPositionDotImage
+            imageScale = when {
+                heading != null && outdoorContoursEnabled -> nativeOutdoorArrowScale(bridgeMarkerCssScale)
+                heading != null -> nativePositionArrowScale(bridgeMarkerCssScale)
+                outdoorContoursEnabled -> nativeOutdoorDotScale(bridgeMarkerCssScale)
+                else -> 9.0
+            }
+            imageColor = Color(0.18f, 0.76f, 1f, 1f); isDrawLeader = false; isDepthTest = !outdoorContoursEnabled
         }, if (heading == null) "当前位置" else "当前位置，方向可信").apply {
-            altitudeMode = AltitudeMode.CLAMP_TO_GROUND; isAlwaysOnTop = false
+            altitudeMode = AltitudeMode.CLAMP_TO_GROUND; isAlwaysOnTop = outdoorContoursEnabled
             if (heading != null) { imageRotation = heading.degrees; imageRotationReference = OrientationMode.RELATIVE_TO_GLOBE }
         }
-        val drawables = mutableListOf<Renderable>(ringPath, puck)
+        val drawables = mutableListOf<Renderable>().apply {
+            if (!outdoorContoursEnabled) add(ringPath)
+            add(puck)
+        }
         positionRenderables = drawables
         drawables.forEach(positionLayer::addRenderable)
         worldWindow.requestRedraw()
@@ -855,6 +1003,7 @@ class NativeMapController internal constructor(
         }
         mainHandler.post {
             if (disposed) return@post
+            if (outdoorContoursEnabled) unmaskOutdoorStyleLayersForMutation()
             baseLayer.clearRenderables()
             rasterFeatherBacking.clear()
             labelLayer.clearRenderables()
@@ -884,7 +1033,11 @@ class NativeMapController internal constructor(
                 baseLayer.addRenderable(makeTileSurfaceImage(base, false, rasterCallbacks = rasterCallbacks))
                 labelLayer.addRenderable(makeTileSurfaceImage(labels, true))
             }
+            rememberOutdoorLayerState(baseLayer, baseLayer.isEnabled)
+            rememberOutdoorLayerState(labelLayer, legacyRasterLayersVisible && rasterLabelOpacity > 0f)
             fixedDetailLayer.sync(fixedRasterZoom,fixedRasterDetailProvider(custom,id,rasterCallbacks))
+            rememberOutdoorLayerState(fixedDetailLayer.renderLayer, fixedDetailLayer.renderLayer.isEnabled)
+            suppressOutdoorStyleLayers()
             refreshTileDemand(forceGeneration = true)
             worldWindow.requestRedraw()
         }
@@ -908,7 +1061,7 @@ class NativeMapController internal constructor(
             if (disposed || terrainEnabled == enabled) return@Runnable
             val preserved = if (bridgeCameraConfigured && frameDrawn) cameraSnapshot() else null
             terrainEnabled = enabled
-            terrainCutLayer.isEnabled = enabled
+            terrainCutLayer.isEnabled = terrainEffectiveEnabled()
             syncTerrainAttachment()
             // Retain the bounded DEM coverage while detached so a 2D/3D round trip
             // does not discard loaded ground or shift the logical camera target.
@@ -930,7 +1083,7 @@ class NativeMapController internal constructor(
         check(Looper.myLooper() == Looper.getMainLooper()) { "Terrain overlay settings must run on the Android main thread" }
         check(!disposed) { "Map controller is disposed" }
         val options = NativeTerrainOverlayOptions(
-            contoursEnabled, elevationColorsEnabled, contourIntervalMeters, elevationColorsOpacity,
+            contoursEnabled, elevationColorsEnabled, contourIntervalMeters, elevationColorsOpacity, outdoorContoursEnabled,
         )
         if (terrainOverlayOptions == options) return
         terrainOverlayOptions = options
@@ -944,7 +1097,7 @@ class NativeMapController internal constructor(
 
     /** Attribution for active DEM terrain or its color/contour overlays; null when all are off. */
     fun terrainOverlayAttribution(): String? =
-        if (terrainEnabled || terrainBasemapEnabled || terrainOverlayOptions.contoursEnabled ||
+        if (terrainEffectiveEnabled() || terrainBasemapEnabled || terrainOverlayOptions.contoursEnabled || terrainOverlayOptions.outdoorContours ||
             terrainOverlayOptions.elevationColorsEnabled && terrainOverlayOptions.elevationColorsOpacity > 0.0)
             NativeTerrainOverlays.ATTRIBUTION else null
 
@@ -954,18 +1107,19 @@ class NativeMapController internal constructor(
             appContext, network,
             tileIdentityFor = { z, x, y -> owner.get()?.tileIdentityAndRegister("public-terrain-dem", "terrarium", z, x, y, "rgb-encoding-v1", "public") },
             viewId = { owner.get()?.let { controller ->
-                if (controller.terrainEnabled || controller.terrainBasemapEnabled || controller.terrainOverlayOptions.contoursEnabled || controller.terrainOverlayOptions.elevationColorsEnabled) controller.tileViewId else null
+                if (controller.terrainEffectiveEnabled() || controller.terrainBasemapEnabled || controller.terrainOverlayOptions.contoursEnabled || controller.terrainOverlayOptions.elevationColorsEnabled || controller.terrainOverlayOptions.outdoorContours) controller.tileViewId else null
             } },
             demandGeneration = rasterGeneration,
         ).also { terrainCoverage = it }
     }
 
     private fun syncTerrainAttachment() {
-        val coverage = if (terrainEnabled) ensureTerrainCoverage() else terrainCoverage
-        if (terrainEnabled && !terrainCoverageAttached && coverage != null) {
+        val terrainActive = terrainEffectiveEnabled()
+        val coverage = if (terrainActive) ensureTerrainCoverage() else terrainCoverage
+        if (terrainActive && !terrainCoverageAttached && coverage != null) {
             worldWindow.engine.globe.elevationModel.addCoverage(coverage)
             terrainCoverageAttached = true
-        } else if (!terrainEnabled && terrainCoverageAttached && coverage != null) {
+        } else if (!terrainActive && terrainCoverageAttached && coverage != null) {
             worldWindow.engine.globe.elevationModel.removeCoverage(coverage)
             terrainCoverageAttached = false
         }
@@ -976,13 +1130,13 @@ class NativeMapController internal constructor(
         terrainOverlayLayer.clearRenderables()
         terrainOverlayRenderer?.close()
         terrainOverlayRenderer = null
-        if (options.contoursEnabled || options.elevationColorsEnabled && options.elevationColorsOpacity > 0.0) {
+        if (options.outdoorContours || options.contoursEnabled || options.elevationColorsEnabled && options.elevationColorsOpacity > 0.0) {
             val renderer = NativeTerrainOverlays(ensureTerrainCoverage()).apply {
                 setViewportStyle(terrainOverlayUiZoom, terrainOverlayCssScale, tileDemandFocusPx())
             }
             renderer.renderables(options).forEach(terrainOverlayLayer::addRenderable)
             terrainOverlayRenderer = renderer
-        } else if (!terrainEnabled && !terrainBasemapEnabled) {
+        } else if (!terrainEffectiveEnabled() && !terrainBasemapEnabled) {
             terrainCoverage = null
         }
         appliedTerrainOverlayOptions = options
@@ -1032,12 +1186,12 @@ class NativeMapController internal constructor(
         val viewport = worldWindow.engine.viewport
         val anchor = bridgeGroundAnchor.takeIf { bridgeCameraConfigured && !disposed }
         val ground = if (anchor != null) Position(anchor.latitude.degrees, anchor.longitude.wrapLongitude().degrees,
-            (bridgeAnchorElevation ?: 0.0) * if (terrainEnabled) worldWindow.engine.globe.verticalExaggeration else 1.0) else Position()
+            (bridgeAnchorElevation ?: 0.0) * if (terrainEffectiveEnabled()) worldWindow.engine.globe.verticalExaggeration else 1.0) else Position()
         // Invert the real eye against the still-valid explicit ground anchor. Picking the
         // center terrain triangle again introduces mesh interpolation error into every
         // linked-map round trip. Real gestures/zoom/view invalidate this anchor first.
         val hit = anchor != null || !viewport.isEmpty && (
-            terrainEnabled && worldWindow.engine.pickTerrainPosition(viewport.width / 2.0, viewport.height / 2.0, ground) ||
+            terrainEffectiveEnabled() && worldWindow.engine.pickTerrainPosition(viewport.width / 2.0, viewport.height / 2.0, ground) ||
                 worldWindow.engine.screenPointToGroundPosition(viewport.width / 2.0, viewport.height / 2.0, ground))
         val look = if (hit) worldWindow.engine.cameraAsLookAt(LookAt(), ground)
         else worldWindow.engine.cameraAsLookAt(LookAt())
@@ -1074,8 +1228,8 @@ class NativeMapController internal constructor(
         check(Looper.myLooper() == Looper.getMainLooper()) { "Camera operations must run on the Android main thread" }
         // Before the first terrain frame, cameraAsLookAt falls back to a horizon point
         // whose altitude is not a ground anchor. Never inherit it when restoring a view.
-        val knownGround = if (bridgeCameraConfigured && terrainEnabled) getElevation(snapshot.latitude, snapshot.longitude) else null
-        val anchorAltitude = (knownGround ?: 0.0) * if (terrainEnabled) worldWindow.engine.globe.verticalExaggeration else 1.0
+        val knownGround = if (bridgeCameraConfigured && terrainEffectiveEnabled()) getElevation(snapshot.latitude, snapshot.longitude) else null
+        val anchorAltitude = (knownGround ?: 0.0) * if (terrainEffectiveEnabled()) worldWindow.engine.globe.verticalExaggeration else 1.0
         val look = LookAt().apply {
             set(
                 snapshot.latitude.degrees, snapshot.longitude.wrapLongitude().degrees,
@@ -1122,8 +1276,9 @@ class NativeMapController internal constructor(
         val lat=coordinate?.optDouble(1,Double.NaN) ?: Double.NaN
         val lon=coordinate?.optDouble(0,Double.NaN) ?: Double.NaN
         val needsGround=NativeModelTerrainInput.needsTerrainRefresh(marker)
-        val liveGround=if(needsGround && terrainEnabled && lat.isFinite() && lat in -90.0..90.0 && lon.isFinite()) getElevation(lat,lon) else null
-        return NativeModelTerrainInput.prepare(marker,terrainEnabled,liveGround)
+        val terrainActive = terrainEffectiveEnabled()
+        val liveGround=if(needsGround && terrainActive && lat.isFinite() && lat in -90.0..90.0 && lon.isFinite()) getElevation(lat,lon) else null
+        return NativeModelTerrainInput.prepare(marker,terrainActive,liveGround)
     }
 
     /** Renders a complete Web annotation record; unsupported or groundless models are reported explicitly. */
@@ -1141,7 +1296,7 @@ class NativeMapController internal constructor(
         }
         val result = NativeModelRenderer.render(
             input,
-            NativeTerrainSampler{sampleLat,sampleLon->if(terrainEnabled)getElevation(sampleLat,sampleLon) else 0.0},
+            NativeTerrainSampler{sampleLat,sampleLon->if(terrainEffectiveEnabled())getElevation(sampleLat,sampleLon) else 0.0},
             previousPresentation,
         )
         val id = result.id ?: return result
@@ -1671,7 +1826,7 @@ class NativeMapController internal constructor(
                 cartography.baseRenderLayer.isEnabled && cartography.baseRenderLayer.opacity > 0f,
             sentinelLatestVisible = cartography.plan.effectiveBase == "sentinel-latest" &&
                 cartography.baseRenderLayer.isEnabled && cartography.baseRenderLayer.opacity > 0f,
-            terrainDemVisible = terrainEnabled || terrainBasemapEnabled || terrainOverlayOptions.contoursEnabled ||
+            terrainDemVisible = terrainEffectiveEnabled() || terrainBasemapEnabled || terrainOverlayOptions.contoursEnabled ||
                 terrainOverlayOptions.elevationColorsEnabled,
         )
     }
@@ -1703,7 +1858,7 @@ class NativeMapController internal constructor(
         check(Looper.myLooper() == Looper.getMainLooper()) { "Unprojection reads must run on the Android main thread" }
         if (disposed || !x.isFinite() || !y.isFinite()) return null
         val result = Position()
-        val hit = if (terrainEnabled) worldWindow.engine.pickTerrainPosition(x.toDouble(), y.toDouble(), result)
+        val hit = if (terrainEffectiveEnabled()) worldWindow.engine.pickTerrainPosition(x.toDouble(), y.toDouble(), result)
             else worldWindow.engine.screenPointToGroundPosition(x.toDouble(), y.toDouble(), result)
         if (!hit) return null
         val latitude = result.latitude.inDegrees
