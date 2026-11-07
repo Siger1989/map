@@ -78,12 +78,78 @@
   ],
   "glyphEvidence": "Actual SDK TextRenderer/Android native Canvas raster, densities1/2/3.2, 150/1200/4500m, horizontal and45deg. Synthetic background; not actual map/phone acceptance.",
   "sourceScheduling": "Deterministic coroutine barriers prove one suspended source no longer blocks another ready tile; CPU maximum1/preparation maximum2. Not a phone speed percentage.",
-  "runtime": "pending until APK first delivered",
+  "runtime": {
+    "avd": "owned read-only ShantuPerf34, API34",
+    "installedCode": 193,
+    "installedBaseApkReadbackMatchesIssued": true,
+    "mapScene": "QA camera fixture; no GPS written",
+    "worldView": {
+      "zoom": 12,
+      "pitchDegrees": 45,
+      "bearingDegrees": 20
+    },
+    "physicalViewport": [
+      390,
+      857
+    ],
+    "webViewport": [
+      390,
+      673
+    ],
+    "density": 1,
+    "loadedAndRenderedContourTiles": 20,
+    "afterTwoNativeSwipesLoadedTiles": 21,
+    "cameraChangedAfterSwipes": true,
+    "maximumLogicalVertices": 35892,
+    "processAssemblyMaximumActiveSlots": 1,
+    "networkErrorsInSnapshot": 0,
+    "annotationCountBeforeAfter": [
+      0,
+      0
+    ],
+    "newStageMetricsReadback": "Older QA helper numeric allowlist filters new stage fields; not device-readback verified. Unit scheduling tests cover them.",
+    "systemUiAnrObserved": true,
+    "targetMentionInCrashBuffer": false,
+    "fatalOrOomInCapturedCrashBuffer": 0,
+    "contourDisableAndUiAfterPan": "NOT VERIFIED: attempts did not confirm off/geometry release; no PASS claimed. Subsequent Back returned Launcher and old WebView probe timed out. Requires a fresh interaction run; cause of initial no-change taps not confirmed.",
+    "cleanup": "QA stop, own port forwarding removed, owned read-only AVD closed; no phone/data clear/uninstall",
+    "scope": "Rendering/pan only. No app startup-time, first-pixel timing, phone performance or long-run stability acceptance."
+  },
   "phoneVerified": false,
   "limitations": [
     "No physical OPPO attached",
     "No accepted same-scene phone latency/memory/FPS result",
     "Google ID-only and AMap original-route shares remain unsupported",
     "Offline downloads still one package at a time,16 tile workers; no multi-package queue added"
-  ]
+  ],
+  "package": {
+    "version": "0.2.186-test",
+    "versionCode": 193,
+    "package": "com.shantu.oldengine",
+    "sha256": "f753525cb8b041254f24425a7f1d53af37536dc01e7e1af73d38857faba7ba6c",
+    "bytes": 165377061,
+    "sourceCommit": "10b05315e9851f6d3e62aa5ac360d94192299ffe",
+    "originalSignature": true,
+    "identity": true,
+    "seedCount": 39,
+    "privateSeedsMatch": true,
+    "tiandituKeyPresentAndUnchanged": true,
+    "freshWebAssetCount": 1925,
+    "crcAndUniqueEntries": true,
+    "zipalign16KiB": true,
+    "elf64BitLoadSegments16KiB": true
+  },
+  "build": {
+    "optimized": "PASS",
+    "durationSeconds": 189,
+    "privateLibrariesUnchangedFrom185": 8,
+    "legacy32BitElf": "unchanged; not all-ABI16KiB claim"
+  },
+  "privateRelease": {
+    "url": "https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.186-private",
+    "privateBeforeAfter": true,
+    "serverSizeAndDigestMatches": 5,
+    "fullReadbackMatches": 5,
+    "anonymousApkHead": 404
+  }
 }
