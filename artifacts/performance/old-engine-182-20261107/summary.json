@@ -1,0 +1,75 @@
+{
+  "version": "0.2.182-test",
+  "versionCode": 189,
+  "package": "com.shantu.oldengine",
+  "sha256": "c163861cfb0d2b6bdb71bf1ea7248e6d5edbfa405b1ad3236dfedf9fe5934d81",
+  "bytes": 165365385,
+  "originalSignature": true,
+  "identity": true,
+  "zipalign16KiB": true,
+  "crcAndUniqueEntries": true,
+  "seedCount": 39,
+  "privateSeedsMatch": true,
+  "tiandituKeyPresentAndUnchanged": true,
+  "freshWebAssetCount": 1925,
+  "nativeLibrariesUnchangedFrom181": [
+    "lib/arm64-v8a/libshantu_cad.so",
+    "lib/arm64-v8a/libsqliteX.so",
+    "lib/armeabi-v7a/libshantu_cad.so",
+    "lib/armeabi-v7a/libsqliteX.so",
+    "lib/x86/libshantu_cad.so",
+    "lib/x86/libsqliteX.so",
+    "lib/x86_64/libshantu_cad.so",
+    "lib/x86_64/libsqliteX.so"
+  ],
+  "actualSdkColorHookMethodsInDex": true,
+  "sourceCommit": "9018b397e233deb8f5d35c5ea2162c5e2590ef8f",
+  "nativePhotoTestsInheritedFrom181": 2,
+  "nativeSourceUnchangedFrom181": true,
+  "nodeTests": 18,
+  "physicalDeviceVerified": false,
+  "nodeTestsFresh": 18,
+  "tsc": "PASS",
+  "optimizedBuild": "PASS, 3m51s",
+  "uiMatrix": {
+    "390x857": "PASS actual shared components, synthetic two packages",
+    "360x780": "PASS actual shared components, synthetic two packages",
+    "390x480": "PASS list scroll and backup reachable"
+  },
+  "runtime": {
+    "apkVersion": "0.2.182-test",
+    "versionCode": 189,
+    "package": "com.shantu.oldengine",
+    "device": "ShantuPerf34 / API34 / emulator-5582",
+    "installedWithReplace": true,
+    "actualWebViewport": {
+      "width": 390,
+      "height": 673
+    },
+    "favoritesCacheCategory": "PASS, empty existing index (0 packages)",
+    "managementAndBackup": "PASS, opens/collapsed by default/expands and horizontal export button visible/returns to favorites",
+    "populatedPackages": "synthetic browser component data only, not phone acceptance",
+    "targetCrashBufferBytes": 0,
+    "qaGpsWritten": false,
+    "recordingStarted": false,
+    "cacheDataDeleted": false,
+    "helperStopped": true,
+    "portForwardRemoved": true,
+    "ownedReadOnlyAvdStopped": true,
+    "physicalDeviceVerified": false
+  },
+  "privateRelease": "https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.182-private",
+  "privateReadback": {
+    "hashesMatched": [
+      "Shantu-0.2.182-oldengine-private.apk",
+      "Shantu-0.2.182-oldengine-private.integrity.json",
+      "INSTALL-0.2.182-oldengine-private.txt",
+      "SHA256SUMS.txt",
+      "private-handoff-manifest.json"
+    ],
+    "apkCrc": true,
+    "anonymousHead": 404,
+    "physicalDeviceVerified": false
+  },
+  "wechatInternalChooserIntegrated": false
+}
