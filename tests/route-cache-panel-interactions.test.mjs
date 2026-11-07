@@ -19,7 +19,7 @@ async function loadPanel() {
         api.onLoad({ filter: new RegExp(`^${name}$`), namespace: 'route-cache-stub' }, () => ({ contents, loader: 'js' }));
       };
       stub(/asyncImportedRoutePlan$/, 'estimate', `
-        export async function estimateImportedRouteDownloadAsync() { return { count: 12, estimatedBytes: 4096, bounds: [103, 30, 104, 31] }; }
+        export async function estimateImportedRouteDownloadAsync(area) { globalThis.__estimatedCacheArea = area; return { count: 12, estimatedBytes: 4096, bounds: [103, 30, 104, 31] }; }
       `);
       stub(/nativeOffline$/, 'native-offline', `
         export function canExportLegacyOfflineArchive(){return globalThis.__legacyExportAvailable===true;}
@@ -31,6 +31,83 @@ async function loadPanel() {
   });
   return (await import('../.openai/route-cache-panel-interactions/RouteCachePanel.js')).RouteCachePanel;
 }
+
+test('area cache uses the selected polygon boundary and omits route buffer settings', async t => {
+  const { window } = parseHTML('<html><body><div id="root"></div></body></html>');
+  const previous = {
+    window: globalThis.window,
+    document: globalThis.document,
+    localStorage: globalThis.localStorage,
+    actEnvironment: globalThis.IS_REACT_ACT_ENVIRONMENT,
+    estimatedCacheArea: globalThis.__estimatedCacheArea,
+  };
+  Object.assign(globalThis, {
+    window,
+    document: window.document,
+    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    IS_REACT_ACT_ENVIRONMENT: true,
+    __estimatedCacheArea: undefined,
+  });
+  const React = await import('react');
+  const { createRoot } = await import('react-dom/client');
+  const RouteCachePanel = await loadPanel();
+  const mount = document.getElementById('root'), root = createRoot(mount);
+  const source = {
+    id: 'area-source', name: '区域影像', kind: 'online', tiles: ['https://tiles.example.test/{z}/{x}/{y}.png'],
+    minzoom: 12, maxzoom: 16, tileSize: 256, scheme: 'xyz',
+  };
+  const boundary = [[103, 30], [103.02, 30], [103.02, 30.02], [103, 30.02], [103, 30]];
+  const calls = [];
+  const offline = {
+    current: null, packages: [], busy: false, message: '', background: false, removing: [],
+    pause() {}, resume() {}, remove() {}, verify() {},
+    createImportedRoute(...args) { calls.push(args); },
+  };
+  t.after(async () => {
+    await React.act(async () => root.unmount());
+    for (const [key, value] of Object.entries({
+      window: previous.window,
+      document: previous.document,
+      localStorage: previous.localStorage,
+      IS_REACT_ACT_ENVIRONMENT: previous.actEnvironment,
+      __estimatedCacheArea: previous.estimatedCacheArea,
+    })) {
+      if (value === undefined) delete globalThis[key]; else globalThis[key] = value;
+    }
+  });
+  await React.act(async () => root.render(React.createElement(RouteCachePanel, {
+    routes: [], areas: [{ id: 'drawn-area', name: '河谷区域', boundary }], initialAreaId: 'drawn-area',
+    sources: [source], offline, onOpenMap() {}, onSources() {},
+  })));
+
+  assert.equal(mount.querySelector('.route-cache-mode button[aria-pressed="true"]').textContent, '区域缓存');
+  assert.match(mount.querySelector('.route-cache-mode button[title]')?.title ?? '', /按区域内部及边界瓦片缓存/);
+  const reactProps = element => element[Object.keys(element).find(key => key.startsWith('__reactProps$'))];
+  assert.equal(mount.querySelectorAll('.route-cache-select-row select').length, 1, 'first step contains only the selected area dropdown');
+  assert.equal(mount.querySelector('.route-cache-primary').textContent.trim(), '确认区域');
+  assert.equal([...mount.querySelectorAll('select')].some(select => [...select.options].some(option => option.value === source.id)), false, 'source selection is deferred to its own step');
+  await React.act(async () => mount.querySelector('.route-cache-primary').click());
+  const sourceSelect = [...mount.querySelectorAll('.route-cache-select-row select')]
+    .find(select => [...select.options].some(option => option.value === source.id));
+  assert.ok(sourceSelect, 'the next step presents the common source selector');
+  await React.act(async () => reactProps(sourceSelect).onChange({ target: { value: source.id } }));
+  await React.act(async () => mount.querySelector('.route-cache-back').click());
+  assert.equal(mount.querySelector('.route-cache-mode button[aria-pressed="true"]').textContent, '区域缓存', 'returning keeps the selected scope type');
+  assert.equal(mount.querySelector('.route-cache-select-row select').value, 'drawn-area', 'returning keeps the selected polygon');
+  await React.act(async () => mount.querySelector('.route-cache-primary').click());
+  assert.equal([...mount.querySelectorAll('.route-cache-select-row select')].find(select => select.value === source.id)?.value, source.id, 'returning to source setup keeps the selected source');
+  await React.act(async () => [...mount.querySelectorAll('button')].find(button => button.textContent.trim() === '下一步').click());
+
+  assert.ok(mount.querySelector('.route-cache-options'), 'area mode follows the same zoom configuration step');
+  assert.doesNotMatch(mount.textContent, /路线两侧/);
+  await React.act(async () => mount.querySelector('.route-cache-primary').click());
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], '河谷区域');
+  assert.deepEqual(calls[0][1], { kind: 'polygon', boundary });
+  assert.equal(calls[0][2], source);
+  assert.equal(calls[0][4], undefined, 'area downloads do not pass route names');
+  assert.deepEqual(globalThis.__estimatedCacheArea, { kind: 'polygon', boundary }, 'estimate uses the same polygon instead of route length or a rectangle');
+});
 
 test('selecting an online map source enables Next and opens cache settings without starting downloads', async t => {
   const { window } = parseHTML('<html><body><div id="root"></div></body></html>');
@@ -74,9 +151,13 @@ test('selecting an online map source enables Next and opens cache settings witho
     focusTripId: 'focused-task',
   })));
 
+  assert.equal(mount.querySelector('.route-cache-primary').textContent.trim(), '确认路线');
+  assert.equal(mount.querySelector('.route-cache-step-hint'), null, 'the scope step does not ask for a source before its own step');
+  assert.equal(mount.querySelectorAll('.route-cache-select-row select').length, 1);
+  await React.act(async () => mount.querySelector('.route-cache-primary').click());
   const sourceSelect = [...mount.querySelectorAll('.route-cache-select-row select')]
     .find(select => [...select.options].some(option => option.value === source.id));
-  assert.ok(sourceSelect);
+  assert.ok(sourceSelect, 'route confirmation advances to the dedicated source step');
   const nextBeforeSource = [...mount.querySelectorAll('button')].find(button => button.textContent.trim() === '下一步');
   assert.equal(nextBeforeSource.disabled, true);
   assert.match(mount.querySelector('.route-cache-step-hint').textContent, /先选择在线图源/);
@@ -100,6 +181,8 @@ test('selecting an online map source enables Next and opens cache settings witho
   let focusedId = '';
   window.HTMLElement.prototype.scrollIntoView = function () { focusedId = this.dataset.tripId ?? ''; };
   await React.act(async () => mount.querySelector('.route-cache-back').click());
+  await React.act(async () => mount.querySelector('.route-cache-back').click());
+  assert.ok(mount.querySelector('.route-cache-mode'), 'return through source selection before switching to package management');
   await React.act(async () => [...mount.querySelectorAll('[role="tab"]')].find(button => button.textContent.includes('缓存包')).click());
   assert.ok(mount.querySelector('.route-cache-package--focused'));
   assert.equal(focusedId, 'focused-task', 'opening a task can scroll directly to its package row');
@@ -178,7 +261,7 @@ test('package list leads, current task is located, unavailable sources remain vi
   assert.match(missingRow.textContent, /原图源已移除或未导入/);
   assert.match(missingRow.textContent, /最近失败原因：图源连接超时/);
   assert.equal(missingRow.querySelector('.route-cache-package-open').disabled, true);
-  assert.equal([...missingRow.querySelectorAll('button')].find(button => button.textContent.includes('使用此包离线浏览')).disabled, true);
+  assert.equal([...missingRow.querySelectorAll('button')].find(button => button.textContent.includes('仅缓存浏览')).disabled, true);
   assert.equal([...missingRow.querySelectorAll('button')].find(button => button.textContent.trim() === '检查完整性').disabled, true, 'the shared verifier stays gated while the native download is active');
 
   const archive = mount.querySelector('.route-cache-archive-details');

@@ -9,14 +9,14 @@ export function useOfflineMapMode(
 ) {
   const callbacks = useRef({ change, clearSource });
   callbacks.current = { change, clearSource };
-  const open = (trip?: TripPackage) => {
+  const open = (trip?: TripPackage, onlyCached = false) => {
     if (trip) {
       try {
         const previousId=localStorage.getItem('shantu.offline-package.v1');
         const previousMode=localStorage.getItem(OFFLINE_MAP_KEY);
         try {
           localStorage.setItem('shantu.offline-package.v1',trip.id);
-          localStorage.setItem(OFFLINE_MAP_KEY, 'true');
+          localStorage.setItem(OFFLINE_MAP_KEY, String(onlyCached));
         } catch (error) {
           try {
             if (previousId===null) localStorage.removeItem('shantu.offline-package.v1');
@@ -27,7 +27,7 @@ export function useOfflineMapMode(
           throw error;
         }
       } catch { throw new Error('缓存包选择未能保存，未切换离线地图'); }
-      setOfflineMapOnly(true);
+      setOfflineMapOnly(onlyCached);
       callbacks.current.clearSource(trip.provider === 'imported' ? trip.sourceId ?? '' : '');
     }
     callbacks.current.change({
@@ -39,16 +39,19 @@ export function useOfflineMapMode(
         terrain: false, offlineBasemap: false, rasterLevel: null,
         rasterDatums: { ...readRasterDatums(), ...(trip.sourceId && trip.datum ? { [`custom:${trip.sourceId}`]: trip.datum } : {}) },
       } : {}),
-      offlineMaxZoom: trip ? trip.zoom ?? trip.display?.offlineMaxZoom ?? 14 : offlineMapOnly() ? 14 : null,
+      offlineMaxZoom: trip && onlyCached ? trip.zoom ?? trip.display?.offlineMaxZoom ?? 14 : onlyCached ? 14 : null,
     });
   };
   useEffect(() => {
-    const online = () => {
+    const refresh = (event?: Event) => {
+      const isNetworkRecovery = event?.type === 'online';
       let only = offlineMapOnly();
       try { only=localStorage.getItem(OFFLINE_MAP_KEY)==='true'; } catch {}
       let id=''; try { id=localStorage.getItem('shantu.offline-package.v1')??''; } catch {}
       const trip=tripPackages().find(p=>p.id===id);
-      if (only && !trip) {
+      // A network-recovery event refreshes the map, never the user's explicit
+      // cache-only preference. Other mode/package changes still clear stale IDs.
+      if (only && !trip && !isNetworkRecovery) {
         only=false;
         try { localStorage.setItem(OFFLINE_MAP_KEY, 'false'); } catch {}
       }
@@ -59,13 +62,18 @@ export function useOfflineMapMode(
       callbacks.current.clearSource(sourceId);
       callbacks.current.change({ offlineMaxZoom:only ? trip?.zoom ?? trip?.display?.offlineMaxZoom ?? 14 : null });
     };
-    online();
-    window.addEventListener('shantu:offline-map-mode',online);
+    refresh();
+    window.addEventListener('shantu:offline-map-mode',refresh);
+    window.addEventListener('online',refresh);
     if (offlineMapOnly()) {
       let id='';try { id=localStorage.getItem('shantu.offline-package.v1')??''; } catch {}
-      open(tripPackages().find(p=>p.id===id));
+      const trip = tripPackages().find(p=>p.id===id);
+      if (trip) open(trip, true);
     }
-    return () => window.removeEventListener('shantu:offline-map-mode',online);
+    return () => {
+      window.removeEventListener('shantu:offline-map-mode',refresh);
+      window.removeEventListener('online',refresh);
+    };
   }, []);
   return open;
 }

@@ -44,6 +44,9 @@ export function syncSelectedEdges(map: Map, state: TrackOverlay) {
   });
   if (!map.getLayer(`${id}-halo-outer`)) map.addLayer(lineLayer(`${id}-halo-outer`, 9, 0.16), map.getLayer(id) ? id : undefined);
   if (!map.getLayer(`${id}-halo-inner`)) map.addLayer(lineLayer(`${id}-halo-inner`, 5, 0.3), map.getLayer(id) ? id : undefined);
-  if (!map.getLayer(id)) map.addLayer(lineLayer(id, 2.5, 1));
+  // Keep the legacy ID for drag/source bookkeeping, but draw no replacement core.
+  if (!map.getLayer(id)) map.addLayer(lineLayer(id, 0, 0));
+  if (map.getLayer('manual-track-outline'))
+    for (const layer of [`${id}-halo-outer`, `${id}-halo-inner`, id]) map.moveLayer?.(layer, 'manual-track-outline');
   syncOverlayData(map, id, selectedEdgeData(state));
 }

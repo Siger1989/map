@@ -11,6 +11,7 @@ import { applyNavigationCamera } from '../guidance/navigationCamera';
 import { installFollowPanHandler } from './followGestures';
 import { cameraDetailZoom } from './cameraDetailZoom';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
+import { flashCollectionSelection } from '../collections/selectionHighlight';
 import { offlineMapProtocol } from '../outdoor/tileCache';
 import { mapTileRequestTransform, registerTiandituProtocol, tiandituLoadingSnapshot } from '../mapSources/tiandituProtocol';
 import { installTiandituRecovery } from '../mapSources/tiandituRecovery';
@@ -125,6 +126,7 @@ export type MapHandle = {
   previewTrackNode: (preview: TrackOverlay['preview']) => void;
   shareMapStyle: () => ShareMapStyle | null;
   highlightOffline: (trip: TripPackage) => void;
+  highlightCollection?: (data: GeoJSON.FeatureCollection) => void;
   cameraSnapshot: () => import('../controls/useMapFocusLock').CameraSnapshot | null;
   restoreCamera: (camera: import('../controls/useMapFocusLock').CameraSnapshot) => void;
   setTerrainMode: (terrain: boolean) => void;
@@ -299,7 +301,8 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const { settings, onPoint, onStatus } = props;
     const container = useRef<HTMLDivElement>(null);
     const coverageCleanup=useRef<(()=>void)|null>(null);
-    useEffect(()=>()=>{coverageCleanup.current?.();},[]);
+    const selectionCleanup=useRef<(()=>void)|null>(null);
+    useEffect(()=>()=>{coverageCleanup.current?.();selectionCleanup.current?.();},[]);
     const mapRef = useRef<Map | null>(null);
     const cameraSync = useRef(new CameraSync());
     const sourceProtocolScheme = useRef<string | null>(null);
@@ -856,6 +859,10 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         highlightOffline: (trip) => {
           coverageCleanup.current?.();
           if(mapRef.current && loaded.current)coverageCleanup.current=flashOfflineCoverage(mapRef.current,trip);
+        },
+        highlightCollection: data => {
+          selectionCleanup.current?.();
+          if (mapRef.current && loaded.current) selectionCleanup.current = flashCollectionSelection(mapRef.current, data);
         },
         previewRoute: (center) => {
           const marker = previewRef.current,

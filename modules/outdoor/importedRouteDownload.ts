@@ -16,6 +16,7 @@ export type ImportedRoutePlan = {
   count: number;
   estimatedBytes: number;
 };
+export type ImportedDownloadArea = Extract<DownloadArea, { kind: 'route' | 'polygon' }>;
 
 function regularTileUrl(templates: string[], tile: Tile, scheme: 'xyz' | 'tms', ratio = '') {
   const { z } = tile;
@@ -96,14 +97,18 @@ function intersectsBounds(tile: Tile, bounds?: MapSource['bounds']) {
   return east >= bounds[0] && west <= bounds[2] && north >= bounds[1] && south <= bounds[3];
 }
 
-/** Build requests for a route corridor only. This is pure planning and never starts network work. */
+/** Build requests for a route corridor or for a polygon's interior and boundary. */
 export function planImportedRouteDownload(
-  area: Extract<DownloadArea, { kind: 'route' }>,
+  area: ImportedDownloadArea,
   source: MapSource,
   zoom: number,
 ): ImportedRoutePlan {
-  if (area?.kind !== 'route' || !Array.isArray(area.segments) || !area.segments.length || area.segments.some((segment) => !Array.isArray(segment) || segment.length < 2))
+  const areaKind = (area as DownloadArea | undefined)?.kind;
+  if (areaKind !== 'route' && areaKind !== 'polygon') throw new Error('请先选择包含有效路段的路线');
+  if (area?.kind === 'route' && (!Array.isArray(area.segments) || !area.segments.length || area.segments.some((segment) => !Array.isArray(segment) || segment.length < 2)))
     throw new Error('请先选择包含有效路段的路线');
+  if (area?.kind === 'polygon' && (!Array.isArray(area.boundary) || area.boundary.length < 3 || area.boundary.length > 2000))
+    throw new Error('区域边界需包含 3 至 2000 个节点');
   validateImportedDownloadSource(source);
   if (!Number.isInteger(zoom) || zoom < source.minzoom || zoom > source.maxzoom)
     throw new Error('请选择此图源支持的最高级别');
@@ -145,15 +150,17 @@ export function planImportedRouteDownload(
         const urlEstimate = url.includes('@2x') ? estimate * 4 : estimate;
         sizes.set(url, Math.max(sizes.get(url) ?? 0, urlEstimate));
         if (sizes.size > MAX_IMPORTED_DOWNLOAD_RESOURCES)
-          throw new Error(`路线图源请求量超过 ${MAX_IMPORTED_DOWNLOAD_RESOURCES.toLocaleString()} 项上限；当前路线两侧各 ${area.bufferKm} km 范围无法缩小，请降低级别或分段缓存`);
+          throw new Error(area.kind === 'route'
+            ? `路线图源请求量超过 ${MAX_IMPORTED_DOWNLOAD_RESOURCES.toLocaleString()} 项上限；当前路线两侧各 ${area.bufferKm} km 范围无法缩小，请降低级别或分段缓存`
+            : `区域图源请求量超过 ${MAX_IMPORTED_DOWNLOAD_RESOURCES.toLocaleString()} 项上限，请降低级别或缩小区域`);
       }
     }
   }
   const urls = [...sizes.keys()];
   const estimatedBytes = urls.reduce((total, url) => total + sizes.get(url)!, 0);
   if (estimatedBytes > MAX_IMPORTED_DOWNLOAD_BYTES)
-    throw new Error('预计空间超过 8 GiB 上限，请降低级别或分段缓存');
-  if (!urls.length) throw new Error('所选级别没有可下载的路线瓦片');
+    throw new Error(`预计空间超过 8 GiB 上限，请降低级别或${area.kind === 'route' ? '分段缓存' : '缩小区域'}`);
+  if (!urls.length) throw new Error(area.kind === 'route' ? '所选级别没有可下载的路线瓦片' : '所选区域与图源覆盖范围没有可下载瓦片');
   return { urls, bounds, count: urls.length, estimatedBytes };
 }
 

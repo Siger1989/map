@@ -52,6 +52,7 @@ class NativeBridgeOverlayRenderer(
     private val routePointImageSize = 32
     private val trackNodeImages = linkedMapOf<String, ImageSource>()
     private val trackNodeImageSize = 64
+    private val selectionRing = ImageSource.fromBitmap(NativeTrackNodeBitmap.collectionRing())
     private val arrow = ImageSource.fromBitmap(Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).also { bitmap ->
         Canvas(bitmap).drawPath(android.graphics.Path().apply { moveTo(32f, 5f); lineTo(56f, 52f); lineTo(32f, 40f); lineTo(8f, 52f); close() },
             Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE })
@@ -150,6 +151,7 @@ class NativeBridgeOverlayRenderer(
             val routePointPresentation = NativeOverlayStyle.routePointPresentation(cssScale, routePointImageSize)
             val placemark = Placemark(position, PlacemarkAttributes().apply {
                 imageScale = when {
+                    role == "collectionHighlight" -> NativeOverlayStyle.imageScaleForCssSize(34.0, cssScale, 64)
                     role == "routePoint" -> routePointPresentation.imageScale
                     isTrackNode -> NativeOverlayStyle.imageScaleForCssSize(nodeCssSize, cssScale, trackNodeImageSize)
                     properties.optBoolean("arrow") -> NativeOverlayStyle.imageScaleForCssSize(
@@ -166,6 +168,9 @@ class NativeBridgeOverlayRenderer(
                     labelAttributes.outlineColor = NativeOverlayStyle.color(properties.optString("labelHaloColor", "#14392e"), 1.0)
                     labelAttributes.outlineWidth = routePointPresentation.haloWidthPixels
                     labelAttributes.textOffset = Offset.topCenter()
+                } else if (role == "collectionHighlight") {
+                    imageSource = selectionRing; imageColor = Color(1f, 1f, 1f, 1f)
+                    imageOffset = Offset.center()
                 } else if (isTrackNode) {
                     imageSource = trackNodeImage(properties.optString("color", "#d0f76b"), selected, active, boxSelected)
                     imageColor = Color(1f, 1f, 1f, 1f)
@@ -178,7 +183,7 @@ class NativeBridgeOverlayRenderer(
                 // Editing handles are controls attached to terrain. Do not let the terrain
                 // depth buffer erase them when the clamped placemark and DEM surface differ
                 // by a fraction of a rendered depth step.
-                isDepthTest = !isTrackNode
+                isDepthTest = !isTrackNode && role != "collectionHighlight"
             }, text ?: "").apply {
                 altitudeMode = AltitudeMode.CLAMP_TO_GROUND; isAlwaysOnTop = false
                 if (role == "routePoint") isEyeDistanceScaling = false
@@ -238,44 +243,7 @@ class NativeBridgeOverlayRenderer(
     private fun trackNodeImage(color: String, selected: Boolean, active: Boolean, boxSelected: Boolean): ImageSource {
         val key = "$color|selected=$selected|active=$active|boxSelected=$boxSelected"
         trackNodeImages[key]?.let { return it }
-        val source = ImageSource.fromBitmap(Bitmap.createBitmap(trackNodeImageSize, trackNodeImageSize, Bitmap.Config.ARGB_8888).also { bitmap ->
-            val canvas = Canvas(bitmap)
-            val center = trackNodeImageSize / 2f
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-            if (boxSelected || active) {
-                val green = NativeOverlayStyle.androidColor("#20b978")
-                paint.shader = RadialGradient(center, center, 31f, intArrayOf(
-                    android.graphics.Color.argb(42, android.graphics.Color.red(green), android.graphics.Color.green(green), android.graphics.Color.blue(green)),
-                    android.graphics.Color.argb(if (active) 112 else 88, android.graphics.Color.red(green), android.graphics.Color.green(green), android.graphics.Color.blue(green)),
-                    android.graphics.Color.argb(34, android.graphics.Color.red(green), android.graphics.Color.green(green), android.graphics.Color.blue(green)),
-                    android.graphics.Color.TRANSPARENT,
-                ), floatArrayOf(0f, 0.34f, 0.7f, 1f), Shader.TileMode.CLAMP)
-                canvas.drawCircle(center, center, 31f, paint)
-                paint.shader = null
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = 1.4f
-                paint.color = android.graphics.Color.argb(174, android.graphics.Color.red(green), android.graphics.Color.green(green), android.graphics.Color.blue(green))
-                canvas.drawCircle(center, center, 14f, paint)
-                paint.style = Paint.Style.FILL
-                paint.color = NativeOverlayStyle.androidColor("#14392e")
-                canvas.drawCircle(center, center, 9.5f, paint)
-                paint.color = NativeOverlayStyle.androidColor(color)
-                canvas.drawCircle(center, center, 6.5f, paint)
-                if (active) {
-                    paint.color = android.graphics.Color.WHITE
-                    canvas.drawCircle(center, center, 2f, paint)
-                }
-            } else if (selected) {
-                paint.color = NativeOverlayStyle.androidColor(if (active) "#fff3a0" else "#ffffff")
-                canvas.drawCircle(center, center, 29f, paint)
-            }
-            if (!boxSelected && !active) {
-                paint.color = NativeOverlayStyle.androidColor("#14392e")
-                canvas.drawCircle(center, center, 23f, paint)
-                paint.color = NativeOverlayStyle.androidColor(color)
-                canvas.drawCircle(center, center, 18f, paint)
-            }
-        })
+        val source = ImageSource.fromBitmap(NativeTrackNodeBitmap.create(color, selected, active, boxSelected))
         trackNodeImages[key] = source
         while (trackNodeImages.size > 128) trackNodeImages.remove(trackNodeImages.keys.first())
         return source

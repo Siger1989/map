@@ -2,6 +2,20 @@ import type { Coordinate } from '../navigation/types';
 import type { ScreenPoint } from './drawing';
 import type { SelectionBox } from '../collections/boxSelection';
 
+/** Resolve the closest visible handle, including nodes already in the marquee. */
+export function nodeAtBoxTap(points: Coordinate[], tap: ScreenPoint,
+  project: (p: Coordinate) => ScreenPoint | null, radius = 22): Coordinate | null {
+  let closest: Coordinate | null = null;
+  let distance = radius;
+  for (const point of points) {
+    const p = project(point);
+    if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
+    const d = Math.hypot(p.x - tap.x, p.y - tap.y);
+    if (d <= distance) { distance = d; closest = point; }
+  }
+  return closest;
+}
+
 /** Select visible vertex handles whose screen footprint touches the marquee rectangle. */
 export function nodesInBox(
   points: Coordinate[],

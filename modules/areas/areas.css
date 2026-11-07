@@ -151,3 +151,4 @@
   width: 100%;
   color: #ffc0a8;
 }
+.area-editor-actions[data-cache-enabled='true'] { grid-template-columns:repeat(3,minmax(0,1fr)); }

@@ -43,7 +43,8 @@ test('planning uses the same persisted task ID when the real manifest replaces t
   const source = await readFile(new URL('../modules/outdoor/useOffline.ts', import.meta.url), 'utf8');
   assert.match(source, /persistTripPlanningTask\(placeholder\);setPackages\(tripPackages\(\)\);setCurrent\(placeholder\)/);
   assert.match(source, /prepareImportedRoutePackage\(name,area,source,zoom,signal,routeNames,id\)/);
-  assert.match(source, /prepareImportedRoutePackage\(name, \{ kind: 'route', segments: trip\.routeSegments, bufferKm: trip\.bufferKm \?\? 4 \}, source, trip\.zoom \?\? 14, signal, trip\.routeNames, trip\.id\)/);
+  assert.match(source, /const area: ImportedDownloadArea \| null = trip\.areaBoundary\?\.length/);
+  assert.match(source, /prepareImportedRoutePackage\(name, area, source, trip\.zoom \?\? 14, signal, trip\.routeNames, trip\.id\)/);
 });
 
 test('collection exposes planning state and keeps retry/resume controls on the saved package', async () => {

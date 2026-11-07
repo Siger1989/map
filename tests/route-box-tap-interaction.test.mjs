@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { build } from 'esbuild';
+import { parseHTML } from 'linkedom';
+
+test('marquee tap selects a single handle, empty taps and two-finger gestures do not switch', async t => {
+  await build({entryPoints:['modules/tracks/TrackNodeBoxSelect.tsx'],outdir:'.openai/183-box-component',bundle:true,platform:'node',format:'esm',packages:'external',jsx:'automatic',loader:{'.css':'empty'},logLevel:'silent'});
+  const {window}=parseHTML('<html><body><div id="root"></div></body></html>');
+  const names=['window','document','requestAnimationFrame','cancelAnimationFrame','IS_REACT_ACT_ENVIRONMENT'];
+  const before=Object.fromEntries(names.map(k=>[k,globalThis[k]]));
+  Object.assign(globalThis,{window,document:window.document,requestAnimationFrame:()=>1,cancelAnimationFrame:()=>{},IS_REACT_ACT_ENVIRONMENT:true});
+  const React=await import('react'),{createRoot}=await import('react-dom/client');
+  const {TrackNodeBoxSelect}=await import('../.openai/183-box-component/TrackNodeBoxSelect.js');
+  const root=createRoot(document.getElementById('root')),calls=[];
+  t.after(async()=>{await React.act(async()=>root.unmount());for(const k of names){if(before[k]===undefined)delete globalThis[k];else globalThis[k]=before[k];}});
+  await React.act(async()=>root.render(React.createElement(TrackNodeBoxSelect,{active:true,mode:'add',points:[[10,10],[40,40],[70,70]],selected:[[10,10],[40,40]],pointSize:8,project:([x,y])=>({x,y}),onChange:p=>calls.push(['change',p]),onExit:()=>calls.push(['exit'])})));
+  const surface=document.querySelector('.map-box-surface');
+  surface.getBoundingClientRect=()=>({left:0,top:0});surface.setPointerCapture=()=>{};surface.hasPointerCapture=()=>false;
+  const props=surface[Object.keys(surface).find(k=>k.startsWith('__reactProps$'))];
+  const event=(x,y,id=1)=>({button:0,pointerId:id,clientX:x,clientY:y,currentTarget:surface});
+  await React.act(async()=>{props.onPointerDown(event(40,40));props.onPointerUp(event(40,40));});
+  assert.deepEqual(calls,[['exit'],['change',[[40,40]]]],'a handle already inside the box switches to single selection');
+  calls.length=0;
+  await React.act(async()=>{props.onPointerDown(event(200,200));props.onPointerUp(event(200,200));});
+  assert.deepEqual(calls,[]);
+  await React.act(async()=>{props.onPointerDown(event(10,10,1));props.onPointerDown(event(40,40,2));props.onPointerUp(event(10,10,1));props.onPointerUp(event(40,40,2));});
+  assert.deepEqual(calls,[],'ending a two-finger pan never selects a node');
+  await React.act(async()=>{props.onPointerDown(event(0,0));props.onPointerUp(event(45,45));});
+  assert.deepEqual(calls,[['change',[[10,10],[40,40]]]],'a genuine drag remains a box operation');
+});

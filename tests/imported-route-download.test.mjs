@@ -21,6 +21,8 @@ const pathCoords = (url) => {
   return match && match.slice(1).map(Number);
 };
 const rawUrl = (templates, z, x, y) => templates[0].replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y));
+const tileLon = (x, z) => x / 2 ** z * 360 - 180;
+const tileLat = (y, z) => Math.atan(Math.sinh(Math.PI * (1 - 2 * y / 2 ** z))) * 180 / Math.PI;
 
 test('batch routes equal the union of individual corridors, without connecting routes or duplicate requests', () => {
   const map = source({ minzoom: 12, maxzoom: 14 });
@@ -67,6 +69,44 @@ test('disconnected route segments remain separate corridor clusters', () => {
   const left = xs.filter((x) => x < 2050), right = xs.filter((x) => x > 2100);
   assert.ok(left.length && right.length);
   assert.ok(xs.every((x) => x < 2050 || x > 2100));
+});
+
+test('polygon area planning includes interior and intersecting boundary tiles, not only its perimeter or bounds rectangle', () => {
+  const z = 12, west = 2048, east = 2052, north = 2048, south = 2052;
+  const area = { kind: 'polygon', boundary: [
+    [tileLon(west, z), tileLat(north, z)], [tileLon(east, z), tileLat(north, z)],
+    [tileLon(east, z), tileLat(south, z)], [tileLon(west, z), tileLat(south, z)],
+  ] };
+  const outputTiles = downloadTiles(area, z, MAX_IMPORTED_DOWNLOAD_RESOURCES, false, z);
+  const keys = new Set(outputTiles.map(tile => `${tile.x}/${tile.y}`));
+  assert.ok(keys.has('2050/2050'), 'a central interior tile is included');
+  assert.ok(keys.has('2048/2048') && keys.has('2051/2051'), 'tiles intersecting the polygon boundary are included');
+  assert.ok(outputTiles.length >= 16, 'the polygon interior is filled, not just its perimeter');
+  const plan = planImportedRouteDownload(area, source({ minzoom: z, maxzoom: z }), z);
+  assert.equal(plan.bounds[0], tileLon(west, z));
+  assert.equal(plan.bounds[2], tileLon(east, z));
+  assert.ok(plan.urls.some(url => pathCoords(url)?.slice(1).join('/') === '2050/2050'));
+});
+
+test('polygon edge supercover retains a tile touched only at an exact corner crossing', () => {
+  const z = 12, baseX = 2048, baseY = 2048;
+  const point = (x, y) => [tileLon(baseX + x, z), tileLat(baseY + y, z)];
+  // This narrow polygon's diagonal edge crosses (1,1) between the old half-tile
+  // samples. Tile (1,0) is touched at that corner but contains no scanline fill.
+  const area = { kind: 'polygon', boundary: [point(0.1, 0.1), point(2.9, 2.9), point(2.85, 2.95), point(0.05, 0.15)] };
+  const oldSampled = new Set();
+  const [start, end] = [[0.1, 0.1], [2.9, 2.9]];
+  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(end[0] - start[0]), Math.abs(end[1] - start[1])) * 2));
+  for (let k = 0; k <= steps; k++) oldSampled.add(`${baseX + Math.floor(start[0] + (end[0] - start[0]) * k / steps)}/${baseY + Math.floor(start[1] + (end[1] - start[1]) * k / steps)}`);
+  assert.equal(oldSampled.has(`${baseX + 1}/${baseY}`), false, 'the previous half-tile samples miss the corner-only tile');
+  const keys = new Set(downloadTiles(area, z, MAX_IMPORTED_DOWNLOAD_RESOURCES, false, z).map(tile => `${tile.x}/${tile.y}`));
+  assert.ok(keys.has(`${baseX + 1}/${baseY}`), 'corner-touch tile is included by exact supercover');
+});
+
+test('polygon area validation rejects degenerate or oversized boundaries', () => {
+  assert.throws(() => downloadTiles({ kind: 'polygon', boundary: [[0, 0], [1, 1]] }, 12), /至少包含 3 个有效节点/);
+  assert.throws(() => downloadTiles({ kind: 'polygon', boundary: Array.from({ length: 2001 }, (_, i) => [i / 2000, i % 2]) }, 12), /2000 个节点/);
+  assert.throws(() => downloadTiles({ kind: 'polygon', boundary: [[0, 0], [1, 0], [NaN, 1]] }, 12), /无效坐标/);
 });
 
 test('OVMAP layer stack enumerates only active layer URLs and de-duplicates them', () => {
@@ -130,6 +170,11 @@ test('async adapter falls back for Node, returns compact estimates, and discards
   const estimate = await estimateImportedRouteDownloadAsync(area, map, 14);
   assert.equal(estimate.count, plan.count);
   assert.equal(estimate.estimatedBytes, plan.estimatedBytes);
+  const polygonArea = { kind: 'polygon', boundary: [[104, 30], [104.02, 30], [104.02, 30.02], [104, 30.02]] };
+  const areaPlan = await planImportedRouteDownloadAsync(polygonArea, map, 14);
+  const areaEstimate = await estimateImportedRouteDownloadAsync(polygonArea, map, 14);
+  assert.ok(areaPlan.urls.length > 0);
+  assert.equal(areaEstimate.count, areaPlan.count);
   const controller = new AbortController();
   const pending = estimateImportedRouteDownloadAsync(area, map, 14, { signal: controller.signal });
   controller.abort();

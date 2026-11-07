@@ -10,6 +10,9 @@ import { PinEditor } from '../modules/annotations/PinEditor';
 import { useAnnotations } from '../modules/annotations/useAnnotations';
 import { ANNOTATION_STORAGE, newAnnotation } from '../modules/annotations/data';
 import { RouteEditToolbar } from '../modules/tracks/RouteViews';
+import { AppColorPicker } from '../modules/appearance/AppColorPicker';
+import { TrackDrawingStyle } from '../modules/tracks/TrackDrawingStyle';
+import { OfflineModePrompt } from '../modules/outdoor/OfflineModePrompt';
 import { TrackNodeBoxSelect } from '../modules/tracks/TrackNodeBoxSelect';
 import { startRouteEdit, selectEditNode, renameEditRoute, insertEditNode, removeEditNodes, editSelectionDetails, setEditEnd, toggleEditBranch, undoRouteEdit, styleRouteEdit, addEditMarker } from '../modules/tracks/routeEdit';
 import type { ManualTrack, ScreenPoint } from '../modules/tracks/drawing';
@@ -88,6 +91,8 @@ if (nativeGet.call(localStorage, isolatedAnnotationsKey) === null) {
 }
 
 const query = new URLSearchParams(location.search);
+if (query.get('only') === '1') localStorage.setItem('shantu.offline-map-only.v1', 'true');
+else localStorage.setItem('shantu.offline-map-only.v1', 'false');
 if (query.get('legacy') === '1') Object.defineProperty(window, 'GuanyunNative', { configurable: true,
   value: { offlineStart() { throw new Error('QA 不执行原生下载'); }, offlineExportLegacyArchive() { throw new Error('QA 仅显示备份入口，不执行导出'); } } });
 const initialWidth = Number(query.get('width'));
@@ -121,9 +126,12 @@ const sampleTrip: TripPackage = {
   bytes: 374000, createdAt: 1760000000000, complete: false, phase: 'running', phaseMessage: '合成数据·布局检查',
 };
 
+const sampleArea = { id:'feedback-area', name:'合成河谷区域', boundary:[[104.05,30.65],[104.054,30.65],[104.054,30.651],[104.051,30.651],[104.051,30.654],[104.05,30.654]] as Coordinate[] };
+if (query.get('collectionItem') === '1') localStorage.setItem('guanyun.manual-tracks.v1', JSON.stringify([routeTrack]));
+
 function Fixture() {
-  const [panel, setPanel] = useState<'navigation' | 'pin' | 'route' | 'cache' | 'progress' | 'collections'>(
-    initialPanel === 'pin' || initialPanel === 'route' || initialPanel === 'cache' || initialPanel === 'progress' || initialPanel === 'collections' ? initialPanel : 'navigation',
+  const [panel, setPanel] = useState<'navigation' | 'pin' | 'route' | 'cache' | 'progress' | 'collections' | 'draw'>(
+    initialPanel === 'pin' || initialPanel === 'route' || initialPanel === 'cache' || initialPanel === 'progress' || initialPanel === 'collections' || initialPanel === 'draw' ? initialPanel : 'navigation',
   );
   const [width, setWidth] = useState(initialWidth === 360 ? 360 : 390);
   const [height, setHeight] = useState([480, 780, 857].includes(initialHeight) ? initialHeight : 857);
@@ -134,6 +142,8 @@ function Fixture() {
   const [focusCacheId, setFocusCacheId] = useState<string>();
   const [progressPhase, setProgressPhase] = useState<'running' | 'waiting' | 'failed'>(query.get('phase') === 'failed' ? 'failed' : query.get('phase') === 'waiting' ? 'waiting' : 'running');
   const [offlineMessage, setOfflineMessage] = useState('');
+  const [drawingStyle, setDrawingStyle] = useState(DEFAULT_TRACK_STYLE);
+  const [drawingNote, setDrawingNote] = useState('');
   const annotations = useAnnotations();
   const pin = annotations.items.find(item => item.id === 'feedback-qa-pin') ?? annotations.items[0];
   const [editSession, setEditSession] = useState(() => selectEditNode(startRouteEdit(routeTrack), routeCoordinates[7]));
@@ -177,7 +187,7 @@ function Fixture() {
   const isolatedOffline = {
     packages: cachePackages, removing: [], current: cachePackages[0] ?? null, background: false, busy: cachePackages.length > 0, message: '',
     createMap: async () => undefined,
-    createImportedRoute: async () => { setOfflineMessage('QA 已拦截开始缓存；没有发出地图网络请求。'); },
+    createImportedRoute: async (_name: string, area: {kind:string}) => { setOfflineMessage(`QA 已拦截${area.kind}下载；没有发出地图网络请求。`); },
     createRegion: async () => undefined, create: async () => undefined,
     resume: async () => undefined, verify: async () => undefined, remove: async () => undefined,
     pause: () => undefined,
@@ -186,7 +196,7 @@ function Fixture() {
   const project = (coordinate: Coordinate): ScreenPoint | null => {
     const index = selectedTrackPoints.findIndex(point => point[0] === coordinate[0] && point[1] === coordinate[1]);
     if (index < 0) return null;
-    return { x: 28 + index * 11 + (pane === 2 ? 18 : 0), y: 172 + Math.sin(index / 3) * 24 + (pane === 2 ? 7 : 0) };
+    return { x: 28 + index * 11 + (pane === 2 ? 18 : 0), y: (height < 600 ? 50 : 172) + Math.sin(index / 3) * 24 + (pane === 2 ? 7 : 0) };
   };
   const setCase = (nextPanel: typeof panel) => {
     setPanel(nextPanel);
@@ -262,6 +272,8 @@ function Fixture() {
             onImport={() => undefined} onPhoto={() => undefined} cameraStatus="相机动作已在 QA 页拦截" />
             : <p role="status">正在载入合成标记…</p>}
         </section>}
+        {panel === 'draw' && <section className="track-tools" style={{position:'absolute',top:64,left:8,width:276}}><TrackDrawingStyle style={drawingStyle} onChange={setDrawingStyle} condition={drawingNote} onCondition={setDrawingNote}/><p>合成数据 · 实际画线选色组件</p></section>}
+        <OfflineModePrompt />
         {panel === 'route' && <section className="feedback-qa-route">
           <div className="feedback-qa-route-map" aria-label={`合成地图投影模拟 pane=${pane}`}>
             <span className="feedback-qa-pane-label">pane={pane} 投影模拟 · 非双图引擎</span>
@@ -300,8 +312,10 @@ function Fixture() {
         </section>}
         {panel === 'cache' && <ControlDock active="cache" onActive={() => {}} title={`地图缓存 · ${cachePackages.length}个包`} back={{ label: '返回收藏', onClick: () => setPanel('collections') }}>
           <RouteCachePanel routes={[{ id: 'feedback-route', name: '合成路线 · 绿道样段', segments: [routeCoordinates] }]}
+            areas={[sampleArea]} initialAreaId={query.get('area') === '1' ? sampleArea.id : undefined}
             sources={[cacheSource]} offline={isolatedOffline} initialTab={query.get('tab') === 'packages' || focusCacheId ? 'packages' : 'setup'} focusTripId={focusCacheId}
-            onOpenMap={() => setOfflineMessage('QA 已拦截离线浏览；不发出网络请求。')} onSources={() => setOfflineMessage('此页不导入图源。')} />
+            onPreviewMap={trip => { setFocusCacheId(trip.id); setOfflineMessage('QA 高亮任务：'+trip.name); }}
+            onOpenMap={(_trip, only) => setOfflineMessage(`QA 浏览模式：${only ? '仅缓存' : '常规浏览'}；不发出网络请求。`)} onSources={() => setOfflineMessage('此页不导入图源。')} />
           {offlineMessage && <p className="feedback-qa-cache-notice" role="status">{offlineMessage}</p>}
         </ControlDock>}
         {panel === 'collections' && <ControlDock active="favorites" onActive={() => {}} title="收藏">
@@ -317,6 +331,7 @@ function Fixture() {
         {panel !== 'cache' && panel !== 'collections' && <nav className="feedback-qa-bottom" aria-label="合成底部导航"><span>地图</span><span>路线</span><span>记录</span><span>我的</span></nav>}
       </div>
     </main>
+    <AppColorPicker />
     <style>{`
       html,body,#root{min-width:0;min-height:100%;margin:0;background:#101716;font-family:system-ui,sans-serif}
       #root{display:flex;flex-direction:column;align-items:center;gap:0;padding:0;box-sizing:border-box;overflow:auto}

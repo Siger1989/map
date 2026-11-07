@@ -70,11 +70,15 @@ export function subscribeNativeOfflineDisplayPolicy(listener: (policy: NativeOff
   };
   if (typeof window === 'undefined') return () => {};
   window.addEventListener('shantu:offline-map-mode', publish);
+  // Retry policy publication when connectivity returns, without changing the
+  // user's persisted cache-only preference.
+  window.addEventListener('online', publish);
   window.addEventListener('storage', onStorage);
   publish();
   return () => {
     generation++;
     window.removeEventListener('shantu:offline-map-mode', publish);
+    window.removeEventListener('online', publish);
     window.removeEventListener('storage', onStorage);
   };
 }

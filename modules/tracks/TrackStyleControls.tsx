@@ -1,6 +1,7 @@
 import { TRAVEL_MODES, normalizeTravelMode, speedBands } from '../routeAnalysis/travelMode';
 import { useId } from 'react';
-import { TRACK_COLORS, type TrackStyle } from './style';
+import type { TrackStyle } from './style';
+import { TrackColorPicker } from './TrackColorPicker';
 export function TrackStyleControls({
   style,
   onChange,
@@ -72,27 +73,8 @@ export function TrackStyleControls({
           onChange({ ...style, opacity: 1 - Number(e.target.value) / 100 })
         }
       />
-      <div className="track-color-options" role="group" aria-label="轨迹颜色">
-        {TRACK_COLORS.map((color, i) => (
-          <button
-            key={color}
-            aria-label={['红色', '蓝色', '绿色', '紫色', '橙色', '粉色'][i]}
-            aria-pressed={style.color === color}
-            onClick={() => onChange({ ...style, color })}
-          >
-            <i style={{ background: color }} />
-          </button>
-        ))}
-        <label className="track-custom-color" title="自定义颜色">
-          <input
-            type="color"
-            aria-label="自定义轨迹颜色"
-            value={style.color}
-            onChange={(e) => onChange({ ...style, color: e.target.value })}
-          />
-          <span>自定</span>
-        </label>
-      </div>
+      <TrackColorPicker className="track-custom-color" label="轨迹颜色" value={style.color}
+        onChange={color => onChange({ ...style, color })} />
       <svg
         className="track-style-sample"
         viewBox="0 0 180 14"

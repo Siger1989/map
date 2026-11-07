@@ -1,8 +1,8 @@
 import { planImportedRouteDownload } from './importedRouteDownload.ts';
-import type { DownloadArea } from './downloadPlan.ts';
+import type { ImportedDownloadArea } from './importedRouteDownload.ts';
 import type { MapSource } from '../mapSources/types.ts';
 
-type Request = { id: number; area: Extract<DownloadArea, { kind: 'route' }>; source: MapSource; zoom: number; estimateOnly?: boolean };
+type Request = { id: number; area: ImportedDownloadArea; source: MapSource; zoom: number; estimateOnly?: boolean };
 self.addEventListener('message', (event: MessageEvent<Request>) => {
   const { id, area, source, zoom } = event.data;
   try {

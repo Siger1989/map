@@ -1539,7 +1539,11 @@ function makeHandle(
       ? createNativeShareStyle(runtime.client, runtime.mapId, (signal) => buildCurrentState(runtime, signal))
       : null,
     highlightOffline: (trip: TripPackage) => {
-      runtime.transientGeometry.offlineCoverage(trip, 3000);
+      runtime.transientGeometry.offlineCoverage(trip, 12000);
+      runtime.syncTransientGeometry?.();
+    },
+    highlightCollection: data => {
+      runtime.transientGeometry.collectionSelection(data);
       runtime.syncTransientGeometry?.();
     },
     cameraSnapshot: () => runtime.camera ?? null,

@@ -39,9 +39,9 @@ test('editing clears both DOM and geographic gap cues, blocks stale redisplay, e
 test('main toolbar exposes setting one branch node as end with real undo and no subpage detour',async t=>{
   dom();const a=[20,10],b=[20.01,10],c=[20.02,10],d=[20.01,10.01];
   let session=startRouteEdit({id:'fork',name:'fork',createdAt:0,style,segments:[[a,b,c],[b,d]]}),select,rerender;
-  function Probe(){const [value,setValue]=React.useState(session),[points,setPoints]=React.useState([]),[snapping,setSnapping]=React.useState(false),[roadSnapping,setRoadSnapping]=React.useState(false),[riverSnapping,setRiverSnapping]=React.useState(false);session=value;
+  function Probe(){const [value,setValue]=React.useState(session),[points,setPoints]=React.useState([]),[boxMode,setBoxMode]=React.useState(null),[snapping,setSnapping]=React.useState(false),[roadSnapping,setRoadSnapping]=React.useState(false),[riverSnapping,setRiverSnapping]=React.useState(false);session=value;
     select=p=>{setPoints(p?[p]:[]);setValue(v=>p?selectEditNode(v,p):{...v,selected:null});};rerender=setValue;
-    return React.createElement(RouteEditToolbar,{session:value,selectedPoints:points,error:'',boxMode:null,onName:name=>setValue(v=>renameEditRoute(v,name)),onSetEnd:()=>setValue(v=>setEditEnd(v,points[0])),onBranch:()=>setValue(toggleEditBranch),onUndo:()=>setValue(undoRouteEdit),onBack(){},onSave(){},onAdd(){},onRemove(){},onSelectionMode(){},onSelectionDetails(){},onPointMarker(){return true;},onClearSelection(){select(null);},onStyle(){},onSnapping(){setSnapping(v=>!v);},onRoadSnapping(){setRoadSnapping(v=>!v);},onRiverSnapping(){setRiverSnapping(v=>!v);},snapping,roadSnapping,riverSnapping});}
+    return React.createElement(RouteEditToolbar,{session:value,selectedPoints:points,error:'',boxMode,onName:name=>setValue(v=>renameEditRoute(v,name)),onSetEnd:()=>setValue(v=>setEditEnd(v,points[0])),onBranch:()=>setValue(toggleEditBranch),onUndo:()=>setValue(undoRouteEdit),onBack(){},onSave(){},onAdd(){},onRemove(){},onSelectionMode:setBoxMode,onSelectionDetails(){},onPointMarker(){return true;},onClearSelection(){select(null);},onStyle(){},onSnapping(){setSnapping(v=>!v);},onRoadSnapping(){setRoadSnapping(v=>!v);},onRiverSnapping(){setRiverSnapping(v=>!v);},snapping,roadSnapping,riverSnapping});}
   const root=createRoot(document.getElementById('root'));t.after(async()=>act(async()=>root.unmount()));
   await act(async()=>root.render(React.createElement(Probe)));
   const snap=document.querySelector('.route-snap-toggle');
@@ -51,6 +51,13 @@ test('main toolbar exposes setting one branch node as end with real undo and no 
   assert.equal(document.querySelector('.route-snap-toggle').getAttribute('aria-label'),'道路吸附，已开启');
   assert.equal(document.querySelector('.route-snap-toggle').title,'道路吸附已开启');
   assert.equal(document.querySelector('.route-box-mode-group').getAttribute('aria-label'),'框选模式');
+  const boxButtons=[...document.querySelectorAll('.route-box-mode-group button')];
+  assert.equal(boxButtons.length,2,'only add and subtract box-selection controls remain');
+  assert.deepEqual(boxButtons.map(button=>button.textContent.trim()),['框选加','框选减']);
+  await act(async()=>boxButtons[0].click());
+  assert.match(document.querySelector('.route-edit-status').textContent,/直接点节点恢复单点/);
+  assert.equal([...document.querySelectorAll('.route-box-mode-group button')].some(button=>/退出框选|点选/.test(button.textContent)),false);
+  await act(async()=>document.querySelector('.route-box-mode-group button').click());
   const button=()=>document.querySelector('.route-selection-modes .route-set-endpoint');
   assert.equal(button().disabled,true);
   await act(async()=>select(d));assert.equal(button().disabled,false);
@@ -70,7 +77,7 @@ test('main toolbar exposes setting one branch node as end with real undo and no 
   assert.equal(document.querySelector('.route-edit-dock').dataset.view,'tools');
 });
 
-test('route editor title is an IME-safe rename field and save receives the latest unblurred value',async t=>{
+test('route editor title is an IME-safe rename field and normal exit receives the latest value without a duplicate save button',async t=>{
   dom();
   const original={id:'rename-route',name:'原路线',createdAt:0,source:'manual',style,segments:[[[20,10],[20.01,10]]]};
   let session=startRouteEdit(original),setSession,saved,backed;
@@ -109,9 +116,11 @@ test('route editor title is an IME-safe rename field and save receives the lates
   await act(async()=>setSession(undoRouteEdit));
   input=document.querySelector('.route-edit-name-input');
   assert.equal(input.value,'原路线','undo restores the title field');
+  assert.equal(document.querySelector('.route-edit-heading-actions .route-solid'),null,'the parent editor view has no duplicate save-and-exit action');
   await changeText('最终名称');
-  await act(async()=>document.querySelector('.route-edit-heading-actions .route-solid').click());
-  assert.equal(saved,'最终名称','save gets the current buffer even if change/blur state has not rerendered');
+  await act(async()=>document.querySelector('.route-edit-heading-actions button').click());
+  assert.equal(backed,'最终名称','normal exit gets the current buffer even if change/blur state has not rerendered');
+  assert.equal(saved,undefined,'the removed duplicate action cannot bypass ExitGuard');
   assert.equal(session.track.name,'最终名称');
   await changeText('临时名称');
   input=document.querySelector('.route-edit-name-input');
@@ -122,7 +131,7 @@ test('route editor title is an IME-safe rename field and save receives the lates
   assert.equal(stopped,true,'Escape in the input does not escape the editor');
   assert.equal(document.querySelector('.route-edit-name-input').value,'最终名称');
   await changeText('   ');
-  await act(async()=>document.querySelector('.route-edit-heading-actions button:not(.route-solid)').click());
+  await act(async()=>document.querySelector('.route-edit-heading-actions button').click());
   assert.equal(backed,'最终名称','blank input cannot erase the last committed name');
   assert.equal(session.track.name,'最终名称');
 });

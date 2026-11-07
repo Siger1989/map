@@ -297,3 +297,72 @@ test('checkboxes exist only in explicit batch mode; empty rows and cancellation 
   await act(async () => window.dispatchEvent(new window.Event('blur')));
   assert.equal(host.querySelector('.workbench-heading small').textContent, '2 项', 'exit clears selection and cancels any in-flight gesture');
 });
+
+test('browsing selection briefly flashes, restarts on repeat, clears on switch/cancel, and honors reduced motion', async t => {
+  const { window, frames } = setupDom();
+  const React = await import('react');
+  const { act } = React;
+  const { createRoot } = await import('react-dom/client');
+  const WorkbenchPanel = await loadPanel();
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  globalThis.__collectionVisibilityFixture = fixture();
+  t.after(async () => act(async () => root.unmount()));
+  await act(async () => root.render(React.createElement(WorkbenchPanel, {
+    center: [104, 30], onClose() {}, onLocate() {}, onOpen() {}, onNavigate() {}, onManage() {},
+  })));
+  const timers = new Map();
+  let nextTimer = 1;
+  window.setTimeout = (callback, delay) => {
+    assert.equal(delay, 760);
+    const id = nextTimer++;
+    timers.set(id, callback);
+    return id;
+  };
+  window.clearTimeout = id => timers.delete(id);
+
+  const flushFrame = async () => {
+    const pending = [...frames.values()];
+    frames.clear();
+    await act(async () => pending.forEach(callback => callback(0)));
+  };
+  const row = id => host.querySelector(`[data-workbench-drop="${id}"]`);
+  const pinButton = host.querySelector('[aria-label="定位收藏 营地"]');
+  const routeButton = host.querySelector('[aria-label="定位收藏 山路"]');
+  assert.ok(pinButton && routeButton);
+
+  await act(async () => pinButton.click());
+  assert.equal(row('pin:a').classList.contains('is-selection-flash'), false, 'flash starts on the next frame');
+  await flushFrame();
+  assert.equal(row('pin:a').classList.contains('is-selection-flash'), true);
+  assert.equal(timers.size, 1);
+
+  await act(async () => pinButton.click());
+  assert.equal(row('pin:a').classList.contains('is-selection-flash'), false, 'same-item click resets the running flash');
+  assert.equal(timers.size, 0, 'retrigger cancels the prior expiry timer');
+  await flushFrame();
+  assert.equal(row('pin:a').classList.contains('is-selection-flash'), true, 'same item can trigger it again');
+
+  await act(async () => routeButton.click());
+  assert.equal(row('pin:a').classList.contains('is-selection-flash'), false, 'switch clears the previous row immediately');
+  await flushFrame();
+  assert.equal(row('route:b').classList.contains('is-selection-flash'), true);
+  assert.equal(row('pin:a').classList.contains('is-selection-flash'), false);
+
+  const batchButton = [...host.querySelectorAll('.workbench-heading button')].find(button => button.textContent === '多选');
+  await act(async () => batchButton.click());
+  assert.equal(row('route:b').classList.contains('is-selection-flash'), false, 'entering explicit selection cancels the transient glow');
+  assert.equal(timers.size, 0, 'cancel clears the pending expiry timer');
+
+  await act(async () => host.querySelector('[aria-label="定位收藏 山路"]').click());
+  await flushFrame();
+  const [expiry] = timers.values();
+  await act(async () => expiry());
+  assert.equal(row('route:b').classList.contains('is-selection-flash'), false, 'the temporary class is removed when its short timer expires');
+
+  window.matchMedia = () => ({ matches: true });
+  await act(async () => host.querySelector('[aria-label="定位收藏 营地"]').click());
+  await flushFrame();
+  assert.equal(row('pin:a').classList.contains('is-selection-flash'), false, 'reduced-motion preference skips the animation');
+});

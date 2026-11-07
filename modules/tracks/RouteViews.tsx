@@ -11,6 +11,7 @@ import { useDockClearance } from './useDockClearance';
 import { useRouteEditKeyboardFocus } from './useRouteEditKeyboardFocus';
 import { ComparisonEditorPositionButton } from '../mapComparison/ComparisonEditorPosition';
 import { RouteSelectionFields } from './RouteSelectionFields';
+import { TrackColorPicker } from './TrackColorPicker';
 import type { PointDetail } from './selectionDetails';
 import type { BoxSelectionMode } from '../collections/boxSelection';
 import { RoutePointMarkerFields, type PointMarkerInput } from './RoutePointMarkerFields';
@@ -474,7 +475,6 @@ export function RouteEditToolbar({
             <div className="route-edit-heading-actions">
               <small>{session.history.length ? '未保存' : ''}</small>
               <button onClick={() => onBack(commitRouteName())}>退出编辑</button>
-              <button className="route-solid" onClick={() => onSave(commitRouteName())}>保存并退出</button>
             </div>
           </> : <>
           <strong>{activeView === 'style' ? '线条样式' : activeView === 'marker' ? '添加标记' : `框选备注·${selectedCount}点`}</strong>
@@ -491,7 +491,7 @@ export function RouteEditToolbar({
           </button>
         </div>
         <p className="route-edit-status" role="status">
-          {boxMode ? `框选${boxMode === 'add' ? '加选' : '减选'} · 已选${selectedCount}点 · 点“退出框选”恢复点选` : snapName
+          {boxMode ? `框选${boxMode === 'add' ? '加选' : '减选'} · 已选${selectedCount}点 · 直接点节点恢复单点` : snapName
             ? `松手拼合：${snapName}`
             : snapHint ? snapHint
             : selectedCount ? `已选${selectedCount}点 · ${selectedCount === 1 ? '修改点颜色/备注' : '修改两端都选中的相连线段'}`
@@ -538,7 +538,6 @@ export function RouteEditToolbar({
         </div>
         <div className="route-selection-modes" role="group" aria-label="路线选择方式">
           <div className="route-box-mode-group" role="group" aria-label="框选模式">
-            <button aria-pressed={!boxMode} onClick={() => onSelectionMode(null)}>{boxMode ? '退出框选' : '点选'}</button>
             <button aria-pressed={boxMode === 'add'} disabled={branch} onClick={() => onSelectionMode('add')}>框选加</button>
             <button aria-pressed={boxMode === 'subtract'} disabled={branch} onClick={() => onSelectionMode('subtract')}>框选减</button>
           </div>
@@ -550,25 +549,8 @@ export function RouteEditToolbar({
         {activeView === 'marker' && <RoutePointMarkerFields key={selectedPoints[0].join(',')} initial={{color:displayedPointColor(session.track,selectedPoints[0]),note:session.track.pointDetails?.[selectedPoints[0].join(',')]?.note}} onAdd={onPointMarker} onBack={()=>setView('selection')}/>}
         {activeView === 'style' && <div className="route-edit-style">
         <div className="route-edit-colors" role="group" aria-label="轨迹颜色">
-          {TRACK_COLORS.map((color, i) => (
-            <button
-              key={color}
-              aria-label={['红色', '蓝色', '绿色', '紫色', '橙色', '粉色'][i]}
-              aria-pressed={style.color === color}
-              onClick={() => onStyle({ ...style, color, colorMode: 'solid' })}
-            >
-              <i style={{ background: color }} />
-            </button>
-          ))}
-          <label className="route-custom-color">
-            自定
-            <input
-              aria-label="自定义轨迹颜色"
-              type="color"
-              value={style.color}
-              onChange={(e) => onStyle({ ...style, color: e.target.value, colorMode: 'solid' })}
-            />
-          </label>
+          <TrackColorPicker className="route-custom-color" label="轨迹颜色" value={style.color}
+            onChange={color => onStyle({ ...style, color, colorMode: 'solid' })} />
         </div>
         <div className="route-edit-sliders">
           <label>点径 <b>{style.pointSize ?? 8} px</b><input aria-label="轨迹点大小" type="range" min="4" max="16" step="1" value={style.pointSize ?? 8} onChange={e=>onStyle({...style,pointSize:Number(e.target.value)})}/></label>

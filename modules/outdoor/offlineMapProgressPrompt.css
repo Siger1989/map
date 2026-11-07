@@ -21,6 +21,14 @@
   text-align: left;
   cursor: pointer;
 }
+.offline-mode-recovery {
+  position:absolute; z-index:12; left:8px;
+  top:calc(var(--home-header-height,48px) + 6px);
+  min-height:28px; max-width:calc(100% - 92px); padding:3px 7px;
+  border:0; border-radius:4px; background:var(--ui-surface,#18201f); color:var(--ui-accent,#d0f76b);
+  opacity:.85; font-size:11px;
+}
+.offline-mode-recovery[data-bottom='true'] { top:auto; bottom:calc(var(--home-footer,56px) + 54px); left:54px; }
 .offline-map-progress-prompt:focus-visible {
   outline: 2px solid var(--ui-accent, #d0f76b);
   outline-offset: -2px;

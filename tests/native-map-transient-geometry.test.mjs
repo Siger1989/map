@@ -40,10 +40,34 @@ test('offline coverage keeps the original tile geometry, filled state, label and
   assert.equal(scene.features.length, original.data.features.length + 1);
   assert.equal(scene.features[0].geometry.type, 'Polygon');
   assert.equal(scene.features[0].properties.fillOpacity, 0.22);
-  assert.equal(scene.features.at(-1).properties.label, original.label);
+  assert.ok(scene.features.at(-1).properties.label.startsWith(original.label));
+  assert.match(scene.features.at(-1).properties.label,/1\/1项/);
   assert.equal(scene.features.at(-1).properties.role, 'offlineCoverageLabel');
   await new Promise((resolve) => setTimeout(resolve, 10));
   assert.equal(transient.snapshot().features.length, 0);
   assert.equal(expired, 1);
   assert.equal(trip.urls[0], 'tdt:vec:14:8192:6000');
+});
+
+test('cache preview draws only real disconnected segments and marks partial planning bounds honestly', () => {
+  const transient=new NativeTransientGeometry();
+  const segments=[[[104,30],[104.01,30]],[[104.02,30],[104.03,30.01]]];
+  const scene=transient.offlineCoverage({id:'partial',name:'river',bounds:[104,30,104.03,30.01],urls:['a','b'],done:1,bytes:20,createdAt:0,complete:false,routeSegments:segments},12000);
+  const routes=scene.features.filter(f=>f.properties.role==='cacheRoute'&&f.properties.opacity===1);
+  assert.deepEqual(routes.map(f=>f.geometry.coordinates),segments);
+  assert.match(scene.features.at(-1).properties.label,/未完成包计划范围.*1\/2项/);
+  transient.clear();
+  assert.equal(transient.snapshot().features.length,0);
+});
+
+test('collection flash replaces the previous selection and expires without clearing unrelated cues', async () => {
+  const transient=new NativeTransientGeometry();
+  transient.previewRoute([104,30]);
+  const selection={type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[105,30]},properties:{role:'collectionHighlight'}}]};
+  transient.collectionSelection(selection,0);
+  assert.equal(transient.snapshot().features.length,2);
+  await new Promise(resolve=>setTimeout(resolve,10));
+  assert.equal(transient.snapshot().features.length,1);
+  assert.equal(transient.snapshot().features[0].properties.role,'previewRoute');
+  transient.clear();
 });

@@ -6,6 +6,7 @@ import { normalizeTrackStyle } from './style';
 import { displayedPointColor, displayedEdgeColors } from './displayColors';
 import { trackEdgeKey } from './alternatives';
 import { equalCoordinate } from './editing';
+import { TrackColorPicker } from './TrackColorPicker';
 
 /** Local edits target this selection, with one explicit apply/undo step. */
 export function RouteSelectionFields({ track, points, onApply, onMarker, onSetEnd }: {
@@ -20,7 +21,8 @@ export function RouteSelectionFields({ track, points, onApply, onMarker, onSetEn
   const [patch, setPatch] = useState<PointDetail>({});
   const label = points.length === 1 ? '选中点' : `相连${edges.length}段`;
   return <div className="route-selection-fields" aria-label={`${label}属性`}>
-    <label title={`${label}颜色`}><input aria-label={`${label}颜色`} type="color" value={color} onChange={e => {setColor(e.target.value);setPatch(p => ({...p,color:e.target.value}));}} /></label>
+    <TrackColorPicker className="route-selection-color" label={`${label}颜色`} value={color}
+      onChange={value => { setColor(value); onApply({ color: value }); }} />
     <input aria-label={`${label}备注`} placeholder={new Set(notes).size > 1 ? '多种备注，输入统一修改' : `${label}备注`} maxLength={1600} value={note} onChange={e => {setNote(e.target.value);setPatch(p => ({...p,note:e.target.value}));}} />
     <button disabled={!Object.keys(patch).length || points.length > 1 && !edges.length} onClick={() => {onApply(patch); setPatch({});}}>应用</button>
     {points.length === 1 && <button className="route-add-point-marker" onClick={onMarker}>加标记</button>}

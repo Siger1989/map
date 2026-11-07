@@ -3,6 +3,7 @@ import type { Coordinate } from '../../navigation/types.ts';
 import type { RouteGap } from '../../tracks/routeInfo.ts';
 import type { TripPackage } from '../../outdoor/offline.ts';
 import { coverageGeometry } from '../../outdoor/offlineCoverage.ts';
+import { cachePackagePreview } from '../../outdoor/cachePackagePreview.ts';
 
 type Properties = Record<string, string | number | boolean | readonly number[] | null | undefined>;
 const collection = (features: Feature[] = []): FeatureCollection => ({ type: 'FeatureCollection', features });
@@ -12,12 +13,22 @@ const validCoordinate = (value: Coordinate | null | undefined): value is Coordin
 
 /** Temporary native-map counterparts of the existing preview, gap, issue and offline coverage layers. */
 export class NativeTransientGeometry {
-  private readonly roles = new Map<'previewRoute' | 'routeGap' | 'routeIssue' | 'offlineCoverage', Feature[]>();
+  private readonly roles = new Map<'previewRoute' | 'routeGap' | 'routeIssue' | 'offlineCoverage' | 'collectionSelection', Feature[]>();
+  private selectionTimer: ReturnType<typeof setTimeout> | null = null;
   private coverageTimer: ReturnType<typeof setTimeout> | null = null;
   private coverageGeneration = 0;
   private readonly onCoverageExpired?: () => void;
 
   constructor(onCoverageExpired?: () => void) { this.onCoverageExpired = onCoverageExpired; }
+
+  collectionSelection(data: FeatureCollection, durationMs = 760): FeatureCollection {
+    if (this.selectionTimer) clearTimeout(this.selectionTimer);
+    this.roles.set('collectionSelection', data.features.map(item => ({ ...item, properties: { ...item.properties } })));
+    this.selectionTimer = setTimeout(() => {
+      this.selectionTimer = null; this.roles.delete('collectionSelection'); this.onCoverageExpired?.();
+    }, durationMs);
+    return this.snapshot();
+  }
 
   previewRoute(coordinate: Coordinate | null): FeatureCollection {
     if (!validCoordinate(coordinate)) this.roles.delete('previewRoute');
@@ -59,18 +70,26 @@ export class NativeTransientGeometry {
     this.cancelCoverageTimer();
     const generation = ++this.coverageGeneration;
     const coverage = coverageGeometry(trip);
-    const features = coverage.data.features.map((item) => ({
+    const preview = cachePackagePreview(trip);
+    const areaFeatures = preview.geojson.features.filter(item => item.properties.role === 'area-range');
+    const coverageLabel = areaFeatures.length ? `${trip.name} · 所选区域规划边界` : coverage.label;
+    const features = (areaFeatures.length ? areaFeatures : coverage.data.features).map((item) => ({
       ...item,
       properties: {
         ...(item.properties ?? {}), role: 'offlineCoverage', color: '#16a34a',
-        fillColor: '#20c565', fillOpacity: coverage.filled ? 0.22 : 0, width: 3,
-        filled: coverage.filled, label: coverage.label,
+        fillColor: '#20c565', fillOpacity: coverage.filled ? 0.22 : 0.04, width: 2,
+        filled: coverage.filled, label: coverageLabel,
       },
     } as Feature));
-    if (trip.bounds.every(Number.isFinite)) {
+    for (const route of preview.geojson.features.filter(item => item.properties.role === 'route')) {
+      features.push({ ...route, properties: { role: 'cacheRoute', color: '#20b978', width: 9, opacity: 0.22 } } as Feature);
+      features.push({ ...route, properties: { role: 'cacheRoute', color: '#d0f76b', width: 3, opacity: 1 } } as Feature);
+    }
+    if (preview.plannedBounds) {
       const [west, south, east, north] = trip.bounds;
       features.push(feature({ type: 'Point', coordinates: [(west + east) / 2, (south + north) / 2] }, {
-        role: 'offlineCoverageLabel', color: '#14532d', pointSize: 2, label: coverage.label,
+        role: 'offlineCoverageLabel', color: '#d0f76b', pointSize: 2,
+        label: `${coverageLabel} · ${preview.progress.done}/${preview.progress.total}项${preview.routeGeometry === 'available' || areaFeatures.length ? '' : ' · 无原路线几何'}`,
       }));
     }
     this.roles.set('offlineCoverage', features);
@@ -91,6 +110,8 @@ export class NativeTransientGeometry {
 
   clear(): FeatureCollection {
     this.cancelCoverageTimer();
+    if (this.selectionTimer) clearTimeout(this.selectionTimer);
+    this.selectionTimer = null;
     this.roles.clear();
     return collection();
   }

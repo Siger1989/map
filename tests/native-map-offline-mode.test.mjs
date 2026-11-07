@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readNativeOfflineDisplayPolicy } from '../modules/map/native/offlineMode.ts';
+import { parseHTML } from 'linkedom';
+import { readNativeOfflineDisplayPolicy, subscribeNativeOfflineDisplayPolicy } from '../modules/map/native/offlineMode.ts';
 
 function installStorage(values) {
   const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
@@ -49,4 +50,33 @@ test('old trip package metadata defaults to Tianditu and missing selected packag
       version: 1, enabled: true, packageId: null, sourceId: null, provider: null, vectorTileTemplates: [],
     });
   } finally { restore(); }
+});
+
+test('native policy republishes on network recovery without changing explicit cache-only preference', () => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const { window } = parseHTML('<html><body></body></html>');
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: window });
+  const restore = installStorage({
+    'shantu.offline-map-only.v1': 'true',
+    'shantu.offline-package.v1': 'offline-route',
+    'guanyun.trips.v1': JSON.stringify([{ id: 'offline-route', provider: 'imported', sourceId: 'source-1', urls: [] }]),
+  });
+  try {
+    const published = [];
+    const unsubscribe = subscribeNativeOfflineDisplayPolicy(policy => published.push(policy));
+    const before = published.length;
+    window.dispatchEvent(new window.Event('online'));
+    assert.equal(published.length, before + 1);
+    assert.equal(published.at(-1).enabled, true);
+    assert.equal(published.at(-1).packageId, 'offline-route');
+    assert.equal(localStorage.getItem('shantu.offline-map-only.v1'), 'true');
+    unsubscribe();
+    const afterUnsubscribe = published.length;
+    window.dispatchEvent(new window.Event('online'));
+    assert.equal(published.length, afterUnsubscribe, 'connectivity listener is removed with the subscription');
+  } finally {
+    restore();
+    if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow);
+    else delete globalThis.window;
+  }
 });

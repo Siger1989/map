@@ -1,4 +1,5 @@
 import { TRACK_WIDTHS, type TrackStyle } from './style';
+import { TrackColorPicker } from './TrackColorPicker';
 
 /** Always-visible drawing appearance, one compact row using existing style state. */
 export function TrackDrawingStyle({
@@ -14,14 +15,8 @@ export function TrackDrawingStyle({
 }) {
   return (
     <div className="track-drawing-style" aria-label="画线外观">
-      <label className="track-drawing-color" title="画线颜色">
-        <input
-          type="color"
-          aria-label="画线颜色"
-          value={style.color}
-          onChange={(e) => onChange({ ...style, color: e.target.value })}
-        />
-      </label>
+      <TrackColorPicker className="track-drawing-color" label="画线颜色" value={style.color}
+        onChange={color => onChange({ ...style, color })} />
       <label title="画线线宽">
         <select
           aria-label="画线线宽"

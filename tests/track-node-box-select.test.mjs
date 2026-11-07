@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { nodesInBox } from '../modules/tracks/trackNodeBoxSelection.ts';
+import { nodesInBox, nodeAtBoxTap } from '../modules/tracks/trackNodeBoxSelection.ts';
+
+test('box taps pick the nearest existing handle and ignore empty space or invalid projection', () => {
+  const points=[[0,0],[10,10],[40,40]];
+  const project=([x,y])=>({x,y});
+  assert.deepEqual(nodeAtBoxTap(points,{x:12,y:11},project),[10,10]);
+  assert.deepEqual(nodeAtBoxTap(points,{x:40,y:40},project),[40,40]);
+  assert.equal(nodeAtBoxTap(points,{x:90,y:90},project),null);
+  assert.equal(nodeAtBoxTap(points,{x:0,y:0},()=>null),null);
+});
 
 test('route node box includes all three visible handles touching the inclusive rectangle', () => {
   const points = [[0, 0], [10, 10], [22, 20], [24, 20], [40, 40]];

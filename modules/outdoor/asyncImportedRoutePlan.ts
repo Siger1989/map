@@ -1,15 +1,13 @@
 import type { MapSource } from '../mapSources/types.ts';
-import type { DownloadArea } from './downloadPlan.ts';
-import { planImportedRouteDownload, type ImportedRoutePlan } from './importedRouteDownload.ts';
+import { planImportedRouteDownload, type ImportedDownloadArea, type ImportedRoutePlan } from './importedRouteDownload.ts';
 
-type RouteArea = Extract<DownloadArea, { kind: 'route' }>;
 export type ImportedRouteEstimate = { count: number; estimatedBytes: number; bounds: ImportedRoutePlan['bounds'] };
 type WorkerReply = { id: number; plan?: ImportedRoutePlan | ImportedRouteEstimate; error?: string };
 let requestId = 0;
 
 /** Estimate away from the UI thread when module workers are available. Aborting terminates the worker. */
 export function planImportedRouteDownloadAsync(
-  area: RouteArea,
+  area: ImportedDownloadArea,
   source: MapSource,
   zoom: number,
   options: { signal?: AbortSignal; timeoutMs?: number } = {},
@@ -52,7 +50,7 @@ export function planImportedRouteDownloadAsync(
 
 /** UI-only variant avoids cloning a large URL array back from the worker. */
 export function estimateImportedRouteDownloadAsync(
-  area: RouteArea,
+  area: ImportedDownloadArea,
   source: MapSource,
   zoom: number,
   options: { signal?: AbortSignal; timeoutMs?: number } = {},

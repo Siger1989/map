@@ -14,6 +14,8 @@ import {
   type DownloadProvider,
 } from './offline';
 import type { DownloadArea } from './downloadPlan';
+import { downloadBounds } from './downloadPlan';
+import type { ImportedDownloadArea } from './importedRouteDownload';
 import type { LayerSettings } from '../map/types';
 import { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy';
 import { fetchOnlineMapTile } from '../mapSources/tileTransport';
@@ -64,7 +66,7 @@ export function useOffline() {
     void hydrateTripPackages().then(items=>{
       const recovered = items.map((trip) => {
         if (trip.phase !== 'preparing' || trip.urls.length) return trip;
-        const next = { ...trip, phase: 'failed' as const, phaseMessage: '上次路线规划未完成；可从收藏中继续规划' };
+        const next = { ...trip, phase: 'failed' as const, phaseMessage: `上次${trip.areaBoundary ? '区域' : '路线'}规划未完成；可从收藏中继续规划` };
         putTrip(next);
         return next;
       });
@@ -154,13 +156,32 @@ export function useOffline() {
       setMessage('新离线下载仅支持已导入图源的路线走廊');
       return Promise.resolve();
     },
-    createImportedRoute: (name: string, area: Extract<DownloadArea, { kind: 'route' }>, source: MapSource, zoom: number, routeNames?: readonly string[]) => run(async signal => {
+    createImportedRoute: (name: string, area: ImportedDownloadArea, source: MapSource, zoom: number, routeNames?: readonly string[]) => run(async signal => {
       activeProvider.current='imported';
       if (tripPackages().length >= 8) throw new Error('已达 8 个离线包，请先移除不用的包');
       const id = crypto.randomUUID();
-      const placeholder = createImportedPlanningTrip(id, name, area, source, zoom, routeNames);
+      const placeholder: TripPackage = area.kind === 'route'
+        ? createImportedPlanningTrip(id, name, area, source, zoom, routeNames)
+        : {
+          id,
+          name: `${name.trim().slice(0, 30) || '区域'} · ${source.name}`.slice(0, 60),
+          bounds: downloadBounds(area),
+          urls: [],
+          done: 0,
+          bytes: 0,
+          createdAt: Date.now(),
+          complete: false,
+          provider: 'imported',
+          sourceId: source.id,
+          sourceName: source.name,
+          datum: source.datum ?? 'wgs84',
+          zoom,
+          areaBoundary: area.boundary.map(point => [...point] as Coordinate),
+          phase: 'preparing',
+          phaseMessage: '正在规划区域缓存…',
+        };
       activeId.current = id;
-      await persistTripPlanningTask(placeholder);setPackages(tripPackages());setCurrent(placeholder);setMessage('正在规划路线缓存…');
+      await persistTripPlanningTask(placeholder);setPackages(tripPackages());setCurrent(placeholder);setMessage(area.kind === 'polygon' ? '正在规划区域缓存…' : '正在规划路线缓存…');
       const trip=await prepareImportedRoutePackage(name,area,source,zoom,signal,routeNames,id);
       setPackages(tripPackages());setCurrent(trip);
       await download(trip,signal);
@@ -182,12 +203,17 @@ export function useOffline() {
         activeId.current = trip.id;
         activeProvider.current = trip.provider;
         if (!trip.urls.length) {
-          if (!trip.sourceId || !trip.routeSegments?.length) throw new Error('该规划任务缺少路线信息，无法继续；请从路线页重新缓存');
+          const area: ImportedDownloadArea | null = trip.areaBoundary?.length
+            ? { kind: 'polygon', boundary: trip.areaBoundary }
+            : trip.routeSegments?.length
+              ? { kind: 'route', segments: trip.routeSegments, bufferKm: trip.bufferKm ?? 4 }
+              : null;
+          if (!trip.sourceId || !area) throw new Error('该规划任务缺少路线或区域边界信息，无法继续；请重新选择缓存范围');
           const source = await readMap(trip.sourceId);
           if (!source || source.kind !== 'online') throw new Error('导入图源已移除，无法继续规划该缓存');
           const suffix = ` · ${source.name}`;
           const name = trip.name.endsWith(suffix) ? trip.name.slice(0, -suffix.length) : trip.name;
-          const prepared = await prepareImportedRoutePackage(name, { kind: 'route', segments: trip.routeSegments, bufferKm: trip.bufferKm ?? 4 }, source, trip.zoom ?? 14, signal, trip.routeNames, trip.id);
+          const prepared = await prepareImportedRoutePackage(name, area, source, trip.zoom ?? 14, signal, trip.routeNames, trip.id);
           setPackages(tripPackages());setCurrent(prepared);
           await download(prepared, signal);
           return;

@@ -33,8 +33,10 @@ export type TripPackage = {
   bufferKm?: number;
   detailCorridor?: boolean;
   routeNames?: string[];
-  /** Kept only in the local package index so an interrupted route plan can be retried. */
+  /** Original route geometry used for previews and interrupted-plan recovery. */
   routeSegments?: Coordinate[][];
+  /** Saved polygon boundary for area packages; stored in IndexedDB, not the compact index. */
+  areaBoundary?: Coordinate[];
   phase?: 'preparing' | 'queued' | 'running' | 'waiting' | 'paused' | 'failed' | 'complete';
   phaseMessage?: string;
   display?: Partial<LayerSettings>;
@@ -81,7 +83,7 @@ export async function prepareMapPackage(name: string, area: DownloadArea, settin
 
 export async function prepareImportedRoutePackage(
   name: string,
-  area: Extract<DownloadArea, { kind: 'route' }>,
+  area: Extract<DownloadArea, { kind: 'route' | 'polygon' }>,
   source: MapSource,
   zoom: number,
   signal: AbortSignal,
@@ -131,12 +133,14 @@ export async function prepareImportedRoutePackage(
     phase: 'queued',
     provider: 'imported',
     routeNames: names,
-    routeSegments: area.segments.map((segment) => segment.map((point) => [...point] as Coordinate)),
+    ...(area.kind === 'route'
+      ? { routeSegments: area.segments.map((segment) => segment.map((point) => [...point] as Coordinate)) }
+      : { areaBoundary: area.boundary.map((point) => [...point] as Coordinate) }),
     sourceId: stored.id,
     sourceName: stored.name,
     datum: source.datum ?? 'wgs84',
     zoom,
-    bufferKm: area.bufferKm,
+    bufferKm: area.kind === 'route' ? area.bufferKm : undefined,
     display: {
       satellite: false,
       offlineBasemap: false,
@@ -429,7 +433,7 @@ export async function removeTrip(trip: TripPackage) {
     for(const url of trip.urls) if(!keep.has(resourceCacheKey(url)))await cache.delete(resourceCacheKey(url));
     // Re-read after awaits: another package may have received progress meanwhile.
     removeTripIndex(trip.id);
-    if (trip.manifest || trip.phase || trip.routeSegments) {
+    if (trip.manifest || trip.phase || trip.routeSegments || trip.areaBoundary) {
       try { await removeTripManifest(trip.id); }
       catch (error) {
         // Keep the package recoverable if its IndexedDB manifest could not be removed.

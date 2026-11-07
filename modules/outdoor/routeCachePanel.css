@@ -37,6 +37,8 @@
 .route-cache-setup,
 .route-cache-package-pane { display: flex; min-height: 0; flex-direction: column; gap: 4px; }
 .route-cache-package-pane { flex: 1 1 auto; overflow: hidden; }
+.route-cache-mode { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.route-cache-mode > button[aria-pressed="true"] { border-color:transparent; color:var(--ui-accent, #d0f76b); background:var(--ui-selected, #293529); }
 .route-cache-select-row {
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);
@@ -84,7 +86,8 @@
 .route-cache-settings-actions { display: flex; gap: 4px; }
 .route-cache-settings-actions .route-cache-primary { flex: 1 1 auto; }
 .route-cache-options { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-.route-cache-options > label { display: flex; min-width: 0; flex-direction: column; gap: 2px; color: var(--ui-muted, #a9b3ad); }
+.route-cache-options:has(> label:only-child) { grid-template-columns: minmax(0, 1fr); }
+.route-cache-options > label { display: grid; grid-template-columns:28px minmax(0,1fr); align-items:center; min-width: 0; gap: 2px; color: var(--ui-muted, #a9b3ad); font-size:11px; }
 .route-cache-options select { min-height: 32px; }
 .route-cache-estimate { min-height: 16px; color: var(--ui-muted, #a9b3ad); line-height: 1.3; }
 .route-cache-note,
@@ -128,6 +131,7 @@
 .route-cache-progress > small { color: var(--ui-muted, #a9b3ad); }
 .route-cache-panel progress { width: 100%; height: 5px; accent-color: var(--ui-accent, #d0f76b); }
 .route-cache-package-primary-actions { display:grid; grid-template-columns:minmax(0, .82fr) minmax(0, 1.18fr); gap:4px; }
+.route-cache-preview { min-height:28px; align-self:flex-start; padding:2px 6px; font-size:11px; color:var(--ui-accent) !important; }
 .route-cache-package-primary-actions > button { min-height:28px; padding:2px 4px; font-size:10px; line-height:1.15; white-space:normal; }
 .route-cache-package-open { border-color:transparent !important; background:var(--ui-selected, #293529) !important; color:var(--ui-accent, #d0f76b) !important; font-weight:650; }
 .route-cache-use-offline { color:var(--ui-ink, #f2f5ed) !important; }

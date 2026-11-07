@@ -20,10 +20,12 @@ export function AreaTools({
   state,
   onFinish,
   onHide,
+  onCache,
 }: {
   state: AreasState;
   onFinish: () => void;
   onHide: () => void;
+  onCache?: () => void;
 }) {
   const item = state.items.find((a) => a.id === state.selected);
   const [removing, setRemoving] = useState(false),
@@ -101,9 +103,10 @@ export function AreaTools({
           <label className="area-color-field">颜色<input type="color" value={item.color} onChange={(e) => state.update(item.id, { color: e.target.value })}/></label>
           <label className="area-visible-field"><input type="checkbox" checked={item.visible} onChange={(e) => state.update(item.id, { visible: e.target.checked })}/>显示区域</label>
         </div>
-        <div className="area-editor-actions">
+        <div className="area-editor-actions" data-cache-enabled={!!onCache}>
           <button onClick={onHide}>收起编辑</button>
           <button disabled={!state.canUndo} onClick={state.undoMove}>撤销移动</button>
+          {onCache && <button onClick={onCache}>区域离线</button>}
         </div>
         <details className="area-metrics">
           <summary title="闭合边界点可长按拖动，双指取消">球面面积估算 · 周长约 {Math.round(metrics.perimeter).toLocaleString('zh-CN')} m</summary>

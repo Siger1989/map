@@ -270,6 +270,31 @@
     inset 3px 0 #1a967c,
     inset 0 0 0 1px #ffffffb0;
 }
+.workbench-tree-item.is-selection-flash::after,
+.workbench-folder-heading.is-selection-flash::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 4px;
+  outline: 1px solid rgb(96 208 133 / 68%);
+  box-shadow: 0 0 8px 2px rgb(72 196 113 / 52%);
+  pointer-events: none;
+  animation: workbench-selection-glow 760ms ease-out both;
+}
+.workbench-tree-item.is-selection-flash,
+.workbench-folder-heading.is-selection-flash {
+  position: relative;
+}
+@keyframes workbench-selection-glow {
+  from { opacity: 0.92; }
+  to { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workbench-tree-item.is-selection-flash::after,
+  .workbench-folder-heading.is-selection-flash::after {
+    animation: none;
+  }
+}
 .workbench-item-open {
   flex: 1;
   min-width: 0;

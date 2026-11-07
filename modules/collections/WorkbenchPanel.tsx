@@ -1,5 +1,5 @@
 import { SmartInput } from '../input/SmartText';
-import { useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   Check,
   Eye,
@@ -86,6 +86,38 @@ export function WorkbenchPanel(props: Props) {
   const [batch, setBatch] = useState(false),
     [checked, setChecked] = useState(new Set<string>()),
     [active, setActive] = useState('');
+  const [selectionFlash, setSelectionFlash] = useState('');
+  const selectionFlashFrame = useRef<number | null>(null);
+  const selectionFlashTimer = useRef<number | null>(null);
+  const cancelSelectionFlash = () => {
+    if (selectionFlashFrame.current !== null) {
+      window.cancelAnimationFrame(selectionFlashFrame.current);
+      selectionFlashFrame.current = null;
+    }
+    if (selectionFlashTimer.current !== null) {
+      window.clearTimeout(selectionFlashTimer.current);
+      selectionFlashTimer.current = null;
+    }
+    setSelectionFlash('');
+  };
+  const flashSelection = (key: string) => {
+    cancelSelectionFlash();
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    selectionFlashFrame.current = window.requestAnimationFrame(() => {
+      selectionFlashFrame.current = null;
+      setSelectionFlash(key);
+      selectionFlashTimer.current = window.setTimeout(() => {
+        selectionFlashTimer.current = null;
+        setSelectionFlash('');
+      }, 760);
+    });
+  };
+  useEffect(() => () => {
+    if (selectionFlashFrame.current !== null)
+      window.cancelAnimationFrame(selectionFlashFrame.current);
+    if (selectionFlashTimer.current !== null)
+      window.clearTimeout(selectionFlashTimer.current);
+  }, []);
   const [action, setAction] = useState<WorkbenchActionType | null>(null),
     [listError, setListError] = useState(''),
     [actionMessage, setActionMessage] = useState(''),
@@ -194,6 +226,7 @@ export function WorkbenchPanel(props: Props) {
   });
   const startBatch = (ids: string[]) => {
     if (!ids.length) return;
+    cancelSelectionFlash();
     swipe.cancel();
     setChecked(new Set(ids));
     setBatch(true);
@@ -394,6 +427,7 @@ export function WorkbenchPanel(props: Props) {
           onClick={() => {
             if (hold.suppressClick() || folderSwipe.suppressClick(key)) return;
             setActive(key);
+            flashSelection(key);
             if (folder)
               setExpanded((old) => {
                 const next = new Set(old);
@@ -473,7 +507,7 @@ export function WorkbenchPanel(props: Props) {
           key={key}
           {...dropAttrs}
           style={style}
-          className={`workbench-tree-item${active === key ? ' is-active' : ''}${complete ? ' is-checked' : ''}`}
+          className={`workbench-tree-item${active === key ? ' is-active' : ''}${complete ? ' is-checked' : ''}${selectionFlash === key ? ' is-selection-flash' : ''}`}
         >
           {controls}
         </div>
@@ -482,7 +516,7 @@ export function WorkbenchPanel(props: Props) {
       <div key={key} className="workbench-tree-folder" style={style}>
         <div
           {...dropAttrs}
-          className={`workbench-folder-heading${active === key ? ' is-active' : ''}${complete ? ' is-checked' : ''}`}
+          className={`workbench-folder-heading${active === key ? ' is-active' : ''}${complete ? ' is-checked' : ''}${selectionFlash === key ? ' is-selection-flash' : ''}`}
         >
           {controls}
         </div>
@@ -520,6 +554,7 @@ export function WorkbenchPanel(props: Props) {
               aria-label={batch ? '完成多选' : '进入多选'}
               aria-pressed={batch}
               onClick={() => {
+                cancelSelectionFlash();
                 swipe.cancel();
                 setBatch(!batch);
                 setChecked(new Set());
@@ -586,6 +621,7 @@ export function WorkbenchPanel(props: Props) {
             regions={regionMode}
             disabled={!store.ready}
             onSelect={(key) => {
+              cancelSelectionFlash();
               if (key === 'regions') {
                 setRegionMode(!regionMode);
                 setActive('');
@@ -774,6 +810,7 @@ export function WorkbenchPanel(props: Props) {
               removeWorkbenchItems(items, new Set(ids)),
             );
             if (ok) {
+              cancelSelectionFlash();
               setChecked(new Set());
               setActive('');
             }
@@ -784,7 +821,10 @@ export function WorkbenchPanel(props: Props) {
               const ok = commit(
                 dissolveWorkbenchFolder(items, id),
               );
-              if (ok) setActive('');
+              if (ok) {
+                cancelSelectionFlash();
+                setActive('');
+              }
               return ok;
             } catch (e) {
               setActionMessage(e instanceof Error ? e.message : '解散失败');

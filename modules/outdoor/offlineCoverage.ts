@@ -1,6 +1,7 @@
 import type { Map as LibreMap } from 'maplibre-gl';
 import type { TripPackage } from './offline';
 import { tdtIdentity } from './tiandituCache.ts';
+import { cachePackagePreview } from './cachePackagePreview.ts';
 export function coverageGeometry(trip:TripPackage):{data:GeoJSON.FeatureCollection;filled:boolean;label:string} {
   const zoom=Math.min(trip.zoom??14,14),rows=new Map<number,Set<number>>();
   if(trip.complete)for(const url of trip.urls){const id=tdtIdentity(url),parts=id?.split(':');if(!parts || Number(parts[2])!==zoom)continue;const x=Number(parts[3]),y=Number(parts[4]);if(!rows.has(y))rows.set(y,new Set());rows.get(y)!.add(x);}
@@ -15,11 +16,15 @@ export function coverageGeometry(trip:TripPackage):{data:GeoJSON.FeatureCollecti
 /** A temporary layer only; never changes the offline index or stored tracks. */
 export function flashOfflineCoverage(map:LibreMap,trip:TripPackage) {
   const id='shantu-offline-highlight',coverage=coverageGeometry(trip);
-  const cleanup=()=>{clearTimeout(timer);label.remove();for(const layer of [id+'-edge',id+'-fill'])if(map.getLayer(layer))map.removeLayer(layer);if(map.getSource(id))map.removeSource(id);};
-  map.addSource(id,{type:'geojson',data:coverage.data});
-  map.addLayer({id:id+'-fill',type:'fill',source:id,paint:{'fill-color':'#20c565','fill-opacity':coverage.filled?0.22:0}});
-  map.addLayer({id:id+'-edge',type:'line',source:id,paint:{'line-color':'#16a34a','line-width':3}});
-  const label=document.createElement('div');label.className='offline-coverage-label';label.textContent=coverage.label;map.getContainer().appendChild(label);
-  const timer=setTimeout(cleanup,3000);
+  const preview=cachePackagePreview(trip);
+  const areaFeatures=preview.geojson.features.filter(f=>f.properties.role==='area-range');
+  const data:GeoJSON.FeatureCollection={type:'FeatureCollection',features:[...(areaFeatures.length?areaFeatures:coverage.data.features),...preview.geojson.features.filter(f=>f.properties.role==='route')]};
+  const cleanup=()=>{clearTimeout(timer);label.remove();for(const layer of [id+'-route',id+'-edge',id+'-fill'])if(map.getLayer(layer))map.removeLayer(layer);if(map.getSource(id))map.removeSource(id);};
+  map.addSource(id,{type:'geojson',data});
+  map.addLayer({id:id+'-fill',type:'fill',source:id,paint:{'fill-color':'#20c565','fill-opacity':coverage.filled?0.22:0.04}});
+  map.addLayer({id:id+'-edge',type:'line',source:id,filter:['==',['geometry-type'],'Polygon'],paint:{'line-color':'#16a34a','line-width':2}});
+  map.addLayer({id:id+'-route',type:'line',source:id,filter:['==',['geometry-type'],'LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d0f76b','line-width':3}});
+  const label=document.createElement('div');label.className='offline-coverage-label';label.textContent=areaFeatures.length?`${trip.name} · 所选区域规划边界 · ${preview.progress.done}/${preview.progress.total}项`:coverage.label;map.getContainer().appendChild(label);
+  const timer=setTimeout(cleanup,12000);
   return cleanup;
 }

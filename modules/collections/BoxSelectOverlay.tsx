@@ -4,9 +4,11 @@ import { selectionBox, type SelectionBox, type BoxSelectionMode } from './boxSel
 import './boxSelection.css';
 
 /** The rectangle previews the gesture; selected results live independently. */
-export function BoxSelectOverlay({ active = true, label, count, children, onBox, onExit, onClear, mode: controlledMode, tools = true, allowNarrowBox = false, filter, onTwoFingerMove, onTwoFingerEnd, selectedResults, onResultAction, resumeToken = 0 }: {
+export function BoxSelectOverlay({ active = true, label, count, children, onBox, onTap, onExit, onClear, mode: controlledMode, tools = true, allowNarrowBox = false, filter, onTwoFingerMove, onTwoFingerEnd, selectedResults, onResultAction, resumeToken = 0 }: {
   active?: boolean; label: string; count: number; children: ReactNode;
   onBox: (box: SelectionBox, mode: BoxSelectionMode) => void;
+  /** A stationary single-pointer tap, never the end of a box or two-finger pan. */
+  onTap?: (point: ScreenPoint) => void;
   onExit: () => void; onClear: () => void;
   mode?: BoxSelectionMode; tools?: boolean; filter?: ReactNode;
   /** Route handles can be collinear: a long, narrow drag is still a selection. */
@@ -147,7 +149,7 @@ export function BoxSelectOverlay({ active = true, label, count, children, onBox,
       const width = next.right - next.left, height = next.bottom - next.top;
       if (allowNarrowBox ? Math.max(width, height) >= 5 : width >= 5 && height >= 5) {
         onBox(next, mode);
-      }
+      } else if (Math.max(width, height) < 5) onTap?.(point);
     }} onPointerCancel={e => { pointers.current.delete(e.pointerId); start.current = null; surfaceBounds.current = null; previousGesture.current = null; pendingGesture.current = null; if (gestureFrame.current) cancelAnimationFrame(gestureFrame.current); gestureFrame.current = 0; drawRectangle(null); finishTwoFinger(); }}
       onLostPointerCapture={e => { pointers.current.delete(e.pointerId); start.current = null; surfaceBounds.current = null; previousGesture.current = null; pendingGesture.current = null; if (gestureFrame.current) cancelAnimationFrame(gestureFrame.current); gestureFrame.current = 0; drawRectangle(null); finishTwoFinger(); }}
     />}
