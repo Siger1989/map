@@ -1,0 +1,350 @@
+{
+  "version": "0.2.184-test",
+  "versionCode": 191,
+  "package": "com.shantu.oldengine",
+  "bytes": 165373389,
+  "sha256": "fda4d38bcfb96501286e38df4b614e52cc1858efdcae65e479e2ef6196da9bfd",
+  "applicationSourceCommit": "41bce5bfcfb424ed73ef60c239ed66342c5d6769",
+  "branch": "codex/old-engine-tilt-dual-20261105",
+  "mergedToMain": false,
+  "delivery": {
+    "localIssued": true,
+    "privateRelease": "v0.2.184-private",
+    "repositoryPrivateVerified": true,
+    "assetsFullyReadBack": 5,
+    "anonymousApkHead": 404,
+    "sentBeforeApkRuntime": true
+  },
+  "checks": {
+    "targetedNode": 38,
+    "nativeRobolectric": 14,
+    "tsc": "PASS",
+    "freshWebAssets": 1925,
+    "privateSeedsUnchanged": 39,
+    "originalSignature": true,
+    "zipCrcAnd16KiBAlignment": true,
+    "elf64BitLoadSegments16KiB": true,
+    "allEightNativeLibrariesMatch183": true,
+    "cadFourAbisReusedFromHashVerified183": true,
+    "newDependencies": false
+  },
+  "actualSample": {
+    "productionJavaHttpsShortLinkExpansion": "PASS",
+    "desktopJavaElapsedMs": 1639,
+    "productionTypeScriptNameAndDestinationMatch": "PASS",
+    "rawTrackingUrlsPublished": false
+  },
+  "browser": {
+    "results": [
+      {
+        "width": 390,
+        "height": 857,
+        "ready": {
+          "x": 12,
+          "y": 623.625,
+          "width": 298,
+          "height": 155.375,
+          "scrollHeight": 153,
+          "clientHeight": 153,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            },
+            {
+              "text": "在山兔导航",
+              "width": 96,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "loading": {
+          "x": 12,
+          "y": 648.109375,
+          "width": 298,
+          "height": 130.890625,
+          "scrollHeight": 129,
+          "clientHeight": 129,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "failed": {
+          "x": 12,
+          "y": 668.40625,
+          "width": 298,
+          "height": 110.59375,
+          "scrollHeight": 109,
+          "clientHeight": 109,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            },
+            {
+              "text": "重试读取",
+              "width": 82,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "invalid": {
+          "x": 12,
+          "y": 627.8125,
+          "width": 298,
+          "height": 151.1875,
+          "scrollHeight": 149,
+          "clientHeight": 149,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "navigationCallback": "exact place; QA intercepted",
+        "existingMarkerAndImported": 2
+      },
+      {
+        "width": 360,
+        "height": 780,
+        "ready": {
+          "x": 12,
+          "y": 546.625,
+          "width": 268,
+          "height": 155.375,
+          "scrollHeight": 153,
+          "clientHeight": 153,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            },
+            {
+              "text": "在山兔导航",
+              "width": 96,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "loading": {
+          "x": 12,
+          "y": 571.109375,
+          "width": 268,
+          "height": 130.890625,
+          "scrollHeight": 129,
+          "clientHeight": 129,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "failed": {
+          "x": 12,
+          "y": 591.40625,
+          "width": 268,
+          "height": 110.59375,
+          "scrollHeight": 109,
+          "clientHeight": 109,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            },
+            {
+              "text": "重试读取",
+              "width": 82,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "invalid": {
+          "x": 12,
+          "y": 550.8125,
+          "width": 268,
+          "height": 151.1875,
+          "scrollHeight": 149,
+          "clientHeight": 149,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "navigationCallback": "exact place; QA intercepted",
+        "existingMarkerAndImported": 2
+      },
+      {
+        "width": 390,
+        "height": 480,
+        "ready": {
+          "x": 12,
+          "y": 246.625,
+          "width": 298,
+          "height": 155.375,
+          "scrollHeight": 153,
+          "clientHeight": 153,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            },
+            {
+              "text": "在山兔导航",
+              "width": 96,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "loading": {
+          "x": 12,
+          "y": 271.109375,
+          "width": 298,
+          "height": 130.890625,
+          "scrollHeight": 129,
+          "clientHeight": 129,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "failed": {
+          "x": 12,
+          "y": 291.40625,
+          "width": 298,
+          "height": 110.59375,
+          "scrollHeight": 109,
+          "clientHeight": 109,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            },
+            {
+              "text": "重试读取",
+              "width": 82,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "invalid": {
+          "x": 12,
+          "y": 250.8125,
+          "width": 298,
+          "height": 151.1875,
+          "scrollHeight": 149,
+          "clientHeight": 149,
+          "font": "14px",
+          "buttons": [
+            {
+              "text": "关闭",
+              "width": 54,
+              "height": 44,
+              "disabled": false
+            }
+          ]
+        },
+        "navigationCallback": "exact place; QA intercepted",
+        "existingMarkerAndImported": 2
+      }
+    ],
+    "synthetic": true,
+    "androidShareTest": false
+  },
+  "runtime": {
+    "device": "owned read-only ShantuPerf34",
+    "api": 34,
+    "installedVersionConfirmed": 191,
+    "androidTextShareTargetQuery": "PASS",
+    "actualAndroidActionSendColdLaunch": "PASS",
+    "coldInitialResult": "FAIL: emulator had no active network; error/retry UI visible",
+    "networkRecovery": "normal Android Internet UI connected to its virtual Wi-Fi; no proxy change",
+    "sameShareRetryAfterNetworkRecovery": "PASS: named marker and matching displayed destination",
+    "processRestart": {
+      "beforePid": 2412,
+      "afterPid": 3291,
+      "loadedMarkerCount": 1
+    },
+    "warmNewIntentRepeat": {
+      "markerCountBefore": 1,
+      "markerCountAfter": 1,
+      "duplicateCreated": false
+    },
+    "navigationAction": "PASS: actual route panel destination prefilled",
+    "gps": "awaiting location; none injected; manual start remains available",
+    "roadRouteCalculatedOrRealGuidanceStarted": false,
+    "sourceGoogleMapsAppSharesheetUi": "UNVERIFIED: tested Android ACTION_SEND and real shared URL",
+    "coldAvdBootMs": 244752,
+    "bootIsAppStartMetric": false,
+    "hostOrSystemFault": "System UI ANR observed; Wait used",
+    "crashBufferBytes": 0,
+    "longTermStabilityAcceptance": false,
+    "helperStoppedPortRemovedHomeOwnedAvdShutdown": true
+  },
+  "phone": {
+    "model": "OPPO Find X8",
+    "connected": false,
+    "acceptance": "UNVERIFIED"
+  },
+  "dataProtection": {
+    "formalApkAndOld180To183HashesUnchanged": true,
+    "uninstallOrDataClear": false,
+    "phoneDataAccessed": false,
+    "qaEmulatorReadOnly": true
+  },
+  "limits": [
+    "Google connectivity needed for short links",
+    "Only explicit-place-coordinate formats",
+    "Name/Place-ID-only and some country-domain URLs unsupported",
+    "Existing road-service coverage applies",
+    "WeChat deferred",
+    "HarmonyOS native not delivered"
+  ]
+}
