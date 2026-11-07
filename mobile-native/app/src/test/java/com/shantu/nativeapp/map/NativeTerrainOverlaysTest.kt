@@ -539,7 +539,7 @@ class NativeTerrainOverlaysTest {
     fun `contour label CSS size uses bridge scale independently from SDK LOD density`() {
         val label = NativeContourCurvedLabel(
             earth.worldwind.geom.Position.fromDegrees(0.0, 0.0, 0.0),
-            doubleArrayOf(0.0, 0.0, 0.01, 0.0), "4350 m", FloatArray(6) { 1f }, 6f,
+            doubleArrayOf(0.0, 0.0, 0.01, 0.0), "4350 m",
         )
         label.setCssScale(3.2f)
         assertEquals(3.2f, label.cssScale, 1e-6f)
@@ -549,8 +549,8 @@ class NativeTerrainOverlaysTest {
         label.setCssScale(2.0f)
         label.setCssScale(3.2f)
         assertEquals("main/dual pane scales must coexist without per-frame reconstruction", 2, label.delegateCacheCount)
-        assertEquals(7.5f, NativeContourVectorGeometry.LABEL_SIZE, 0f)
-        assertEquals(0.8f, NativeContourVectorGeometry.LABEL_HALO_WIDTH, 0f)
+        assertEquals(9f, NativeContourVectorGeometry.LABEL_SIZE, 0f)
+        assertEquals(0.65f, NativeContourVectorGeometry.LABEL_HALO_WIDTH, 0f)
     }
 
     @Test
@@ -704,8 +704,8 @@ class NativeTerrainOverlaysTest {
         assertTrue(renderables.byteWeight >= batches.single().gpuByteEstimate)
         assertTrue(labels.isNotEmpty())
         assertTrue(labels.all { it.text.endsWith(" m") && it.cssScale.isNaN() })
-        assertEquals(7.5f, NativeContourVectorGeometry.LABEL_SIZE, 0f)
-        assertEquals(0.8f, NativeContourVectorGeometry.LABEL_HALO_WIDTH, 0f)
+        assertEquals(9f, NativeContourVectorGeometry.LABEL_SIZE, 0f)
+        assertEquals(0.65f, NativeContourVectorGeometry.LABEL_HALO_WIDTH, 0f)
         assertTrue(labels.all { kotlin.math.abs(it.anchor.latitude.inDegrees) < 90.0 })
 
         batches.forEach { NativeContourVectorTileBuilder.applyScreenDensity(it, 2f) }

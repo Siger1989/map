@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Process-scoped admission for contour DEM sampling and CPU geometry assembly only.
+ * Suspending bounded admission primitive; the process singleton owns CPU geometry assembly only.
  * The permit releases before SDK content admission; per-layer prepared-result caps remain separate.
  * Semaphore.acquire is suspending and FIFO; a waiting pane never blocks the render thread.
  */
@@ -54,7 +54,7 @@ internal class NativeContourProcessBudget(private val capacity: Int = 1) {
         }
     }
 
-    /** Owns only DEM sampling and CPU geometry construction, not the returned SDK result. */
+    /** Releases admission at block return, before the returned SDK result is admitted. */
     suspend fun <T> withAssemblyPermit(block: suspend () -> T): T {
         val permit = acquire()
         return try { block() } finally { permit.close() }

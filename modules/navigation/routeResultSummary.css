@@ -1,9 +1,15 @@
 /* Result-card affordances are local to this component. */
+.observatory #map-control-panel .route-summary { position: relative; }
 .observatory #map-control-panel .route-summary .route-summary-actions-primary,
 .observatory #map-control-panel .route-summary .route-summary-actions-secondary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 3px;
+}
+.observatory #map-control-panel .route-summary .route-summary-actions-secondary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.observatory #map-control-panel .route-summary .route-summary-actions-secondary .route-removal-trigger {
+  border-color: var(--ui-danger, #c2410c) !important;
+  color: var(--ui-danger, #c2410c) !important;
 }
 .observatory #map-control-panel .route-summary .route-summary-actions-primary > button { flex: initial; }
 .observatory #map-control-panel .route-summary .route-summary-metrics { width:100%; min-width:0; }

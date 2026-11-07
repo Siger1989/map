@@ -70,7 +70,7 @@ export function RoutePanel({
   guidanceError: string;
   onShare: () => void;
   onCache?: () => void;
-  onEditPoints?: () => void; onCancel?: () => void;
+  onEditPoints?: () => void; onCancel?: () => boolean | void;
   onImport?: () => void;
   importInHeader?: boolean;
   onRouteApplied?: (route: PlannedRoute) => void;

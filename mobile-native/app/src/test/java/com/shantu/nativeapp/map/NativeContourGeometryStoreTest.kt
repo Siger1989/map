@@ -1,6 +1,7 @@
 package com.shantu.nativeapp.map
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
@@ -127,11 +128,15 @@ class NativeContourGeometryStoreTest {
     @Test fun `cancellation closes a pane lease and removes the geometry entry`() = runBlocking {
         val store = NativeContourGeometryStore<Int, Any>()
         val lease = store.acquireOrCreate(42) { Any() }
+        val entered = CompletableDeferred<Unit>()
         val worker = async(Dispatchers.Default) {
             withContext(Dispatchers.Default) {
-                try { awaitCancellation() } finally { lease.close() }
+                try { entered.complete(Unit); awaitCancellation() } finally { lease.close() }
             }
         }
+        // Cancel only after the lease-owning block is entered. Cancelling an unstarted
+        // coroutine never executes its body/finally and does not exercise this contract.
+        entered.await()
         assertEquals(NativeContourGeometryStore.Snapshot(1, 1), store.snapshot())
         worker.cancelAndJoin()
         assertEquals(NativeContourGeometryStore.Snapshot(0, 0), store.snapshot())

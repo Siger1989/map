@@ -8,6 +8,7 @@ import {
 } from './favorites';
 import type { Coordinate, PlannedRoute, RoutePlace, RouteStyle } from './types';
 import { routeNameOrDefault } from './routeName';
+import { hideMatchingFavoriteRoute } from './routeVisibility';
 export function useRouteFavorites() {
   const [items, setItems] = useState<RouteFavorite[]>([]),
     [message, setMessage] = useState('');
@@ -30,13 +31,13 @@ export function useRouteFavorites() {
     window.addEventListener('guanyun-data-changed', reload);
     return () => window.removeEventListener('guanyun-data-changed', reload);
   }, []);
-  const persist = (next: RouteFavorite[]) => {
+  const persist = (next: RouteFavorite[], failureMessage = '本机存储空间不足，路线未能收藏。') => {
     try {
       localStorage.setItem(FAVORITES_STORAGE, JSON.stringify(next));
       setItems(next);
       return true;
     } catch {
-      setMessage('本机存储空间不足，路线未能收藏。');
+      setMessage(failureMessage);
       return false;
     }
   };
@@ -101,6 +102,14 @@ export function useRouteFavorites() {
       if (!next.some((item, index) => item !== items[index])) return true;
       setMessageRoute(route.createdAt);
       return persist(next);
+    },
+    hideRoute: (route: PlannedRoute) => {
+      const next = hideMatchingFavoriteRoute(items, route);
+      if (next === items) return true;
+      setMessageRoute(route.createdAt);
+      if (!persist(next, '路线显示状态未保存。')) return false;
+      setMessage('已隐藏当前路线显示。');
+      return true;
     },
     remove: (id: string) => {
       if (persist(items.filter((i) => i.id !== id))) setMessage('已移除收藏。');

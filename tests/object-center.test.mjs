@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { objectCenter, objectFocusZoom } from '../modules/map/objectCenter.ts';
+import { objectCenter, objectFocusZoom, objectRecenterPlan } from '../modules/map/objectCenter.ts';
 
 test('object center uses a minimal longitude arc across the antimeridian', () => {
   assert.deepEqual(objectCenter([[179, 10], [-179, 14]]), [-180, 12]);
@@ -17,4 +17,21 @@ test('explicit object recenter moves to common detail scales without zooming bac
   assert.equal(objectFocusZoom(12, 'route'), 15);
   assert.equal(objectFocusZoom(17, 'area'), 17);
   assert.equal(objectFocusZoom(14, 'other'), 16);
+});
+
+test('route recenter plans fit every route coordinate instead of focusing its midpoint', () => {
+  const route = [[-122.5, 37.1], [-121.7, 37.8], [-120.9, 38.4]];
+  assert.deepEqual(objectRecenterPlan(route, 'route', 16), {
+    kind: 'fitCollection',
+    coordinates: route,
+  });
+  assert.equal(objectRecenterPlan([], 'route', 16), null);
+});
+
+test('non-route recenter plans retain point focus and zoom behavior', () => {
+  assert.deepEqual(objectRecenterPlan([[12, 20], [14, 24]], 'area', 12), {
+    kind: 'focusPoint',
+    coordinate: [13, 22],
+    zoom: 15,
+  });
 });

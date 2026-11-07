@@ -29,6 +29,7 @@ internal object NativeContourGeometryTelemetry {
 
     fun snapshot(): Map<String, Long> {
         val processBudget = NativeContourProcessBudget.process.snapshot()
+        val preparation = NativeContourPreparationPipeline.process.snapshot()
         return mapOf(
             "completedBatches" to completed.get(),
             "maximumLogicalVertices" to maximumLogicalVertices.get(),
@@ -42,6 +43,22 @@ internal object NativeContourGeometryTelemetry {
             "processAssemblyMaximumActiveSlots" to processBudget.maximumActiveSlots.toLong(),
             "processAssemblyWaits" to processBudget.waits,
             "processAssemblyQueuedRequests" to processBudget.queuedRequests.toLong(),
+            "preparationActiveSlots" to preparation.preparationActive.toLong(),
+            "preparationMaximumActiveSlots" to preparation.preparationMaximumActive.toLong(),
+            "preparationQueuedRequests" to preparation.preparationQueued.toLong(),
+            "sourceLoadCount" to preparation.sourceLoadCount,
+            "sourceLoadElapsedNanos" to preparation.sourceLoadElapsedNanos,
+            "sourceLoadMaximumNanos" to preparation.sourceLoadMaximumNanos,
+            "sourceNoDataCount" to preparation.sourceNoDataCount,
+            "sourceFailureCount" to preparation.sourceFailureCount,
+            "assemblyWaitCount" to preparation.assemblyWaitCount,
+            "assemblyWaitElapsedNanos" to preparation.assemblyWaitElapsedNanos,
+            "assemblyWaitMaximumNanos" to preparation.assemblyWaitMaximumNanos,
+            "assemblyCount" to preparation.assemblyCount,
+            "assemblyElapsedNanos" to preparation.assemblyElapsedNanos,
+            "assemblyMaximumNanos" to preparation.assemblyMaximumNanos,
+            "assemblyFailureCount" to preparation.assemblyFailureCount,
+            "preparationCancellationCount" to preparation.cancellationCount,
         )
     }
 }

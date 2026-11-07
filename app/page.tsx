@@ -3,7 +3,7 @@ import { NavigationTelemetry } from '@/modules/guidance/NavigationTelemetry';
 import { SelectedRouteInfo } from '@/modules/routeDisplay/SelectedRouteInfo';
 import { collectionPreviewPoints } from '@/modules/collections/previewBounds';
 import type { CatalogEntry } from '@/modules/collections/catalog';
-import { objectCenter, objectFocusZoom } from '@/modules/map/objectCenter';
+import { objectRecenterPlan } from '@/modules/map/objectCenter';
 import { collectionHighlightData } from '@/modules/collections/selectionHighlight';
 import { cachePackagePreview } from '@/modules/outdoor/cachePackagePreview';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -1338,8 +1338,9 @@ export default function Home() {
     ? selectedAnnotation.name || '未命名标记'
     : selectedTrack?.name || (selectedDraft ? '路线草稿' : '');
   const recenterCoordinates = (coordinates: readonly [number, number][], kind: 'marker' | 'route' | 'area' | 'other') => {
-    const center = objectCenter(coordinates);
-    if (center) map.current?.focusPoint(center, objectFocusZoom(map.current?.cameraSnapshot()?.zoom ?? 15, kind));
+    const plan = objectRecenterPlan(coordinates, kind, map.current?.cameraSnapshot()?.zoom ?? 15);
+    if (plan?.kind === 'fitCollection') map.current?.fitCollection(plan.coordinates);
+    else if (plan?.kind === 'focusPoint') map.current?.focusPoint(plan.coordinate, plan.zoom);
   };
   const recenterCatalogEntry = (entry: CatalogEntry) => {
     if (entry.kind === 'pin' || entry.kind === 'model') recenterCoordinates([entry.annotation.coordinates], 'marker');
@@ -1504,6 +1505,10 @@ export default function Home() {
     if (routePreviewMode && panel !== 'route') endRoutePreview();
   }, [panel, routePreviewMode, guidance.active]);
   const stopNavigation = () => {
+    // A restored favorite is an independent map overlay. Hide the matching copy
+    // as well as clearing the transient plan; its saved geometry remains intact.
+    if (navigation.route && !favorites.hideRoute(navigation.route) && !guidance.active) return false;
+    searchNavigationDraft.clear();
     endRoutePreview();
     setNavigationDisplayOpen(false);
     guidance.stop();
@@ -1513,6 +1518,7 @@ export default function Home() {
     setTrackLinePoint(null);
     map.current?.previewRoute(null);
     setPanel(null);
+    return true;
   };
   const routeOverlay = useMemo(
     () => {
@@ -2082,6 +2088,7 @@ export default function Home() {
             onShow: () => map.current?.fitCollection(navigation.route!.coordinates, { top: 80, right: 32, bottom: 150, left: 24 }),
             onDetails: () => setComparison(null),
             onClose: () => setPanel(null),
+            onDelete: stopNavigation,
           } : null}
           editorDialog={comparison ? routeEditorDialog : null}
           editorPaneOverlay={(_, paneMap) => panel === null && (routeNodeBox || !!routeNodeSelection.length) && editor.session && <div className="map-comparison-edit-overlay">

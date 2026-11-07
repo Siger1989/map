@@ -1,5 +1,9 @@
 import { createRoot } from 'react-dom/client';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useNavigation } from '../modules/navigation/useNavigation';
+import { useRouteFavorites } from '../modules/navigation/useRouteFavorites';
+import { FAVORITES_STORAGE } from '../modules/navigation/favorites';
+import { RouteResultSummary } from '../modules/navigation/RouteResultSummary';
 import { DEFAULT_APPEARANCE, themeTokens, type Palette } from '../modules/appearance/theme';
 import { GuidanceCard } from '../modules/guidance/GuidanceCard';
 import { GuidanceProgressRail } from '../modules/guidance/GuidanceProgressRail';
@@ -144,9 +148,43 @@ const sampleTrip: TripPackage = {
 const sampleArea = { id:'feedback-area', name:'合成河谷区域', boundary:[[104.05,30.65],[104.054,30.65],[104.054,30.651],[104.051,30.651],[104.051,30.654],[104.05,30.654]] as Coordinate[] };
 if (query.get('collectionItem') === '1') localStorage.setItem('guanyun.manual-tracks.v1', JSON.stringify([routeTrack]));
 
+const plannedQaFavorite = {
+  id: 'qa186-planned', name: '合成路线 · 取消与删除检查', savedAt: 1760000000000, visible: true,
+  start: { name: '合成起点', coordinates: routeCoordinates[0] },
+  end: { name: '合成终点', coordinates: routeCoordinates.at(-1)! }, route: plannedRoute,
+};
+if (initialPanel === 'planned') localStorage.setItem(FAVORITES_STORAGE, JSON.stringify([plannedQaFavorite]));
+
+/** Actual hooks/summary under production dock CSS, with namespaced synthetic storage only. */
+function PlannedRouteQa() {
+  const navigation = useNavigation();
+  const favorites = useRouteFavorites();
+  const [open, setOpen] = useState(true);
+  const [notice, setNotice] = useState('合成数据 · 非实际地图相机验证');
+  useEffect(() => { navigation.restore(plannedQaFavorite); }, []);
+  const cancel = () => {
+    if (navigation.route && !favorites.hideRoute(navigation.route)) return false;
+    navigation.clear(); setOpen(false); setNotice('当前规划已移除；收藏内容保留'); return true;
+  };
+  return <>
+    <div style={{ position: 'absolute', top: 290, left: 12, right: 80, fontSize: 12 }}>
+      <p data-qa-plan-state>{notice} · 规划 {navigation.route ? 1 : 0} · 收藏 {favorites.items.length} · 可见 {favorites.items.filter(item => item.visible).length}</p>
+      <button onClick={() => { navigation.restore(plannedQaFavorite); setOpen(true); }}>重开合成路线</button>
+    </div>
+    <ControlDock active={open ? 'route' : null} onActive={() => setOpen(false)} title={plannedQaFavorite.name}>
+      {navigation.route && <RouteResultSummary route={navigation.route} start={navigation.start} end={navigation.end}
+        mode={navigation.mode} loading={navigation.loading} planningError={navigation.error}
+        onModeChange={value => navigation.setMode(value)} onSwap={() => navigation.swap()}
+        onShow={() => setNotice('合成布局页不验证地图相机')} onEdit={() => setNotice('此页仅测试移除路线')}
+        onSave={() => {}} onShare={() => {}} onStartNavigation={() => {}} navigating={false}
+        guidanceError="" saveMessage={favorites.message} onCancel={cancel} />}
+    </ControlDock>
+  </>;
+}
+
 function Fixture() {
-  const [panel, setPanel] = useState<'navigation' | 'pin' | 'route' | 'cache' | 'progress' | 'collections' | 'draw' | 'place'>(
-    initialPanel === 'pin' || initialPanel === 'route' || initialPanel === 'cache' || initialPanel === 'progress' || initialPanel === 'collections' || initialPanel === 'draw' || initialPanel === 'place' ? initialPanel : 'navigation',
+  const [panel, setPanel] = useState<'navigation' | 'pin' | 'route' | 'cache' | 'progress' | 'collections' | 'draw' | 'place' | 'planned'>(
+    initialPanel === 'pin' || initialPanel === 'route' || initialPanel === 'cache' || initialPanel === 'progress' || initialPanel === 'collections' || initialPanel === 'draw' || initialPanel === 'place' || initialPanel === 'planned' ? initialPanel : 'navigation',
   );
   const [width, setWidth] = useState(initialWidth === 360 ? 360 : 390);
   const [height, setHeight] = useState([480, 780, 857].includes(initialHeight) ? initialHeight : 857);
@@ -268,11 +306,12 @@ function Fixture() {
       </span>}
     </nav>
     <main className="feedback-qa-frame" style={{ width, height, ...tokens } as CSSProperties} data-panel={panel}>
-      <div className="observatory home-map" data-ui-style="outdoor" data-panel={panel === 'collections' ? 'favorites' : panel === 'cache' ? 'cache' : undefined} data-guiding={panel === 'navigation' ? 'true' : undefined} style={{
+      <div className="observatory home-map" data-ui-style="outdoor" data-panel={panel === 'collections' ? 'favorites' : panel === 'cache' ? 'cache' : panel === 'planned' ? 'route' : undefined} data-guiding={panel === 'navigation' ? 'true' : undefined} style={{
         '--home-top': 'env(safe-area-inset-top, 0px)', '--home-left': '8px', '--home-right': '8px',
         '--home-bottom': 'env(safe-area-inset-bottom, 0px)', '--home-footer': 'calc(64px + var(--home-bottom))', '--home-header-height': '60px',
       } as CSSProperties}>
         <div className="feedback-qa-map" aria-hidden="true"><span>合成数据·布局检查</span></div>
+        {panel === 'planned' && <PlannedRouteQa />}
         {panel === 'place' && <>
           <div style={{position:'absolute',top:16,left:12,right:80,fontSize:12,display:'grid',gap:6}}>
             <p>合成分享 · 实际地点接收组件及标记存储<br/>不是 Android 分享/真实地图导航验收</p>

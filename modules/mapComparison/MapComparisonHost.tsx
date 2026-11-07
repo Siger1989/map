@@ -6,6 +6,7 @@ import { settingsForBasemapSource } from '../mapSources/selection';
 import type { Coordinate } from '../navigation/types';
 import { formatDistance, formatDuration } from '../navigation/types';
 import { RouteNameInput } from '../navigation/RouteNameInput';
+import { RouteRemovalControl } from '../navigation/RouteRemovalControl';
 import type { ViewState } from '../map/types';
 import { applyLayerPatch, type LayerSettings } from '../map/types';
 import type { SatelliteState } from '../satellite/satellite';
@@ -52,6 +53,7 @@ type Props = {
     onDetails: () => void;
     onRecenter: () => void;
     onClose: () => void;
+    onDelete?: () => boolean | void | Promise<boolean | void>;
   } | null;
   operations?: {
     onMark: (point: Coordinate, kind: AnnotationChoice) => boolean;
@@ -347,6 +349,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
             <button type="button" onClick={plannedRoute.onShow}>看全程</button>
             <button type="button" className="route-solid" onClick={plannedRoute.onEdit}>编辑线点</button>
             <button type="button" onClick={plannedRoute.onDetails}>更多操作</button>
+            {plannedRoute.onDelete && <RouteRemovalControl onRemove={plannedRoute.onDelete} buttonClassName="route-danger" />}
           </nav>
         </section>}
         {!plannedRoute && operations?.selectedTrack && mode === 'browse' && layerPane === null && properties === null && <section className="map-comparison-track-selection" aria-label="已选路线">

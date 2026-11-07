@@ -55,8 +55,8 @@ internal object NativeContourVectorGeometry {
     const val MINOR_WIDTH = 0.45f
     const val MAJOR_WIDTH = 1.05f
     const val LINE_OPACITY = 0.8f
-    const val LABEL_SIZE = 7.5f
-    const val LABEL_HALO_WIDTH = 0.8f
+    const val LABEL_SIZE = 9f
+    const val LABEL_HALO_WIDTH = 0.65f
     const val LABEL_SPACING_PIXELS = 900f
     const val MAX_VISIBLE_LABELS = 80
     const val OUTDOOR_CONTOUR_HEX = 0xc8e978
@@ -289,39 +289,40 @@ internal class NativeContourLayer(
         try {
             return semaphore.withPermit {
                 if (closed) return@withPermit null
-                // This suspends fairly across panes before samples/geometry are allocated, but
-                // releases as soon as assembly returns. A prepared result may wait for contentWeight
-                // in a hidden layer without monopolizing the process-wide CPU assembly lane.
-                val content = NativeContourProcessBudget.process.withAssemblyPermit {
-                    if (closed) return@withAssemblyPermit null
-                    val samples = loadSamples(z, x, sourceY) ?: return@withAssemblyPermit null
-                    if (closed) return@withAssemblyPermit null
-                    val buildContext = currentCoroutineContext()
-                    try {
-                        val key = NativeContourGeometryKey.fromSamples(z, x, sourceY, interval, samples)
-                        buildContext.ensureActive()
-                        if (closed) throw CancellationException("Contour layer closed")
-                        val lease = NativeContourSharedGeometryStore.process.acquireOrCreate(key) {
-                            NativeContourVectorTileBuilder.build(samples, z, x, sourceY, interval) {
-                                buildContext.ensureActive()
-                                if (closed) throw CancellationException("Contour layer closed")
-                            }
-                        }
+                // Keep at most two source arrays in preparation across all panes. A slow DEM
+                // fetch does not own the single CPU geometry lane; geometry still assembles
+                // serially and the existing per-pane prepared/content budgets remain intact.
+                val content = NativeContourPreparationPipeline.process.prepare(
+                    loadSamples = { if (closed) null else loadSamples(z, x, sourceY) },
+                    assemble = assemble@{ samples ->
+                        if (closed) return@assemble null
+                        val buildContext = currentCoroutineContext()
                         try {
-                            val edgeSamples = NativeContourTileEdges.fromSamples(samples, kotlin.math.sqrt(samples.size.toDouble()).toInt())
-                            NativeContourTileContent(lease, NativeContourTileKey(z, x, sourceY), edgeSamples) { permit.close() }
-                        } catch (failure: Throwable) {
-                            lease.release()
-                            throw failure
+                            val key = NativeContourGeometryKey.fromSamples(z, x, sourceY, interval, samples)
+                            buildContext.ensureActive()
+                            if (closed) throw CancellationException("Contour layer closed")
+                            val lease = NativeContourSharedGeometryStore.process.acquireOrCreate(key) {
+                                NativeContourVectorTileBuilder.build(samples, z, x, sourceY, interval) {
+                                    buildContext.ensureActive()
+                                    if (closed) throw CancellationException("Contour layer closed")
+                                }
+                            }
+                            try {
+                                val edgeSamples = NativeContourTileEdges.fromSamples(samples, kotlin.math.sqrt(samples.size.toDouble()).toInt())
+                                NativeContourTileContent(lease, NativeContourTileKey(z, x, sourceY), edgeSamples) { permit.close() }
+                            } catch (failure: Throwable) {
+                                lease.release()
+                                throw failure
+                            }
+                        } catch (budget: NativeContourGeometryBudgetExceeded) {
+                            val canSubdivide = z < NativeContourVectorGeometry.SOURCE_MAX_ZOOM
+                            val refined = canSubdivide && forcedRefinements.requestRefinement(request) { !closed }
+                            NativeContourGeometryTelemetry.rejected(z, refined, !canSubdivide)
+                            if (refined && !closed) WorldWind.requestRedraw()
+                            return@assemble null
                         }
-                    } catch (budget: NativeContourGeometryBudgetExceeded) {
-                        val canSubdivide = z < NativeContourVectorGeometry.SOURCE_MAX_ZOOM
-                        val refined = canSubdivide && forcedRefinements.requestRefinement(request) { !closed }
-                        NativeContourGeometryTelemetry.rejected(z, refined, !canSubdivide)
-                        if (refined && !closed) WorldWind.requestRedraw()
-                        return@withAssemblyPermit null
-                    }
-                } ?: return@withPermit null
+                    },
+                ) ?: return@withPermit null
                 unhandedContent = content
                 val retained = synchronized(prepared) {
                     if (closed) false else {
@@ -437,13 +438,12 @@ internal class NativeContourLayer(
                     if (outdoorContoursEnabled) return@forEach
                     rc.geographicToCartesian(renderable.anchor, AltitudeMode.CLAMP_TO_GROUND, cartesian)
                     if (!rc.projectWithDepth(cartesian, 0.0, screen)) return@forEach
-                    val density = cssScale.coerceAtLeast(0.1f)
-                    val width = (renderable.text.length * NativeContourVectorGeometry.LABEL_SIZE * 0.66f + 5f) * density
-                    val height = 12f * density
                     if (screen.x < rc.viewport.x || screen.x > rc.viewport.x + rc.viewport.width ||
-                        screen.y < rc.viewport.y || screen.y > rc.viewport.y + rc.viewport.height ||
-                        !labelCollision.accept(screen.x.toFloat(), screen.y.toFloat(), width, height)) return@forEach
+                        screen.y < rc.viewport.y || screen.y > rc.viewport.y + rc.viewport.height) return@forEach
+                    val density = cssScale.coerceAtLeast(0.1f)
                     renderable.setCssScale(density)
+                    val extent = renderable.collisionExtent
+                    if (!labelCollision.accept(screen.x.toFloat(), screen.y.toFloat(), extent, extent)) return@forEach
                 } else {
                     NativeContourVectorTileBuilder.applyScreenDensity(renderable, cssScale)
                 }
@@ -792,12 +792,9 @@ internal object NativeContourVectorTileBuilder {
                 coordinates[index * 2 + 1] = position.latitude.inDegrees
             }
             val text = "${point.elevationMeters} m"
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = NativeContourVectorGeometry.LABEL_SIZE }
-            val widths = FloatArray(text.length)
-            paint.getTextWidths(text, widths)
             output += NativeContourCurvedLabel(
                 NativeContourVectorGeometry.tilePixelPosition(z, x, y, point.x.toDouble(), point.y.toDouble(), size),
-                coordinates, text, widths, paint.measureText(text),
+                coordinates, text,
             )
         }
         // SDK arrays are exact after assembly. Account conservatively for retained feature,
@@ -816,38 +813,52 @@ internal class NativeContourCurvedLabel(
     val anchor: Position,
     private val coords: DoubleArray,
     val text: String,
-    private val charWidths: FloatArray,
-    private val textWidth: Float,
 ) : AbstractRenderable("等高线数值") {
-    private val delegates = LinkedHashMap<Float, MvtCurvedLineLabel>(4, 0.75f, true)
+    private data class DelegateEntry(val label: MvtCurvedLineLabel, val collisionExtent: Float)
+    private val delegates = LinkedHashMap<Float, DelegateEntry>(4, 0.75f, true)
     private var activeScale = Float.NaN
     private var activeDelegate: MvtCurvedLineLabel? = null
+    private var activeCollisionExtent = 0f
     internal val cssScale: Float get() = activeScale
     internal val delegateCacheCount: Int get() = delegates.size
+    internal val collisionExtent: Float get() = activeCollisionExtent
 
     fun setCssScale(value: Float) {
         val scale = (kotlin.math.round(value.coerceIn(0.1f, 10f) * 1000f) / 1000f)
         if (activeScale == scale && activeDelegate != null) return
         activeScale = scale
         delegates[scale]?.let { cached ->
-            activeDelegate = cached
+            activeDelegate = cached.label
+            activeCollisionExtent = cached.collisionExtent
             return
         }
+        val targetSize = NativeContourVectorGeometry.LABEL_SIZE * scale
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = targetSize }
+        val strokePad = kotlin.math.ceil(NativeContourVectorGeometry.LABEL_HALO_WIDTH * scale * 0.5f).toInt()
+        val width = paint.measureText(text) + 2f + strokePad * 2f
+        val metrics = paint.fontMetrics
+        val height = metrics.bottom - metrics.top + 2f + strokePad * 2f
+        // A square circumscribing the whole measured run covers every tangent angle.
+        val rotatedExtent = kotlin.math.hypot(width.toDouble(), height.toDouble()).toFloat() + 2f
         val attributes = TextAttributes().apply {
-            font = Font(NativeContourVectorGeometry.LABEL_SIZE)
-            this.scale = scale.toDouble()
+            // Android Font(Float) takes physical pixels. Rasterize at target density directly
+            // so the glyph texture is sampled at its final display size.
+            font = Font(targetSize)
+            this.scale = 1.0
             textColor = Color(0xfffff1c9.toInt())
             outlineColor = Color(0xff1a3034.toInt())
-            outlineWidth = NativeContourVectorGeometry.LABEL_HALO_WIDTH
+            outlineWidth = NativeContourVectorGeometry.LABEL_HALO_WIDTH * scale
             isOutlineEnabled = true
             isDepthTest = false
         }
         val created = MvtCurvedLineLabel(
-            coords, text, attributes, charWidths, textWidth, NativeContourVectorGeometry.LABEL_SIZE.toInt().coerceAtLeast(1),
+            coords, text, attributes, attributes.font.measureChars(text), attributes.font.measureText(text),
+            (NativeContourVectorGeometry.LABEL_SIZE * scale).toInt().coerceAtLeast(1),
             repeatGapPx = 1_000_000f, displayName = "等高线数值",
         )
-        delegates[scale] = created
+        delegates[scale] = DelegateEntry(created, rotatedExtent)
         activeDelegate = created
+        activeCollisionExtent = rotatedExtent
         if (delegates.size > 2) {
             val eldest = delegates.entries.iterator()
             eldest.next()

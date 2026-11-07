@@ -1,0 +1,43 @@
+.route-removal-control { display: contents; }
+.route-removal-confirm {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--ui-danger, #c2410c);
+  border-radius: inherit;
+  background: var(--ui-surface, #18201f);
+  color: var(--ui-ink, #f2f5ed);
+  box-shadow: var(--ui-shadow, 0 4px 14px #0006);
+}
+.route-removal-confirm > p { margin: 0; font-size: 12px; line-height: 1.3; }
+html[data-ui-theme] .observatory #map-control-panel .route-summary .route-removal-confirm > p {
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+html[data-ui-theme] .observatory .map-comparison-planned-route .route-removal-confirm > p {
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+.route-removal-confirm .route-removal-error { color: var(--ui-danger, #c2410c); }
+.route-removal-confirm-actions { display: flex; justify-content: flex-end; gap: 4px; }
+.route-removal-confirm-actions button {
+  min-width: 64px;
+  min-height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--ui-line, #64716c);
+  border-radius: var(--ui-radius-control, 4px);
+  background: var(--ui-raised, #252e2b);
+  color: var(--ui-ink, #f2f5ed);
+  font-size: 11px;
+}
+.route-removal-confirm-actions .route-removal-danger {
+  border-color: var(--ui-danger, #c2410c);
+  color: var(--ui-danger, #ff8a63);
+}
+.route-removal-confirm-actions button:disabled { opacity: .6; }

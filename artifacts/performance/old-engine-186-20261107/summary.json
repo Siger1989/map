@@ -1,0 +1,89 @@
+{
+  "target": {
+    "version": "0.2.186-test",
+    "versionCode": 193,
+    "package": "com.shantu.oldengine"
+  },
+  "baselineSource": "f38e2206cf268909e7bde557556943ce66d4c404",
+  "nativeTests": {
+    "cases": 67,
+    "status": "PASS",
+    "initialFailure": "Existing lease cancellation fixture could cancel before its finally block started; explicit entered barrier added; final67 passed."
+  },
+  "nodeTests": {
+    "cases": 12,
+    "status": "PASS"
+  },
+  "ui": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 857
+      },
+      "dockHeight": 163,
+      "dialog": {
+        "font": "12px",
+        "line": "16.2px",
+        "width": 266,
+        "height": 103
+      },
+      "cardDoesNotGrow": true,
+      "tabCycle": [
+        "取消",
+        "确认删除",
+        "取消"
+      ],
+      "cancelAndDeleteKeepFavorite": true
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 780
+      },
+      "dockHeight": 163,
+      "dialog": {
+        "font": "12px",
+        "line": "16.2px",
+        "width": 266,
+        "height": 103
+      },
+      "cardDoesNotGrow": true,
+      "tabCycle": [
+        "取消",
+        "确认删除",
+        "取消"
+      ],
+      "cancelAndDeleteKeepFavorite": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 480
+      },
+      "dockHeight": 163,
+      "dialog": {
+        "font": "12px",
+        "line": "16.2px",
+        "width": 266,
+        "height": 103
+      },
+      "cardDoesNotGrow": true,
+      "tabCycle": [
+        "取消",
+        "确认删除",
+        "取消"
+      ],
+      "cancelAndDeleteKeepFavorite": true
+    }
+  ],
+  "glyphEvidence": "Actual SDK TextRenderer/Android native Canvas raster, densities1/2/3.2, 150/1200/4500m, horizontal and45deg. Synthetic background; not actual map/phone acceptance.",
+  "sourceScheduling": "Deterministic coroutine barriers prove one suspended source no longer blocks another ready tile; CPU maximum1/preparation maximum2. Not a phone speed percentage.",
+  "runtime": "pending until APK first delivered",
+  "phoneVerified": false,
+  "limitations": [
+    "No physical OPPO attached",
+    "No accepted same-scene phone latency/memory/FPS result",
+    "Google ID-only and AMap original-route shares remain unsupported",
+    "Offline downloads still one package at a time,16 tile workers; no multi-package queue added"
+  ]
+}

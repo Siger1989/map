@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { RouteProviderNote } from './RouteProviderNote';
 import { RouteElevationSummary } from '../journey/RouteElevationSummary';
 import { formatDistance, formatDuration, type PlannedRoute } from './types';
+import { RouteRemovalControl } from './RouteRemovalControl';
 import './routeResultSummary.css';
 
 export function RouteResultSummary({ route, start, end, mode, loading, planningError, onModeChange, onSwap, onShow, onEdit, onSave, onShare, onCache, onStartNavigation, navigating, guidanceError, saveMessage, onEditPoints, onCancel, previewMode, onPreview, onPreviewTopDown, onExitPreview, quickRouteControls }: {
@@ -12,7 +13,7 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
   onModeChange: (mode: PlannedRoute['mode']) => void; onSwap: () => void;
   onSave: () => void; onShare: () => void; onStartNavigation: () => void;
   navigating: boolean; guidanceError: string; saveMessage: string;
-  onEditPoints?: () => void; onCancel?: () => void;
+  onEditPoints?: () => void; onCancel?: () => boolean | void;
   onCache?: () => void;
   previewMode?: 'forward' | 'top' | null;
   onPreview?: () => void;
@@ -69,7 +70,7 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
       <button type="button" onClick={() => { setDetailsOpen(false); onShow(); }}>看全程</button>
       <button type="button" onClick={onEdit}>编辑</button>
     </nav>
-    <nav className="route-summary-actions route-summary-actions-secondary" aria-label="路线收藏、分享与详情">
+    <nav className="route-summary-actions route-summary-actions-secondary" aria-label="路线收藏、分享、详情与删除">
       <button type="button" onClick={onSave}>收藏</button>
       <button type="button" onClick={onShare}>分享</button>
       <button type="button" className="route-summary-details-toggle" aria-expanded={detailsOpen} aria-controls="route-summary-detail" onClick={() => {
@@ -77,6 +78,7 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
         if (next) setDetailsMounted(true);
         setDetailsOpen(next);
       }}>{detailsOpen ? '收起' : '详情'}</button>
+      {onCancel && <RouteRemovalControl onRemove={onCancel} buttonClassName="route-danger" />}
     </nav>
     {(planningError || guidanceError) && !navigating && <p className="route-error" role="alert">{planningError || guidanceError}</p>}
     {saveMessage && <p className="route-note" role="status">{saveMessage}</p>}
