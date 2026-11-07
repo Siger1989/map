@@ -36,6 +36,7 @@
 
 .route-cache-setup,
 .route-cache-package-pane { display: flex; min-height: 0; flex-direction: column; gap: 4px; }
+.route-cache-package-pane { flex: 1 1 auto; overflow: hidden; }
 .route-cache-select-row {
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);
@@ -106,7 +107,19 @@
   border-radius: 4px;
   background: var(--ui-raised, #252e2b);
 }
+.route-cache-package { gap:3px; padding:4px; }
 .route-cache-package--focused { border-color: var(--ui-accent, #d0f76b); box-shadow: 0 0 0 1px var(--ui-accent, #d0f76b); }
+.route-cache-package--active { border-color: color-mix(in srgb, var(--ui-accent, #d0f76b) 65%, var(--ui-line)); }
+.route-cache-package-heading { display:flex; min-width:0; align-items:center; justify-content:space-between; gap:5px; }
+.route-cache-package-heading > strong { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.route-cache-package-state { flex:0 0 auto; max-width:48%; overflow:hidden; color:var(--ui-muted, #a9b3ad); font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+.route-cache-package-state.is-error { color:var(--ui-danger, #ff8b78); }
+.route-cache-package-state.is-complete { color:var(--ui-accent, #d0f76b); }
+.route-cache-package-source { color:var(--ui-muted, #a9b3ad); font-size:10px; line-height:1.25; }
+.route-cache-package-source-missing { color:var(--ui-danger, #ff8b78); font-size:10px; line-height:1.25; overflow-wrap:anywhere; }
+.route-cache-package-progress-copy { display:flex; min-width:0; justify-content:space-between; gap:4px; color:var(--ui-muted, #a9b3ad); font-size:10px; line-height:1.25; }
+.route-cache-package-progress-copy > span:first-child { min-width:0; overflow-wrap:anywhere; }
+.route-cache-package-progress-copy > span:last-child { flex:0 0 auto; }
 .route-cache-progress > strong,
 .route-cache-package > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .route-cache-progress > span,
@@ -114,7 +127,13 @@
 .route-cache-package > small,
 .route-cache-progress > small { color: var(--ui-muted, #a9b3ad); }
 .route-cache-panel progress { width: 100%; height: 5px; accent-color: var(--ui-accent, #d0f76b); }
-.route-cache-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.route-cache-package-primary-actions { display:grid; grid-template-columns:minmax(0, .82fr) minmax(0, 1.18fr); gap:4px; }
+.route-cache-package-primary-actions > button { min-height:28px; padding:2px 4px; font-size:10px; line-height:1.15; white-space:normal; }
+.route-cache-package-open { border-color:transparent !important; background:var(--ui-selected, #293529) !important; color:var(--ui-accent, #d0f76b) !important; font-weight:650; }
+.route-cache-use-offline { color:var(--ui-ink, #f2f5ed) !important; }
+.route-cache-use-offline[aria-pressed='true'] { background:var(--ui-accent, #d0f76b) !important; color:var(--ui-on-accent, #172018) !important; }
+.route-cache-package .route-cache-actions { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:4px; }
+.route-cache-package .route-cache-actions > button { min-width:0; min-height:28px; padding:2px; font-size:10px; line-height:1.15; white-space:normal; }
 .route-cache-actions > button:first-child { flex: 1 1 auto; }
 .route-cache-actions .route-cache-danger { color: var(--ui-danger, #ff8b78); }
 
@@ -125,31 +144,40 @@
 .route-cache-empty { padding: 8px 4px; border-radius: 4px; color: var(--ui-muted, #a9b3ad); background: var(--ui-raised, #252e2b); text-align: center; }
 .route-cache-package-list {
   display: flex;
+  flex: 1 1 auto;
   min-height: 0;
   flex-direction: column;
   gap: 4px;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
-.observatory .control-dock .control-popover .route-cache-package > .route-cache-package-open {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 3px;
-  width: 100%;
-  height: auto;
-  padding: 4px;
-  text-align: left;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  background: transparent;
-  border-color: transparent;
+.route-cache-package-list > .route-cache-package { flex:0 0 auto; }
+.route-cache-package-list > .route-cache-empty { flex:0 0 auto; }
+.route-cache-selected-warning { display:flex; flex:0 0 auto; align-items:center; justify-content:space-between; gap:6px; padding:4px; border:1px solid var(--ui-line); border-radius:4px; background:var(--ui-raised); font-size:10px; }
+.route-cache-selected-warning > span { min-width:0; color:var(--ui-muted); }
+.route-cache-selected-warning > button { flex:0 0 auto; white-space:nowrap; }
+.route-cache-archive-details { flex:0 0 auto; min-width:0; border-top:1px solid var(--ui-line); color:var(--ui-muted); font-size:10px; }
+.route-cache-archive-details > summary { min-height:26px; display:flex; align-items:center; cursor:pointer; color:var(--ui-muted); }
+.route-cache-archive-content { display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; gap:6px; padding:2px 0 4px; }
+.route-cache-archive-content > span { min-width:0; line-height:1.25; overflow-wrap:anywhere; }
+.route-cache-archive-content > .route-cache-archive-action { flex:0 0 auto; min-width:max-content; min-height:28px; white-space:nowrap; color:var(--ui-accent, #d0f76b); }
+.route-cache-panel[data-step='packages'] { display:flex; flex:1 1 auto; min-height:0; overflow:hidden; }
+.observatory.home-map[data-panel='cache'] .control-dock .control-popover .dock-content:has(.route-cache-panel[data-step='packages']) {
+  display:flex;
+  min-height:0;
+  flex-direction:column;
+  overflow:hidden;
 }
-.route-cache-package-open > strong { font-size: 12px; line-height: 1.35; }
-.route-cache-package-open > span { font-size: 11px; line-height: 1.3; color: var(--ui-muted); }
-.route-cache-package-open progress { margin: 1px 0; }
+.observatory.home-map[data-panel='cache'] .control-dock .control-popover .dock-content > .route-cache-panel[data-step='packages'] {
+  min-height:0;
+  overflow:hidden;
+}
 
 @media (max-width: 370px) {
   .route-cache-select-row { grid-template-columns: 64px minmax(0, 1fr); }
+  .route-cache-package-primary-actions { grid-template-columns:minmax(0, .76fr) minmax(0, 1.24fr); }
 }
 
 /* Keep this task card inside its 200px dock space despite shared 36px defaults. */

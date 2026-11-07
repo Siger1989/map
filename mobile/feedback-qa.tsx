@@ -18,6 +18,8 @@ import type { PointMarkerInput } from '../modules/tracks/RoutePointMarkerFields'
 import type { TrackStyle } from '../modules/tracks/style';
 import type { BoxSelectionMode } from '../modules/collections/boxSelection';
 import { RouteCachePanel } from '../modules/outdoor/RouteCachePanel';
+import { WorkbenchPanel } from '../modules/collections/WorkbenchPanel';
+import { ControlDock } from '../modules/controls/ControlDock';
 import { OfflineMapProgressPrompt } from '../modules/outdoor/OfflineMapProgressPrompt';
 import type { TripPackage } from '../modules/outdoor/offline';
 import type { useOffline } from '../modules/outdoor/useOffline';
@@ -31,6 +33,7 @@ import '../modules/photos/photos.css';
 import '../app/globals.css';
 import '../modules/controls/workspace.css';
 import '../modules/controls/panels.css';
+import '../modules/collections/workbenchCache.css';
 import '../modules/geology/legend.css';
 import '../modules/navigation/navigation.css';
 import '../modules/tracks/tracks.css';
@@ -85,6 +88,8 @@ if (nativeGet.call(localStorage, isolatedAnnotationsKey) === null) {
 }
 
 const query = new URLSearchParams(location.search);
+if (query.get('legacy') === '1') Object.defineProperty(window, 'GuanyunNative', { configurable: true,
+  value: { offlineStart() { throw new Error('QA 不执行原生下载'); }, offlineExportLegacyArchive() { throw new Error('QA 仅显示备份入口，不执行导出'); } } });
 const initialWidth = Number(query.get('width'));
 const initialHeight = Number(query.get('height'));
 const initialPanel = query.get('panel');
@@ -117,8 +122,8 @@ const sampleTrip: TripPackage = {
 };
 
 function Fixture() {
-  const [panel, setPanel] = useState<'navigation' | 'pin' | 'route' | 'cache' | 'progress'>(
-    initialPanel === 'pin' || initialPanel === 'route' || initialPanel === 'cache' || initialPanel === 'progress' ? initialPanel : 'navigation',
+  const [panel, setPanel] = useState<'navigation' | 'pin' | 'route' | 'cache' | 'progress' | 'collections'>(
+    initialPanel === 'pin' || initialPanel === 'route' || initialPanel === 'cache' || initialPanel === 'progress' || initialPanel === 'collections' ? initialPanel : 'navigation',
   );
   const [width, setWidth] = useState(initialWidth === 360 ? 360 : 390);
   const [height, setHeight] = useState([480, 780, 857].includes(initialHeight) ? initialHeight : 857);
@@ -126,6 +131,7 @@ function Fixture() {
   const [pane, setPane] = useState(query.get('pane') === '2' ? 2 : 1);
   const [stateVariant, setStateVariant] = useState({ error: query.get('error') === '1', departure: query.get('deparature') === '1', forward: query.get('forward') === '1' });
   const [tripOpened, setTripOpened] = useState(false);
+  const [focusCacheId, setFocusCacheId] = useState<string>();
   const [progressPhase, setProgressPhase] = useState<'running' | 'waiting' | 'failed'>(query.get('phase') === 'failed' ? 'failed' : query.get('phase') === 'waiting' ? 'waiting' : 'running');
   const [offlineMessage, setOfflineMessage] = useState('');
   const annotations = useAnnotations();
@@ -160,8 +166,16 @@ function Fixture() {
     replan: async () => undefined, replanning: false,
     returnToOriginal: () => undefined, returnToOriginalSupported: true,
   } as unknown as GuidanceState;
+  const cachePackages: TripPackage[] = query.get('packages') === '2' ? [{ ...sampleTrip,
+    id: 'qa182-running', name: '合成山地徒步路线 · 示例影像', sourceId: cacheSource.id, sourceName: cacheSource.name,
+    routeNames: ['合成山地徒步路线'], phase: 'running', phaseMessage: '正在缓存', done: 1278, bytes: 32 * 1048576,
+    urls: Array.from({ length: 2000 }, (_, i) => `https://example.test/14/${i}/0.png`),
+  }, { ...sampleTrip, id: 'qa182-legacy-partial', name: '合成河谷路线 · 原图源已移除', sourceId: 'qa182-missing',
+    sourceName: '已移除的示例图源', routeNames: ['合成河谷路线'], phase: undefined, phaseMessage: undefined, done: 12, bytes: 2 * 1048576,
+    urls: Array.from({ length: 24 }, (_, i) => `https://example.test/15/${i}/0.png`),
+  }] : [];
   const isolatedOffline = {
-    packages: [], removing: [], current: null, background: false, busy: false, message: '',
+    packages: cachePackages, removing: [], current: cachePackages[0] ?? null, background: false, busy: cachePackages.length > 0, message: '',
     createMap: async () => undefined,
     createImportedRoute: async () => { setOfflineMessage('QA 已拦截开始缓存；没有发出地图网络请求。'); },
     createRegion: async () => undefined, create: async () => undefined,
@@ -209,7 +223,7 @@ function Fixture() {
   return <>
     <nav className="feedback-qa-controls" aria-label="验收用例切换">
       <label>页面<select value={panel} onChange={event => setCase(event.target.value as typeof panel)}>
-        <option value="navigation">导航</option><option value="pin">标记</option><option value="route">路线</option><option value="cache">缓存</option><option value="progress">缓存进度</option>
+        <option value="navigation">导航</option><option value="pin">标记</option><option value="route">路线</option><option value="cache">缓存</option><option value="collections">收藏缓存</option><option value="progress">缓存进度</option>
       </select></label>
       <label>宽<select value={width} onChange={event => updateDimension('width', Number(event.target.value))}><option value={360}>360</option><option value={390}>390</option></select></label>
       <label>高<select value={height} onChange={event => updateDimension('height', Number(event.target.value))}><option value={480}>480</option><option value={780}>780</option><option value={857}>857</option></select></label>
@@ -228,7 +242,7 @@ function Fixture() {
       </span>}
     </nav>
     <main className="feedback-qa-frame" style={{ width, height, ...tokens } as CSSProperties} data-panel={panel}>
-      <div className="observatory home-map" data-ui-style="outdoor" data-guiding={panel === 'navigation' ? 'true' : undefined} style={{
+      <div className="observatory home-map" data-ui-style="outdoor" data-panel={panel === 'collections' ? 'favorites' : panel === 'cache' ? 'cache' : undefined} data-guiding={panel === 'navigation' ? 'true' : undefined} style={{
         '--home-top': 'env(safe-area-inset-top, 0px)', '--home-left': '8px', '--home-right': '8px',
         '--home-bottom': 'env(safe-area-inset-bottom, 0px)', '--home-footer': 'calc(64px + var(--home-bottom))', '--home-header-height': '60px',
       } as CSSProperties}>
@@ -284,18 +298,23 @@ function Fixture() {
             onRiverSnapping={() => setSnap(value => ({ ...value, river: !value.river }))} />
           <p className="feedback-qa-route-status" role="status">{routeNotice}</p>
         </section>}
-        {panel === 'cache' && <section className="feedback-qa-cache">
-          <p className="feedback-qa-data-label">合成数据·布局检查 · 图源仅为 example.test，不会发请求</p>
+        {panel === 'cache' && <ControlDock active="cache" onActive={() => {}} title={`地图缓存 · ${cachePackages.length}个包`} back={{ label: '返回收藏', onClick: () => setPanel('collections') }}>
           <RouteCachePanel routes={[{ id: 'feedback-route', name: '合成路线 · 绿道样段', segments: [routeCoordinates] }]}
-            sources={[cacheSource]} offline={isolatedOffline} onOpenMap={() => undefined} onSources={() => setOfflineMessage('此页不导入图源。')} />
+            sources={[cacheSource]} offline={isolatedOffline} initialTab={query.get('tab') === 'packages' || focusCacheId ? 'packages' : 'setup'} focusTripId={focusCacheId}
+            onOpenMap={() => setOfflineMessage('QA 已拦截离线浏览；不发出网络请求。')} onSources={() => setOfflineMessage('此页不导入图源。')} />
           {offlineMessage && <p className="feedback-qa-cache-notice" role="status">{offlineMessage}</p>}
-        </section>}
+        </ControlDock>}
+        {panel === 'collections' && <ControlDock active="favorites" onActive={() => {}} title="收藏">
+          <WorkbenchPanel center={[104,30]} onClose={() => {}} onLocate={() => {}} onOpen={() => {}} onNavigate={() => {}} onManage={() => {}}
+            onCacheRoute={() => {}} onCacheRoutes={() => {}} onCacheFolder={() => setPanel('cache')} cacheCount={cachePackages.length} cachePackages={cachePackages}
+            onCachePackage={id => { setFocusCacheId(id); setPanel('cache'); }} />
+        </ControlDock>}
         {panel === 'progress' && <section className="feedback-qa-progress">
           <p className="feedback-qa-data-label">合成数据·布局检查 · 可点开任务状态</p>
           <OfflineMapProgressPrompt trip={statusTrip} onOpenTask={() => setTripOpened(value => !value)} />
           {tripOpened && <div className="feedback-qa-task-detail" role="status"><strong>{statusTrip.name}</strong><span>{statusTrip.phaseMessage}</span><span>完成 {statusTrip.done}/{statusTrip.urls.length} 项 · {(statusTrip.bytes / 1048576).toFixed(1)} MB</span></div>}
         </section>}
-        <nav className="feedback-qa-bottom" aria-label="合成底部导航"><span>地图</span><span>路线</span><span>记录</span><span>我的</span></nav>
+        {panel !== 'cache' && panel !== 'collections' && <nav className="feedback-qa-bottom" aria-label="合成底部导航"><span>地图</span><span>路线</span><span>记录</span><span>我的</span></nav>}
       </div>
     </main>
     <style>{`

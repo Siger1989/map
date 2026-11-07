@@ -37,6 +37,7 @@ import { collectionArchive } from './archive';
 import { ZIP_MIME } from '../files/archive';
 import type { TripPhoto } from '../photos/storage';
 import type { Recording } from '../outdoor/recording';
+import type { TripPackage } from '../outdoor/offline';
 type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onImport?: () => void;
   onImportedData?: (data: Transfer) => void;
@@ -61,6 +62,8 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onCacheRoutes: (keys: string[]) => void;
   onCacheFolder: () => void;
   cacheCount: number;
+  cachePackages?: readonly TripPackage[];
+  onCachePackage?: (id: string) => void;
   recording?: Recording;
 };
 export function CollectionsPanel(props: Props) {
@@ -285,6 +288,8 @@ export function CollectionsPanel(props: Props) {
         onCacheRoutes={props.onCacheRoutes}
         onCacheFolder={props.onCacheFolder}
         cacheCount={props.cacheCount}
+        cachePackages={props.cachePackages}
+        onCachePackage={props.onCachePackage}
       />
     );
   return (

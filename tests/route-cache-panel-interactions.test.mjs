@@ -22,8 +22,8 @@ async function loadPanel() {
         export async function estimateImportedRouteDownloadAsync() { return { count: 12, estimatedBytes: 4096, bounds: [103, 30, 104, 31] }; }
       `);
       stub(/nativeOffline$/, 'native-offline', `
-        export function canExportLegacyOfflineArchive(){return false;}
-        export function requestLegacyOfflineArchiveExport(){}
+        export function canExportLegacyOfflineArchive(){return globalThis.__legacyExportAvailable===true;}
+        export function requestLegacyOfflineArchiveExport(){globalThis.__legacyExportCalls=(globalThis.__legacyExportCalls??0)+1;return 'started';}
       `);
       stub(/tileCache$/, 'tile-cache', `export const OFFLINE_MAP_KEY='test.offline';`);
     } }],
@@ -103,6 +103,142 @@ test('selecting an online map source enables Next and opens cache settings witho
   await React.act(async () => [...mount.querySelectorAll('[role="tab"]')].find(button => button.textContent.includes('缓存包')).click());
   assert.ok(mount.querySelector('.route-cache-package--focused'));
   assert.equal(focusedId, 'focused-task', 'opening a task can scroll directly to its package row');
+});
+
+test('package list leads, current task is located, unavailable sources remain visible, and backup stays collapsed', async t => {
+  const { window } = parseHTML('<html><body><div id="root"></div></body></html>');
+  const previous = {
+    window: globalThis.window,
+    document: globalThis.document,
+    localStorage: globalThis.localStorage,
+    actEnvironment: globalThis.IS_REACT_ACT_ENVIRONMENT,
+    legacyExportAvailable: globalThis.__legacyExportAvailable,
+    legacyExportCalls: globalThis.__legacyExportCalls,
+  };
+  const stored = new Map();
+  Object.assign(globalThis, {
+    window, document: window.document,
+    localStorage: { getItem: key => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, String(value)), removeItem: key => stored.delete(key) },
+    IS_REACT_ACT_ENVIRONMENT: true,
+    __legacyExportAvailable: true,
+    __legacyExportCalls: 0,
+  });
+  const React = await import('react');
+  const { createRoot } = await import('react-dom/client');
+  const RouteCachePanel = await loadPanel();
+  const mount = document.getElementById('root'), root = createRoot(mount);
+  const source = { id: 'available-source', name: '已导入图源', kind: 'online', tiles: ['https://tiles.example.test/{z}/{x}/{y}.png'], minzoom: 12, maxzoom: 16, tileSize: 256 };
+  const active = {
+    id: 'active-181-task', name: '林道缓存 · 正在下载', provider: 'imported', sourceId: source.id, sourceName: source.name,
+    urls: Array.from({ length: 4768 }, (_, index) => `https://tiles.example.test/${index}`), done: 3178, bytes: 45_403_340,
+    complete: false, phase: 'running', phaseMessage: '缓存中', createdAt: 1760000000000,
+  };
+  const missingSource = {
+    id: 'retained-failed-task', name: '北坡缓存 · 暂停', provider: 'imported', sourceId: 'removed-source', sourceName: '已移除图源',
+    urls: Array.from({ length: 12 }, (_, index) => `https://removed.example.test/${index}`), done: 8, bytes: 819200,
+    complete: false, phase: 'failed', phaseMessage: '最近失败原因：图源连接超时，已下载内容保留', createdAt: 1760000001000,
+  };
+  const calls = { open: [], resume: [], verify: [], remove: [], pause: 0 };
+  const openMap = trip => {
+    calls.open.push(trip.id);
+    stored.set('shantu.offline-package.v1', trip.id);
+    stored.set('test.offline', 'true');
+    window.dispatchEvent(new window.Event('shantu:offline-map-mode'));
+  };
+  const offline = {
+    current: active, packages: [active, missingSource], busy: true, message: '', background: true, removing: [],
+    pause() { calls.pause++; }, resume(trip) { calls.resume.push(trip.id); }, verify(trip) { calls.verify.push(trip.id); }, remove(trip) { calls.remove.push(trip.id); },
+  };
+  let focusedId = '';
+  window.HTMLElement.prototype.scrollIntoView = function () { focusedId = this.dataset.tripId ?? ''; };
+  t.after(async () => {
+    await React.act(async () => root.unmount());
+    for (const [key, value] of Object.entries({ window: previous.window, document: previous.document, localStorage: previous.localStorage, IS_REACT_ACT_ENVIRONMENT: previous.actEnvironment, __legacyExportAvailable: previous.legacyExportAvailable, __legacyExportCalls: previous.legacyExportCalls })) {
+      if (value === undefined) delete globalThis[key]; else globalThis[key] = value;
+    }
+  });
+  await React.act(async () => root.render(React.createElement(RouteCachePanel, {
+    routes: [], sources: [source], offline, onOpenMap: openMap, onSources() {}, initialTab: 'packages',
+    focusTripId: 'stale-focus-id',
+  })));
+
+  const rows = [...mount.querySelectorAll('.route-cache-package[data-trip-id]')];
+  assert.equal(rows.length, 2, 'both imported task rows are rendered with export capability present');
+  assert.equal(rows[0].dataset.tripId, active.id);
+  assert.equal(focusedId, active.id, 'the matching current task is scrolled into view');
+  assert.match(rows[0].textContent, /林道缓存 · 正在下载/);
+  assert.match(rows[0].textContent, /图源：已导入图源/);
+  assert.match(rows[0].textContent, /下载中/);
+  assert.match(rows[0].textContent, /3178\/4768 项/);
+  assert.match(rows[0].textContent, /43\.3 MB/);
+  assert.equal(rows[0].querySelector('progress').getAttribute('value'), '3178');
+  assert.equal(rows[0].querySelector('progress').getAttribute('max'), '4768');
+
+  const missingRow = rows[1];
+  assert.match(missingRow.textContent, /原图源已移除或未导入/);
+  assert.match(missingRow.textContent, /最近失败原因：图源连接超时/);
+  assert.equal(missingRow.querySelector('.route-cache-package-open').disabled, true);
+  assert.equal([...missingRow.querySelectorAll('button')].find(button => button.textContent.includes('使用此包离线浏览')).disabled, true);
+  assert.equal([...missingRow.querySelectorAll('button')].find(button => button.textContent.trim() === '检查完整性').disabled, true, 'the shared verifier stays gated while the native download is active');
+
+  const archive = mount.querySelector('.route-cache-archive-details');
+  assert.ok(archive, 'native export capability keeps the backup action available');
+  assert.equal(archive.parentElement, mount.querySelector('.route-cache-package-list'), 'backup entry lives in the same scrolling list');
+  assert.equal(mount.querySelector('.route-cache-package-list').lastElementChild, archive, 'the backup entry follows every package row');
+  assert.equal(archive.hasAttribute('open'), false, 'backup/import help does not consume the initial viewport');
+  assert.match(archive.querySelector('summary').textContent, /缓存备份与迁入/);
+  assert.doesNotMatch(archive.textContent, /新应用|此旧版APK/);
+  await React.act(async () => archive.querySelector('.route-cache-archive-action').click());
+  assert.equal(globalThis.__legacyExportCalls, 1, 'the legacy private-cache export bridge remains connected');
+
+  await React.act(async () => rows[0].querySelector('.route-cache-actions button').click());
+  assert.equal(calls.pause, 1, 'live current task keeps its pause callback');
+  offline.busy = false;
+  active.phase = 'paused';
+  active.phaseMessage = '已暂停，可继续';
+  await React.act(async () => root.render(React.createElement(RouteCachePanel, {
+    routes: [], sources: [source], offline, onOpenMap: openMap, onSources() {}, initialTab: 'packages',
+  })));
+  const pausedRow = mount.querySelector(`[data-trip-id="${active.id}"]`);
+  const missingAfterPause = mount.querySelector(`[data-trip-id="${missingSource.id}"]`);
+  assert.equal([...pausedRow.querySelectorAll('button')].find(button => button.textContent.trim() === '继续').disabled, false, 'paused package can resume');
+  await React.act(async () => [...pausedRow.querySelectorAll('button')].find(button => button.textContent.trim() === '继续').click());
+  assert.deepEqual(calls.resume, [active.id]);
+  const verify = [...missingAfterPause.querySelectorAll('button')].find(button => button.textContent.trim() === '检查完整性');
+  assert.equal(verify.disabled, false, 'a missing-source package still exposes integrity verification');
+  await React.act(async () => verify.click());
+  assert.deepEqual(calls.verify, [missingSource.id]);
+  await React.act(async () => [...missingAfterPause.querySelectorAll('button')].find(button => button.textContent.trim() === '删除').click());
+  const confirmDelete = [...missingAfterPause.querySelectorAll('button')].find(button => button.textContent.trim() === '确认删除');
+  assert.ok(confirmDelete, 'removal still requires explicit confirmation');
+  await React.act(async () => confirmDelete.click());
+  assert.deepEqual(calls.remove, [missingSource.id]);
+  assert.ok(mount.querySelector(`[data-trip-id="${missingSource.id}"]`), 'the component keeps the package row until the offline hook reports successful removal');
+  await React.act(async () => pausedRow.querySelector('.route-cache-use-offline').click());
+  assert.deepEqual(calls.open, [active.id], 'offline browsing uses the host source/display/bounds workflow instead of only changing flags');
+  assert.equal(stored.get('shantu.offline-package.v1'), active.id);
+  assert.equal(stored.get('test.offline'), 'true');
+  assert.match(pausedRow.querySelector('.route-cache-use-offline').textContent, /恢复在线地图/);
+  await React.act(async () => pausedRow.querySelector('.route-cache-package-open').click());
+  assert.deepEqual(calls.open, [active.id, active.id]);
+
+  const css = await (await import('node:fs/promises')).readFile(new URL('../modules/outdoor/routeCachePanel.css', import.meta.url), 'utf8');
+  assert.match(css, /\.route-cache-package-list\s*\{[^}]*overflow-y:\s*auto/s, 'only the package list scrolls inside its pane');
+  assert.match(css, /\.route-cache-archive-content\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto/s, 'archive copy and button remain in one horizontal row');
+
+  offline.packages = [];
+  offline.current = null;
+  await React.act(async () => root.render(React.createElement(RouteCachePanel, {
+    routes: [], sources: [source], offline, onOpenMap: trip => calls.open.push(trip.id), onSources() {}, initialTab: 'packages',
+  })));
+  const emptyList = mount.querySelector('.route-cache-package-list');
+  assert.match(emptyList.querySelector('.route-cache-empty').textContent, /还没有路线缓存包/);
+  const emptyArchive = emptyList.lastElementChild;
+  assert.equal(emptyArchive.tagName.toLowerCase(), 'details');
+  assert.equal(emptyArchive.hasAttribute('open'), false, 'the empty-state backup entry is available without occupying a fixed footer');
+  assert.ok(emptyArchive.querySelector('summary'));
+  await React.act(async () => emptyArchive.querySelector('.route-cache-archive-action').click());
+  assert.equal(globalThis.__legacyExportCalls, 2, 'export remains callable when there are no package rows');
 });
 
 test('cache prompt opens the real task and preserves real progress and failure details', async t => {

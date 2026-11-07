@@ -34,3 +34,98 @@ html[data-ui-theme] .observatory.home-map .collection-workbench .workbench-cache
   height: 32px;
   min-height: 32px;
 }
+
+.observatory.home-map .collection-workbench .workbench-cache-packages {
+  padding: 2px 4px 4px;
+  color: var(--ui-ink, #17372e);
+  background: var(--ui-surface, #f4f6f1);
+}
+.observatory.home-map .collection-workbench .workbench-cache-packages-heading {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--ui-line, #cbd5c9);
+  font-size: 11px;
+}
+.observatory.home-map .collection-workbench .workbench-cache-manage {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border: 1px solid var(--ui-line, #cbd5c9);
+  border-radius: var(--ui-radius-control, 4px);
+  color: var(--ui-button-ink, #183b36);
+  background: var(--ui-raised, #fff);
+  font-size: 10px;
+}
+.observatory.home-map .collection-workbench .workbench-cache-manage small {
+  color: var(--ui-muted, #65736b);
+  font-size: 9px;
+}
+.observatory.home-map .collection-workbench .workbench-cache-package {
+  padding: 2px 0;
+  border-bottom: 1px solid var(--ui-line, #d1dace);
+}
+.observatory.home-map .collection-workbench .workbench-cache-package-open {
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 5px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-control, 4px);
+  color: var(--ui-button-ink, #183b36);
+  background: var(--ui-raised, #fff);
+  text-align: left;
+}
+.observatory.home-map .collection-workbench .workbench-cache-package-open:hover {
+  background: var(--ui-selected, #e5eee6);
+}
+.observatory.home-map .collection-workbench .workbench-cache-package-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+.observatory.home-map .collection-workbench .workbench-cache-package-copy strong {
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.observatory.home-map .collection-workbench .workbench-cache-package-copy small {
+  overflow: hidden;
+  color: var(--ui-muted, #65736b);
+  font-size: 9px;
+  line-height: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.observatory.home-map .collection-workbench .workbench-cache-open-label {
+  flex: 0 0 auto;
+  color: var(--ui-accent, #246748);
+  font-size: 9px;
+  white-space: nowrap;
+}
+.observatory.home-map .collection-workbench .workbench-cache-package .offline-progress {
+  margin: 2px 4px 1px;
+  font-size: 9px;
+}
+.observatory.home-map .collection-workbench .workbench-cache-package .offline-progress progress {
+  height: 6px;
+}
+.observatory.home-map .collection-workbench .workbench-cache-empty {
+  margin: 0;
+  padding: 8px 4px;
+  color: var(--ui-muted, #65736b);
+  font-size: 10px;
+}

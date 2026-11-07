@@ -54,6 +54,8 @@ import { selectedWorkbenchKeys } from './workbenchShareData';
 import { CollectionTabs } from './CollectionTabs';
 import { matchesCollectionTab } from './tabOrder';
 import './workbenchCache.css';
+import { CachePackageList } from './CachePackageList';
+import type { TripPackage } from '../outdoor/offline';
 
 type Props = {
   onImport?: () => void;
@@ -67,6 +69,8 @@ type Props = {
   onCacheRoutes: (keys: string[]) => void;
   onCacheFolder: () => void;
   cacheCount: number;
+  cachePackages?: readonly TripPackage[];
+  onCachePackage?: (id: string) => void;
 };
 export function WorkbenchPanel(props: Props) {
   const store = useWorkbenchData();
@@ -545,8 +549,8 @@ export function WorkbenchPanel(props: Props) {
           </header>
           <div className="workbench-search">
             <SmartInput
-              aria-label="搜索收藏"
-              placeholder="搜索收藏"
+              aria-label={type === 'cache' ? '搜索缓存路线和图源' : '搜索收藏'}
+              placeholder={type === 'cache' ? '搜索缓存路线 / 图源' : '搜索收藏'}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -600,16 +604,24 @@ export function WorkbenchPanel(props: Props) {
             </div>
           )}
           <div ref={swipe.list} className="workbench-tree-list">
-            {(type === 'all' || type === 'cache') && (
+            {type === 'all' && (
               <div className="workbench-cache-folder">
-                <button type="button" onClick={props.onCacheFolder} aria-label={`打开缓存区域，${props.cacheCount} 个缓存包`}>
+                <button type="button" onClick={props.onCacheFolder} aria-label={`管理地图缓存，缓存包 ${props.cacheCount} 个`}>
                   <Folder size={16} />
-                  <span><strong>缓存区域</strong><small>离线地图包</small></span>
+                  <span><strong>地图缓存</strong><small>管理全部缓存</small></span>
                   <small className="workbench-cache-count">{props.cacheCount}</small>
                 </button>
               </div>
             )}
-            {sortWorkbenchItems(view, sort, sortCenter).map((i) => row(i))}
+            {type === 'cache' ? (
+              <CachePackageList
+                packages={props.cachePackages ?? []}
+                query={query}
+                totalCount={props.cacheCount}
+                onOpen={props.onCachePackage}
+                onManage={props.onCacheFolder}
+              />
+            ) : sortWorkbenchItems(view, sort, sortCenter).map((i) => row(i))}
             {!view.length && type !== 'cache' && <p className="workbench-empty">{type === 'hidden' ? '暂无隐藏项目' : type === 'route' ? '暂无匹配的行程或路线计划' : '没有匹配的收藏'}</p>}
           </div>
           {batch && (

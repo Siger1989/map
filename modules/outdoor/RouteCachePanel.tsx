@@ -55,6 +55,22 @@ function isOfflineOnly() {
   try { return localStorage.getItem(OFFLINE_MAP_KEY) === 'true'; } catch { return false; }
 }
 
+function readSelectedPackageId() {
+  try { return localStorage.getItem('shantu.offline-package.v1') ?? ''; } catch { return ''; }
+}
+
+function packageProgressLabel(trip: TripPackage, downloading: boolean) {
+  const count = `${trip.done}/${trip.urls.length} 项 · ${cachedSize(trip.bytes)}`;
+  if (trip.phase === 'preparing' || (!trip.urls.length && !trip.complete)) return `${trip.phaseMessage || '正在规划路线缓存'} · ${count}`;
+  if (trip.phase === 'failed') return `${trip.phaseMessage || '缓存失败'} · ${count}`;
+  if (trip.phase === 'waiting') return `${trip.phaseMessage || '等待网络恢复，已下载内容保留'} · ${count}`;
+  if (trip.complete || trip.phase === 'complete') return `已完成 · ${count}`;
+  if (trip.phase === 'paused') return `已暂停，可继续 · ${count}`;
+  if (downloading || trip.phase === 'running') return `下载中 · ${count}`;
+  if (trip.phase === 'queued') return `排队中 · ${count}`;
+  return `未完成 · ${count}`;
+}
+
 export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources, initialRouteId, initialTab = 'setup', focusTripId, batch = false, initialRouteIds = [] }: Props) {
   const onlineSources = useMemo(() => sources.filter((source) => source.kind === 'online'), [sources]);
   const [tab, setTab] = useState<'setup' | 'packages'>(initialTab);
@@ -65,6 +81,7 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
   const [bufferKm, setBufferKm] = useState(4);
   const [zoom, setZoom] = useState(14);
   const [onlyCached, setOnlyCached] = useState(isOfflineOnly);
+  const [selectedPackageId, setSelectedPackageId] = useState(readSelectedPackageId);
   const [removeConfirmId, setRemoveConfirmId] = useState('');
   const [hiddenCompletedTripId, setHiddenCompletedTripId] = useState(offline.current?.complete ? offline.current.id : '');
   const [openError, setOpenError] = useState('');
@@ -103,7 +120,10 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
     if (selectedSource) setZoom(initialZoom(selectedSource));
   }, [selectedSource?.id]);
   useEffect(() => {
-    const sync = () => setOnlyCached(isOfflineOnly());
+    const sync = () => {
+      setOnlyCached(isOfflineOnly());
+      setSelectedPackageId(readSelectedPackageId());
+    };
     window.addEventListener('shantu:offline-map-mode', sync);
     window.addEventListener('storage', sync);
     return () => {
@@ -134,20 +154,29 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
   const canExportLegacyArchive = canExportLegacyOfflineArchive();
   const activeTrip = offline.current;
   const availableTrip = (trip: TripPackage) => !!trip.sourceId && onlineSources.some((source) => source.id === trip.sourceId);
-  let selectedPackageId = '';
-  try { selectedPackageId = localStorage.getItem('shantu.offline-package.v1') ?? ''; } catch { /* Storage may be unavailable. */ }
   const selectedPackage = packages.find((trip) => trip.id === selectedPackageId && availableTrip(trip));
+  const requestedPackageExists = !!focusTripId && packages.some((trip) => trip.id === focusTripId);
+  const focusPackageId = requestedPackageExists ? focusTripId
+    : activeTrip?.provider === 'imported' && !activeTrip.complete && packages.some((trip) => trip.id === activeTrip.id) ? activeTrip.id : undefined;
   const showProgress = activeTrip?.provider === 'imported' && (offline.busy || !activeTrip.complete || hiddenCompletedTripId !== activeTrip.id);
 
   useEffect(() => {
-    if (tab !== 'packages' || !focusTripId) return;
+    if (tab !== 'packages' || !focusPackageId) return;
     const target = [...(packageListRef.current?.querySelectorAll<HTMLElement>('[data-trip-id]') ?? [])]
-      .find((element) => element.dataset.tripId === focusTripId);
+      .find((element) => element.dataset.tripId === focusPackageId);
     target?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
-  }, [focusTripId, packages.length, tab]);
+  }, [focusPackageId, packages.length, tab]);
 
   const openTrip = (trip: TripPackage) => {
     setOpenError('');
+    if (!availableTrip(trip)) {
+      setOpenError('原图源已移除或未导入。重新导入原图源后，才能查看或续传此包；现有任务记录和已缓存瓦片已保留。');
+      return;
+    }
+    if (!trip.urls.length || trip.done <= 0) {
+      setOpenError('此包尚未下载可查看的地图图像。');
+      return;
+    }
     try { onOpenMap(trip); }
     catch (error) { setOpenError((error as Error).message || '打开缓存包失败'); }
   };
@@ -159,6 +188,14 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
       setOnlyCached(enabled);
       window.dispatchEvent(new Event('shantu:offline-map-mode'));
     } catch { setOpenError('缓存模式未能保存，请重试'); }
+  };
+
+  const useTripOffline = (trip: TripPackage) => {
+    if (!availableTrip(trip) || trip.done <= 0) return;
+    // The host also selects the package's source, restores its display settings
+    // and fits its bounds. Changing only the cache flags can leave another
+    // source selected and make an otherwise valid package look empty.
+    openTrip(trip);
   };
 
   const start = () => {
@@ -278,37 +315,41 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
         <div className="route-cache-package-pane">
           {offline.message && <small className="route-cache-message" role="status">{offline.message}</small>}
           {openError && <small className="route-cache-open-error" role="alert">{openError}</small>}
-          {canExportLegacyArchive && <div className="route-cache-inline-help" role="group" aria-label="迁移旧版离线缓存">
-            <span>将此旧版 APK 私有缓存导出为 ZIP；在新应用的“本地离线地图”中选择“迁入旧版离线缓存归档”。确认新应用已导入后，再决定是否移除旧版安装。</span>
-            <button onClick={() => {
-              try { requestLegacyOfflineArchiveExport(); setOpenError('正在打包旧版离线缓存；完成后会打开系统保存窗口，请将ZIP保存到新应用可访问的位置。'); }
-              catch (error) { setOpenError((error as Error).message || '旧版缓存导出失败'); }
-            }}>导出旧版缓存 ZIP</button>
+          {onlyCached && !selectedPackage && <div className="route-cache-selected-warning" role="status">
+            <span>离线浏览包当前不可用。请选一个可用包，或恢复在线地图。</span>
+            <button className="route-cache-back" onClick={() => setCacheOnly(false)}>恢复在线地图</button>
           </div>}
-          <label className="route-cache-only">
-            <input type="checkbox" checked={onlyCached && !!selectedPackage} disabled={!selectedPackage} onChange={(event) => setCacheOnly(event.target.checked)} />
-            仅显示缓存图像
-          </label>
-          {!selectedPackage && <small className="route-cache-cache-hint">请先点选一个可用缓存包，再启用仅缓存显示。</small>}
-          {onlyCached && <button className="route-cache-online" onClick={() => setCacheOnly(false)}>恢复在线地图</button>}
-          {packages.length === 0 ? <div className="route-cache-empty">还没有沿线缓存包</div> : (
-            <div className="route-cache-package-list" ref={packageListRef}>
+          <div className="route-cache-package-list" ref={packageListRef} aria-label="路线缓存任务列表">
+              {packages.length === 0 && <div className="route-cache-empty">还没有路线缓存包</div>}
               {packages.map((trip) => {
                 const canOpen = availableTrip(trip) && trip.urls.length > 0 && trip.done > 0 && !offline.removing.includes(trip.id);
                 const downloading = offline.busy && activeTrip?.id === trip.id;
-                const percent = trip.urls.length ? Math.min(100, Math.round(trip.done / trip.urls.length * 100)) : 0;
+                const percent = trip.urls.length ? Math.min(100, Math.floor(trip.done / trip.urls.length * 100)) : 0;
                 const routeName = cachedRouteName(trip);
-                return <article className={`route-cache-package${focusTripId === trip.id ? ' route-cache-package--focused' : ''}`} key={trip.id} data-trip-id={trip.id}>
-                  <button className="route-cache-package-open" disabled={!canOpen}
-                    aria-label={`显示缓存地图：${routeName}`}
-                    title={!availableTrip(trip) ? '原图源不可用，请重新导入后再查看' : !trip.urls.length ? '路线缓存清单尚未完成' : trip.done === 0 ? '尚未下载地图图像' : '点击显示缓存地图'}
-                    onClick={() => openTrip(trip)}>
-                    <strong>{routeName}</strong>
-                    <span>图源：{trip.sourceName ?? '自定义图源'}</span>
-                    <span title="本包已缓存瓦片大小；不同包共用的瓦片只存储一份">占用空间：{cachedSize(trip.bytes)}</span>
-                    <span>下载进度：{trip.phase === 'preparing' ? (trip.phaseMessage || '正在规划路线缓存…') : trip.phase === 'waiting' ? (trip.phaseMessage || '等待网络恢复，已下载内容保留') : `${percent}% · ${trip.done}/${trip.urls.length} · ${trip.complete ? '已完成' : downloading ? '下载中' : trip.phase === 'failed' ? '失败，可重试' : trip.phase === 'paused' ? '已暂停，可继续' : '未完成'}`}</span>
-                    {trip.phase === 'preparing' ? <progress aria-label="正在规划路线缓存" /> : <progress aria-label="下载进度" value={trip.done} max={Math.max(1, trip.urls.length)} />}
-                  </button>
+                const sourceAvailable = availableTrip(trip);
+                const selectedForOffline = selectedPackageId === trip.id && onlyCached;
+                const status = packageProgressLabel(trip, downloading);
+                return <article className={`route-cache-package${focusPackageId === trip.id ? ' route-cache-package--focused' : ''}${downloading ? ' route-cache-package--active' : ''}`} key={trip.id} data-trip-id={trip.id} data-active-task={downloading || undefined}>
+                  <header className="route-cache-package-heading">
+                    <strong title={routeName}>{routeName}</strong>
+                    <span className={`route-cache-package-state${trip.phase === 'failed' ? ' is-error' : trip.complete ? ' is-complete' : ''}`} role="status">{status.split(' · ')[0]}</span>
+                  </header>
+                  <small className="route-cache-package-source">图源：{trip.sourceName ?? '自定义图源'}</small>
+                  {!sourceAvailable && <small className="route-cache-package-source-missing" role="status">原图源已移除或未导入；重新导入后可查看、续传。任务记录和已缓存瓦片保留。</small>}
+                  <div className="route-cache-package-progress-copy">
+                    <span>{status}</span>
+                    <span>{percent}%</span>
+                  </div>
+                  {trip.phase === 'preparing' ? <progress aria-label={`${routeName}正在规划缓存`} /> : <progress aria-label={`${routeName}下载进度`} value={trip.done} max={Math.max(1, trip.urls.length)} />}
+                  <div className="route-cache-package-primary-actions">
+                    <button className="route-cache-package-open" disabled={!canOpen}
+                      aria-label={`查看缓存地图：${routeName}`}
+                      title={!sourceAvailable ? '原图源已移除或未导入，重新导入后才能查看' : !trip.urls.length ? '路线缓存清单尚未完成' : trip.done === 0 ? '尚未下载地图图像' : '查看已缓存地图'}
+                      onClick={() => openTrip(trip)}>查看地图</button>
+                    {selectedForOffline
+                      ? <button className="route-cache-use-offline is-selected" aria-pressed="true" onClick={() => setCacheOnly(false)}>恢复在线地图</button>
+                      : <button className="route-cache-use-offline" aria-pressed="false" disabled={!sourceAvailable || trip.done <= 0} title={!sourceAvailable ? '原图源已移除或未导入' : trip.done <= 0 ? '先缓存至少一项地图图像' : '使用此包离线浏览'} onClick={() => useTripOffline(trip)}>使用此包离线浏览</button>}
+                  </div>
                   <div className="route-cache-actions">
                     {downloading ? <button onClick={offline.pause}>暂停</button> : !trip.complete && <button disabled={offline.busy || !availableTrip(trip)} onClick={() => void offline.resume(trip)}>继续</button>}
                     <button disabled={offline.busy} onClick={() => void offline.verify(trip)}>检查完整性</button>
@@ -318,8 +359,19 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
                   </div>
                 </article>;
               })}
+          {canExportLegacyArchive && <details className="route-cache-archive-details" onToggle={event => {
+            if (event.currentTarget.open) event.currentTarget.scrollIntoView({ block: 'nearest' });
+          }}>
+            <summary>缓存备份与迁入</summary>
+            <div className="route-cache-archive-content">
+              <span>导出本机私有离线缓存 ZIP。保存后，可在支持该归档的山兔版本中导入。</span>
+              <button className="route-cache-archive-action" onClick={() => {
+                try { requestLegacyOfflineArchiveExport(); setOpenError('正在准备缓存归档；完成后会打开系统保存窗口。'); }
+                catch (error) { setOpenError((error as Error).message || '缓存归档导出失败'); }
+              }}>导出缓存 ZIP</button>
             </div>
-          )}
+            </details>}
+          </div>
         </div>
       )}
     </section>

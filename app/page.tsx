@@ -3361,7 +3361,7 @@ export default function Home() {
               : panel
           }
           drawingActive={panel === null && tracks.drawing}
-          title={panel === 'cache' ? (routeCacheTarget.tab === 'packages' ? '缓存区域' : routeCacheTarget.batch ? '批量缓存地图' : '路线地图缓存') : panel === 'route' ? defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' }) : panel === 'industry' ? '行业工具' : panel === 'sources' ? sourcesNavigation?.title : undefined}
+          title={panel === 'cache' ? (routeCacheTarget.tab === 'packages' ? `地图缓存 · ${offline.packages.filter(trip => trip.provider === 'imported').length}个包` : routeCacheTarget.batch ? '批量缓存地图' : '路线地图缓存') : panel === 'route' ? defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' }) : panel === 'industry' ? '行业工具' : panel === 'sources' ? sourcesNavigation?.title : undefined}
           titleContent={panel === 'route' && navigation.route ? <RouteNameInput
             key={navigation.route.createdAt}
             name={navigation.route.name || defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' })}
@@ -3602,6 +3602,12 @@ export default function Home() {
                 setPanel('cache');
               }}
               cacheCount={offline.packages.filter(trip => trip.provider === 'imported').length}
+              cachePackages={offline.packages.filter(trip => trip.provider === 'imported')}
+              onCachePackage={id => {
+                preserveFavoritesFocus();
+                setRouteCacheTarget({ tab: 'packages', focusTripId: id });
+                setPanel('cache');
+              }}
               onCacheRoute={key => {
                 const routeId = key.startsWith('track:') ? key.slice(6) : key.startsWith('route:') ? `favorite:${key.slice(6)}` : '';
                 if (!cacheRoutes.some(route => route.id === routeId)) return;
