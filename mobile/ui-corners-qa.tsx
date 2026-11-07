@@ -103,7 +103,7 @@ function Fixture() {
       } as CSSProperties}>
         <div className="qa-map" aria-hidden="true" />
         <GuidanceCard guidance={guidance} onStop={() => undefined} onFollow={() => undefined}
-          onShow={() => undefined} following={false} onShare={() => undefined}
+          onShow={() => undefined} following={false}
           onFirstPerson={() => undefined}
           telemetry={<NavigationTelemetry session={session} fix={null} />} />
         <button className="qa-rally-toggle" onClick={() => setShowRally((value) => !value)}>

@@ -75,7 +75,9 @@ export function PhotoPicker({
       </label>}
       {folderReady && <small>
         {folders
-          ? '可多选；文件夹含子目录。每张≤20MB，最多200张/200MB。'
+          ? native
+            ? '系统会先采样并压缩照片；原片不改。单张源文件≤100MB，最多200张；缓存最多200MB。'
+            : '可多选；文件夹含子目录。单张≤20MB，最多200张/200MB。'
           : '当前安装包不支持选文件夹，请升级后使用；也可先多选照片。'}
       </small>}
     </div>

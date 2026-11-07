@@ -800,6 +800,17 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-d
   display: grid;
   grid-template-columns: repeat(5,minmax(0,1fr));
 }
+.observatory .route-edit-primary .route-box-mode-group {
+  grid-column: span 3;
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  min-width: 0;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--ui-line, #c9d5d0);
+  border-radius: var(--ui-radius-control,4px);
+  background: color-mix(in srgb,var(--ui-selected, #dcefe5) 55%,var(--ui-surface, #fff));
+}
 .observatory .route-edit-primary .route-edit-actions-row {
   grid-template-columns: var(--ui-compact-control-height,28px) var(--ui-compact-control-height,28px) minmax(54px,1fr) minmax(58px,1fr) var(--ui-compact-control-height,28px);
 }
@@ -862,7 +873,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-d
   border-radius: 4px;
 }
 .observatory .route-edit-dock[data-view='selection'] .route-add-point-marker { grid-column: 1 / 3; justify-self: start; }
-.observatory .route-edit-dock[data-view='selection'] .route-set-endpoint { grid-column: 3; }
+.observatory .route-edit-dock[data-view='selection'] .route-set-endpoint { grid-column: 5; }
 .observatory .route-edit-dock[data-view='style'] .route-edit-style { margin: 0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-primary .route-edit-mode-row {
   box-sizing: border-box;
@@ -1068,4 +1079,30 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-d
   height: 44px;
   border-color: var(--ui-line);
   background: var(--ui-raised);
+}
+
+/* Keep the three box-selection actions on one shared surface. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-primary .route-selection-modes .route-box-mode-group {
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-control,4px);
+  background: color-mix(in srgb,var(--ui-selected) 55%,var(--ui-surface));
+  box-shadow: none;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-primary .route-selection-modes .route-box-mode-group button {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-primary .route-selection-modes .route-box-mode-group button[aria-pressed='true'] {
+  color: var(--ui-accent);
+  border-color: transparent;
+  background: var(--ui-selected);
+  box-shadow: none;
+}
+/* The generic theme's active ink is low contrast on the soft selected surface. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] button.route-snap-toggle[aria-pressed='true'] {
+  color: var(--ui-accent);
+  background: var(--ui-selected);
+  border-color: transparent;
+  box-shadow: 0 0 6px 1px color-mix(in srgb,var(--ui-accent) 22%,transparent);
 }

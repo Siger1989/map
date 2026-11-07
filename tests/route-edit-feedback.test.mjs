@@ -16,9 +16,9 @@ const style={color:'#ff4400',width:3};
 function dom(){ const {window}=parseHTML('<html><body><div id="root"></div></body></html>'); window.requestAnimationFrame=callback=>window.setTimeout(()=>callback(Date.now()),0); window.cancelAnimationFrame=window.clearTimeout.bind(window); Object.assign(globalThis,{window,document:window.document,requestAnimationFrame:window.requestAnimationFrame.bind(window),cancelAnimationFrame:window.cancelAnimationFrame.bind(window),IS_REACT_ACT_ENVIRONMENT:true}); globalThis.localStorage={getItem:()=>JSON.stringify({mode:'slope'}),setItem(){}}; return window; }
 function mapMock(){
   const sources=new Map(),layers=new Map(),stats={writes:0,projects:0,updates:0};
-  return {sources,stats,on(){},getSource:id=>sources.get(id),getLayer:id=>layers.get(id),
+  return {sources,stats,on(){},off(){},getContainer:()=>document.body,getCanvas:()=>({clientWidth:390,clientHeight:857,getBoundingClientRect:()=>({left:0,top:0})}),getSource:id=>sources.get(id),getLayer:id=>layers.get(id),
     addSource(id,spec){sources.set(id,{data:structuredClone(spec.data),setData(data){this.data=structuredClone(data);if(id==='manual-tracks')stats.writes++;return Promise.resolve();},updateData(diff){if(id==='manual-tracks')stats.updates++;for(const change of diff.update??[]){const feature=this.data.features.find(f=>f.id===change.id);if(feature)for(const {key,value} of change.addOrUpdateProperties??[])feature.properties[key]=value;}return Promise.resolve();}});},
-    addLayer(spec){layers.set(spec.id,spec);},getStyle:()=>({layers:[...layers.values()]}),moveLayer(){},isMoving:()=>false,
+    addLayer(spec){layers.set(spec.id,spec);},getStyle:()=>({layers:[...layers.values()]}),getLayoutProperty:(id,key)=>layers.get(id)?.layout?.[key],getPaintProperty:(id,key)=>layers.get(id)?.paint?.[key],queryRenderedFeatures:()=>[],moveLayer(){},isMoving:()=>false,
     project:([x,y])=>{stats.projects++;return {x:x*1e5,y:y*1e5};}};
 }
 
@@ -39,19 +39,27 @@ test('editing clears both DOM and geographic gap cues, blocks stale redisplay, e
 test('main toolbar exposes setting one branch node as end with real undo and no subpage detour',async t=>{
   dom();const a=[20,10],b=[20.01,10],c=[20.02,10],d=[20.01,10.01];
   let session=startRouteEdit({id:'fork',name:'fork',createdAt:0,style,segments:[[a,b,c],[b,d]]}),select,rerender;
-  function Probe(){const [value,setValue]=React.useState(session),[points,setPoints]=React.useState([]);session=value;
+  function Probe(){const [value,setValue]=React.useState(session),[points,setPoints]=React.useState([]),[snapping,setSnapping]=React.useState(false),[roadSnapping,setRoadSnapping]=React.useState(false),[riverSnapping,setRiverSnapping]=React.useState(false);session=value;
     select=p=>{setPoints(p?[p]:[]);setValue(v=>p?selectEditNode(v,p):{...v,selected:null});};rerender=setValue;
-    return React.createElement(RouteEditToolbar,{session:value,selectedPoints:points,error:'',boxMode:null,onName:name=>setValue(v=>renameEditRoute(v,name)),onSetEnd:()=>setValue(v=>setEditEnd(v,points[0])),onBranch:()=>setValue(toggleEditBranch),onUndo:()=>setValue(undoRouteEdit),onBack(){},onSave(){},onAdd(){},onRemove(){},onSelectionMode(){},onSelectionDetails(){},onPointMarker(){return true;},onClearSelection(){select(null);},onStyle(){},onSnapping(){},onRoadSnapping(){},onRiverSnapping(){},snapping:false,roadSnapping:false,riverSnapping:false});}
+    return React.createElement(RouteEditToolbar,{session:value,selectedPoints:points,error:'',boxMode:null,onName:name=>setValue(v=>renameEditRoute(v,name)),onSetEnd:()=>setValue(v=>setEditEnd(v,points[0])),onBranch:()=>setValue(toggleEditBranch),onUndo:()=>setValue(undoRouteEdit),onBack(){},onSave(){},onAdd(){},onRemove(){},onSelectionMode(){},onSelectionDetails(){},onPointMarker(){return true;},onClearSelection(){select(null);},onStyle(){},onSnapping(){setSnapping(v=>!v);},onRoadSnapping(){setRoadSnapping(v=>!v);},onRiverSnapping(){setRiverSnapping(v=>!v);},snapping,roadSnapping,riverSnapping});}
   const root=createRoot(document.getElementById('root'));t.after(async()=>act(async()=>root.unmount()));
   await act(async()=>root.render(React.createElement(Probe)));
+  const snap=document.querySelector('.route-snap-toggle');
+  assert.equal(snap.getAttribute('aria-label'),'道路吸附，已关闭');
+  assert.equal(snap.title,'道路吸附已关闭');
+  await act(async()=>snap.click());
+  assert.equal(document.querySelector('.route-snap-toggle').getAttribute('aria-label'),'道路吸附，已开启');
+  assert.equal(document.querySelector('.route-snap-toggle').title,'道路吸附已开启');
+  assert.equal(document.querySelector('.route-box-mode-group').getAttribute('aria-label'),'框选模式');
   const button=()=>document.querySelector('.route-selection-modes .route-set-endpoint');
   assert.equal(button().disabled,true);
   await act(async()=>select(d));assert.equal(button().disabled,false);
   const noteEntry=document.querySelector('[data-edit-entry="selection"]');
-  assert.equal(noteEntry.textContent.trim(),'备注');
-  assert.equal(noteEntry.getAttribute('aria-label'),'节点备注');
+  assert.equal(noteEntry.textContent.trim(),'框选备注');
+  assert.equal(noteEntry.getAttribute('aria-label'),'框选备注');
+  assert.equal(noteEntry.title,'框选备注·1点');
   await act(async()=>noteEntry.click());
-  assert.equal(document.querySelector('.route-edit-dock-heading strong').textContent,'节点备注·1点');
+  assert.equal(document.querySelector('.route-edit-dock-heading strong').textContent,'框选备注·1点');
   assert.ok(document.querySelector('.route-selection-fields input[aria-label="选中点备注"]'));
   await act(async()=>document.querySelector('[aria-label="返回编辑工具"]').click());
   assert.equal(document.querySelector('.route-edit-dock').dataset.view,'tools');

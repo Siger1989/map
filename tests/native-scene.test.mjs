@@ -37,6 +37,21 @@ test('hidden tracks stay hidden and drag preview updates only the displayed geom
   assert.equal(createNativeSceneGeometry(props({ ...overlay, visible: false })).tracks.features.length, 0);
 });
 
+test('box-selected native nodes are explicit and selected edges render green glows with one pickable core', () => {
+  const track = { id: 'one', name: 'line', createdAt: 0, style,
+    segments: [[[0, 0], [0.001, 0], [0.002, 0]]], nodes: [[0, 0], [0.001, 0], [0.002, 0]] };
+  const overlay = { ...state([track]), nodeSelection: { trackId: 'one', points: [[0, 0], [0.001, 0]] } };
+  const features = createNativeSceneGeometry(props(overlay)).tracks.features;
+  const nodes = features.filter(f => f.properties.role === 'trackNode');
+  assert.deepEqual(nodes.map(f => f.properties.selected), [true, true, true], 'selected preserves its existing whole-track meaning');
+  assert.deepEqual(nodes.map(f => f.properties.boxSelected), [true, true, false], 'boxSelected marks only coordinates in nodeSelection');
+  const edges = features.filter(f => f.properties.role === 'selectedEdge');
+  assert.deepEqual(edges.map(f => f.properties.color), ['#20b978', '#20b978', '#20b978']);
+  assert.deepEqual(edges.map(f => f.properties.width), [11, 7, 4.5]);
+  assert.deepEqual(edges.map(f => f.properties.opacity), [0.16, 0.3, 1]);
+  assert.equal(edges.filter(f => f.properties.nativePick?.kind === 'track').length, 1, 'only the crisp core retains a pick delegate');
+});
+
 test('native cue line widths stay ordinary in forward and top modes', () => {
   const trackOverlay = state();
   const input = {

@@ -135,3 +135,26 @@ test('async adapter falls back for Node, returns compact estimates, and discards
   controller.abort();
   await assert.rejects(pending, { name: 'AbortError' });
 });
+
+test('worker estimate timeout settles the UI instead of leaving an endless pending state', async () => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'Worker');
+  const previousUrl = Object.getOwnPropertyDescriptor(globalThis, 'URL');
+  let terminated = 0;
+  globalThis.Worker = class {
+    postMessage() {}
+    terminate() { terminated++; }
+  };
+  globalThis.URL = class { constructor(path) { this.href = String(path); } };
+  try {
+    await assert.rejects(
+      estimateImportedRouteDownloadAsync(route(), source(), 14, { timeoutMs: 5 }),
+      /路线缓存量估算超时/,
+    );
+    assert.equal(terminated, 1);
+  } finally {
+    if (previous) Object.defineProperty(globalThis, 'Worker', previous);
+    else delete globalThis.Worker;
+    if (previousUrl) Object.defineProperty(globalThis, 'URL', previousUrl);
+    else delete globalThis.URL;
+  }
+});

@@ -47,7 +47,12 @@
 .map-comparison-drawing .track-drawing { inset: 0; }
 .map-comparison-drawing-mode { position: absolute; bottom: calc(44px + var(--home-bottom) + 2px); left: 112px; right: 92px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; pointer-events: auto; background: var(--ui-surface); border-radius: var(--ui-radius-control); }
 .map-comparison-drawing-mode button { min-width: 0; padding: 0 2px; font-size: 11px; }
-.map-comparison-drawing-mode button[aria-pressed='true'] { background: var(--ui-selected); color: var(--ui-accent); }
+.map-comparison-drawing-mode button[aria-pressed='true'] {
+  background: var(--ui-selected);
+  color: var(--ui-accent);
+  border-color: transparent;
+  box-shadow: 0 0 6px 1px color-mix(in srgb,var(--ui-accent) 22%,transparent);
+}
 .map-comparison-heading span { color: var(--ui-muted); font-size: 11px; flex: 1; min-width: 0; }
 .map-comparison-panes { display: grid; grid-template-rows: 1fr 1fr; flex: 1; min-height: 0; }
 .map-comparison-pane { position: relative; min-width: 0; min-height: 0; }

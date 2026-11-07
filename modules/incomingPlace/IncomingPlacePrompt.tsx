@@ -17,12 +17,16 @@ function nativeBridge(): PlaceBridge | undefined {
     ? candidate as PlaceBridge : undefined;
 }
 
-/** A user-confirmed destination handoff. It never starts live guidance or saves a place. */
-export function IncomingPlacePrompt({ onNavigate, onDismiss }: {
-  onNavigate: (place: RoutePlace) => void;
+/** Confirmation uses the real marker store; opening an untrusted URI alone never mutates it. */
+export function IncomingPlacePrompt({ onNavigate, onSave, saveError, onDismiss }: {
+  onNavigate: (place: RoutePlace) => boolean | void;
+  onSave?: (place: RoutePlace) => boolean;
+  saveError?: string;
   onDismiss?: () => void;
 }) {
   const [incoming, setIncoming] = useState<IncomingState | null>(null);
+  const [saveAttempted, setSaveAttempted] = useState(false);
+  useEffect(() => setSaveAttempted(false), [incoming?.token]);
   const handledToken = useRef('');
 
   const dismiss = useCallback((token: string, notify = true) => {
@@ -86,16 +90,18 @@ export function IncomingPlacePrompt({ onNavigate, onDismiss }: {
       </div>
       {incoming.parsed.kind === 'place' && incoming.parsed.inputDatum === 'GCJ-02' &&
         <div style={{ marginTop: 3, color: 'var(--ui-muted, #b2c6c3)', fontSize: 12 }}>腾讯坐标已转换为 WGS84</div>}
-      <div style={{ marginTop: 8, color: 'var(--ui-muted, #c2d6d0)', fontSize: 12 }}>确认后填入路线终点；不会自动开始实时导航。</div>
+      <div style={{ marginTop: 8, color: 'var(--ui-muted, #c2d6d0)', fontSize: 12 }}>导航会保存同名标记并设为路线终点，确认路线后再开始。</div>
     </> : <div style={{ color: 'var(--ui-muted, #c2d6d0)' }}>{unsupportedReason}</div>}
     </div>
-    <div style={{ display: 'flex', flexShrink: 0, justifyContent: 'flex-end', gap: 4, marginTop: 4 }}>
+    {saveAttempted && saveError && <p role="alert" style={{ color: 'var(--ui-danger)', margin: '4px 0', fontSize: 12 }}>{saveError}</p>}
+    <div style={{ display: 'flex', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end', gap: 4, marginTop: 4 }}>
       <button type="button" onClick={() => dismiss(incoming.token)} style={buttonStyle(false)}>关闭</button>
+      {place && onSave && <button type="button" onClick={() => { setSaveAttempted(true); if (onSave(place)) dismiss(incoming.token, false); }} style={buttonStyle(false)}>保存标记</button>}
       {place && <button type="button" onClick={() => {
         const selected = place;
-        dismiss(incoming.token, false);
-        onNavigate(selected);
-      }} style={buttonStyle(true)}>设为路线终点</button>}
+        setSaveAttempted(true);
+        if (onNavigate(selected) !== false) dismiss(incoming.token, false);
+      }} style={buttonStyle(true)}>在山兔导航</button>}
     </div>
   </section>;
 }

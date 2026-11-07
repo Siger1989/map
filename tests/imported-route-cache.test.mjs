@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { readFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 
 const mocks = new Map([
   ['./nativeOffline.ts', `
@@ -137,6 +138,35 @@ test('imported route saves one valid image, reuses its cached body, verifies com
   assert.equal(verified.complete, true);
   assert.equal(state.nativeCalls, 0);
   assert.equal(state.nativeDownloadCalls, 0);
+});
+
+test('imported route downloads and verifies one real HTTP tile through the existing cache path', async t => {
+  const state = await environment(t);
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j8ioAAAAASUVORK5CYII=', 'base64');
+  let requests = 0;
+  const server = createServer((request, response) => {
+    requests++;
+    assert.equal(request.url, '/map/12/2048/2048.png');
+    response.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': png.length });
+    response.end(png);
+  });
+  await new Promise((resolve, reject) => server.listen(0, '127.0.0.1', resolve).once('error', reject));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const address = server.address();
+  const url = `http://127.0.0.1:${address.port}/map/12/2048/2048.png`;
+  const source = { id: 'local-http-source', name: '本机HTTP测试影像', kind: 'online', format: 'XYZ', tiles: [url] };
+  state.sources.set(source.id, source);
+  const trip = makeTrip([url], { id: 'local-http-trip', sourceId: source.id, sourceName: source.name });
+
+  await api.downloadTrip(trip, new AbortController().signal, () => {}, (tileUrl, signal) => fetch(tileUrl, { signal }));
+  assert.equal(requests, 1);
+  const saved = state.rows.get(url);
+  assert.ok(saved);
+  const verified = await api.verifyTrip(trip);
+  assert.equal(verified.complete, true);
+  assert.equal(verified.done, 1);
+  assert.equal(verified.bytes, png.length);
+  assert.deepEqual(Buffer.from(await state.rows.get(url).arrayBuffer()), png);
 });
 
 test('only the explicit native route-download capability redirects imported packages', async t => {

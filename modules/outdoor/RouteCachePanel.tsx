@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MapSource } from '../mapSources/types';
 import type { Coordinate } from '../navigation/types';
-import { MAX_IMPORTED_DOWNLOAD_BYTES, MAX_IMPORTED_DOWNLOAD_RESOURCES } from './importedRouteDownload';
+import { MAX_IMPORTED_DOWNLOAD_BYTES, MAX_IMPORTED_DOWNLOAD_RESOURCES, validateImportedDownloadSource } from './importedRouteDownload';
 import { estimateImportedRouteDownloadAsync } from './asyncImportedRoutePlan';
 import { OFFLINE_MAP_KEY } from './tileCache';
 import { canExportLegacyOfflineArchive, requestLegacyOfflineArchiveExport } from './nativeOffline';
@@ -18,6 +18,7 @@ type Props = {
   onSources: () => void;
   initialRouteId?: string;
   initialTab?: 'setup' | 'packages';
+  focusTripId?: string;
   batch?: boolean;
   initialRouteIds?: string[];
 };
@@ -54,7 +55,7 @@ function isOfflineOnly() {
   try { return localStorage.getItem(OFFLINE_MAP_KEY) === 'true'; } catch { return false; }
 }
 
-export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources, initialRouteId, initialTab = 'setup', batch = false, initialRouteIds = [] }: Props) {
+export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources, initialRouteId, initialTab = 'setup', focusTripId, batch = false, initialRouteIds = [] }: Props) {
   const onlineSources = useMemo(() => sources.filter((source) => source.kind === 'online'), [sources]);
   const [tab, setTab] = useState<'setup' | 'packages'>(initialTab);
   const [setupStep, setSetupStep] = useState<'selectRoutes' | 'route' | 'source' | 'settings'>(() => batch ? 'selectRoutes' : 'route');
@@ -68,6 +69,7 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
   const [hiddenCompletedTripId, setHiddenCompletedTripId] = useState(offline.current?.complete ? offline.current.id : '');
   const [openError, setOpenError] = useState('');
   const [attemptedStart, setAttemptedStart] = useState(false);
+  const packageListRef = useRef<HTMLDivElement>(null);
   const selectedRoute = routes.find((route) => route.id === routeId) ?? routes[0];
   const selectableRoutes = useMemo(() => routes.filter((route) => route.segments.some((segment) => segment.length >= 2)), [routes]);
   const selectedRoutes = useMemo(() => batch
@@ -75,6 +77,11 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
     : selectedRoute ? [selectedRoute] : [], [batch, selectableRoutes, selectedRouteIds, selectedRoute]);
   const allRoutesSelected = selectableRoutes.length > 0 && selectedRoutes.length === selectableRoutes.length;
   const selectedSource = onlineSources.find((source) => source.id === sourceId);
+  const sourceSupportError = useMemo(() => {
+    if (!selectedSource) return '';
+    try { validateImportedDownloadSource(selectedSource); return ''; }
+    catch (error) { return (error as Error).message || '此图源暂不支持路线缓存'; }
+  }, [selectedSource]);
 
   useEffect(() => {
     if (!routes.some((route) => route.id === routeId)) setRouteId(routes[0]?.id ?? '');
@@ -108,7 +115,10 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
   const area = useMemo(() => selectedRoutes.length ? ({ kind: 'route' as const, segments: selectedRoutes.flatMap((route) => route.segments.filter((segment) => segment.length >= 2)), bufferKm }) : null, [selectedRoutes, bufferKm]);
   const [estimate, setEstimate] = useState<{ plan: Awaited<ReturnType<typeof estimateImportedRouteDownloadAsync>> | null; error: string; pending: boolean; area: typeof area; sourceId: string; zoom: number }>({ plan: null, error: '', pending: false, area: null, sourceId: '', zoom: 0 });
   useEffect(() => {
-    if (!area || !selectedSource) { setEstimate({ plan: null, error: '', pending: false, area, sourceId: selectedSource?.id ?? '', zoom }); return; }
+    if (!area || !selectedSource || sourceSupportError) {
+      setEstimate({ plan: null, error: sourceSupportError, pending: false, area, sourceId: selectedSource?.id ?? '', zoom });
+      return;
+    }
     const controller = new AbortController();
     const tuple = { area, sourceId: selectedSource.id, zoom };
     setEstimate({ ...tuple, plan: null, error: '', pending: true });
@@ -117,7 +127,7 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
       (error) => { if (!controller.signal.aborted) setEstimate({ ...tuple, plan: null, error: (error as Error).message, pending: false }); },
     );
     return () => controller.abort();
-  }, [area, selectedSource, zoom]);
+  }, [area, selectedSource, sourceSupportError, zoom]);
   const estimateCurrent = estimate.area === area && estimate.sourceId === (selectedSource?.id ?? '') && estimate.zoom === zoom;
   const zooms = selectedSource ? zoomOptions(selectedSource) : [];
   const packages = offline.packages.filter((trip) => trip.provider === 'imported');
@@ -128,6 +138,13 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
   try { selectedPackageId = localStorage.getItem('shantu.offline-package.v1') ?? ''; } catch { /* Storage may be unavailable. */ }
   const selectedPackage = packages.find((trip) => trip.id === selectedPackageId && availableTrip(trip));
   const showProgress = activeTrip?.provider === 'imported' && (offline.busy || !activeTrip.complete || hiddenCompletedTripId !== activeTrip.id);
+
+  useEffect(() => {
+    if (tab !== 'packages' || !focusTripId) return;
+    const target = [...(packageListRef.current?.querySelectorAll<HTMLElement>('[data-trip-id]') ?? [])]
+      .find((element) => element.dataset.tripId === focusTripId);
+    target?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  }, [focusTripId, packages.length, tab]);
 
   const openTrip = (trip: TripPackage) => {
     setOpenError('');
@@ -152,7 +169,7 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
   };
 
   return (
-    <section className="route-cache-panel" aria-label="沿轨迹路线缓存">
+    <section className="route-cache-panel" aria-label="沿轨迹路线缓存" data-step={tab === 'setup' ? setupStep : tab}>
       {initialTab !== 'packages' && (tab === 'packages' || (setupStep !== 'settings' && setupStep !== 'selectRoutes')) ? <div className="route-cache-tabs" role="tablist" aria-label="缓存页面">
         <button role="tab" aria-selected={tab === 'setup'} onClick={() => setTab('setup')}>沿线缓存</button>
         <button role="tab" aria-selected={tab === 'packages'} onClick={() => setTab('packages')}>缓存包 <span>{packages.length}</span></button>
@@ -212,6 +229,8 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
                 </label>
                 {onlineSources.length === 0 ? <div className="route-cache-inline-help"><span>需先导入自定义在线图源。</span><button onClick={onSources}>去导入</button></div> : null}
                 <button className="route-cache-primary" disabled={!selectedRoute || !selectedSource} onClick={() => setSetupStep('settings')}>下一步</button>
+                {!selectedRoute && <small className="route-cache-step-hint" role="status">先选择包含有效线段的路线</small>}
+                {selectedRoute && !selectedSource && <small className="route-cache-step-hint" role="status">先选择在线图源，再继续设置缓存</small>}
               </> : setupStep === 'source' && batch ? <>
                 <div className="route-cache-batch-summary"><span>已选 {selectedRoutes.length} 条路线</span><button onClick={() => setSetupStep('selectRoutes')}>修改选择</button></div>
                 <label className="route-cache-select-row">自定义图源
@@ -222,7 +241,14 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
                 </label>
                 {onlineSources.length === 0 ? <div className="route-cache-inline-help"><span>需先导入自定义在线图源。</span><button onClick={onSources}>去导入</button></div> : null}
                 <button className="route-cache-primary" disabled={!selectedRoutes.length || !selectedSource} onClick={() => setSetupStep('settings')}>下一步</button>
+                {!selectedRoutes.length && <small className="route-cache-step-hint" role="status">先选择至少一条有效路线</small>}
+                {selectedRoutes.length > 0 && !selectedSource && <small className="route-cache-step-hint" role="status">先选择在线图源，再继续设置缓存</small>}
               </> : <>
+                <div className="route-cache-selection-status" role="status">
+                  <span>路线：{selectedRoutes.map((route) => route.name).join('、')}</span>
+                  <span>图源：{selectedSource?.name || '未选择'}</span>
+                </div>
+                {sourceSupportError && <small className="route-cache-source-error" role="alert">此图源不能用于路线缓存：{sourceSupportError}</small>}
                 <div className="route-cache-options">
                   <label>路线两侧
                     <select value={bufferKm} onChange={(event) => setBufferKm(Number(event.target.value))}>
@@ -266,13 +292,13 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
           {!selectedPackage && <small className="route-cache-cache-hint">请先点选一个可用缓存包，再启用仅缓存显示。</small>}
           {onlyCached && <button className="route-cache-online" onClick={() => setCacheOnly(false)}>恢复在线地图</button>}
           {packages.length === 0 ? <div className="route-cache-empty">还没有沿线缓存包</div> : (
-            <div className="route-cache-package-list">
+            <div className="route-cache-package-list" ref={packageListRef}>
               {packages.map((trip) => {
                 const canOpen = availableTrip(trip) && trip.urls.length > 0 && trip.done > 0 && !offline.removing.includes(trip.id);
                 const downloading = offline.busy && activeTrip?.id === trip.id;
                 const percent = trip.urls.length ? Math.min(100, Math.round(trip.done / trip.urls.length * 100)) : 0;
                 const routeName = cachedRouteName(trip);
-                return <article className="route-cache-package" key={trip.id}>
+                return <article className={`route-cache-package${focusTripId === trip.id ? ' route-cache-package--focused' : ''}`} key={trip.id} data-trip-id={trip.id}>
                   <button className="route-cache-package-open" disabled={!canOpen}
                     aria-label={`显示缓存地图：${routeName}`}
                     title={!availableTrip(trip) ? '原图源不可用，请重新导入后再查看' : !trip.urls.length ? '路线缓存清单尚未完成' : trip.done === 0 ? '尚未下载地图图像' : '点击显示缓存地图'}

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { indexedDB } from 'fake-indexeddb';
-import { createImportedPlanningTrip, importedTaskPhase } from '../modules/outdoor/offlineTaskState.ts';
+import { createImportedPlanningTrip, importedTaskPhase, selectOfflineMapProgressTask } from '../modules/outdoor/offlineTaskState.ts';
 import { persistTripPlanningTask, tripPackages } from '../modules/outdoor/tripStorage.ts';
 
 test('route planning task is a durable same-ID package with an honest preparing phase', () => {
@@ -27,6 +27,16 @@ test('native offline states map to real resumable package states', () => {
   assert.equal(importedTaskPhase('cancelled'), 'paused');
   assert.equal(importedTaskPhase('error'), 'failed');
   assert.equal(importedTaskPhase('unknown'), undefined);
+});
+
+test('map progress picks live imported work over a stale completed current task', () => {
+  const completed = { id: 'done', name: '已完成', provider: 'imported', complete: true, phase: 'complete', createdAt: 10 };
+  const stale = { id: 'stale', name: '旧任务', provider: 'imported', complete: false, phase: 'running', createdAt: 20 };
+  const live = { id: 'live', name: '当前任务', provider: 'imported', complete: false, phase: 'preparing', createdAt: 30 };
+  assert.equal(selectOfflineMapProgressTask([stale, live], completed), live);
+  assert.equal(selectOfflineMapProgressTask([live], { ...stale, phase: 'paused' }), live, 'live work takes precedence over a paused last-current task');
+  assert.equal(selectOfflineMapProgressTask([], { ...stale, phase: 'failed' }).id, stale.id, 'the last failed task remains inspectable when no live work exists');
+  assert.equal(selectOfflineMapProgressTask([completed], completed), null, 'completed tasks do not leave a map progress prompt behind');
 });
 
 test('planning uses the same persisted task ID when the real manifest replaces the placeholder', async () => {

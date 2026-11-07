@@ -477,15 +477,15 @@ export function RouteEditToolbar({
               <button className="route-solid" onClick={() => onSave(commitRouteName())}>保存并退出</button>
             </div>
           </> : <>
-          <strong>{activeView === 'style' ? '线条样式' : activeView === 'marker' ? '添加标记' : `节点备注·${selectedCount}点`}</strong>
+          <strong>{activeView === 'style' ? '线条样式' : activeView === 'marker' ? '添加标记' : `框选备注·${selectedCount}点`}</strong>
             <ComparisonEditorPositionButton kind="路线"/>
           </>}
         </header>
         <div className="route-edit-primary" hidden={activeView !== 'tools'}>
         <div className="route-edit-mode-row" role="group" aria-label="路线编辑方式">
-          <button aria-pressed={roadSnapping} onClick={onRoadSnapping}>道路吸附</button>
-          <button aria-pressed={riverSnapping} onClick={onRiverSnapping}>河道吸附</button>
-          <button aria-pressed={snapping} onClick={onSnapping}>节点吸附</button>
+          <button className="route-snap-toggle" aria-label={`道路吸附，${roadSnapping ? '已开启' : '已关闭'}`} title={`道路吸附${roadSnapping ? '已开启' : '已关闭'}`} aria-pressed={roadSnapping} onClick={onRoadSnapping}>道路吸附</button>
+          <button className="route-snap-toggle" aria-label={`河道吸附，${riverSnapping ? '已开启' : '已关闭'}`} title={`河道吸附${riverSnapping ? '已开启' : '已关闭'}`} aria-pressed={riverSnapping} onClick={onRiverSnapping}>河道吸附</button>
+          <button className="route-snap-toggle" aria-label={`节点吸附，${snapping ? '已开启' : '已关闭'}`} title={`节点吸附${snapping ? '已开启' : '已关闭'}`} aria-pressed={snapping} onClick={onSnapping}>节点吸附</button>
           <button data-edit-entry="style" aria-label="线条样式" aria-expanded={activeView === 'style'} onClick={() => {onSelectionMode(null);setView('style');}}>
             <i className="route-style-chip" style={{ background: style.color }} />样式
           </button>
@@ -537,10 +537,12 @@ export function RouteEditToolbar({
           </button>
         </div>
         <div className="route-selection-modes" role="group" aria-label="路线选择方式">
-          <button aria-pressed={!boxMode} onClick={() => onSelectionMode(null)}>{boxMode ? '退出框选' : '点选'}</button>
-          <button aria-pressed={boxMode === 'add'} disabled={branch} onClick={() => onSelectionMode('add')}>框选加</button>
-          <button aria-pressed={boxMode === 'subtract'} disabled={branch} onClick={() => onSelectionMode('subtract')}>框选减</button>
-          <button data-edit-entry="selection" aria-label="节点备注" disabled={!selectedCount} onClick={() => {onSelectionMode(null);setView('selection');}}>备注</button>
+          <div className="route-box-mode-group" role="group" aria-label="框选模式">
+            <button aria-pressed={!boxMode} onClick={() => onSelectionMode(null)}>{boxMode ? '退出框选' : '点选'}</button>
+            <button aria-pressed={boxMode === 'add'} disabled={branch} onClick={() => onSelectionMode('add')}>框选加</button>
+            <button aria-pressed={boxMode === 'subtract'} disabled={branch} onClick={() => onSelectionMode('subtract')}>框选减</button>
+          </div>
+          <button data-edit-entry="selection" aria-label="框选备注" title={selectedCount ? `框选备注·${selectedCount}点` : '框选备注'} disabled={!selectedCount} onClick={() => {onSelectionMode(null);setView('selection');}}>框选备注</button>
           <button className="route-set-endpoint" disabled={selectedCount !== 1 || branch} aria-pressed={selectedCount === 1 && !!session.track.routeTerminals?.end && equalCoordinate(selectedPoints[0],session.track.routeTerminals.end)} onClick={onSetEnd}>设终点</button>
         </div>
         </div>

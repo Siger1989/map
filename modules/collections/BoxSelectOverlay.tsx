@@ -4,11 +4,13 @@ import { selectionBox, type SelectionBox, type BoxSelectionMode } from './boxSel
 import './boxSelection.css';
 
 /** The rectangle previews the gesture; selected results live independently. */
-export function BoxSelectOverlay({ active = true, label, count, children, onBox, onExit, onClear, mode: controlledMode, tools = true, filter, onTwoFingerMove, onTwoFingerEnd, selectedResults, onResultAction, resumeToken = 0 }: {
+export function BoxSelectOverlay({ active = true, label, count, children, onBox, onExit, onClear, mode: controlledMode, tools = true, allowNarrowBox = false, filter, onTwoFingerMove, onTwoFingerEnd, selectedResults, onResultAction, resumeToken = 0 }: {
   active?: boolean; label: string; count: number; children: ReactNode;
   onBox: (box: SelectionBox, mode: BoxSelectionMode) => void;
   onExit: () => void; onClear: () => void;
   mode?: BoxSelectionMode; tools?: boolean; filter?: ReactNode;
+  /** Route handles can be collinear: a long, narrow drag is still a selection. */
+  allowNarrowBox?: boolean;
   onTwoFingerMove?: (previous: ScreenPoint[], next: ScreenPoint[]) => void;
   onTwoFingerEnd?: () => void;
   selectedResults?: ReactNode; onResultAction?: (action: 'export' | 'share' | 'delete') => void;
@@ -142,7 +144,8 @@ export function BoxSelectOverlay({ active = true, label, count, children, onBox,
       const next = selectionBox(start.current.point, point);
       start.current = null; surfaceBounds.current = null; drawRectangle(null);
       if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-      if (next.right - next.left >= 5 && next.bottom - next.top >= 5) {
+      const width = next.right - next.left, height = next.bottom - next.top;
+      if (allowNarrowBox ? Math.max(width, height) >= 5 : width >= 5 && height >= 5) {
         onBox(next, mode);
       }
     }} onPointerCancel={e => { pointers.current.delete(e.pointerId); start.current = null; surfaceBounds.current = null; previousGesture.current = null; pendingGesture.current = null; if (gestureFrame.current) cancelAnimationFrame(gestureFrame.current); gestureFrame.current = 0; drawRectangle(null); finishTwoFinger(); }}

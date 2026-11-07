@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatDistance } from '../navigation/types';
 import type { GuidanceSession } from './session';
 import { freshFix } from './session';
@@ -6,21 +6,10 @@ import './guidanceProgress.css';
 
 /** Read-only route progress for the active navigation session. */
 export function GuidanceProgressRail({ session }: { session: GuidanceSession }) {
-  const railRef = useRef<HTMLElement>(null);
-  const [compact, setCompact] = useState(false);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, []);
-  useEffect(() => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const update = () => setCompact(rail.clientHeight < 160);
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(rail);
-    return () => observer.disconnect();
   }, []);
 
   const total = Math.max(0, session.path.length);
@@ -72,8 +61,7 @@ export function GuidanceProgressRail({ session }: { session: GuidanceSession }) 
 
   return (
     <aside
-      ref={railRef}
-      className={`guidance-progress-rail${compact ? ' is-compact' : ''}`}
+      className="guidance-progress-rail"
       aria-label={`导航进度：${status}；已走${formatDistance(progress)}，剩余${formatDistance(remaining)}，全程${formatDistance(total)}`}
       data-located={located}
       data-status={session.arrived ? 'arrived' : session.offRoute ? 'off-route' : located ? 'located' : 'waiting'}
@@ -91,12 +79,8 @@ export function GuidanceProgressRail({ session }: { session: GuidanceSession }) 
         aria-valuenow={hasConfirmedFix ? Math.round(fraction * 100) : undefined}
         aria-valuetext={`${accessibleProgress}；${status}`}
       >
-        <span className="guidance-progress-fill" style={compact
-          ? { width: `${hasConfirmedFix ? fraction * 100 : 0}%` }
-          : { height: `${hasConfirmedFix ? fraction * 100 : 0}%` }} />
-        {located && <span className="guidance-progress-thumb" style={compact
-          ? { left: `${fraction * 100}%` }
-          : { bottom: `${fraction * 100}%` }} />}
+        <span className="guidance-progress-fill" style={{ height: `${hasConfirmedFix ? fraction * 100 : 0}%` }} />
+        {located && <span className="guidance-progress-thumb" style={{ bottom: `${fraction * 100}%` }} />}
       </div>
       <span className="guidance-progress-end guidance-progress-origin">
         <span>起</span>

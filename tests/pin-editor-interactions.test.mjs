@@ -35,7 +35,7 @@ test('pin name is selected once and the model menu adds a prism at the pin coord
     annotationState = useAnnotations();
     const item = annotationState.items.find(value => value.id === 'pin');
     return React.createElement('div', { 'data-pane': pane }, item && React.createElement(PinEditor, {
-      state: annotationState, item, photos: [], onClose() {}, onShare() {}, onAdjust() {}, onCapture() {}, onImport() {}, onPhoto() {},
+      state: annotationState, item, photos: [{ id: 'photo-1', name: 'photo.jpg', title: '照片', url: 'data:image/png;base64,' }], onClose() {}, onShare() {}, onAdjust() {}, onCapture() {}, onImport() {}, onPhoto() {},
       onAddModel: (kind, coordinates) => annotationState.addAndEdit(kind, coordinates),
     }));
   }
@@ -50,6 +50,23 @@ test('pin name is selected once and the model menu adds a prism at the pin coord
   assert.equal(name.selectionEnd, name.value.length);
   assert.equal(focusCount, 1);
   assert.equal(selectCount, 1);
+  assert.equal(document.querySelector('[aria-label="复制信息"]'), null, 'the detail header no longer duplicates the parent copy action');
+  assert.equal(document.querySelector('[aria-label="分享完整标记信息"]'), null, 'the coordinate row no longer duplicates the header share action');
+  const editCoordinates = document.querySelector('[aria-label="编辑标记坐标"]');
+  assert.match(editCoordinates.textContent, /编辑坐标/);
+  assert.match(editCoordinates.textContent, /104\.000000, 30\.000000/);
+  await act(async () => editCoordinates.click());
+  const longitude = document.querySelector('[aria-label="经度"]');
+  assert.ok(longitude, 'the edit coordinate entry opens the real coordinate editor');
+  assert.ok(document.querySelector('[aria-label="纬度"]'));
+  await act(async () => document.querySelector('.pin-picker-back').click());
+  assert.ok(document.querySelector('[aria-label="编辑标记坐标"]'), 'back returns to the pin details');
+  await act(async () => document.querySelector('.pin-danger').click());
+  assert.ok(document.querySelector('[role="alertdialog"]'));
+  assert.ok(document.querySelector('[role="alertdialog"] .pin-danger'));
+  await act(async () => [...document.querySelectorAll('[role="alertdialog"] button')].find(button => button.textContent === '取消').click());
+  assert.ok(document.querySelector('[aria-label="编辑标记坐标"]'), 'cancel keeps the original marker');
+  assert.ok(document.querySelector('[aria-label="查看照片 photo.jpg"]'), 'cancel keeps its associated photo visible');
   await act(async () => root.render(React.createElement(Probe, { pane: 'moved' })));
   assert.equal(focusCount, 1, 'same marker rerender/pane move does not steal focus');
   assert.equal(selectCount, 1, 'same marker rerender does not select again');

@@ -91,6 +91,10 @@
 .route-cache-note { margin: 0; }
 .route-cache-back { color: var(--ui-muted, #a9b3ad) !important; }
 .route-cache-open-error { color: var(--ui-danger, #ff8b78) !important; }
+.route-cache-step-hint { color: var(--ui-muted, #a9b3ad); font-size: 11px; line-height: 1.25; }
+.route-cache-selection-status { display: grid; gap: 2px; min-width: 0; color: var(--ui-muted, #a9b3ad); font-size: 11px; line-height: 1.25; }
+.route-cache-selection-status > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.route-cache-source-error { color: var(--ui-danger, #ff8b78); font-size: 11px; line-height: 1.25; }
 
 .route-cache-progress,
 .route-cache-package {
@@ -102,6 +106,7 @@
   border-radius: 4px;
   background: var(--ui-raised, #252e2b);
 }
+.route-cache-package--focused { border-color: var(--ui-accent, #d0f76b); box-shadow: 0 0 0 1px var(--ui-accent, #d0f76b); }
 .route-cache-progress > strong,
 .route-cache-package > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .route-cache-progress > span,

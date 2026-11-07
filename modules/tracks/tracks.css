@@ -678,3 +678,10 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-panel 
 .track-node-toolbar [role='alert'] {
   color: #ffbf98;
 }
+
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] button[aria-pressed='true'] {
+  color: var(--ui-accent);
+  background: var(--ui-selected);
+  border-color: transparent;
+  box-shadow: 0 0 6px 1px color-mix(in srgb,var(--ui-accent) 22%,transparent);
+}

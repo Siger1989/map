@@ -12,7 +12,7 @@ export function planImportedRouteDownloadAsync(
   area: RouteArea,
   source: MapSource,
   zoom: number,
-  options: { signal?: AbortSignal } = {},
+  options: { signal?: AbortSignal; timeoutMs?: number } = {},
 ): Promise<ImportedRoutePlan> {
   const { signal } = options;
   if (signal?.aborted) return Promise.reject(new DOMException('估算已取消', 'AbortError'));
@@ -30,11 +30,14 @@ export function planImportedRouteDownloadAsync(
   return new Promise((resolve, reject) => {
     const id = ++requestId;
     const worker = new Worker(new URL('./routeDownloadWorker.ts', import.meta.url), { type: 'module' });
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     const cleanup = () => {
+      if (timeout) clearTimeout(timeout);
       signal?.removeEventListener('abort', abort);
       worker.terminate();
     };
     const abort = () => { cleanup(); reject(new DOMException('估算已取消', 'AbortError')); };
+    timeout = setTimeout(() => { cleanup(); reject(new Error('路线缓存量估算超时，请缩小范围或重试')); }, options.timeoutMs ?? 30_000);
     signal?.addEventListener('abort', abort, { once: true });
     worker.onerror = (event) => { cleanup(); reject(new Error(event.message || '后台估算失败')); };
     worker.onmessage = (event: MessageEvent<WorkerReply>) => {
@@ -52,7 +55,7 @@ export function estimateImportedRouteDownloadAsync(
   area: RouteArea,
   source: MapSource,
   zoom: number,
-  options: { signal?: AbortSignal } = {},
+  options: { signal?: AbortSignal; timeoutMs?: number } = {},
 ): Promise<ImportedRouteEstimate> {
   const { signal } = options;
   if (signal?.aborted) return Promise.reject(new DOMException('估算已取消', 'AbortError'));
@@ -68,8 +71,10 @@ export function estimateImportedRouteDownloadAsync(
   return new Promise((resolve, reject) => {
     const id = ++requestId;
     const worker = new Worker(new URL('./routeDownloadWorker.ts', import.meta.url), { type: 'module' });
-    const cleanup = () => { signal?.removeEventListener('abort', abort); worker.terminate(); };
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const cleanup = () => { if (timeout) clearTimeout(timeout); signal?.removeEventListener('abort', abort); worker.terminate(); };
     const abort = () => { cleanup(); reject(new DOMException('估算已取消', 'AbortError')); };
+    timeout = setTimeout(() => { cleanup(); reject(new Error('路线缓存量估算超时，请缩小范围或重试')); }, options.timeoutMs ?? 30_000);
     signal?.addEventListener('abort', abort, { once: true });
     worker.onerror = (event) => { cleanup(); reject(new Error(event.message || '后台估算失败')); };
     worker.onmessage = (event: MessageEvent<WorkerReply>) => {

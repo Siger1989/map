@@ -24,7 +24,6 @@ export function GuidanceCard({
   onFollow,
   onShow,
   following,
-  onShare,
   compact = true,
   onFirstPerson,
   onDisplay,
@@ -43,7 +42,6 @@ export function GuidanceCard({
   onFollow: () => void;
   onShow: () => void;
   following: boolean;
-  onShare: () => void;
   compact?: boolean;
   onFirstPerson?: () => void;
   onDisplay?: () => void;
@@ -91,7 +89,7 @@ export function GuidanceCard({
   const showCompactInstruction = !g.error && !s.quality && !s.offRoute && !s.arrived && !s.departurePending &&
     !!g.instruction && instructionKind !== 'arrival' && !instructionCoversRemainingRoute;
   const [maneuverDistance, maneuverUnit] = (g.instruction ? formatDistance(g.instruction.distance) : '').split(' ');
-  const compactState = g.error || s.quality || (s.offRoute || s.arrived || s.departurePending ? status : '');
+  const compactState = s.quality || (s.offRoute || s.arrived || s.departurePending ? status : '');
   const compactPriorityStatus = compactState;
   const positionIsReliable = !s.offRoute && !s.arrived && !s.quality && !s.departurePending && freshFix(s.last);
   const nearbyRouteOffset = positionIsReliable &&
@@ -154,9 +152,9 @@ export function GuidanceCard({
             {displayPanel ? '路线显示' : s.arrived
               ? '导航完成'
               : `导航中 · ${TRAVEL_MODES.find((m) => m.id === s.route.mode)?.label}`}
-          </strong> : <button className="guidance-resume guidance-follow-status" aria-label="继续导航" aria-pressed={following} onClick={onFollow}>
-            <Navigation size={15} />
-            <span className="guidance-follow-label">{cameraWaiting ? '等待定位' : following ? '导航跟随中' : '继续导航'}</span>
+          </strong> : <button className="guidance-resume guidance-follow-status" type="button" aria-label={following ? '当前位置' : '恢复跟随'} title={following ? '回到当前位置并继续跟随' : '恢复定位跟随'} aria-pressed={following} onClick={onFollow}>
+            <LocateFixed size={15} />
+            <span className="guidance-follow-label">{following ? '当前位置' : '恢复跟随'}</span>
             <span className="guidance-mode-tag">{TRAVEL_MODES.find(m => m.id === s.route.mode)?.label}</span>
           </button>}
           <div className="guidance-header-actions">
@@ -168,7 +166,7 @@ export function GuidanceCard({
               aria-pressed={cameraMode === 'forward'}
               data-waiting={cameraWaiting}
               onClick={onFirstPerson}
-            ><PersonStanding size={15} /><span>{cameraMode === 'forward' ? '切回俯视' : '第一人称'}</span></button>}
+            ><PersonStanding size={16} /></button>}
             {displayPanel ? <button aria-label="返回导航详情" title="返回导航详情" onClick={onCloseDisplay}><ArrowLeft size={18} /></button> : compact && <button className="guidance-expand" aria-label={expanded ? '收起导航详情' : '展开导航详情'} title={expanded ? '收起导航详情' : '展开导航详情'} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>}
           </div>
         </div>
@@ -178,7 +176,7 @@ export function GuidanceCard({
             {showCompactInstruction ? <>
               <span className="guidance-maneuver-distance">{maneuverDistance}<small> {maneuverUnit}</small></span>
               <span className="guidance-maneuver-text" title={g.instruction!.text}>{g.instruction!.text}</span>
-            </> : s.arrived || s.departurePending || s.offRoute || s.quality || g.error
+            </> : g.error ? <button className="guidance-error-open" type="button" onClick={() => setExpanded(true)}>接入路线失败 · 查看详情</button> : s.arrived || s.departurePending || s.offRoute || s.quality
               ? <span className="guidance-compact-state" role="status" title={compactState || status}>{compactState || status}</span>
               : <>
                 <span className="guidance-maneuver-distance guidance-target-distance">{nextCheckpointDistance}</span>
@@ -187,9 +185,10 @@ export function GuidanceCard({
             {showCompactInstruction && <span className="guidance-remaining-line">全程剩余 {formatDistance(g.remaining)}</span>}
           </div>
         </div>}
-        {compact && !expanded && !displayPanel && (compactTelemetry || visibleCompactContextStatus) && <div className="guidance-compact-context">
+        {compact && !expanded && !displayPanel && (compactTelemetry || visibleCompactContextStatus || (g.error && !forwardNavigation)) && <div className="guidance-compact-context">
           {compactTelemetry && <div className="guidance-compact-telemetry">{compactTelemetry}</div>}
-          {visibleCompactContextStatus && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{visibleCompactContextStatus}</span>}
+          {g.error && !forwardNavigation ? <button className="guidance-error-open" type="button" onClick={() => setExpanded(true)}>接入路线失败 · 查看详情</button>
+            : visibleCompactContextStatus && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{visibleCompactContextStatus}</span>}
         </div>}
         {motionNotice && !displayPanel && expanded && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{motionNotice}</span>}
         {positionStatus && !motionNotice && !displayPanel && expanded && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{positionStatus}</span>}
@@ -241,37 +240,31 @@ export function GuidanceCard({
             网络已断开，将尝试已下载的离线路网；覆盖不足或模式不支持时会显示实际错误。
           </p>
         )}
-        {g.error && (
-          <p className="guidance-error" role="alert">
-            {g.error}
-          </p>
-        )}
+        {g.error && <p className="guidance-error" role="alert">{g.error}</p>}
           <div className="guidance-actions">
-            {!s.arrived && <button onClick={() => void g.replan()} disabled={g.replanning}>{g.replanning ? '重新规划路线中…' : '重新规划路线'}</button>}
-            <button onClick={onShare} disabled={s.departurePending}>分享</button>
+            {!s.arrived && <button type="button" onClick={() => void g.replan()} disabled={g.replanning} title="从当前位置重新规划到原路线终点，不改写原路线">{g.replanning ? '规划到终点中…' : '重新规划到终点'}</button>}
             {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(true); onDisplay(); }}>路线显示</button>}
-            {!s.arrived && <button onClick={onFollow}>
-              <LocateFixed size={16} />
-              {following ? '当前位置' : '继续导航'}
-            </button>}
             {!s.arrived && (s.offRoute || s.departurePending || s.replanned || !!g.rejoin) && (
               <button
+                type="button"
+                title={s.departurePending ? '当前位置 → 原路线起点；不会改写原路线' : g.rejoin ? '查看当前位置接回原路线的路径' : '从当前位置接回原路线并保留原路线进度'}
                 onClick={s.departurePending ? g.retry : g.rejoin ? onShow : g.returnToOriginal}
                 disabled={
                   g.loading || (!s.departurePending && !!s.quality) || (!s.departurePending && !g.rejoin && !g.returnToOriginalSupported)
                 }
               >
                 {s.departurePending ? (
-                  <><RefreshCw size={15} />重新计算到起点</>
+                  <><RefreshCw size={14} />{g.loading ? '规划到路线起点中…' : '规划到路线起点'}</>
                 ) : g.rejoin ? (
-                  '查看返回路径'
+                  '查看接回路径'
                 ) : (
-                  g.returnToOriginalSupported ? '返回原路线' : '原路线进度无法映射'
+                  g.returnToOriginalSupported ? '接回原路线' : '原路线进度无法映射'
                 )}
               </button>
             )}
             <button type="button" onClick={onStop}>结束导航</button>
           </div>
+        {s.departurePending && <p className="guidance-departure-note">当前位置 → 原路线起点 · 不改写原路线</p>}
         {s.gap && (
           <p className="guidance-note">定位中断或精度不足期间未累加距离。</p>
         )}

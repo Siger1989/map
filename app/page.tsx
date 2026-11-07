@@ -30,6 +30,8 @@ import { useScreenAwake } from '@/modules/position/useScreenAwake';
 import { useRecording } from '@/modules/outdoor/useRecording';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
 import { RouteCachePanel } from '@/modules/outdoor/RouteCachePanel';
+import { OfflineMapProgressPrompt } from '@/modules/outdoor/OfflineMapProgressPrompt';
+import { selectOfflineMapProgressTask } from '@/modules/outdoor/offlineTaskState';
 import { useOffline } from '@/modules/outdoor/useOffline';
 import { useOfflineMapMode } from '@/modules/outdoor/useOfflineMapMode';
 import { ReturnPanel } from '@/modules/returnHome/ReturnPanel';
@@ -52,6 +54,7 @@ import { PlaceShare } from '@/modules/placeShare/PlaceShare';
 import { copyAndOpenPlaceNavigation } from '@/modules/placeShare/delivery';
 import { annotationSharePlace } from '@/modules/annotations/share';
 import { AnnotationCoordinateInfo } from '@/modules/annotations/AnnotationCoordinateInfo';
+import { AnnotationQuickName } from '@/modules/annotations/AnnotationQuickName';
 import { useAnnotationCoordinateElevation } from '@/modules/annotations/useAnnotationCoordinateElevation';
 import { RasterLevelControl } from '@/modules/cartography/RasterLevelControl';
 import { basemapConfiguration } from '@/modules/cartography/basemaps';
@@ -100,7 +103,7 @@ import {
 } from '@/modules/tracks/RouteViews';
 import { useRouteEditor } from '@/modules/tracks/useRouteEditor';
 import {
-  appendEditBranch,
+  appendEditBranchContinuous as appendEditBranch,
   selectEditNode,
   moveEditNode,
   insertEditNode,
@@ -304,7 +307,7 @@ export default function Home() {
     }
     previousPanel.current = panel;
   }, [panel]);
-  const [routeCacheTarget, setRouteCacheTarget] = useState<{ routeId?: string; routeIds?: string[]; batch?: boolean; returnPanel?: 'route' | null; tab: 'setup' | 'packages' }>({ tab: 'setup' });
+  const [routeCacheTarget, setRouteCacheTarget] = useState<{ routeId?: string; routeIds?: string[]; batch?: boolean; returnPanel?: 'route' | null; focusTripId?: string; tab: 'setup' | 'packages' }>({ tab: 'setup' });
   const [sourcesParent, setSourcesParent] = useState<'layers' | 'tools' | 'cache'>(
     'tools',
   );
@@ -1760,6 +1763,7 @@ export default function Home() {
         tracks.pause();
       }}
       onSelect={(place) => {
+        if (!annotations.savePlace(place)) return;
         setPanel(null);
         follow.pause();
         position.free();
@@ -1770,6 +1774,7 @@ export default function Home() {
       }}
       onNavigate={(place) => {
         if (!switchFromSection()) return;
+        if (!annotations.savePlace(place)) return;
         endRoutePreview(false);
         searchNavigationDraft.begin(guidance.active);
         follow.pause();
@@ -2801,7 +2806,8 @@ export default function Home() {
             >
               <div className="selection-tools-heading">
                 <div role="status">
-                  <strong>{selectionName}</strong>
+                  <AnnotationQuickName key={selectedAnnotation.id} id={selectedAnnotation.id} name={selectedAnnotation.name} disabled={!!featureMove}
+                    onSave={name => annotations.update(selectedAnnotation.id, { name })} />
                   <span>
                     {featureMove
                       ? '正在调整位置 · 松手确认，双指取消'
@@ -2847,34 +2853,6 @@ export default function Home() {
                 >
                   详情 / 编辑
                 </button>
-                <button
-                  disabled={
-                    !!featureMove ||
-                    (selectedAnnotation
-                      ? annotations.moveUndoId !== selectedAnnotation.id
-                      : selectedDraft
-                        ? !tracks.canUndo
-                        : tracks.nodeUndoId !== tracks.selectedId)
-                  }
-                  onClick={() =>
-                    selectedAnnotation
-                      ? annotations.undoMove()
-                      : selectedDraft
-                        ? tracks.undo()
-                        : tracks.undoNodeMove()
-                  }
-                >
-                  撤销
-                </button>
-                <button
-                  disabled={!!featureMove}
-                  onClick={() => {
-                    tracks.select(null);
-                    annotations.select(null);
-                  }}
-                >
-                  完成调整
-                </button>
               </div>
               {selectedAnnotation && (
                 <div className="selection-tools-route-actions" aria-label="设置导航起终点">
@@ -2899,6 +2877,13 @@ export default function Home() {
             </div>
           )}
         {markerCamera.input}
+        {panel === null && !comparison && !tracks.drawing && !editor.session && !routeVisible && !measurement.active && !survey.active && !sectionEditing && (() => {
+          const task = selectOfflineMapProgressTask(offline.packages, offline.current);
+          return task ? <OfflineMapProgressPrompt trip={task} onOpenTask={trip => {
+            setRouteCacheTarget({ tab: 'packages', focusTripId: trip.id, returnPanel: null });
+            setPanel('cache');
+          }} /> : null;
+        })()}
         <SurveyMapOverlay
           items={sections.items}
           state={survey}
@@ -3064,17 +3049,6 @@ export default function Home() {
                 setPanel(null);
                 routeDisplay.choose('display-planned-route');
                 setNavigationDisplayOpen(true);
-              }}
-              onShare={() => {
-                const s = guidance.session;
-                if (s)
-                  openRouteShareDialog(
-                    sharePlanned(
-                      s.route,
-                      s.route.name?.trim() || '当前导航全程',
-                      s.departureLength > 0,
-                    ),
-                  );
               }}
               guidance={guidance}
               following={follow.following}
@@ -3474,7 +3448,7 @@ export default function Home() {
         >
           {mountIndustryToolsPanel(INDUSTRY_TOOLS_ENABLED, panel) && <IndustryTools state={industryToolsState} onStateChange={setIndustryToolsState} />}
           {panel === 'cache' && <RouteCachePanel routes={routeCacheTarget.batch ? favoriteCacheRoutes : cacheRoutes} sources={mapSources.maps} offline={offline}
-            initialRouteId={routeCacheTarget.routeId} initialTab={routeCacheTarget.tab}
+            initialRouteId={routeCacheTarget.routeId} initialTab={routeCacheTarget.tab} focusTripId={routeCacheTarget.focusTripId}
             batch={routeCacheTarget.batch} initialRouteIds={routeCacheTarget.routeIds}
             onSources={() => { setSourcesParent('cache'); setSourcesNavigation(null); setPanel('sources'); }}
             onOpenMap={trip => {
@@ -4019,10 +3993,18 @@ export default function Home() {
               }}
             />
           ) : null)}
-        <IncomingPlacePrompt onNavigate={(place) => {
+        <IncomingPlacePrompt onSave={place => {
+          if (!annotations.savePlace(place)) return false;
+          setPanel(null);
+          map.current?.focusPoint(place.coordinates, view.zoom);
+          return true;
+        }} saveError={annotations.error} onNavigate={(place) => {
+          if (!switchFromSection() || !annotations.savePlace(place)) return false;
+          endRoutePreview(false);
           navigation.clear();
           navigation.place('end', place);
           setPanel('route');
+          return true;
         }} />
         {placeShareTarget && <PlaceShare place={placeShareTarget.place} onClose={() => setPlaceShareTarget(null)} onExport={placeShareTarget.markerId ? () => { setCollectionOutputKey(`annotation:${placeShareTarget.markerId}`); setPlaceShareTarget(null); setPanel('favorites'); } : undefined} />}
         {shareTarget && (

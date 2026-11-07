@@ -42,8 +42,16 @@ export function createNativeSceneGeometry(props: Pick<TerrainMapProps, 'trackOve
     tracks.push(...trackNoteFeatures(noteTracks).features.map(f => ({ ...f, properties: { ...f.properties,
       role: 'note', label: f.properties?.note, color: '#fff4cd', minZoom: 10,
       nativePick: { kind: 'track', trackId: f.properties?.trackId } } })));
-    tracks.push(...selectedEdgeData(state).features.map(f => ({ ...f, properties: { ...f.properties,
-      role: 'selectedEdge', color: '#fff3a0', nativePick: { kind: 'track', trackId: state.nodeSelection?.trackId } } })));
+    for (const edge of selectedEdgeData(state).features) {
+      const baseWidth = Number(edge.properties?.width) || 0;
+      for (const stroke of [
+        { width: baseWidth + 9, opacity: 0.16, pickable: false },
+        { width: baseWidth + 5, opacity: 0.3, pickable: false },
+        { width: baseWidth + 2.5, opacity: 1, pickable: true },
+      ]) tracks.push({ ...edge, properties: { ...edge.properties, ...stroke,
+        role: 'selectedEdge', color: '#20b978',
+        ...(stroke.pickable ? { nativePick: { kind: 'track', trackId: state.nodeSelection?.trackId } } : {}) } });
+    }
     for (const warning of state.analysisMarkers ?? []) tracks.push(feature({ type: 'Point', coordinates: warning.coordinate },
       { role: 'warning', color: '#d84240', pointSize: 10, label: warning.label }));
     if (state.linePoint) tracks.push(feature({ type: 'Point', coordinates: state.linePoint.coordinate },

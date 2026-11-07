@@ -122,11 +122,17 @@ test('DEM colours reach the real map source in edit mode; hit targets remain ori
   assert.deepEqual(layers.get('manual-track-outline').paint['line-width'], routeLineWidthExpression([
     '+', ['get', 'width'], ['case', ['get', 'selected'], 2, 1],
   ]));
-  assert.deepEqual(layers.get('manual-track-selection-edge').paint['line-width'], routeLineWidthExpression(['get', 'width']));
+  assert.deepEqual(layers.get('manual-track-selection-edge').paint['line-width'],
+    routeLineWidthExpression(['+', ['get', 'width'], 2.5]));
   assert.deepEqual(layers.get('manual-track-line').paint['line-opacity'], routeLineOpacityExpression(['get', 'opacity']));
   assert.deepEqual(layers.get('manual-track-outline').paint['line-opacity'], routeLineOpacityExpression(['*', 0.65, ['get', 'opacity']]));
   assert.deepEqual(layers.get('manual-track-selection-edge').paint['line-opacity'], routeLineOpacityExpression(1));
+  assert.equal(layers.get('manual-track-selection-edge').paint['line-color'], '#20b978');
+  assert.deepEqual(layers.get('manual-track-selection-edge-halo-inner').paint['line-width'],
+    routeLineWidthExpression(['+', ['get', 'width'], 5]));
+  assert.equal(layers.get('manual-track-selection-edge-halo-outer').paint['line-color'], '#20b978');
   assert.deepEqual(selectedEdges.features[0].geometry.coordinates, track.segments, 'selection retains geographic geometry, not projected endpoint chords');
+  assert.equal(selectedEdges.features[0].properties.color, '#20b978');
   assert.equal(
     new Set(
       data.features

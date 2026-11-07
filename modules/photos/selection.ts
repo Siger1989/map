@@ -1,24 +1,44 @@
 export const PHOTO_ACCEPT =
-  'image/jpeg,image/png,image/webp,image/heic,image/heif';
+  'image/*,.heic,.heif,.avif,.jpg,.jpeg,.png,.webp,.gif,.bmp';
 // The Android bridge routes this input to the system directory picker.
 export const PHOTO_FOLDER_ACCEPT = 'application/x-guanyun-photo-folder';
+const MIME_BY_EXTENSION: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  jpe: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  heic: 'image/heic',
+  heif: 'image/heif',
+  avif: 'image/avif',
+  gif: 'image/gif',
+  bmp: 'image/bmp',
+  dib: 'image/bmp',
+};
+const SUPPORTED_MIME = new Set(Object.values(MIME_BY_EXTENSION));
 export function imageMime(file: { name: string; type: string }) {
-  if (/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type))
-    return file.type.toLowerCase();
-  if (file.type && file.type !== 'application/octet-stream') return null;
   const extension = /\.([^.]+)$/.exec(file.name)?.[1].toLowerCase();
-  return (
-    (
-      {
-        jpg: 'image/jpeg',
-        jpeg: 'image/jpeg',
-        png: 'image/png',
-        webp: 'image/webp',
-        heic: 'image/heic',
-        heif: 'image/heif',
-      } as Record<string, string>
-    )[extension ?? ''] ?? null
-  );
+  const byExtension = MIME_BY_EXTENSION[extension ?? ''];
+  const byType = file.type.trim().toLowerCase().split(';', 1)[0];
+  // Folder scans skip explicitly identified documents/scripts even if renamed .jpg.
+  if (byType.startsWith('text/') || /^(application\/(?:javascript|ecmascript|json|pdf|zip))$/.test(byType)) return null;
+  // Keep a recognized MIME when available, but trust a known photo extension
+  // when a provider reports a generic or stale type (common with camera roll).
+  if (SUPPORTED_MIME.has(byType)) return byType;
+  if (byExtension) return byExtension;
+  return null;
+}
+export function nativeImportOriginalHash(meta: Record<string, unknown> | undefined, mime: string, bytes: ArrayBuffer) {
+  const hash = meta?.ImageUniqueID;
+  const marker = meta?.UserComment;
+  const header = new Uint8Array(bytes, 0, Math.min(bytes.byteLength, 3));
+  const isJpeg = header.length >= 3 && header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
+  if (mime !== 'image/jpeg' || !isJpeg) return null;
+  if (typeof hash !== 'string' || !/^[a-f0-9]{64}$/i.test(hash)) return null;
+  const markerText = typeof marker === 'string' ? marker.replace(/\0/g, '').trim() : '';
+  const markedHash = /^(?:ASCII)?\s*SHANTU_NATIVE_PHOTO_V1:([a-f0-9]{64})$/i.exec(markerText)?.[1];
+  if (markedHash?.toLowerCase() !== hash.toLowerCase()) return null;
+  return hash.toLowerCase();
 }
 export function selectPhotoFiles<T extends { name: string; type: string }>(
   files: T[],

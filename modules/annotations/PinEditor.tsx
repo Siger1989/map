@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Camera, Copy, Share2, Upload, X } from 'lucide-react';
+import { ArrowLeft, Camera, Pencil, Share2, Upload, X } from 'lucide-react';
 import { SmartTextarea } from '../input/SmartText';
 import type { VisiblePhoto } from '../photos/storage';
 import { MAX_ATTRIBUTES } from './attributes';
@@ -12,9 +12,6 @@ import type { AnnotationsState } from './useAnnotations';
 import './pinEditor.css';
 import { ComparisonEditorPositionButton } from '../mapComparison/ComparisonEditorPosition';
 import { AnnotationTypeOptions } from './AnnotationTypeOptions';
-import { annotationSharePlace } from './share';
-import { placeShareData } from '../placeShare/data';
-import { writeClipboard } from '../platform/macNative';
 
 const COLORS = ['#f2b45f', '#ef5652', '#5fdf79', '#598fff', '#a379de', '#ffffff'];
 const MODEL_CHOICES = Object.keys(ANNOTATION_CHOICES).filter(
@@ -37,8 +34,6 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
   onCameraRetry?: () => void;
   onAddModel?: (kind: Exclude<AnnotationChoice, 'pin'>, coordinates: Coordinate) => boolean;
 }) {
-  const [copyInfoStatus, setCopyInfoStatus] = useState('');
-  const [copyInfoText, setCopyInfoText] = useState('');
   const [confirm, setConfirm] = useState<'delete' | null>(null);
   const [picker, setPicker] = useState<'coordinates' | 'icon' | 'color' | null>(null);
   const editor = useRef<HTMLElement>(null);
@@ -111,18 +106,6 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
   const save = () => {
     return commit();
   };
-  const copyInfo = async () => {
-    if (!save()) return;
-    const text = placeShareData(annotationSharePlace(item)).text;
-    try {
-      await writeClipboard(text);
-      setCopyInfoText('');
-      setCopyInfoStatus('完整标记信息已复制');
-    } catch {
-      setCopyInfoText(text);
-      setCopyInfoStatus('请长按下方信息复制');
-    }
-  };
   const addModel = (kind: AnnotationChoice) => {
     if (!save()) return;
     if (kind === 'pin' || !onAddModel || !onAddModel(kind, item.coordinates)) return;
@@ -158,7 +141,6 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
       <ComparisonEditorPositionButton kind="标记"/>
       <button aria-label={item.visible ? '隐藏标记' : '显示标记'} title="切换地图上这个标记的显示，名称和资料保留" onClick={() => changeAndSave({ visible: !item.visible })}>{item.visible ? '隐藏' : '显示'}</button>
       <button className="pin-danger" onClick={() => setConfirm('delete')}>删除</button>
-      <button type="button" aria-label="复制信息" title="复制完整标记信息" onClick={() => void copyInfo()}><Copy size={14}/><span>复制信息</span></button>
       <button className="pin-save" aria-label="分享" title="分享" onClick={() => { if (save()) onShare(item); }}><Share2 size={15}/><span className="pin-heading-label">分享</span></button>
     </header>
     {picker ? <div className="pin-picker">
@@ -171,8 +153,7 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
       <label className="pin-field"><span>名称</span><input ref={nameInput} aria-label="标记名称" autoComplete="off" maxLength={60} value={item.name} onChange={event => changeAndSave({ name: event.target.value }, isComposing(event))} onCompositionEnd={() => save()} onBlur={() => save()} /></label>
       <label className="pin-field pin-note-field"><span>备注</span><SmartTextarea aria-label="标记备注" rows={4} maxLength={500} value={item.note} placeholder="可填写位置说明" onChange={event => changeAndSave({ note: event.target.value }, isComposing(event))} onCompositionEnd={() => save()} onBlur={() => save()} /></label>
       <div className="pin-coordinate-row">
-        <button className="pin-coordinate-value" aria-label="编辑标记坐标" onClick={() => setPicker('coordinates')}><span>坐标</span><b>{item.coordinates[0].toFixed(6)}, {item.coordinates[1].toFixed(6)} · WGS84</b></button>
-        <button aria-label="分享完整标记信息" title="分享完整信息" onClick={() => { if (save()) onShare(item); }}><Share2 size={17}/></button>
+        <button className="pin-coordinate-value" type="button" aria-label="编辑标记坐标" title="点击编辑 WGS84 坐标" onClick={() => setPicker('coordinates')}><Pencil size={12}/><span>编辑坐标</span><b>{item.coordinates[0].toFixed(6)}, {item.coordinates[1].toFixed(6)}</b></button>
       </div>
       <div className="pin-elevation-row">
         <span>地面海拔</span>
@@ -207,14 +188,14 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
       </div>)}
     </div>
     </>}
-    {copyInfoStatus && <p role="status" className="pin-status">{copyInfoStatus}</p>}
-    {copyInfoText && <textarea readOnly aria-label="待复制的标记信息" value={copyInfoText} onFocus={event => event.currentTarget.select()} />}
     {state.error && <p role="alert" className="pin-status">{state.error}</p>}
     {cameraStatus && <p role="status" className="pin-status">{cameraStatus}{cameraRetry && <button onClick={onCameraRetry}>重试保存</button>}</p>}
     {confirm === 'delete' && <div className="pin-confirm" role="alertdialog" aria-modal="true" aria-label="确认删除标记">
+      <div className="pin-confirm-card">
       <strong>{`删除“${item.name || '未命名'}”？`}</strong>
       <p>仅删除这个标记；照片原文件保留。</p>
-      <div><button className="pin-danger" onClick={() => { if (state.remove(item.id)) onClose(); }}>确认删除</button><button onClick={() => setConfirm(null)}>取消</button></div>
+      <div className="pin-confirm-actions"><button className="pin-danger" onClick={() => { if (state.remove(item.id)) onClose(); }}>确认删除</button><button onClick={() => setConfirm(null)}>取消</button></div>
+      </div>
     </div>}
   </section>;
 }

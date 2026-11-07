@@ -50,3 +50,18 @@ export function importedTaskPhase(state?: string): TripPackage['phase'] {
   return undefined;
 }
 
+const ACTIVE_PROGRESS_PHASES = new Set(['preparing', 'queued', 'running', 'waiting']);
+
+/** Prefer live work in the package index if the hook's last-current task is stale or complete. */
+export function selectOfflineMapProgressTask(
+  packages: readonly TripPackage[],
+  current: TripPackage | null,
+): TripPackage | null {
+  const active = packages
+    .filter((trip) => trip.provider === 'imported' && !trip.complete && ACTIVE_PROGRESS_PHASES.has(trip.phase ?? ''))
+    .sort((a, b) => b.createdAt - a.createdAt || b.id.localeCompare(a.id));
+  if (current?.provider === 'imported' && !current.complete && ACTIVE_PROGRESS_PHASES.has(current.phase ?? '')) return current;
+  if (active.length) return active[0];
+  return current?.provider === 'imported' && !current.complete ? current : null;
+}
+

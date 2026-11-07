@@ -53,7 +53,7 @@
   font-size: 12px;
   pointer-events: auto;
 }
-.map-box-hit.route-node-hit { box-sizing: border-box; background: transparent; border: 1.5px solid #fff3a0; box-shadow: 0 0 3px 1px #fff8baaa; }
+.map-box-hit.route-node-hit { box-sizing:border-box; background:transparent; border:1px solid #79f39a; box-shadow:0 0 4px 2px #53ed8c99, 0 0 9px 3px #53ed8c44; }
 .map-box-tools-heading { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .map-box-tools-heading strong { white-space: nowrap; }
 .map-box-tools-heading select {

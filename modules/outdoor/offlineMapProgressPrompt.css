@@ -1,0 +1,57 @@
+.offline-map-progress-prompt {
+  position: absolute;
+  z-index: 12;
+  left: calc(var(--home-left, 8px) + 44px);
+  bottom: calc(var(--home-footer, 56px) + 8px);
+  display: flex;
+  box-sizing:border-box;
+  width: min(156px, calc(100% - 136px));
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: var(--ui-radius-control, 4px);
+  color: var(--ui-ink, #f2f5ed);
+  background: color-mix(in srgb, var(--ui-surface) 65%, transparent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.offline-map-progress-prompt:focus-visible {
+  outline: 2px solid var(--ui-accent, #d0f76b);
+  outline-offset: -2px;
+}
+.offline-map-progress-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+.offline-map-progress-copy strong,
+.offline-map-progress-copy > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.offline-map-progress-copy strong { font-size: 11px; font-weight: 650; }
+.offline-map-progress-copy > span { color: var(--ui-muted, #a9b3ad); }
+.offline-map-progress-copy > .offline-map-progress-reason {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.offline-map-progress-prompt progress {
+  width: 34px;
+  height: 5px;
+  flex: 0 0 34px;
+  accent-color: var(--ui-accent, #d0f76b);
+}

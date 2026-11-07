@@ -140,6 +140,8 @@ export function trackNodeFeatures(
       color: nodeColors.get(point.join(',')) ?? style.color,
       pointSize: style.pointSize ?? 8,
       selected,
+      boxSelected: state.nodeSelection?.trackId === track.id &&
+        state.nodeSelection.points.some(selectedPoint => equalCoordinate(point, selectedPoint)),
       active: state.activeNode?.trackId === track.id && equalCoordinate(point, state.activeNode.coordinate),
       trackId: track.id,
       ...(selected && ((routeStart && equalCoordinate(point, routeStart)) || (routeEnd && equalCoordinate(point, routeEnd)))

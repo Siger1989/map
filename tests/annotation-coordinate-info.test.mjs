@@ -49,7 +49,7 @@ test('annotation coordinate copy uses exact Google order, preserves unknown elev
   await React.act(async () => root.render(render({
     annotationId: 'a', coordinates: [116.4074, 39.9042], elevation: null,
   })));
-  assert.match(document.querySelector('.annotation-coordinate-info-values').textContent, /海拔未取得/);
+  assert.match(document.querySelector('.annotation-coordinate-info-elevation').textContent, /海拔未取得/);
   await React.act(async () => document.querySelector('button').click());
   assert.deepEqual(globalThis.__coordinateClipboardCalls, ['39.9042, 116.4074']);
   assert.match(document.querySelector('[role="status"]').textContent, /已复制/);

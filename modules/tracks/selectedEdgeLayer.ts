@@ -7,6 +7,8 @@ import { normalizeTrackStyle } from './style.ts';
 import { syncOverlayData } from '../map/overlayData.ts';
 import { routeLineOpacityExpression, routeLineWidthExpression } from '../map/zoomLineWidth.ts';
 
+const SELECTION_GREEN = '#20b978';
+
 /** Geographic edges let MapLibre drape selection on the same terrain as the route. */
 export function selectedEdgeData(state: TrackOverlay): FeatureCollection {
   const selection = state.nodeSelection;
@@ -22,7 +24,7 @@ export function selectedEdgeData(state: TrackOverlay): FeatureCollection {
     type: 'FeatureCollection',
     features: coordinates.length ? [{
       id: 'manual-track-selected-edge',
-      type: 'Feature', properties: { width: normalizeTrackStyle(track.style).width + 2.5 },
+      type: 'Feature', properties: { width: normalizeTrackStyle(track.style).width, color: SELECTION_GREEN, opacity: 1 },
       geometry: { type: 'MultiLineString', coordinates },
     }] : [],
   };
@@ -31,14 +33,17 @@ export function selectedEdgeData(state: TrackOverlay): FeatureCollection {
 export function syncSelectedEdges(map: Map, state: TrackOverlay) {
   const id = 'manual-track-selection-edge';
   if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  if (!map.getLayer(id)) map.addLayer({
-    id, type: 'line', source: id,
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
+  const lineLayer = (layerId: string, widthOffset: number, opacity: number) => ({
+    id: layerId, type: 'line' as const, source: id,
+    layout: { 'line-cap': 'round' as const, 'line-join': 'round' as const },
     paint: {
-      'line-color': '#fff3a0',
-      'line-width': routeLineWidthExpression(['get', 'width']),
-      'line-opacity': routeLineOpacityExpression(1),
+      'line-color': SELECTION_GREEN,
+      'line-width': routeLineWidthExpression(['+', ['get', 'width'], widthOffset]),
+      'line-opacity': routeLineOpacityExpression(opacity),
     },
   });
+  if (!map.getLayer(`${id}-halo-outer`)) map.addLayer(lineLayer(`${id}-halo-outer`, 9, 0.16), map.getLayer(id) ? id : undefined);
+  if (!map.getLayer(`${id}-halo-inner`)) map.addLayer(lineLayer(`${id}-halo-inner`, 5, 0.3), map.getLayer(id) ? id : undefined);
+  if (!map.getLayer(id)) map.addLayer(lineLayer(id, 2.5, 1));
   syncOverlayData(map, id, selectedEdgeData(state));
 }

@@ -73,13 +73,13 @@ export function AnnotationCoordinateInfo({
       <div className="annotation-coordinate-info-values">
         <span>纬 {coordinates[1].toFixed(6)}°</span>
         <span>经 {coordinates[0].toFixed(6)}°</span>
-        <button type="button" onClick={copy} disabled={copyState === 'copying'} aria-label="复制 Google Maps 格式坐标">
-          <Clipboard size={13} aria-hidden="true" />
-          <span>{copyState === 'copying' ? '复制中' : '复制坐标'}</span>
-        </button>
       </div>
       <div className="annotation-coordinate-info-elevation">
         <span>{elevationMessage(elevation, elevationStatus)}</span>
+        <button type="button" onClick={copy} disabled={copyState === 'copying'} aria-label="复制 Google Maps 格式坐标">
+          <Clipboard size={12} aria-hidden="true" />
+          <span>{copyState === 'copying' ? '复制中' : '复制坐标'}</span>
+        </button>
       </div>
       <small role="status" aria-live="polite">
         {copyState === 'copied' ? '已复制，可粘贴到 Google Maps' :

@@ -8,6 +8,8 @@ import {
   type AnnotationEdit,
 } from './editorSession';
 import type { Coordinate } from '../navigation/types';
+import type { RoutePlace } from '../navigation/types';
+import { existingPlaceMarker, placeMarkerDefaults } from './placeMarker';
 import { readElevation } from '../terrain/elevation';
 import {
   ATTRIBUTE_TEMPLATE_KEY,
@@ -154,7 +156,7 @@ export function useAnnotations() {
     kind: AnnotationChoice,
     coordinates: Coordinate,
     trackAnchor?: Annotation['trackAnchor'],
-    defaults?: Pick<Annotation, 'name' | 'icon'>,
+    defaults?: Pick<Annotation, 'name' | 'icon'> & Partial<Pick<Annotation, 'note'>>,
   ) => {
     if (
       !canAddAnnotation(current.current, kind === 'borehole' ? 'pin' : kind)
@@ -166,6 +168,7 @@ export function useAnnotations() {
     if (defaults) {
       item.name = defaults.name;
       item.icon = defaults.icon;
+      if (defaults.note !== undefined) item.note = defaults.note;
     }
     if (trackAnchor) {
       item.trackAnchor = trackAnchor;
@@ -214,6 +217,14 @@ export function useAnnotations() {
     return true;
   };
   return {
+    savePlace: (place: RoutePlace) => {
+      const existing = existingPlaceMarker(current.current, place);
+      if (!existing) return add('pin', place.coordinates, undefined, placeMarkerDefaults(place));
+      if (!existing.visible && !update(existing.id, { visible: true })) return false;
+      setSelected(existing.id);
+      setPicking(null);
+      return true;
+    },
     addOutline: (
       shape: Pick<
         Annotation,

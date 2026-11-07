@@ -106,7 +106,6 @@ test('navigation card and route summary expose first-person camera and route pre
     onFollow() {},
     onShow() {},
     following: false,
-    onShare() {},
     compact: true,
     onFirstPerson() { firstPersonCalls.push('first-person'); },
     cameraMode,
@@ -120,7 +119,7 @@ test('navigation card and route summary expose first-person camera and route pre
   await React.act(async () => root.render(React.createElement(GuidanceCard, { ...cardProps(), cameraMode: undefined })));
   assert.equal(host.querySelector('.guidance-compact-primary'), null, 'ordinary navigation defaults to a clear top view');
   assert.equal(host.querySelectorAll('.guidance-header-actions button').length, 2, 'the collapsed header retains the first-person action and more button');
-  assert.match(host.querySelector('.guidance-follow-status')?.textContent, /继续导航步行/);
+  assert.match(host.querySelector('.guidance-follow-status')?.textContent, /恢复跟随步行/);
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
   assert.equal(host.querySelector('.guidance-compact-primary')?.getAttribute('data-maneuver'), 'straight');
   assert.equal(host.querySelector('.guidance-maneuver-distance')?.textContent, '500 米');
@@ -129,7 +128,7 @@ test('navigation card and route summary expose first-person camera and route pre
   assert.equal(host.querySelector('.guidance-header-actions .guidance-first-person')?.getAttribute('aria-pressed'), 'true', 'the first-person action stays available without opening details');
   assert.ok(host.querySelector('.guidance-actions button:last-child'), 'ending navigation remains available in details');
   await React.act(async () => root.render(React.createElement(GuidanceCard, { ...cardProps(), following: true })));
-  assert.match(host.querySelector('.guidance-follow-status')?.textContent, /导航跟随中步行/);
+  assert.match(host.querySelector('.guidance-follow-status')?.textContent, /当前位置步行/);
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
   session.last = { coordinates: [104.001, 30], accuracy: 8, timestamp: Date.now() };
   session.offset = 20;
@@ -192,7 +191,8 @@ test('navigation card and route summary expose first-person camera and route pre
   assert.equal(host.querySelector('.guidance-inline-status'), null, 'first-person primary state is not duplicated in the auxiliary status row');
 
   let cameraButton = host.querySelector('.guidance-first-person');
-  assert.equal(cameraButton.textContent, '切回俯视');
+  assert.equal(cameraButton.textContent, '');
+  assert.equal(cameraButton.getAttribute('aria-label'), '切回俯视导航');
   await React.act(async () => cameraButton.click());
   assert.equal(firstPersonCalls.length, 2, 'the shared toggle requests returning to top view');
   cameraMode = 'top';
@@ -201,19 +201,20 @@ test('navigation card and route summary expose first-person camera and route pre
   assert.equal(host.querySelector('.guidance-compact-primary'), null, 'top view has no direction panel');
   assert.equal(host.querySelector('.guidance-trip-summary'), null, 'no bottom metrics overlay in either mode');
   cameraButton = host.querySelector('.guidance-first-person');
-  assert.equal(cameraButton.textContent, '第一人称');
+  assert.equal(cameraButton.textContent, '');
+  assert.equal(cameraButton.getAttribute('aria-label'), '开启第一人称导航');
   await React.act(async () => cameraButton.click());
   assert.equal(firstPersonCalls.length, 3, 'the same first-layer toggle requests forward view');
   cameraMode = 'forward';
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
 
   const css = await readFile('modules/guidance/guidance.css', 'utf8');
-  assert.match(css, /\.guidance-card header button\s*\{[^}]*min-width:\s*44px;[^}]*height:\s*44px;[^}]*min-height:\s*44px;/s);
+  assert.match(css, /\.guidance-card \.guidance-heading-row button\s*\{[^}]*min-width:\s*44px;[^}]*height:\s*44px;[^}]*min-height:\s*44px;/s);
   assert.match(css, /\.guidance-content\s*\{[\s\S]*?overflow:\s*auto;/);
-  assert.match(css, /\.observatory\.home-map \.guidance-card\s*\{[\s\S]*?overflow:\s*visible;/);
-  assert.match(css, /\.observatory\.home-map \.guidance-card\[data-compact='true'\]\s*\{[^}]*width:min\(300px/s);
+  assert.match(css, /\.guidance-card\s*\{[\s\S]*?overflow:hidden;/);
+  assert.match(css, /\.guidance-card\s*\{[^}]*width:min\(300px/s);
   assert.match(css, /--normal-nav-rail-top:\s*calc\(var\(--home-top\) \+ var\(--home-header-height\) \+ 4px/);
-  assert.match(css, /\.guidance-card\[data-compact='true'\] header button\.guidance-expand\s*\{[^}]*width:\s*32px/s, 'compact expand control fits beside follow in the same row');
+  assert.match(css, /\.guidance-card header \.guidance-first-person\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*background:transparent/s, 'first-person remains a transparent icon control with a 44px target');
   assert.doesNotMatch(css, /background:\s*#204da8/i, 'first-person mode does not recolour the whole card blue');
   assert.match(css, /\.guidance-compact-context[\s\S]*?\.navigation-telemetry--compact/, 'compact telemetry is styled within the shared card context');
   assert.doesNotMatch(css, /\.global-focus-lock\s*\{/);

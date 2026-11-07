@@ -232,6 +232,7 @@ export function appendEditBranch(
   point: Coordinate,
   target?: ManualTrack,
   section?: Coordinate[],
+  finishOnJoin = true,
 ): RouteEditSession {
   if (session.branch === null) throw new Error('请先选中节点并开启分叉。');
   if (!coordinate(point)) throw new Error('节点坐标无效。');
@@ -268,9 +269,13 @@ export function appendEditBranch(
   Object.assign(track, inheritAppendedBranchMetadata(session.track, track, session.branch, line.length));
   return revise(session, {
     track,
-    branch: target || joinsSelf ? null : session.branch,
+    branch: finishOnJoin && (target || joinsSelf) ? null : session.branch,
     selected: point,
   });
+}
+/** Interactive drawing finishes only when the user presses End, even after snapping to a junction. */
+export function appendEditBranchContinuous(session: RouteEditSession, point: Coordinate, target?: ManualTrack, section?: Coordinate[]) {
+  return appendEditBranch(session, point, target, section, false);
 }
 export function editedRouteRecord(
   session: RouteEditSession,

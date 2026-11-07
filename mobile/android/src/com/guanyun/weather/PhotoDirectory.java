@@ -46,8 +46,9 @@ final class PhotoDirectory {
     }
     static boolean isPhoto(String mime, String name) {
         String type = mime == null ? "" : mime.toLowerCase(Locale.ROOT);
-        if (type.matches("image/(jpeg|png|webp|heic|heif)")) return true;
-        return (type.isEmpty() || "application/octet-stream".equals(type)) && name != null
-            && name.toLowerCase(Locale.ROOT).matches(".*\\.(jpg|jpeg|png|webp|heic|heif)$");
+        if (type.matches("image/(jpeg|png|webp|heic|heif|avif|gif|bmp)")) return true;
+        // Camera and cloud providers frequently return a generic or stale MIME.
+        return name != null && name.toLowerCase(Locale.ROOT)
+            .matches(".*\\.(jpe?g|png|webp|heic|heif|avif|gif|bmp|dib)$");
     }
 }
