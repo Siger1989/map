@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import exifr from 'exifr';
 import { imageMime, nativeImportOriginalHash, selectPhotoFiles } from '../modules/photos/selection.ts';
 
 test('recognizes common photo formats and keeps a known extension when MIME is stale', () => {
@@ -31,4 +33,14 @@ test('only a marked generated JPEG can supply the preserved source hash', () => 
   assert.equal(nativeImportOriginalHash({ ImageUniqueID: hash, UserComment: `SHANTU_NATIVE_PHOTO_V1:${hash}` }, 'image/png', jpeg), null);
   assert.equal(nativeImportOriginalHash({ ImageUniqueID: hash, UserComment: `SHANTU_NATIVE_PHOTO_V1:${hash}` }, 'image/jpeg', jpeg), hash);
   assert.equal(nativeImportOriginalHash({ ImageUniqueID: hash, UserComment: `ASCII\0\0\0SHANTU_NATIVE_PHOTO_V1:${hash}` }, 'image/jpeg', jpeg), hash);
+});
+
+test('the actual EXIF parser returns lowercase binary userComment for a generated JPEG', async () => {
+  const file = await readFile(new URL('./fixtures/photos/native-generated.jpg', import.meta.url));
+  const meta = await exifr.parse(file, { pick: ['ImageUniqueID', 'UserComment'], reviveValues: false, translateValues: false });
+  assert.ok(ArrayBuffer.isView(meta.userComment), 'this fixture exercises the real binary parser result');
+  const bytes = Uint8Array.from(file).buffer;
+  assert.equal(nativeImportOriginalHash(meta, 'image/jpeg', bytes), 'a'.repeat(64));
+  const invalid = { ...meta, userComment: new TextEncoder().encode('ASCII\0\0\0SHANTU_NATIVE_PHOTO_V1:' + 'b'.repeat(64)) };
+  assert.equal(nativeImportOriginalHash(invalid, 'image/jpeg', bytes), null, 'mismatched metadata does not override the content digest');
 });

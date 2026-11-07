@@ -30,12 +30,14 @@ export function imageMime(file: { name: string; type: string }) {
 }
 export function nativeImportOriginalHash(meta: Record<string, unknown> | undefined, mime: string, bytes: ArrayBuffer) {
   const hash = meta?.ImageUniqueID;
-  const marker = meta?.UserComment;
+  const marker = meta?.UserComment ?? meta?.userComment;
   const header = new Uint8Array(bytes, 0, Math.min(bytes.byteLength, 3));
   const isJpeg = header.length >= 3 && header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
   if (mime !== 'image/jpeg' || !isJpeg) return null;
   if (typeof hash !== 'string' || !/^[a-f0-9]{64}$/i.test(hash)) return null;
-  const markerText = typeof marker === 'string' ? marker.replace(/\0/g, '').trim() : '';
+  const comment = typeof marker === 'string' ? marker : ArrayBuffer.isView(marker) && marker.byteLength <= 256
+    ? new TextDecoder().decode(Uint8Array.from(new Uint8Array(marker.buffer, marker.byteOffset, marker.byteLength))) : '';
+  const markerText = comment.replace(/\0/g, '').trim();
   const markedHash = /^(?:ASCII)?\s*SHANTU_NATIVE_PHOTO_V1:([a-f0-9]{64})$/i.exec(markerText)?.[1];
   if (markedHash?.toLowerCase() !== hash.toLowerCase()) return null;
   return hash.toLowerCase();
