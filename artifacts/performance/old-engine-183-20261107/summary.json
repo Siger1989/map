@@ -1,0 +1,100 @@
+{
+  "version": "0.2.183-test",
+  "versionCode": 190,
+  "package": "com.shantu.oldengine",
+  "sourceCommit": "be49551e66dfe48e56bad96c2bc3ed6b0782608d",
+  "branch": "codex/old-engine-tilt-dual-20261105",
+  "mergedToMain": false,
+  "bytes": 165371245,
+  "sha256": "d8075f497243aa5dd31bac2e4ddefac27587b9823067237b9ea576d89c596654",
+  "delivery": {
+    "private": true,
+    "assetsFullyReadBack": 5,
+    "anonymousApkHead": 404,
+    "sentBeforeRuntime": true
+  },
+  "checks": {
+    "nodeCases": 61,
+    "freshNativeCases": 17,
+    "tsc": "PASS",
+    "optimizedBuild": "PASS",
+    "originalSignature": true,
+    "privateSeedsUnchanged": 39,
+    "freshWebAssets": 1925,
+    "crcAnd16KiBAlignment": true
+  },
+  "emulator": {
+    "name": "ShantuPerf34",
+    "api": 34,
+    "readOnly": true,
+    "overwriteInstall": "PASS",
+    "launchAndGlobe": "PASS",
+    "cacheIndex": "actual empty index",
+    "initialDownload": "FAIL: notification permission dialog",
+    "authorizedRepeat": [
+      {
+        "zoom": 14,
+        "tripIdPrefix": "qa170-",
+        "resourceCount": 1,
+        "terminalState": "complete",
+        "done": 1,
+        "total": 1,
+        "bytes": 25271,
+        "missing": 0,
+        "error": "缓存完成",
+        "verifiedDone": 1,
+        "verifiedTotal": 1,
+        "tilePresent": true,
+        "readStatus": 200,
+        "readContentType": "image/jpeg",
+        "readBytes": 25271,
+        "testState": "PASS",
+        "cleanup": "PASS"
+      },
+      {
+        "zoom": 19,
+        "tripIdPrefix": "qa170-",
+        "resourceCount": 1,
+        "terminalState": "complete",
+        "done": 1,
+        "total": 1,
+        "bytes": 12306,
+        "missing": 0,
+        "error": "缓存完成",
+        "verifiedDone": 1,
+        "verifiedTotal": 1,
+        "tilePresent": true,
+        "readStatus": 200,
+        "readContentType": "image/jpeg",
+        "readBytes": 12306,
+        "testState": "PASS",
+        "cleanup": "PASS"
+      }
+    ],
+    "scope": "two native backend JPEG samples, not complete route or polygon UI download",
+    "coldAvdBootMs": 352594,
+    "coldAvdBootIsAppStartMetric": false,
+    "hostFaults": [
+      "System UI ANR dismissed with Wait",
+      "com.android.bluetooth SIGABRT in crash buffer"
+    ],
+    "targetCrashObservedDuringBoundedRun": false,
+    "helperStoppedForwardRemovedHomeAndOwnedAvdShutdown": true,
+    "cacheManagerBackupReturn": "PASS",
+    "closeAction": "sent; no settled main-screen capture before cleanup/Home"
+  },
+  "interop": {
+    "googleActualShortLinkResolved": true,
+    "googleParserIn183": false,
+    "wechatInternalNavigationChooserIntegrated": false,
+    "googleShareIntentTest": "NOT EXECUTED: automatic approval rejection"
+  },
+  "physicalDevice": {
+    "model": "OPPO Find X8",
+    "connected": false,
+    "acceptance": "UNVERIFIED"
+  },
+  "fullMainDualAndPhoneTouchAcceptance": "UNVERIFIED",
+  "formalAndOldArtifactsPreserved": true,
+  "userDataCleared": false
+}
