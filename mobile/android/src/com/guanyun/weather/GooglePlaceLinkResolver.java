@@ -13,7 +13,8 @@ import java.util.regex.Pattern;
 final class GooglePlaceLinkResolver {
     static final int MAX_URL_LENGTH = 8192;
     static final int MAX_HOPS = 5;
-    static final long TOTAL_TIMEOUT_MS = 25_000L;
+    static final long TOTAL_TIMEOUT_MS = 12_000L;
+    static final String NETWORK_HELP = "Google 短链接不含坐标，山兔暂时无法连接 Google。请让山兔可访问 Google 后重试，或改用带坐标的地点链接。";
     private static final int PER_HOP_TIMEOUT_MS = 5_000;
     private static final Pattern LINK_PATTERN = Pattern.compile("(?i)https?://[^\\s<>\"']+");
     private static final Pattern MIXED_PLACE_PATTERN = Pattern.compile("(?i)\\bgeo:|https://apis\\.map\\.qq\\.com/uri/v1/marker(?:[?#\\s]|$)");
@@ -87,7 +88,7 @@ final class GooglePlaceLinkResolver {
         for (int hop = 0; hop < MAX_HOPS; hop++) {
             if (Thread.currentThread().isInterrupted()) return Result.failure("地点链接解析已取消。");
             long remainingNanos = deadline - System.nanoTime();
-            if (remainingNanos <= 0) return Result.retry("Google 地点短链接解析超时，请重试。");
+            if (remainingNanos <= 0) return Result.retry(NETWORK_HELP);
             int remainingMs = (int)Math.max(1, Math.min(Integer.MAX_VALUE, remainingNanos / 1_000_000L));
             int perTimeout = Math.max(1, Math.min(PER_HOP_TIMEOUT_MS, remainingMs / 2));
             int connectTimeout = perTimeout;
@@ -96,10 +97,10 @@ final class GooglePlaceLinkResolver {
             try { response = transport.get(current, connectTimeout, readTimeout); }
             catch (Exception error) {
                 if (Thread.currentThread().isInterrupted()) return Result.failure("地点链接解析已取消。");
-                return Result.retry("Google 地点短链接暂时无法打开，请检查网络后重试。");
+                return Result.retry(NETWORK_HELP);
             }
             if (Thread.currentThread().isInterrupted()) return Result.failure("地点链接解析已取消。");
-            if (System.nanoTime() >= deadline) return Result.retry("Google 地点短链接解析超时，请重试。");
+            if (System.nanoTime() >= deadline) return Result.retry(NETWORK_HELP);
             if (response.status < 300 || response.status >= 400) {
                 if (response.status == 200) return Result.failure("Google 返回了网页而不是地点链接，无法安全确认地点。");
                 String message = "Google 地点短链接返回 HTTP " + response.status + "，请重试。";

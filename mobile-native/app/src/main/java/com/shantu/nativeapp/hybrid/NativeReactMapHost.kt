@@ -59,6 +59,9 @@ import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.tan
 
+private const val MAX_DEFERRED_OBJECT_TAP_EVENTS = 32
+private const val OBJECT_DOUBLE_TAP_PICK_TIMEOUT_MS = 450L
+
 internal class NativeTapCompletionGate {
     private var activeGestureId: Long? = null
     private var releasedTapGestureId: Long? = null
@@ -185,6 +188,11 @@ class NativeReactMapHost(
         var renderFrameSequence: Long = 0L,
         var lastPublishedRenderFrame: PublishedRenderFrame? = null,
         val tapCompletionGate: NativeTapCompletionGate = NativeTapCompletionGate(),
+        val objectDoubleTapGate: NativeObjectDoubleTapGate = NativeObjectDoubleTapGate(),
+        val deferredCameraEvents: MutableList<MotionEvent> = mutableListOf(),
+        var pendingSecondTap: JSONObject? = null,
+        var objectDoubleTapFlushTask: Runnable? = null,
+        var expiredObjectDoubleTapGesture: Long? = null,
         var capturedGestureId: Long? = null,
         var adapterCapturedGesture: Boolean = false,
         val touchNavigation: NativeMapTouchNavigation = NativeMapTouchNavigation(),
@@ -584,6 +592,10 @@ class NativeReactMapHost(
         entry.disposed = true
         entry.drawingMoveCoalescer?.discard()
         entry.drawingMoveCoalescer = null
+        entry.objectDoubleTapGate.cancel()
+        cancelObjectDoubleTapFlush(entry)
+        entry.pendingSecondTap = null
+        discardDeferredCameraEvents(entry)
         entry.lastPublishedRenderFrame = null
         shareJobs.entries.filter { it.value.first == mapId }.toList().forEach { (id, item) -> shareJobs.remove(id); item.second.cancel() }
         maps.remove(mapId)
@@ -721,6 +733,12 @@ class NativeReactMapHost(
         entry.renderInteraction = nextRenderInteraction
         entry.renderRevision = revision
         entry.renderState = input
+        if (!objectDoubleTapEligible(entry)) {
+            entry.objectDoubleTapGate.cancel()
+            entry.pendingSecondTap = null
+            cancelObjectDoubleTapFlush(entry)
+            flushDeferredCameraEvents(entry)
+        }
         entry.viewport?.optJSONObject("cssRect")?.let { rect ->
             entry.container.visibility = if (rect.optDouble("width") > 0 && rect.optDouble("height") > 0) View.VISIBLE else View.INVISIBLE
         }
@@ -2090,6 +2108,27 @@ class NativeReactMapHost(
         ) { move -> processDrawingMove(entry, move) }
         entry.controller.view.setOnTouchListener { _, event ->
             if (!isCurrent(entry)) return@setOnTouchListener false
+            val scale = cssScale(entry)
+            val doubleTapEligible = objectDoubleTapEligible(entry)
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    if (entry.objectDoubleTapGate.isCandidateActive) {
+                        entry.objectDoubleTapGate.cancel()
+                        entry.pendingSecondTap = null
+                        cancelObjectDoubleTapFlush(entry)
+                        flushDeferredCameraEvents(entry)
+                    }
+                    if (!entry.objectDoubleTapGate.begin(event.eventTime, (event.x / scale).toFloat(), (event.y / scale).toFloat(), event.pointerCount, doubleTapEligible) && !doubleTapEligible) {
+                        entry.objectDoubleTapGate.cancel()
+                    }
+                }
+                MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_CANCEL -> {
+                    entry.objectDoubleTapGate.cancel()
+                    entry.pendingSecondTap = null
+                    cancelObjectDoubleTapFlush(entry)
+                    flushDeferredCameraEvents(entry)
+                }
+            }
             // Ink-only motion changes the React preview, not the native camera. Navigation,
             // pointer handoff and gesture boundaries keep their existing frame-dirty entry.
             val drawingOnlyMove = event.actionMasked == MotionEvent.ACTION_MOVE &&
@@ -2102,7 +2141,6 @@ class NativeReactMapHost(
                 entry.cameraOrigin.beginUserGesture()
                 cancelCameraAnimation(entry)
             }
-            val scale = cssScale(entry)
             val x = event.x / scale; val y = event.y / scale
             val now = android.os.SystemClock.elapsedRealtime()
             val shouldEmitTouch = event.actionMasked != MotionEvent.ACTION_MOVE || now - entry.lastTouchAt >= TOUCH_EVENT_INTERVAL_MS
@@ -2134,7 +2172,17 @@ class NativeReactMapHost(
             val capturePointer = entry.touchNavigation.capture(event,
                 captureByMode || entry.capturedGestureId == entry.gestureSequence,
                 { entry.controller.setEditingGestureNavigation(it) }) { cameraEvent ->
-                entry.controller.view.onTouchEvent(cameraEvent)
+                if (entry.objectDoubleTapGate.isCandidateActive) {
+                    if (entry.deferredCameraEvents.size >= MAX_DEFERRED_OBJECT_TAP_EVENTS) {
+                        entry.objectDoubleTapGate.cancel()
+                        entry.pendingSecondTap = null
+                        cancelObjectDoubleTapFlush(entry)
+                        flushDeferredCameraEvents(entry)
+                        entry.controller.view.onTouchEvent(cameraEvent)
+                        return@capture
+                    }
+                    entry.deferredCameraEvents += MotionEvent.obtain(cameraEvent)
+                } else entry.controller.view.onTouchEvent(cameraEvent)
             }
             if (NativeBridgeTouchPolicy.shouldClearGroundAnchor(
                     actionDown = event.actionMasked == MotionEvent.ACTION_DOWN,
@@ -2161,24 +2209,40 @@ class NativeReactMapHost(
                     val suppressClick = captureByMode || interaction.readOnly ||
                         entry.adapterCapturedGesture && entry.capturedGestureId == entry.gestureSequence
                     entry.touchDown = null
-                    if (!suppressClick && down != null && kotlin.math.hypot((event.x - down.first).toDouble(), (event.y - down.second).toDouble()) < appContext.resources.displayMetrics.density * 12) {
+                    val isTap = !suppressClick && down != null &&
+                        kotlin.math.hypot((event.x - down.first).toDouble(), (event.y - down.second).toDouble()) < appContext.resources.displayMetrics.density * 12
+                    if (isTap) {
                         val coordinate = entry.controller.unprojectCoordinate(event.x, event.y)
                         if (event.eventTime - event.downTime >= LONG_PRESS_MS) {
+                            entry.objectDoubleTapGate.cancel()
+                            flushDeferredCameraEvents(entry)
                             if (coordinate != null) emitEvent(entry.id, "longPress", JSONObject().put("gestureId", entry.gestureSequence).put("pointerId", event.getPointerId(0)).put("downTime", event.downTime).put("eventTime", event.eventTime).put("x", x).put("y", y).put("coordinates", JSONArray().put(coordinate.second).put(coordinate.first)))
                         } else {
                                 val tapGesture = entry.gestureSequence
                                 val tapTime = event.eventTime
+                                entry.objectDoubleTapGate.noteTap(tapTime, x.toFloat(), y.toFloat(), objectDoubleTapEligible(entry))
                                 entry.tapCompletionGate.releaseTap(tapGesture)
                                 pickTouchObjectIds(entry, event.x, event.y) { ids, exactIds ->
-                                    if (isCurrent(entry) && entry.tapCompletionGate.accepts(tapGesture)) {
-                                        emitEvent(entry.id, "tap", JSONObject()
-                                            .put("point", JSONObject().put("x", x).put("y", y))
-                                            .put("coordinates", coordinate?.let { JSONArray().put(it.second).put(it.first) } ?: JSONObject.NULL)
-                                            .put("ids", JSONArray(ids)).put("exactIds", JSONArray(exactIds)).put("gestureId", tapGesture).put("eventTime", tapTime))
+                                    if (!isCurrent(entry)) return@pickTouchObjectIds
+                                    val accepted = entry.tapCompletionGate.accepts(tapGesture)
+                                    val resolvingEarlier = entry.objectDoubleTapGate.isResolvingEarlierTap(tapTime)
+                                    if (!accepted && !resolvingEarlier) {
+                                        entry.objectDoubleTapGate.cancel()
+                                        entry.pendingSecondTap = null
+                                        flushDeferredCameraEvents(entry)
+                                        return@pickTouchObjectIds
                                     }
+                                    handleObjectTapPick(entry, tapGesture, tapTime, x, y, coordinate, ids, exactIds, accepted)
                                 }
                         }
+                    } else {
+                        entry.objectDoubleTapGate.cancel()
+                        entry.pendingSecondTap = null
+                        cancelObjectDoubleTapFlush(entry)
+                        flushDeferredCameraEvents(entry)
                     }
+                    if (entry.objectDoubleTapGate.isCandidateActive)
+                        scheduleObjectDoubleTapFlush(entry, entry.gestureSequence)
                     entry.gestureSequence++
                     entry.capturedGestureId = null
                     entry.adapterCapturedGesture = false
@@ -2253,6 +2317,96 @@ class NativeReactMapHost(
             }
             capturePointer
         }
+    }
+
+    private fun handleObjectTapPick(
+        entry: MapEntry, gestureId: Long, eventTime: Long, x: Double, y: Double,
+        coordinate: Pair<Double, Double>?, ids: List<String>, exactIds: List<String>, accepted: Boolean,
+    ) {
+        if (entry.expiredObjectDoubleTapGesture == gestureId) return
+        val objectId = NativeObjectDoubleTapGate.primaryObjectId(ids, entry.annotationIds, entry.routeIds, entry.trackIds, entry.areaIds)
+        val result = entry.objectDoubleTapGate.resolve(eventTime, x.toFloat(), y.toFloat(), objectId, objectDoubleTapEligible(entry))
+        when (result.state) {
+            NativeObjectDoubleTapGate.State.PENDING -> {
+                if (result.secondEventTime == eventTime) {
+                    entry.pendingSecondTap = JSONObject()
+                        .put("point", JSONObject().put("x", x).put("y", y))
+                        .put("coordinates", coordinate?.let { JSONArray().put(it.second).put(it.first) } ?: JSONObject.NULL)
+                        .put("ids", JSONArray(ids)).put("exactIds", JSONArray(exactIds))
+                        .put("gestureId", gestureId).put("eventTime", eventTime)
+                }
+            }
+            NativeObjectDoubleTapGate.State.MATCH -> {
+                cancelObjectDoubleTapFlush(entry)
+                val secondGestureId = entry.pendingSecondTap?.optLong("gestureId", gestureId) ?: gestureId
+                entry.pendingSecondTap = null
+                discardDeferredCameraEvents(entry)
+                emitEvent(entry.id, "doubleTap", JSONObject()
+                    .put("point", JSONObject().put("x", result.secondX).put("y", result.secondY))
+                    .put("objectId", result.objectId).put("gestureId", secondGestureId)
+                    .put("eventTime", result.secondEventTime))
+            }
+            NativeObjectDoubleTapGate.State.DIFFERENT -> {
+                cancelObjectDoubleTapFlush(entry)
+                flushDeferredCameraEvents(entry)
+                val pending = entry.pendingSecondTap
+                entry.pendingSecondTap = null
+                if (pending != null) emitEvent(entry.id, "tap", pending)
+                else if (accepted) emitEvent(entry.id, "tap", tapEvent(gestureId, eventTime, x, y, coordinate, ids, exactIds))
+            }
+            NativeObjectDoubleTapGate.State.SINGLE -> {
+                cancelObjectDoubleTapFlush(entry)
+                flushDeferredCameraEvents(entry)
+                if (accepted) emitEvent(entry.id, "tap", tapEvent(gestureId, eventTime, x, y, coordinate, ids, exactIds))
+            }
+        }
+    }
+
+    private fun tapEvent(
+        gestureId: Long, eventTime: Long, x: Double, y: Double,
+        coordinate: Pair<Double, Double>?, ids: List<String>, exactIds: List<String>,
+    ) = JSONObject()
+        .put("point", JSONObject().put("x", x).put("y", y))
+        .put("coordinates", coordinate?.let { JSONArray().put(it.second).put(it.first) } ?: JSONObject.NULL)
+        .put("ids", JSONArray(ids)).put("exactIds", JSONArray(exactIds))
+        .put("gestureId", gestureId).put("eventTime", eventTime)
+
+    private fun objectDoubleTapEligible(entry: MapEntry): Boolean {
+        if (entry.renderInteraction.readOnly || entry.renderInteraction.drawingActive) return false
+        val interaction = entry.renderState.optJSONObject("interaction") ?: return false
+        if (interaction.optBoolean("pickingActive") || interaction.optBoolean("annotationPicking") ||
+            interaction.optBoolean("measurementPicking") || entry.renderState.optBoolean("sectionEditing")) return false
+        return entry.renderState.optJSONObject("trackOverlay")?.optBoolean("editing") != true
+    }
+
+    private fun scheduleObjectDoubleTapFlush(entry: MapEntry, gestureId: Long) {
+        cancelObjectDoubleTapFlush(entry)
+        val task = Runnable {
+            entry.objectDoubleTapFlushTask = null
+            if (!isCurrent(entry) || !entry.objectDoubleTapGate.expire(android.os.SystemClock.uptimeMillis())) return@Runnable
+            entry.expiredObjectDoubleTapGesture = gestureId
+            entry.pendingSecondTap = null
+            flushDeferredCameraEvents(entry)
+        }
+        entry.objectDoubleTapFlushTask = task
+        main.postDelayed(task, OBJECT_DOUBLE_TAP_PICK_TIMEOUT_MS)
+    }
+
+    private fun cancelObjectDoubleTapFlush(entry: MapEntry) {
+        entry.objectDoubleTapFlushTask?.let(main::removeCallbacks)
+        entry.objectDoubleTapFlushTask = null
+    }
+
+    private fun flushDeferredCameraEvents(entry: MapEntry) {
+        if (entry.deferredCameraEvents.isEmpty()) return
+        val events = entry.deferredCameraEvents.toList()
+        entry.deferredCameraEvents.clear()
+        for (event in events) try { entry.controller.view.onTouchEvent(event) } finally { event.recycle() }
+    }
+
+    private fun discardDeferredCameraEvents(entry: MapEntry) {
+        entry.deferredCameraEvents.forEach(MotionEvent::recycle)
+        entry.deferredCameraEvents.clear()
     }
 
     private fun processDrawingMove(entry: MapEntry, move: NativeDrawingMove) {

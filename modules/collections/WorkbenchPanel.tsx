@@ -62,6 +62,7 @@ type Props = {
   center: [number, number];
   onClose: () => void;
   onLocate: (key: string) => void;
+  onRecenter: (key: string) => void;
   onOpen: (key: string) => void;
   onNavigate: (key: string) => void;
   onManage: (keys?: string[]) => void;
@@ -436,6 +437,12 @@ export function WorkbenchPanel(props: Props) {
                 return next;
               });
             else props.onLocate(item.id);
+          }}
+          onDoubleClick={(e) => {
+            if (folder || synthetic || batch) return;
+            e.preventDefault();
+            e.stopPropagation();
+            props.onRecenter(item.id);
           }}
         >
           {folder ? (

@@ -57,6 +57,7 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onClose: () => void;
   onReselect?: (keys: string[]) => void;
   onLocate: (entry: CatalogEntry) => void;
+  onRecenter: (entry: CatalogEntry) => void;
   mapCenter: [number, number];
   onCacheRoute: (key: string) => void;
   onCacheRoutes: (keys: string[]) => void;
@@ -267,6 +268,10 @@ export function CollectionsPanel(props: Props) {
         onLocate={(key) => {
           const entry = entries.find((e) => e.key === key);
           if (entry) props.onLocate(entry);
+        }}
+        onRecenter={(key) => {
+          const entry = entries.find((e) => e.key === key);
+          if (entry) props.onRecenter(entry);
         }}
         onOpen={(key) => {
           const entry = entries.find((e) => e.key === key);
@@ -570,6 +575,12 @@ export function CollectionsPanel(props: Props) {
                       <button
                         className="collection-open"
                         onClick={() => (batch ? toggle(e.key) : open(e))}
+                        onDoubleClick={(event) => {
+                          if (batch) return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          props.onRecenter(e);
+                        }}
                       >
                         {'annotation' in e && (
                           <svg

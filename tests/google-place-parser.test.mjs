@@ -40,7 +40,9 @@ test('Google Maps rejects view centers, names, place IDs, and short links withou
   assert.equal(parseIncomingPlace('https://www.google.com/maps/@10,20,12z').kind, 'unsupported');
   assert.equal(parseIncomingPlace('https://www.google.com/maps?ll=10,20&center=11,21').kind, 'unsupported');
   assert.equal(parseIncomingPlace('https://www.google.com/maps/search/?api=1&query=Some+Place').kind, 'unsupported');
-  assert.equal(parseIncomingPlace('https://www.google.com/maps/place/Some+Place/data=!1sChIJsynthetic').kind, 'unsupported');
+  const idOnly = parseIncomingPlace('https://www.google.com/maps/place/Some+Place/data=!4m2!3m1!1s0xsynthetic:0xsynthetic!18m1!1e1');
+  assert.equal(idOnly.kind, 'unsupported');
+  if (idOnly.kind === 'unsupported') assert.match(idOnly.reason, /本版尚不能据此确认坐标/);
   const short = parseIncomingPlace('https://maps.app.goo.gl/synthetic');
   assert.equal(short.kind, 'unsupported');
   if (short.kind === 'unsupported') assert.match(short.reason, /需先联网展开/);
@@ -73,6 +75,29 @@ test('Google Maps rejects invalid, out-of-range, duplicate, conflicting, and mul
 test('Google Maps does not exceed the shared 8192-character input limit', () => {
   const url = `https://www.google.com/maps?q=10,20&x=${'a'.repeat(8192)}`;
   assert.equal(parseIncomingPlace(url).kind, 'unsupported');
+});
+
+test('Google numeric place titles may round the data point without losing the exact selected coordinates', () => {
+  const precise = [-72.34567849, 41.23456749];
+  for (const title of ['41.234567,-72.345678', '41.23457,-72.34568', '41.2346,-72.3457']) {
+    const result = parseIncomingPlace(`https://www.google.com/maps/place/${title}/@42,-73,17z/data=!3d41.23456749!4d-72.34567849`, 'Synthetic pin');
+    assert.equal(result.kind, 'place', title);
+    if (result.kind === 'place') {
+      assert.deepEqual(result.place.coordinates, precise);
+      assert.equal(result.place.name, 'Synthetic pin');
+    }
+  }
+  const south = parseIncomingPlace('https://www.google.com/maps/place/-12.345679,-98.765432/data=!3d-12.3456786!4d-98.7654324');
+  assert.deepEqual(south.kind === 'place' && south.place.coordinates, [-98.7654324, -12.3456786]);
+});
+
+test('Google title rounding cannot accept different pins, coarse titles or conflicting selected data', () => {
+  for (const input of [
+    'https://www.google.com/maps/place/41.234567,-72.345678/data=!3d41.234569!4d-72.345678',
+    'https://www.google.com/maps/place/41.2346,-72.3457/data=!3d41.2347!4d-72.3458',
+    'https://www.google.com/maps/place/41.23,-72.35/data=!3d41.234567!4d-72.345678',
+    'https://www.google.com/maps/place/41.234567,-72.345678/data=!3d41.234567!4d-72.345678!3d41.2345671!4d-72.3456781',
+  ]) assert.equal(parseIncomingPlace(input).kind, 'unsupported', input);
 });
 
 test('Google legacy map host and unencoded label parentheses retain the selected point', () => {

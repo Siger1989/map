@@ -50,6 +50,7 @@ type Props = {
     onEdit: () => void;
     onShow: () => void;
     onDetails: () => void;
+    onRecenter: () => void;
     onClose: () => void;
   } | null;
   operations?: {
@@ -82,6 +83,7 @@ type Props = {
     onStyle?: (style: TrackStyle) => void;
     onSelectMarker?: (id: string) => boolean;
     selectedTrack?: { id: string; name: string } | null;
+    onRecenterSelectedTrack?: () => void;
     onEditSelectedTrack?: () => void;
     onDeleteSelectedTrack?: () => boolean;
     editingTrack?: boolean;
@@ -267,6 +269,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
     onDrawingInput: event => onDrawingInput?.(index, event),
     onMapHold: noop,
     onAnnotationSelect: selectMarker,
+    onObjectDoubleClick: target => children.props.onObjectDoubleClick?.(target),
     onDragBegin: target => {
       setProperties(null);
       setLayerPane(null);
@@ -340,6 +343,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
           <header><strong>路线规划</strong><RouteNameInput name={plannedRoute.name} onSave={plannedRoute.onRename}/><button type="button" className="comparison-route-hide" aria-label={plannedRoute.visible ? '隐藏规划路线' : '显示规划路线'} onClick={plannedRoute.onToggleVisible}>{plannedRoute.visible ? '隐藏' : '显示'}</button><button type="button" aria-label="关闭规划路线操作" onClick={plannedRoute.onClose}><X size={18}/></button></header>
           <p><strong>{formatDistance(plannedRoute.distance)}</strong><span>{formatDuration(plannedRoute.duration)}</span></p>
           <nav aria-label="双图规划路线操作">
+            <button type="button" onClick={plannedRoute.onRecenter}>回中</button>
             <button type="button" onClick={plannedRoute.onShow}>看全程</button>
             <button type="button" className="route-solid" onClick={plannedRoute.onEdit}>编辑线点</button>
             <button type="button" onClick={plannedRoute.onDetails}>更多操作</button>
@@ -347,6 +351,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
         </section>}
         {!plannedRoute && operations?.selectedTrack && mode === 'browse' && layerPane === null && properties === null && <section className="map-comparison-track-selection" aria-label="已选路线">
           <strong title={operations.selectedTrack.name}>{operations.selectedTrack.name}</strong>
+          <button type="button" onClick={operations.onRecenterSelectedTrack}>回中</button>
           <button type="button" onClick={operations.onEditSelectedTrack}>编辑</button>
           <button type="button" aria-label="删除双图已选路线" onClick={() => setConfirmDeleteTrackId(operations.selectedTrack!.id)}><Trash2 size={16}/>删除</button>
           {confirmDeleteTrackId === operations.selectedTrack.id && <div className="map-comparison-track-delete-confirm" role="group" aria-label="确认删除双图已选路线">
@@ -416,6 +421,10 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
         </div>
         {properties === 'line' && operations?.style && operations.onStyle && <ComparisonLineProperties style={operations.style} onChange={operations.onStyle} onClose={() => setProperties(null)} />}
         {markerWorkspace && <section className="map-comparison-edit-window map-comparison-editor-slot" data-kind="marker" data-pane={editorPane} aria-label="双图标记编辑窗口">
+          <button type="button" aria-label="双图标记回中" onClick={() => {
+            const selected = children.props.annotations.find(item => item.id === children.props.annotationSelected);
+            if (selected) primary.current?.focusPoint(selected.coordinates);
+          }}>回中</button>
           <ComparisonEditorPosition.Provider value={editorPosition}>
             <div className="map-comparison-editor-content">{markerWorkspace}</div>
           </ComparisonEditorPosition.Provider>

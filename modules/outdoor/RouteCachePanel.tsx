@@ -409,10 +409,12 @@ export function RouteCachePanel({ routes, areas = [], sources, offline, onOpenMa
                     <strong title={routeName}>{routeName}</strong>
                     <span className={`route-cache-package-state${trip.phase === 'failed' ? ' is-error' : trip.complete ? ' is-complete' : ''}`} role="status">{status.split(' · ')[0]}</span>
                   </header>
-                  <small className="route-cache-package-source">图源：{trip.sourceName ?? '自定义图源'}</small>
-                  <small className="route-cache-package-source">{preview.areaGeometry === 'available' ? '含所选区域' : preview.routeGeometry === 'available' ? '含原路线' : '旧包未保留原路线几何'} · 范围为规划边界，非全部已缓存</small>
-                  {onPreviewMap && <button className="route-cache-preview" onClick={() => onPreviewMap(trip)} aria-label={`高亮路线与范围：${routeName}`}>高亮路线 / 范围</button>}
-                  {!sourceAvailable && <small className="route-cache-package-source-missing" role="status">原图源已移除或未导入；重新导入后可查看、续传。任务记录和已缓存瓦片保留。</small>}
+                  <div className="route-cache-package-meta">
+                    <small className="route-cache-package-source">图源：{trip.sourceName ?? '自定义图源'}</small>
+                    <small className="route-cache-package-source">{preview.areaGeometry === 'available' ? '含所选区域' : preview.routeGeometry === 'available' ? '含原路线' : '旧包未保留原路线几何'} · 范围为规划边界，非全部已缓存</small>
+                    {onPreviewMap && <button className="route-cache-preview" onClick={() => onPreviewMap(trip)} aria-label={`高亮路线与范围：${routeName}`}>高亮路线 / 范围</button>}
+                    {!sourceAvailable && <small className="route-cache-package-source-missing" role="status">原图源已移除或未导入；重新导入后可查看、续传。任务记录和已缓存瓦片保留。</small>}
+                  </div>
                   <div className="route-cache-package-progress-copy">
                     <span>{status}</span>
                     <span>{percent}%</span>

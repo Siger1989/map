@@ -1,0 +1,22 @@
+{
+  "version": "0.2.185-test",
+  "versionCode": 192,
+  "package": "com.shantu.oldengine",
+  "nodeCases": 69,
+  "nativeSuites": {
+    "com.guanyun.weather.GooglePlaceLinkResolverTest": 20,
+    "com.shantu.nativeapp.hybrid.NativeMapTouchNavigationTest": 9,
+    "com.shantu.nativeapp.hybrid.NativeObjectDoubleTapGestureTest": 9,
+    "com.shantu.nativeapp.hybrid.NativePickTouchTargetTest": 7
+  },
+  "nativeCases": 45,
+  "physicalDeviceVerified": false,
+  "actualInstalled185Verified": false,
+  "sourceAppGoogleMapsShareUiVerified": false,
+  "googleIdOnlySampleSupported": false,
+  "amapLongPoiImport": true,
+  "amapShortOrOriginalRouteImport": false,
+  "registeredTiandituPreserved": "pending final package verification",
+  "runtimeStage": "after initial delivery",
+  "syntheticUiOnly": true
+}

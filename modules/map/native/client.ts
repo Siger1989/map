@@ -15,7 +15,7 @@ import type {
 import { NATIVE_MAP_PROTOCOL_VERSION } from './types.ts';
 
 export type NativeMapEventName =
-  | 'cameraFrame' | 'renderFrame' | 'mapReady' | 'mapIdle' | 'tap' | 'longPress' | 'drawingInput'
+  | 'cameraFrame' | 'renderFrame' | 'mapReady' | 'mapIdle' | 'tap' | 'doubleTap' | 'longPress' | 'drawingInput'
   | 'pick' | 'mapPick' | 'touch' | 'status' | 'renderStateApplied' | 'renderState' | 'capabilities'
   | 'demCache' | 'viewCreated' | 'mapViewport' | 'camera' | 'capabilityBlocked'
   | 'cachedTileRequest' | 'cachedTileCancel';

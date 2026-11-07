@@ -12,7 +12,7 @@ import { elevationStats } from '../journey/metrics';
 import { formatDistance, formatDuration } from '../navigation/types';
 
 /** Home summary only. Detailed point metrics remain in the existing route details. */
-export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onDisplay, onRename, onDelete, onClearError, onLocateGap, onCache }: {
+export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onDisplay, onRename, onDelete, onClearError, onLocateGap, onCache, onRecenter }: {
   track: ManualTrack; point: TrackLinePoint | null; alternative: string; error: string;
   onBack: () => void; onNavigate: () => void; onMarker: () => void; onEdit: () => void; onDetails: () => void;
   onRename: (name: string) => boolean;
@@ -21,6 +21,7 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
   onClearError?: () => void;
   onLocateGap?: () => void;
   onCache?: () => void;
+  onRecenter?: () => void;
 }) {
   const [name, setName] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -69,6 +70,7 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
     </div>
     <nav className="home-route-actions" aria-label="路线主要操作">
       <button className="is-primary" onClick={onNavigate}><Navigation size={18} fill="currentColor" />导航</button>
+      {onRecenter && <button type="button" onClick={onRecenter}>回中</button>}
       <button disabled={!point} onClick={onMarker} aria-label="添加标记"><Bookmark size={18} />标记</button>
       <button onClick={onEdit}><Pencil size={18} />编辑</button>
       <button onClick={onDetails}><FileText size={18} />详情</button>

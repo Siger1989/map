@@ -6,6 +6,7 @@ import org.json.JSONObject;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -15,23 +16,37 @@ final class IncomingPlaces {
     private static final int LIMIT = 8192;
     private static final Pattern GEO_TEXT = Pattern.compile("(?i)\\bgeo:");
     private static final Pattern TENCENT_MARKER_TEXT = Pattern.compile("(?i)https://apis\\.map\\.qq\\.com/uri/v1/marker(?:[?#\\s]|$)");
+    private static final Pattern URL_TOKEN = Pattern.compile("(?i)https?://[^\\s<>\\\"']+");
     interface Notifier { void notifyIncomingPlace(); }
 
     private final Notifier notifier;
     private final GooglePlaceLinkResolver resolver;
     private final ThreadPoolExecutor executor;
+    private final ScheduledThreadPoolExecutor deadlines;
+    private final long resolutionTimeoutMs;
     private Future<?> resolving;
+    private Future<?> deadline;
+    private long attempt;
     private String token = "", raw = "", reason = "", state = "empty", title = "";
     private boolean retryable, closed;
 
     IncomingPlaces(MainActivity activity) { this(activity::notifyIncomingPlace, new GooglePlaceLinkResolver()); }
 
     IncomingPlaces(Notifier notifier, GooglePlaceLinkResolver resolver) {
+        this(notifier, resolver, GooglePlaceLinkResolver.TOTAL_TIMEOUT_MS);
+    }
+
+    IncomingPlaces(Notifier notifier, GooglePlaceLinkResolver resolver, long resolutionTimeoutMs) {
         this.notifier = notifier;
         this.resolver = resolver;
+        this.resolutionTimeoutMs = Math.max(1L, resolutionTimeoutMs);
         this.executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
             new ArrayBlockingQueue<>(1), task -> { Thread thread = new Thread(task, "shantu-google-place-resolver"); thread.setDaemon(true); return thread; },
             new ThreadPoolExecutor.AbortPolicy());
+        this.deadlines = new ScheduledThreadPoolExecutor(1, task -> {
+            Thread thread = new Thread(task, "shantu-google-place-deadline"); thread.setDaemon(true); return thread;
+        });
+        this.deadlines.setRemoveOnCancelPolicy(true);
     }
 
     /** Returns true only for supported place content, preserving file imports otherwise. */
@@ -48,6 +63,8 @@ final class IncomingPlaces {
             if ("geo".equalsIgnoreCase(uri.getScheme()) || isTencentMarker(uri)) candidate = intent.getDataString();
             else if (GooglePlaceLinkResolver.isGoogleMapsUrl(intent.getDataString())) {
                 candidate = intent.getDataString(); google = true;
+            } else if (isAmapPoiUrl(intent.getDataString())) {
+                candidate = intent.getDataString();
             } else return false;
         } else if (Intent.ACTION_SEND.equals(action)) {
             CharSequence text;
@@ -56,15 +73,22 @@ final class IncomingPlaces {
             String mime = intent.getType();
             String textValue = text == null ? "" : text.toString();
             String googleUrl = GooglePlaceLinkResolver.extractGoogleMapsUrl(textValue);
-            boolean placeText = googleUrl != null || looksLikeSupportedPlace(textValue);
+            String amapUrl = extractSingleAmapPoiUrl(textValue);
+            boolean hasAmapLink = containsAmapPoiLink(textValue);
+            boolean placeText = googleUrl != null || amapUrl != null || looksLikeSupportedPlace(textValue);
             boolean placeGoogle = googleUrl != null;
+            boolean placeAmap = amapUrl != null;
             boolean plainText = mime == null || "text/plain".equalsIgnoreCase(mime);
+            if (hasAmapLink && (!plainText || hasExplicitStream(intent))) return false;
             // Text shares can attach ClipData solely for the Sharesheet's
             // thumbnail. An explicit stream still belongs to file import.
             boolean hasFile = hasDocumentUri(intent)
-                && !(placeGoogle && plainText && !hasExplicitStream(intent));
-            if (placeText && (!placeGoogle || plainText) && !(placeGoogle && hasFile) && (plainText || !hasFile)) {
-                candidate = !placeGoogle ? textValue : googleUrl;
+                && !((placeGoogle || placeAmap) && plainText && !hasExplicitStream(intent));
+            if (hasAmapLink && (amapUrl == null || googleUrl != null || looksLikeSupportedPlace(textValue))) {
+                candidate = "";
+                unsupportedReason = "分享内容包含多个或不受支持的地点链接，无法确认唯一地点。";
+            } else if (placeText && (!(placeGoogle || placeAmap) || plainText) && !(placeGoogle && hasFile) && !(placeAmap && hasFile) && (plainText || !hasFile)) {
+                candidate = placeGoogle ? googleUrl : placeAmap ? amapUrl : textValue;
                 google = placeGoogle;
                 if (google) candidateTitle = sharedTitle(intent, textValue, googleUrl);
             } else {
@@ -75,7 +99,9 @@ final class IncomingPlaces {
                     return false;
                 } else if (text != null && text.length() > 0 && (mime == null || "text/plain".equalsIgnoreCase(mime))) {
                     candidate = "";
-                    unsupportedReason = "无法从此分享确认地点，请分享 Google 地图中的单个地点，或带坐标的位置链接。";
+                    unsupportedReason = textValue.toLowerCase(java.util.Locale.ROOT).contains("https://surl.amap.com/")
+                        ? "高德短链接尚未接入解析。本版支持带坐标的高德地点长链接；路线分享暂不支持自动导入。"
+                        : "无法从此分享确认地点，请分享带坐标的单个地点链接。";
                 } else return false;
             }
         } else return false;
@@ -113,22 +139,38 @@ final class IncomingPlaces {
     private void scheduleResolve(String id, String url) {
         synchronized (this) {
             if (closed || !id.equals(token) || !"resolving".equals(state)) return;
+            final long currentAttempt = ++attempt;
             try {
+                // Independent of DNS/socket completion: an interrupted network
+                // operation may not return in time to enforce its own budget.
+                deadline = deadlines.schedule(() -> expire(id, currentAttempt), resolutionTimeoutMs, TimeUnit.MILLISECONDS);
                 resolving = executor.submit(() -> {
                     GooglePlaceLinkResolver.Result result = resolver.resolve(url);
                     synchronized (IncomingPlaces.this) {
-                        if (closed || !id.equals(token) || !"resolving".equals(state)) return;
+                        if (closed || !id.equals(token) || currentAttempt != attempt || !"resolving".equals(state)) return;
                         if (result.success) { raw = result.url; state = "received"; reason = ""; retryable = false; }
                         else { raw = ""; state = "failed"; reason = result.reason; retryable = result.retryable; }
+                        if (deadline != null) deadline.cancel(false);
+                        deadline = null;
                         resolving = null;
                     }
                     notifier.notifyIncomingPlace();
                 });
             } catch (RuntimeException saturated) {
+                cancelWorkLocked();
                 state = "failed"; reason = "地点链接处理中，请稍后重试。"; retryable = true; resolving = null;
                 notifier.notifyIncomingPlace();
             }
         }
+    }
+
+    private void expire(String id, long currentAttempt) {
+        synchronized (this) {
+            if (closed || !id.equals(token) || currentAttempt != attempt || !"resolving".equals(state)) return;
+            cancelWorkLocked();
+            raw = ""; state = "failed"; reason = GooglePlaceLinkResolver.NETWORK_HELP; retryable = true;
+        }
+        notifier.notifyIncomingPlace();
     }
 
     private static boolean isShortGoogleUrl(String value) {
@@ -178,6 +220,37 @@ final class IncomingPlaces {
             && "apis.map.qq.com".equalsIgnoreCase(uri.getHost())
             && "/uri/v1/marker".equals(uri.getPath())
             && uri.getUserInfo() == null;
+    }
+
+    private static boolean isAmapPoiUrl(String value) {
+        if (value == null || value.length() > LIMIT) return false;
+        Uri uri = Uri.parse(value);
+        return "https".equalsIgnoreCase(uri.getScheme())
+            && "m.amap.com".equalsIgnoreCase(uri.getHost())
+            && "/poi/detail".equals(uri.getPath())
+            && uri.getUserInfo() == null && (uri.getPort() == -1 || uri.getPort() == 443) && uri.getFragment() == null;
+    }
+
+    private static String extractSingleAmapPoiUrl(String text) {
+        if (text == null || text.length() > LIMIT) return null;
+        java.util.regex.Matcher matcher = URL_TOKEN.matcher(text);
+        String found = null;
+        while (matcher.find()) {
+            String token = matcher.group();
+            while (!token.isEmpty() && ".,;!?)".indexOf(token.charAt(token.length() - 1)) >= 0) token = token.substring(0, token.length() - 1);
+            if (!isAmapPoiUrl(token)) continue;
+            if (found != null) return null;
+            found = token;
+        }
+        if (found == null) return null;
+        int urls = 0;
+        matcher = URL_TOKEN.matcher(text);
+        while (matcher.find()) urls++;
+        return urls == 1 ? found : null;
+    }
+
+    private static boolean containsAmapPoiLink(String text) {
+        return text != null && URL_TOKEN.matcher(text).find() && text.toLowerCase(java.util.Locale.ROOT).contains("amap.com/poi/detail");
     }
 
     private static boolean looksLikeSupportedPlace(String text) {
@@ -230,10 +303,17 @@ final class IncomingPlaces {
     private String retryUrl = "";
 
     private void cancelResolutionLocked() {
+        cancelWorkLocked();
+        retryUrl = "";
+    }
+
+    private void cancelWorkLocked() {
+        attempt++;
+        if (deadline != null) deadline.cancel(false);
+        deadline = null;
         if (resolving != null) resolving.cancel(true);
         resolving = null;
         executor.getQueue().clear();
-        retryUrl = "";
     }
 
     synchronized void dismiss(String id) {
@@ -243,7 +323,7 @@ final class IncomingPlaces {
     }
 
     synchronized void close() {
-        closed = true; cancelResolutionLocked(); executor.shutdownNow();
+        closed = true; cancelResolutionLocked(); executor.shutdownNow(); deadlines.shutdownNow();
         token = ""; raw = ""; reason = ""; title = ""; state = "empty"; retryable = false;
     }
 }

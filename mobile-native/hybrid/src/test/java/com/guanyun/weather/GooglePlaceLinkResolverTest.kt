@@ -95,6 +95,63 @@ class GooglePlaceLinkResolverTest {
         } finally { receiver.close() }
     }
 
+    @Test fun stalledTransportHasIndependentDeadlineEvenWhenItIgnoresInterrupts() {
+        val entered = CountDownLatch(1); val release = CountDownLatch(1)
+        val receiver = IncomingPlaces({}, resolver { _, _, _ ->
+            entered.countDown()
+            awaitIgnoringInterrupts(release)
+            GooglePlaceLinkResolver.Response(302, destination)
+        }, 80L)
+        try {
+            receiver.accept(send("https://maps.app.goo.gl/stalled"))
+            assertTrue(entered.await(2, TimeUnit.SECONDS))
+            await { info(receiver).getString("state") == "failed" }
+            assertTrue(info(receiver).getBoolean("retryable"))
+            assertTrue(info(receiver).getString("reason").contains("短链接不含坐标"))
+            assertEquals("", info(receiver).getString("raw"))
+            release.countDown(); Thread.sleep(60)
+            assertEquals("failed", info(receiver).getString("state"))
+        } finally { receiver.close(); release.countDown() }
+    }
+
+    @Test fun timedOutAttemptCannotOverwriteSameTokenRetryAndQueueAlsoTimesOut() {
+        val firstEntered = CountDownLatch(1); val release = CountDownLatch(1)
+        val calls = AtomicInteger()
+        val receiver = IncomingPlaces({}, resolver { _, _, _ ->
+            if (calls.incrementAndGet() == 1) {
+                firstEntered.countDown(); awaitIgnoringInterrupts(release)
+                GooglePlaceLinkResolver.Response(302, "https://www.google.com/maps?q=1,2")
+            } else GooglePlaceLinkResolver.Response(302, destination)
+        }, 100L)
+        try {
+            receiver.accept(send("https://maps.app.goo.gl/stalled-retry"))
+            assertTrue(firstEntered.await(2, TimeUnit.SECONDS))
+            await { info(receiver).getString("state") == "failed" }
+            val token = info(receiver).getString("token")
+            assertTrue(receiver.retry(token))
+            await { info(receiver).getString("state") == "failed" }
+            assertEquals(1, calls.get()) // queued work also gets a deadline
+            assertTrue(receiver.retry(token))
+            release.countDown()
+            await { info(receiver).getString("state") == "received" }
+            assertEquals(token, info(receiver).getString("token"))
+            assertEquals(destination, info(receiver).getString("raw"))
+            assertEquals(2, calls.get())
+        } finally { receiver.close(); release.countDown() }
+    }
+
+    @Test fun coordinateLongLinkSucceedsWithoutAnyTransportOrGoogleConnectivity() {
+        val receiver = IncomingPlaces({}, resolver { _, _, _ -> throw AssertionError("network must not be used") }, 30L)
+        try {
+            val coordinateUrl = "https://www.google.com/maps?q=10,20(Synthetic+Park)"
+            assertTrue(receiver.accept(send(coordinateUrl)))
+            assertEquals("received", info(receiver).getString("state"))
+            assertEquals(coordinateUrl, info(receiver).getString("raw"))
+            Thread.sleep(60)
+            assertEquals("received", info(receiver).getString("state"))
+        } finally { receiver.close() }
+    }
+
     @Test fun newIntentDropsOldResultAndCloseCancelsNotification() {
         val entered = CountDownLatch(1); val release = CountDownLatch(1)
         val resolver = resolver { _, _, _ ->
@@ -227,12 +284,68 @@ class GooglePlaceLinkResolverTest {
         } finally { receiver.close() }
     }
 
+    @Test fun amapSendAndExactViewAreAcceptedWithoutNetwork() {
+        val receiver = IncomingPlaces({}, resolver { _, _, _ -> throw AssertionError("Amap links must never use transport") })
+        try {
+            val amap = "https://m.amap.com/poi/detail?__p=BSYNTHETIC01%2C31.234567%2C121.345678%2CSynthetic%20Place%2CSynthetic%20Address&poiid=BSYNTHETIC01"
+            assertTrue(receiver.accept(send(amap)))
+            assertEquals("received", info(receiver).getString("state"))
+            assertEquals(amap, info(receiver).getString("raw"))
+            assertTrue(receiver.accept(Intent(Intent.ACTION_VIEW, Uri.parse(amap))))
+            assertEquals("received", info(receiver).getString("state"))
+            assertEquals(amap, info(receiver).getString("raw"))
+        } finally { receiver.close() }
+    }
+
+    @Test fun amapThumbnailIsAllowedButExplicitStreamAndDocumentMimeKeepFileImport() {
+        val receiver = IncomingPlaces({}, resolver { _, _, _ -> throw AssertionError("Amap links must never use transport") })
+        try {
+            val amap = "https://m.amap.com/poi/detail?__p=BSYNTHETIC01%2C31.234567%2C121.345678%2CSynthetic%20Place%2CSynthetic%20Address"
+            val thumbnail = send(amap)
+            thumbnail.clipData = ClipData.newRawUri("preview", Uri.parse("content://preview/image"))
+            assertTrue(receiver.accept(thumbnail))
+            assertEquals(amap, info(receiver).getString("raw"))
+            val stream = send(amap).putExtra(Intent.EXTRA_STREAM, Uri.parse("content://files/route.gpx"))
+            assertFalse(receiver.accept(stream))
+            val document = Intent(Intent.ACTION_SEND).setType("application/gpx+xml")
+                .putExtra(Intent.EXTRA_TEXT, amap).putExtra(Intent.EXTRA_STREAM, Uri.parse("content://files/route.gpx"))
+            assertFalse(receiver.accept(document))
+            val documentWithoutUri = Intent(Intent.ACTION_SEND).setType("application/gpx+xml").putExtra(Intent.EXTRA_TEXT, amap)
+            assertFalse(receiver.accept(documentWithoutUri))
+            assertEquals("received", info(receiver).getString("state"))
+        } finally { receiver.close() }
+    }
+
+    @Test fun mixedAndUnsafeAmapLinksAreNeverSelectedAsPlaceUrls() {
+        val receiver = IncomingPlaces({}, resolver { _, _, _ -> throw AssertionError("Amap links must never use transport") })
+        try {
+            val amap = "https://m.amap.com/poi/detail?__p=BSYNTHETIC01%2C31.234567%2C121.345678%2CSynthetic%20Place%2CSynthetic%20Address"
+            listOf(
+                "$amap https://example.test/track",
+                "https://m.amap.com.evil.test/poi/detail?__p=synthetic",
+                "https://user@m.amap.com/poi/detail?__p=synthetic",
+                "https://m.amap.com/poi/detail/extra?__p=synthetic"
+            ).forEach { text ->
+                assertTrue(receiver.accept(send(text)))
+                assertEquals("unsupported", info(receiver).getString("state"))
+                assertEquals("", info(receiver).getString("raw"))
+            }
+            assertFalse(receiver.accept(Intent(Intent.ACTION_VIEW, Uri.parse("https://m.amap.com.evil.test/poi/detail?__p=synthetic"))))
+        } finally { receiver.close() }
+    }
+
     private fun resolver(block: (String, Int, Int) -> GooglePlaceLinkResolver.Response) =
         GooglePlaceLinkResolver(object : GooglePlaceLinkResolver.Transport {
             override fun get(url: String, connectTimeoutMs: Int, readTimeoutMs: Int) = block(url, connectTimeoutMs, readTimeoutMs)
         })
 
     private fun send(text: String) = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+    private fun awaitIgnoringInterrupts(latch: CountDownLatch) {
+        val end = System.nanoTime() + TimeUnit.SECONDS.toNanos(3)
+        while (System.nanoTime() < end) {
+            try { if (latch.await(20, TimeUnit.MILLISECONDS)) return } catch (_: InterruptedException) { }
+        }
+    }
     private fun info(receiver: IncomingPlaces) = JSONObject(receiver.info())
     private fun await(predicate: () -> Boolean) {
         val until = System.nanoTime() + TimeUnit.SECONDS.toNanos(3)

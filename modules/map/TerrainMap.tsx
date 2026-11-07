@@ -285,6 +285,7 @@ export type TerrainMapProps = {
   annotationPicking?: boolean;
   measurementPicking?: boolean;
   onTrackSelect: (id: string) => void;
+  onObjectDoubleClick?: (target: { kind: 'annotation' | 'track' | 'area' | 'route'; id?: string }) => void;
   onRouteSelect?: () => void;
   onTrackLineSelect: (
     point: import('../tracks/linePoint').TrackLinePoint,
@@ -1527,6 +1528,37 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             if (latest.current.queryOnPick !== false)
               pick(event.lngLat.lng, event.lngLat.lat);
             latest.current.onMapPick([event.lngLat.lng, event.lngLat.lat]);
+          });
+          map.on('dblclick', (event) => {
+            const current = latest.current;
+            if (!current.onObjectDoubleClick || current.readOnly || current.drawingActive ||
+              current.pickingActive || current.annotationPicking || current.measurementPicking ||
+              current.sectionEditing || current.trackOverlay.editing ||
+              featureDragRef.current?.blocksClick() || longPressRef.current?.blocksClick()) return;
+            const point = event.point;
+            const annotation = annotationRef.current?.pick(point);
+            if (annotation) {
+              event.preventDefault();
+              current.onObjectDoubleClick({ kind: 'annotation', id: annotation });
+              return;
+            }
+            if (routeRef.current?.pick(point)) {
+              event.preventDefault();
+              current.onObjectDoubleClick({ kind: 'route' });
+              return;
+            }
+            const node = trackRef.current?.pickNode(point);
+            const track = node?.trackId ?? trackRef.current?.pickTrack(point);
+            if (track) {
+              event.preventDefault();
+              current.onObjectDoubleClick({ kind: 'track', id: track });
+              return;
+            }
+            const area = areaRef.current?.pick(point);
+            if (area) {
+              event.preventDefault();
+              current.onObjectDoubleClick({ kind: 'area', id: area });
+            }
           });
           map.on('move', () => {
             if (boxGestureActive.current) return;

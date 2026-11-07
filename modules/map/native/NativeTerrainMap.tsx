@@ -776,6 +776,22 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
         dispatchNativeTapAction(runtime, action);
         break;
       }
+      case 'doubleTap': {
+        if (!isRecord(value) || !latest.onObjectDoubleClick || latest.readOnly || latest.drawingActive ||
+          latest.pickingActive || latest.annotationPicking || latest.measurementPicking || latest.sectionEditing ||
+          latest.trackOverlay.editing || runtime.interaction?.blocksClick()) break;
+        const objectId = typeof value.objectId === 'string' ? value.objectId : '';
+        const ids = Array.isArray(value.ids) ? value.ids.filter((id): id is string => typeof id === 'string') : [];
+        const annotation = latest.annotations.find(item => item.id === objectId || objectId === `shantu-object:${item.id}` || objectId === `annotation:${item.id}`);
+        if (annotation) { safeCallback(() => latest.onObjectDoubleClick?.({ kind: 'annotation', id: annotation.id })); break; }
+        const area = latest.areaOverlay.items.find(item => item.id === objectId || objectId === `area:${item.id}`);
+        if (area) { safeCallback(() => latest.onObjectDoubleClick?.({ kind: 'area', id: area.id })); break; }
+        const track = latest.trackOverlay.saved.find(item => item.id === objectId || objectId.startsWith(`track:${item.id}:`) || objectId === `track:${item.id}`);
+        if (track) { safeCallback(() => latest.onObjectDoubleClick?.({ kind: 'track', id: track.id })); break; }
+        if (objectId === '__planned-route' || objectId.startsWith('route:') || ids.includes('__planned-route'))
+          safeCallback(() => latest.onObjectDoubleClick?.({ kind: 'route' }));
+        break;
+      }
       case 'drawingInput': {
         if (isRecord(value)) {
           const point = isRecord(value.point) && Number.isFinite(value.point.x) && Number.isFinite(value.point.y)
@@ -981,7 +997,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
         runtime.client = client;
         subscriptions.push(...subscribeNativeProjectionEvents(client, mapId, (name, value) => handleHostEvent(name, value)));
         for (const name of [
-          'camera', 'mapReady', 'mapIdle', 'mapPick', 'tap', 'drawingInput',
+          'camera', 'mapReady', 'mapIdle', 'mapPick', 'tap', 'doubleTap', 'drawingInput',
           'touch', 'gestureCancel', 'pick', 'objectSelect', 'status', 'renderStateApplied', 'sectionStatus', 'sectionProfile', 'sectionChange',
           'sectionSelect', 'modelTerrainStatus', 'satellite', 'geology', 'roadGeometry', 'riverGeometry', 'snapGeometry', 'capabilityBlocked', 'mapViewport', 'viewCreated',
         ]) subscriptions.push(client.subscribe(mapId, name, (value) => handleHostEvent(name, value)));

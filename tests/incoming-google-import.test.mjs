@@ -72,9 +72,9 @@ async function harness(t, initialInfo, { failWrites = 0, failAnnotationReads = f
     });
   }
   const flush = () => React.act(async () => new Promise(resolve => setTimeout(resolve, 0)));
-  const setInfo = async next => {
+  const setInfo = async (next, notify = true) => {
     info = next;
-    await React.act(async () => window.dispatchEvent(new window.Event('shantu-incoming-place')));
+    if (notify) await React.act(async () => window.dispatchEvent(new window.Event('shantu-incoming-place')));
   };
   const click = async label => {
     const button = [...document.querySelectorAll('button')].find(node => node.textContent.trim() === label);
@@ -180,6 +180,22 @@ test('closing the received prompt dismisses its token and keeps the saved marker
   assert.equal(h.annotations()[0].name, 'Synthetic Summit');
 });
 
+test('AMap explicit POI share auto-saves only converted place data and navigates without a resolution step', async t => {
+  const raw = 'https://m.amap.com/poi/detail?__p=BSYNTHETIC01%2C39.915%2C116.404%2C%E5%90%88%E6%88%90%E6%B5%8B%E8%AF%95%E5%85%A5%E5%8F%A3%2C%E5%90%88%E6%88%90%E5%9C%B0%E5%9D%80&userRelationToken=SYNTHETIC_TRACKING';
+  const h = await harness(t, { token: 'amap-1', state: 'received', raw });
+  assert.match(h.dialogText(), /已添加高德地点/);
+  assert.match(h.dialogText(), /高德坐标已转换为 WGS84/);
+  assert.equal(h.annotations().length, 1);
+  const marker = h.annotations()[0];
+  assert.equal(marker.name, '合成测试入口');
+  assert.equal(JSON.stringify(marker).includes('SYNTHETIC_TRACKING'), false);
+  await h.click('在山兔导航');
+  assert.equal(h.navigated.length, 1);
+  assert.ok(Math.abs(h.navigated[0].coordinates[0] - 116.39775550083061) < 1e-9);
+  assert.ok(Math.abs(h.navigated[0].coordinates[1] - 39.91359571849836) < 1e-9);
+  assert.equal(h.retryCalls.length, 0);
+});
+
 test('navigation receives the original parsed place only after its marker is saved', async t => {
   const h = await harness(t, googleInfo('navigate-1'));
   await h.click('在山兔导航');
@@ -199,6 +215,11 @@ test('invalid and viewport-only Google links never create markers', async t => {
   await h.setInfo(googleInfo('invalid-2', { raw: 'https://www.google.com/maps?q=91,181' }));
   assert.equal(h.annotationWrites(), 0);
   assert.equal(h.autoSaveCalls.length, 0);
+  await h.setInfo(googleInfo('id-only-3', { raw: 'https://www.google.com/maps/place/Synthetic+ID+Only/data=!4m2!3m1!1s0xsynthetic:0xsynthetic!18m1!1e1' }));
+  assert.match(h.dialogText(), /本版尚不能据此确认坐标/);
+  assert.equal(h.annotationWrites(), 0);
+  assert.equal(h.autoSaveCalls.length, 0);
+  assert.equal(h.navigated.length, 0);
 });
 
 test('retryable failed resolution requests the same native token and accepts its resolved event', async t => {
@@ -209,6 +230,20 @@ test('retryable failed resolution requests the same native token and accepts its
   await h.setInfo(googleInfo('retry-read-7'));
   assert.equal(h.annotations().length, 1);
   assert.equal(h.annotations()[0].name, 'Synthetic Summit');
+});
+
+test('pending foreground share observes failure and success even when native completion event is missed', async t => {
+  const h = await harness(t, { token: 'lost-event', state: 'resolving', raw: '' });
+  await h.setInfo({ token: 'lost-event', state: 'failed', raw: '', reason: 'Google 短链接不含坐标，山兔暂时无法连接 Google。', retryable: true }, false);
+  await h.React.act(async () => new Promise(resolve => setTimeout(resolve, 560)));
+  assert.match(h.dialogText(), /短链接不含坐标/);
+  assert.doesNotMatch(h.dialogText(), /正在读取 Google 地点/);
+  assert.equal(h.annotations().length, 0);
+  await h.setInfo({ token: 'lost-event', state: 'resolving', raw: '' });
+  await h.setInfo(googleInfo('lost-event'), false);
+  await h.React.act(async () => new Promise(resolve => setTimeout(resolve, 560)));
+  assert.equal(h.annotations().length, 1);
+  assert.match(h.dialogText(), /已添加 Google 地点/);
 });
 
 test('failed auto-save cannot navigate and explicit save retry persists the place', async t => {

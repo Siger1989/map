@@ -2,6 +2,8 @@
 import { NavigationTelemetry } from '@/modules/guidance/NavigationTelemetry';
 import { SelectedRouteInfo } from '@/modules/routeDisplay/SelectedRouteInfo';
 import { collectionPreviewPoints } from '@/modules/collections/previewBounds';
+import type { CatalogEntry } from '@/modules/collections/catalog';
+import { objectCenter, objectFocusZoom } from '@/modules/map/objectCenter';
 import { collectionHighlightData } from '@/modules/collections/selectionHighlight';
 import { cachePackagePreview } from '@/modules/outdoor/cachePackagePreview';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -1335,6 +1337,28 @@ export default function Home() {
   const selectionName = selectedAnnotation
     ? selectedAnnotation.name || '未命名标记'
     : selectedTrack?.name || (selectedDraft ? '路线草稿' : '');
+  const recenterCoordinates = (coordinates: readonly [number, number][], kind: 'marker' | 'route' | 'area' | 'other') => {
+    const center = objectCenter(coordinates);
+    if (center) map.current?.focusPoint(center, objectFocusZoom(map.current?.cameraSnapshot()?.zoom ?? 15, kind));
+  };
+  const recenterCatalogEntry = (entry: CatalogEntry) => {
+    if (entry.kind === 'pin' || entry.kind === 'model') recenterCoordinates([entry.annotation.coordinates], 'marker');
+    else recenterCoordinates(collectionPreviewPoints(entry), entry.kind === 'route' || entry.kind === 'track' ? 'route' : entry.kind === 'area' ? 'area' : 'other');
+  };
+  const recenterObject = (target: { kind: 'annotation' | 'track' | 'area' | 'route'; id?: string }) => {
+    if (target.kind === 'annotation') {
+      const item = annotations.items.find(value => value.id === target.id);
+      if (item) recenterCoordinates([item.coordinates], 'marker');
+    } else if (target.kind === 'area') {
+      const item = areas.items.find(value => value.id === target.id);
+      if (item) recenterCoordinates(item.boundary, 'area');
+    } else if (target.kind === 'track') {
+      const item = tracks.saved.find(value => value.id === target.id);
+      recenterCoordinates((item?.segments ?? (target.id === DRAFT_ID ? tracks.draft : [])).flat(), 'route');
+    } else {
+      recenterCoordinates(navigation.route?.coordinates ?? selectedTrack?.segments.flat() ?? [], 'route');
+    }
+  };
   useEffect(() => {
     if (
       !guidance.active && !layers.outdoorContours &&
@@ -2053,6 +2077,7 @@ export default function Home() {
             onToggleVisible: () => navigation.setVisible(!navigation.visible),
             distance: navigation.route.distance,
             duration: navigation.route.duration,
+            onRecenter: () => recenterObject({ kind: 'route' }),
             onEdit: editPlannedPoints,
             onShow: () => map.current?.fitCollection(navigation.route!.coordinates, { top: 80, right: 32, bottom: 150, left: 24 }),
             onDetails: () => setComparison(null),
@@ -2145,6 +2170,7 @@ export default function Home() {
           onStyle: tracks.setStyle,
           onSelectMarker: id => annotations.items.some(item => item.id === id) && annotations.select(id),
           selectedTrack: !editor.session && selectedTrack ? { id: selectedTrack.id, name: selectedTrack.name } : null,
+          onRecenterSelectedTrack: () => selectedTrack && recenterObject({ kind: 'track', id: selectedTrack.id }),
           editingTrack: !!editor.session,
           onBackEditor: backEditor,
           onEditSelectedTrack: () => {
@@ -2201,6 +2227,10 @@ export default function Home() {
             setProfileOpen(false);
             setAreaEditing(true);
             setPanel(null);
+          }}
+          onObjectDoubleClick={target => {
+            if (focusLock.locked) return;
+            recenterObject(target);
           }}
           drawingActive={
             (branchEditing || tracks.drawing || areas.drawing) && panel === null
@@ -2493,6 +2523,7 @@ export default function Home() {
                 <RouteCard
                   key={railTrack.id}
                   track={railTrack}
+                  onRecenter={() => recenterObject({ kind: 'track', id: railTrack.id })}
                   onRename={(name) => tracks.rename(railTrack.id, name)}
                   point={linePoint}
                   alternative={activeAlternative}
@@ -2774,6 +2805,7 @@ export default function Home() {
           )}
         {areas.selected && !areaEditing && !areas.drawing && panel === null && (
           <div className="area-selection glass">
+            <button onClick={() => recenterObject({ kind: 'area', id: areas.selected! })}>回中</button>
             <button onClick={() => setAreaEditing(true)}>区域编辑</button>
             <button onClick={() => openAreaCache(areas.selected!)}>区域离线</button>
             <button disabled={!areas.canUndo} onClick={areas.undoMove}>
@@ -2865,6 +2897,9 @@ export default function Home() {
                 </p>
               )}
               <div className="selection-tools-actions">
+                <button type="button" disabled={!!featureMove} onClick={() => recenterObject({ kind: 'annotation', id: selectedAnnotation.id })}>
+                  回中
+                </button>
                 <button
                   disabled={!!featureMove}
                   onClick={() =>
@@ -3678,6 +3713,7 @@ export default function Home() {
                 if (entry.kind === 'track') tracks.select(entry.track.id);
                 map.current?.fitCollection(collectionPreviewPoints(entry));
               }}
+              onRecenter={recenterCatalogEntry}
               onClose={() => {
                 if (boxSelecting) {
                   setBoxSelecting(false);

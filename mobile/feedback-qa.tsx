@@ -350,7 +350,7 @@ function Fixture() {
           {offlineMessage && <p className="feedback-qa-cache-notice" role="status">{offlineMessage}</p>}
         </ControlDock>}
         {panel === 'collections' && <ControlDock active="favorites" onActive={() => {}} title="收藏">
-          <WorkbenchPanel center={[104,30]} onClose={() => {}} onLocate={() => {}} onOpen={() => {}} onNavigate={() => {}} onManage={() => {}}
+          <WorkbenchPanel center={[104,30]} onClose={() => {}} onLocate={() => {}} onRecenter={() => {}} onOpen={() => {}} onNavigate={() => {}} onManage={() => {}}
             onCacheRoute={() => {}} onCacheRoutes={() => {}} onCacheFolder={() => setPanel('cache')} cacheCount={cachePackages.length} cachePackages={cachePackages}
             onCachePackage={id => { setFocusCacheId(id); setPanel('cache'); }} />
         </ControlDock>}
