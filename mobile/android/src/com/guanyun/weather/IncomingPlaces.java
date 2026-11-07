@@ -59,7 +59,10 @@ final class IncomingPlaces {
             boolean placeText = googleUrl != null || looksLikeSupportedPlace(textValue);
             boolean placeGoogle = googleUrl != null;
             boolean plainText = mime == null || "text/plain".equalsIgnoreCase(mime);
-            boolean hasFile = hasDocumentUri(intent);
+            // Text shares can attach ClipData solely for the Sharesheet's
+            // thumbnail. An explicit stream still belongs to file import.
+            boolean hasFile = hasDocumentUri(intent)
+                && !(placeGoogle && plainText && !hasExplicitStream(intent));
             if (placeText && (!placeGoogle || plainText) && !(placeGoogle && hasFile) && (plainText || !hasFile)) {
                 candidate = !placeGoogle ? textValue : googleUrl;
                 google = placeGoogle;
@@ -141,6 +144,11 @@ final class IncomingPlaces {
             if (value != null) subject = cleanTitle(value.toString());
         } catch (RuntimeException ignored) { }
         if (isUsefulTitle(subject)) return subject;
+        try {
+            CharSequence value = intent.getCharSequenceExtra(Intent.EXTRA_TITLE);
+            String previewTitle = value == null ? "" : cleanTitle(value.toString());
+            if (isUsefulTitle(previewTitle)) return previewTitle;
+        } catch (RuntimeException ignored) { }
         int at = text.indexOf(url);
         if (at >= 0) {
             String prefix = cleanTitle(text.substring(0, at));
@@ -190,6 +198,11 @@ final class IncomingPlaces {
             }
         } catch (RuntimeException ignored) { return true; }
         return false;
+    }
+
+    private static boolean hasExplicitStream(Intent intent) {
+        try { return intent.getParcelableExtra(Intent.EXTRA_STREAM) != null; }
+        catch (RuntimeException malformed) { return true; }
     }
 
     synchronized String info() {

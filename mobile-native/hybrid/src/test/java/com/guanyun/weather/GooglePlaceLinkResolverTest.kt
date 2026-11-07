@@ -1,6 +1,7 @@
 package com.guanyun.weather
 
 import android.content.Intent
+import android.content.ClipData
 import android.net.Uri
 import org.json.JSONObject
 import org.junit.Assert.*
@@ -194,6 +195,35 @@ class GooglePlaceLinkResolverTest {
                 .putExtra(Intent.EXTRA_SUBJECT, "Google Maps")
             receiver.accept(subject)
             assertEquals("Park", info(receiver)["title"])
+        } finally { receiver.close() }
+    }
+
+    @Test fun textLinkWithClipDataThumbnailUsesGooglePlaceAndExtraTitle() {
+        val receiver = IncomingPlaces({}, resolver { _, _, _ -> GooglePlaceLinkResolver.Response(302, destination) })
+        try {
+            val shared = send("https://www.google.com/maps?q=10,20")
+                .putExtra(Intent.EXTRA_TITLE, "Synthetic Trail Entrance")
+                .putExtra(Intent.EXTRA_SUBJECT, "Google Maps")
+            shared.clipData = ClipData.newRawUri("preview", Uri.parse("content://preview/image"))
+            assertTrue(receiver.accept(shared))
+            assertEquals("received", info(receiver).getString("state"))
+            assertEquals("https://www.google.com/maps?q=10,20", info(receiver).getString("raw"))
+            assertEquals("Synthetic Trail Entrance", info(receiver).getString("title"))
+        } finally { receiver.close() }
+    }
+
+    @Test fun documentOnlyClipDataAndDocumentMimeAreNotTreatedAsTextPreviews() {
+        val receiver = IncomingPlaces({}, resolver { _, _, _ -> GooglePlaceLinkResolver.Response(302, destination) })
+        try {
+            val clip = ClipData.newRawUri("route", Uri.parse("content://files/route.gpx"))
+            val document = Intent(Intent.ACTION_SEND).setType("application/gpx+xml")
+                .putExtra(Intent.EXTRA_TEXT, "https://www.google.com/maps?q=10,20")
+            document.clipData = clip
+            assertFalse(receiver.accept(document))
+            val textFile = Intent(Intent.ACTION_SEND).setType("text/plain")
+            textFile.clipData = clip
+            assertFalse(receiver.accept(textFile))
+            assertEquals("empty", info(receiver).getString("state"))
         } finally { receiver.close() }
     }
 
