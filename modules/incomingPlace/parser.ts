@@ -3,14 +3,15 @@ import { importCoordinate } from '../dataTransfer/coordinateSystem.ts';
 
 export type IncomingPlaceDatum = 'WGS84' | 'GCJ-02';
 export type ParsedIncomingPlace =
-  | { kind: 'place'; place: RoutePlace; inputDatum: IncomingPlaceDatum; format: 'geo-uri' | 'tencent-marker' }
+  | { kind: 'place'; place: RoutePlace; inputDatum: IncomingPlaceDatum; format: 'geo-uri' | 'tencent-marker' | 'google-maps' }
   | { kind: 'unsupported'; reason: string };
 
 const MAX_TEXT = 8192;
 const DECIMAL = /^-?\d+(?:\.\d+)?$/;
 const GEO_QUERY_COORDINATE = /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)(?:\s*\(([^()]*)\))?\s*$/;
 const GEO_QUERY_COORDINATE_PREFIX = /^\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?/;
-const UNSUPPORTED = '暂不支持这种分享格式。请分享包含坐标的 geo 位置或腾讯地图地点标注链接。';
+const UNSUPPORTED = '无法从分享内容确认地点。请分享 Google 地图中的单个地点，或带坐标的位置链接。';
+const GOOGLE_UNSUPPORTED = '此分享没有可确认的单个地点坐标。请打开地点详情后重新分享，或分享带坐标的位置链接。';
 
 function parsePair(value: string, order: 'lat-lon' | 'lon-lat'): Coordinate | null {
   const values = value.trim().split(',');
@@ -32,7 +33,7 @@ function placeResult(
   inputDatum: IncomingPlaceDatum,
   name: string,
   detail?: string,
-  format: 'geo-uri' | 'tencent-marker' = 'geo-uri',
+  format: 'geo-uri' | 'tencent-marker' | 'google-maps' = 'geo-uri',
 ): ParsedIncomingPlace {
   const wgs84 = inputDatum === 'GCJ-02' ? importCoordinate(coordinate, 'gcj02') : [...coordinate] as Coordinate;
   return {
@@ -127,8 +128,95 @@ function parseTencentMarker(urlText: string): ParsedIncomingPlace {
   return placeResult(coordinate, datum, attributes.get('title') ?? '', attributes.get('addr'), 'tencent-marker');
 }
 
+function isGoogleMapsUrl(url: URL): boolean {
+  const host = url.hostname.toLowerCase();
+  return url.protocol === 'https:' && (host === 'google.com' || host === 'www.google.com' || host === 'maps.google.com') &&
+    !url.username && !url.password && !url.port &&
+    (/^\/maps(?:\/|$)/i.test(url.pathname) || (host === 'maps.google.com' && url.pathname === '/'));
+}
+
+function decodeGoogleName(value: string): string {
+  try { return decodeURIComponent(value.replace(/\+/g, ' ')).replace(/\s+/g, ' ').trim(); }
+  catch { return ''; }
+}
+
+function isGenericGoogleName(value: string): boolean {
+  return /^(?:google\s*maps?|谷歌地图|google地图)$/i.test(value.trim());
+}
+
+function googleName(url: URL, sharedName?: string, beforeUrl = '', queryName = ''): string {
+  const placeMatch = /^\/maps\/place\/([^/]+)/i.exec(url.pathname);
+  const pathName = placeMatch ? decodeGoogleName(placeMatch[1]) : '';
+  if (pathName && !parsePair(pathName, 'lat-lon') && !isGenericGoogleName(pathName)) return pathName;
+  for (const candidate of [queryName, sharedName ?? '', beforeUrl]) {
+    const name = candidate.replace(/^[\s:：,，;；\-]+|[\s:：,，;；\-]+$/g, '').trim();
+    if (name && !isGenericGoogleName(name)) return name;
+  }
+  return 'Google 地点';
+}
+
+function parseGoogleMaps(urlText: string, sharedName?: string, beforeUrl = ''): ParsedIncomingPlace {
+  let url: URL;
+  try { url = new URL(urlText); } catch { return { kind: 'unsupported', reason: GOOGLE_UNSUPPORTED }; }
+  if (!isGoogleMapsUrl(url) || url.hash) return { kind: 'unsupported', reason: GOOGLE_UNSUPPORTED };
+
+  const coordinates: Coordinate[] = [];
+  let queryName = '';
+  const addLatLon = (lat: string, lon: string): boolean => {
+    const coordinate = parsePair(`${lat},${lon}`, 'lat-lon');
+    if (!coordinate) return false;
+    coordinates.push(coordinate);
+    return true;
+  };
+
+  // Read the selected place's data field, never unrelated tracking parameters
+  // or the viewport/route's camera coordinates.
+  const placePath = /^\/maps\/place\/([^/]+)/i.exec(url.pathname);
+  if (/^\/maps\/(?:dir|@)/i.test(url.pathname)) return { kind: 'unsupported', reason: GOOGLE_UNSUPPORTED };
+  const dataFields = url.pathname.split('/').filter(part => part.startsWith('data=')).map(part => part.slice(5));
+  dataFields.push(...url.searchParams.getAll('data'));
+  if (dataFields.length > 1 || (dataFields.length && !placePath)) return { kind: 'unsupported', reason: GOOGLE_UNSUPPORTED };
+  let data = '';
+  try { data = dataFields.length ? decodeURIComponent(dataFields[0]!) : ''; }
+  catch { return { kind: 'unsupported', reason: GOOGLE_UNSUPPORTED }; }
+  const latTokens = [...data.matchAll(/!3d([^!&]+)/g)].map(match => match[1]);
+  const lonTokens = [...data.matchAll(/!4d([^!&]+)/g)].map(match => match[1]);
+  if (latTokens.length || lonTokens.length) {
+    const pair = /!3d([^!&]+)!4d([^!&]+)/.exec(data);
+    if (latTokens.length !== 1 || lonTokens.length !== 1 || !pair || !addLatLon(pair[1]!, pair[2]!))
+      return { kind: 'unsupported', reason: GOOGLE_UNSUPPORTED };
+  }
+
+  const pathName = placePath ? decodeGoogleName(placePath[1]!) : '';
+  const pathCoordinate = GEO_QUERY_COORDINATE.exec(pathName);
+  if (pathCoordinate && !addLatLon(pathCoordinate[1]!, pathCoordinate[2]!))
+    return { kind: 'unsupported', reason: 'Google 地图分享中的坐标无效或超出山兔地图支持范围。' };
+
+  const isSearchPath = /^\/maps\/search\/?$/i.test(url.pathname);
+  const isMapsPath = /^\/maps\/?$/i.test(url.pathname) || (url.hostname === 'maps.google.com' && url.pathname === '/');
+  if (url.searchParams.has('q') && url.searchParams.has('query'))
+    return { kind: 'unsupported', reason: GOOGLE_UNSUPPORTED };
+  const coordinateParams = isSearchPath ? url.searchParams.getAll('query') : isMapsPath ? url.searchParams.getAll('q') : [];
+  if (coordinateParams.length > 1) return { kind: 'unsupported', reason: GOOGLE_UNSUPPORTED };
+  if (coordinateParams.length === 1) {
+    const value = coordinateParams[0]!.trim();
+    const match = GEO_QUERY_COORDINATE.exec(value);
+    if (match) {
+      if (!addLatLon(match[1]!, match[2]!))
+        return { kind: 'unsupported', reason: 'Google 地图分享中的坐标无效或超出山兔地图支持范围。' };
+      queryName = match[3] ?? '';
+    } else if (GEO_QUERY_COORDINATE_PREFIX.test(value)) {
+      return { kind: 'unsupported', reason: GOOGLE_UNSUPPORTED };
+    }
+  }
+  if (!coordinates.length) return { kind: 'unsupported', reason: GOOGLE_UNSUPPORTED };
+  if (coordinates.some(coordinate => coordinate[0] !== coordinates[0]![0] || coordinate[1] !== coordinates[0]![1]))
+    return { kind: 'unsupported', reason: 'Google 地图分享包含互相冲突的地点坐标。' };
+  return placeResult(coordinates[0]!, 'WGS84', googleName(url, sharedName, beforeUrl, queryName), undefined, 'google-maps');
+}
+
 /** Strictly parses coordinate-bearing location shares; arbitrary URLs and place names are never geocoded. */
-export function parseIncomingPlace(input: unknown): ParsedIncomingPlace {
+export function parseIncomingPlace(input: unknown, sharedName?: string): ParsedIncomingPlace {
   if (typeof input !== 'string' || input.length === 0 || input.length > MAX_TEXT)
     return { kind: 'unsupported', reason: UNSUPPORTED };
   const text = input.trim();
@@ -145,7 +233,22 @@ export function parseIncomingPlace(input: unknown): ParsedIncomingPlace {
   const geoMatchResults = [...text.matchAll(/geo:[^\s<>"']+/ig)];
   const geoMatches = geoMatchResults.map(match => trimSharePunctuation(match[0]));
   const tencentMatches = [...text.matchAll(/https:\/\/apis\.map\.qq\.com\/uri\/v1\/marker(?:\?[^\s<>"']*)?/ig)].map(match => match[0].replace(/[),，。；]+$/g, ''));
-  if (geoMatches.length + tencentMatches.length !== 1) return { kind: 'unsupported', reason: UNSUPPORTED };
+  const googleMatches = [...text.matchAll(/https:\/\/[^\s<>"']+/ig)].map(match => ({
+    url: trimSharePunctuation(match[0]), index: match.index!,
+  })).filter(match => {
+    try { return isGoogleMapsUrl(new URL(match.url)); } catch { return false; }
+  });
+  const shortGoogleLinks = [...text.matchAll(/https:\/\/[^\s<>"']+/ig)].some(match => {
+    try {
+      const url = new URL(match[0].replace(/[),，。；]+$/g, ''));
+      return url.protocol === 'https:' && ['maps.app.goo.gl', 'goo.gl'].includes(url.hostname.toLowerCase());
+    } catch { return false; }
+  });
+  if (shortGoogleLinks && !googleMatches.length)
+    return { kind: 'unsupported', reason: '这是 Google 地图短链接，需先联网展开为完整地点链接后才能导入。' };
+  const httpsLinks = [...text.matchAll(/https?:\/\/[^\s<>"']+/ig)];
+  if (googleMatches.length && httpsLinks.length !== 1) return { kind: 'unsupported', reason: UNSUPPORTED };
+  if (geoMatches.length + tencentMatches.length + googleMatches.length !== 1) return { kind: 'unsupported', reason: UNSUPPORTED };
   if (geoMatches.length === 1) {
     const match = geoMatchResults[0]!;
     const tail = text.slice(match.index! + match[0].length);
@@ -153,5 +256,8 @@ export function parseIncomingPlace(input: unknown): ParsedIncomingPlace {
     const decoded = decodeUriText(geoMatches[0]);
     return decoded ? parseGeoUri(decoded) : { kind: 'unsupported', reason: UNSUPPORTED };
   }
-  return parseTencentMarker(tencentMatches[0]);
+  if (tencentMatches.length === 1) return parseTencentMarker(tencentMatches[0]);
+  const google = googleMatches[0]!;
+  const prefix = text.slice(0, google.index).split(/\r?\n/).map(line => line.trim()).filter(Boolean).at(-1) ?? '';
+  return parseGoogleMaps(google.url, sharedName, prefix);
 }

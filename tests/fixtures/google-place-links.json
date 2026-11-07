@@ -1,0 +1,29 @@
+[
+  {
+    "name": "Synthetic North Ridge",
+    "input": "https://www.google.com/maps/place/Synthetic+North+Ridge/data=!3m1!4b1!4m6!3m5!1sChIJsynthetic!7e2!8m2!3d41.234567!4d-72.345678!18m1!1e1",
+    "coordinates": [-72.345678, 41.234567]
+  },
+  {
+    "name": "Encoded Sample Park",
+    "input": "https://maps.google.com/maps/place/Encoded%20Sample%20Park/data=!4m2!3d-33.876543!4d151.234567",
+    "coordinates": [151.234567, -33.876543]
+  },
+  {
+    "name": "Shared Query Sample",
+    "sharedName": "Shared Query Sample",
+    "input": "https://www.google.com/maps/search/?api=1&query=12.345678%2C-98.765432",
+    "coordinates": [-98.765432, 12.345678]
+  },
+  {
+    "name": "Synthetic Label",
+    "input": "https://google.com/maps?q=48.123456%2C16.543210%28Synthetic+Label%29",
+    "coordinates": [16.54321, 48.123456]
+  },
+  {
+    "name": "Path Coordinate Sample",
+    "sharedName": "Path Coordinate Sample",
+    "input": "https://www.google.com/maps/place/7.12345,-66.54321",
+    "coordinates": [-66.54321, 7.12345]
+  }
+]

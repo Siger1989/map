@@ -19,6 +19,7 @@ final class NativeBridge {
     @JavascriptInterface public void incomingRouteDismiss(String token) { if(activity.incomingRoutes != null) activity.incomingRoutes.dismiss(token); }
     @JavascriptInterface public String incomingPlaceInfo() { return activity.trustedForeground() && activity.incomingPlaces != null ? activity.incomingPlaces.info() : "{}"; }
     @JavascriptInterface public void incomingPlaceDismiss(String token) { if (activity.trustedForeground() && token != null && token.length() <= 64 && activity.incomingPlaces != null) activity.incomingPlaces.dismiss(token); }
+    @JavascriptInterface public boolean incomingPlaceRetry(String token) { return activity.trustedForeground() && token != null && token.length() <= 64 && activity.incomingPlaces != null && activity.incomingPlaces.retry(token); }
     final ForegroundLocation position;
     final CompassSensor compass;
     final MotionSensor motion;

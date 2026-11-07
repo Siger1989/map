@@ -4026,7 +4026,17 @@ export default function Home() {
               }}
             />
           ) : null)}
-        <IncomingPlacePrompt onSave={place => {
+        <IncomingPlacePrompt onAutoSave={place => {
+          if (!annotations.savePlace(place)) return false;
+          setPanel(null);
+          follow.pause();
+          position.free();
+          navigation.setPicking(null);
+          annotations.setPicking(null);
+          setQuickAdd(null);
+          map.current?.focusPoint(place.coordinates, 14);
+          return true;
+        }} onSave={place => {
           if (!annotations.savePlace(place)) return false;
           setPanel(null);
           map.current?.focusPoint(place.coordinates, view.zoom);
@@ -4034,8 +4044,14 @@ export default function Home() {
         }} saveError={annotations.error} onNavigate={(place) => {
           if (!switchFromSection() || !annotations.savePlace(place)) return false;
           endRoutePreview(false);
-          navigation.clear();
-          navigation.place('end', place);
+          searchNavigationDraft.begin(guidance.active);
+          follow.pause();
+          position.free();
+          navigation.setPicking(null);
+          annotations.setPicking(null);
+          setQuickAdd(null);
+          if (!quickSearchNavigation.begin(place)) navigation.place('end', place);
+          map.current?.focusPoint(place.coordinates, map.current?.cameraSnapshot()?.zoom ?? view.zoom);
           setPanel('route');
           return true;
         }} />

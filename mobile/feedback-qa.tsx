@@ -24,6 +24,7 @@ import { RouteCachePanel } from '../modules/outdoor/RouteCachePanel';
 import { WorkbenchPanel } from '../modules/collections/WorkbenchPanel';
 import { ControlDock } from '../modules/controls/ControlDock';
 import { OfflineMapProgressPrompt } from '../modules/outdoor/OfflineMapProgressPrompt';
+import { IncomingPlacePrompt } from '../modules/incomingPlace/IncomingPlacePrompt';
 import type { TripPackage } from '../modules/outdoor/offline';
 import type { useOffline } from '../modules/outdoor/useOffline';
 import type { MapSource } from '../modules/mapSources/types';
@@ -98,6 +99,20 @@ if (query.get('legacy') === '1') Object.defineProperty(window, 'GuanyunNative', 
 const initialWidth = Number(query.get('width'));
 const initialHeight = Number(query.get('height'));
 const initialPanel = query.get('panel');
+const googleQaRaw = 'https://www.google.com/maps/place/合成Google地点·山地步道入口/data=!3d12.3456!4d-98.7654';
+let googleQaSnapshot = { token: 'qa184-google', state: query.get('phase') === 'loading' ? 'resolving' : query.get('phase') === 'failed' ? 'failed' : 'received',
+  raw: query.get('phase') === 'loading' || query.get('phase') === 'failed' ? '' : googleQaRaw,
+  title: 'Google Maps', reason: '合成网络错误：请联网后重试。', retryable: query.get('phase') === 'failed' };
+function googleQaReceive(phase: 'received' | 'resolving' | 'failed' | 'invalid') {
+  googleQaSnapshot = { ...googleQaSnapshot, state: phase === 'invalid' ? 'received' : phase,
+    raw: phase === 'received' ? googleQaRaw : phase === 'invalid' ? 'https://www.google.com/maps/@12,-98,12z' : '', retryable: phase === 'failed' };
+  window.dispatchEvent(new Event('shantu-incoming-place'));
+}
+if (initialPanel === 'place') Object.defineProperty(window, 'GuanyunNative', { configurable: true, value: {
+  incomingPlaceInfo: () => JSON.stringify(googleQaSnapshot),
+  incomingPlaceDismiss: () => undefined,
+  incomingPlaceRetry: () => googleQaReceive('resolving'),
+} });
 const initialTheme = query.get('theme');
 const orangePalette: Palette = { ...DEFAULT_APPEARANCE.dark, accent: '#ffad55', button: '#302b25' };
 const routeCoordinates: Coordinate[] = Array.from({ length: 25 }, (_, i) => [
@@ -130,8 +145,8 @@ const sampleArea = { id:'feedback-area', name:'合成河谷区域', boundary:[[1
 if (query.get('collectionItem') === '1') localStorage.setItem('guanyun.manual-tracks.v1', JSON.stringify([routeTrack]));
 
 function Fixture() {
-  const [panel, setPanel] = useState<'navigation' | 'pin' | 'route' | 'cache' | 'progress' | 'collections' | 'draw'>(
-    initialPanel === 'pin' || initialPanel === 'route' || initialPanel === 'cache' || initialPanel === 'progress' || initialPanel === 'collections' || initialPanel === 'draw' ? initialPanel : 'navigation',
+  const [panel, setPanel] = useState<'navigation' | 'pin' | 'route' | 'cache' | 'progress' | 'collections' | 'draw' | 'place'>(
+    initialPanel === 'pin' || initialPanel === 'route' || initialPanel === 'cache' || initialPanel === 'progress' || initialPanel === 'collections' || initialPanel === 'draw' || initialPanel === 'place' ? initialPanel : 'navigation',
   );
   const [width, setWidth] = useState(initialWidth === 360 ? 360 : 390);
   const [height, setHeight] = useState([480, 780, 857].includes(initialHeight) ? initialHeight : 857);
@@ -151,6 +166,7 @@ function Fixture() {
   const [boxMode, setBoxMode] = useState<BoxSelectionMode | null>('add');
   const [snap, setSnap] = useState({ node: true, road: false, river: false });
   const [routeNotice, setRouteNotice] = useState('合成数据·布局检查；按钮回调使用真实 routeEdit 操作。');
+  const [googleNotice, setGoogleNotice] = useState('尚未请求导航 · 无GPS模拟');
   const tokenTheme = themeName === 'light' ? DEFAULT_APPEARANCE.light : themeName === 'orange' ? orangePalette : DEFAULT_APPEARANCE.dark;
   const tokens = themeTokens(tokenTheme);
   const guidanceSession = useMemo(() => {
@@ -233,7 +249,7 @@ function Fixture() {
   return <>
     <nav className="feedback-qa-controls" aria-label="验收用例切换">
       <label>页面<select value={panel} onChange={event => setCase(event.target.value as typeof panel)}>
-        <option value="navigation">导航</option><option value="pin">标记</option><option value="route">路线</option><option value="cache">缓存</option><option value="collections">收藏缓存</option><option value="progress">缓存进度</option>
+        <option value="navigation">导航</option><option value="pin">标记</option><option value="route">路线</option><option value="cache">缓存</option><option value="collections">收藏缓存</option><option value="progress">缓存进度</option><option value="place">Google地点</option>
       </select></label>
       <label>宽<select value={width} onChange={event => updateDimension('width', Number(event.target.value))}><option value={360}>360</option><option value={390}>390</option></select></label>
       <label>高<select value={height} onChange={event => updateDimension('height', Number(event.target.value))}><option value={480}>480</option><option value={780}>780</option><option value={857}>857</option></select></label>
@@ -257,6 +273,21 @@ function Fixture() {
         '--home-bottom': 'env(safe-area-inset-bottom, 0px)', '--home-footer': 'calc(64px + var(--home-bottom))', '--home-header-height': '60px',
       } as CSSProperties}>
         <div className="feedback-qa-map" aria-hidden="true"><span>合成数据·布局检查</span></div>
+        {panel === 'place' && <>
+          <div style={{position:'absolute',top:16,left:12,right:80,fontSize:12,display:'grid',gap:6}}>
+            <p>合成分享 · 实际地点接收组件及标记存储<br/>不是 Android 分享/真实地图导航验收</p>
+            <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+              <button onClick={() => googleQaReceive('received')}>模拟接收地点</button>
+              <button onClick={() => googleQaReceive('failed')}>模拟网络失败</button>
+              <button onClick={() => googleQaReceive('resolving')}>模拟读取中</button>
+              <button onClick={() => googleQaReceive('invalid')}>模拟错误链接</button>
+            </div>
+            <output data-google-qa-count>标记总数 {annotations.items.length} · Google标记 {annotations.items.filter(item => item.name.startsWith('合成Google地点')).length}</output>
+            <output data-google-qa-navigation>{googleNotice}</output>
+          </div>
+          <IncomingPlacePrompt onAutoSave={place => annotations.savePlace(place)} saveError={annotations.error}
+            onNavigate={place => { setGoogleNotice(`导航终点已接收：${place.name} · ${place.coordinates.join(',')}（QA拦截）`); return true; }} />
+        </>}
         {panel === 'navigation' && <section className="feedback-qa-navigation">
           <GuidanceCard guidance={guidance} onStop={() => undefined} onFollow={() => undefined} onShow={() => undefined}
             following={false} cameraMode={stateVariant.forward ? 'forward' : 'top'} onFirstPerson={() => updateState('forward', !stateVariant.forward)}

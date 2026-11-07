@@ -77,6 +77,31 @@
         <category android:name="android.intent.category.BROWSABLE" />
         <data android:scheme="https" android:host="apis.map.qq.com" android:path="/uri/v1/marker" />
       </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="https" android:host="maps.app.goo.gl" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="https" android:host="goo.gl" android:pathPrefix="/maps/" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="https" android:host="www.google.com" android:pathPrefix="/maps" />
+        <data android:scheme="https" android:host="google.com" android:pathPrefix="/maps" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="https" android:host="maps.google.com" />
+      </intent-filter>
     </activity>
   <activity-alias android:name="com.guanyun.weather.MainActivity" android:targetActivity="com.guanyun.weather.NativeReactActivity" android:exported="true">
     <intent-filter>
