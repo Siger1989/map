@@ -74,5 +74,10 @@ try {
 
 & $apksigner verify --verbose $signedApk
 if ($LASTEXITCODE -ne 0) { throw 'signed instrumentation APK verification failed' }
-Get-FileHash -LiteralPath $signedApk -Algorithm SHA256 | Select-Object Algorithm, Hash
+$qaHasher = [System.Security.Cryptography.SHA256]::Create()
+try {
+    $qaHashBytes = $qaHasher.ComputeHash([System.IO.File]::ReadAllBytes($signedApk))
+    $qaHash = -join ($qaHashBytes | ForEach-Object { $_.ToString('x2') })
+    Write-Output "INSTRUMENTATION_SHA256=$qaHash"
+} finally { $qaHasher.Dispose() }
 Write-Output "INSTRUMENTATION_APK=$signedApk"

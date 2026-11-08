@@ -651,9 +651,9 @@ internal class BoundedTileNetwork(
                     executeNetworkRequest(url, ioPermit)
                 } catch (cancelled: CancellationException) {
                     throw cancelled
-                } catch (_: Exception) {
+                } catch (error: Exception) {
                     if (retryBudget.get() >= MAX_ATTEMPTS) {
-                        report("地图网络请求失败，已达到本轮重试上限")
+                        report(nativeTileFailureStatus(error, retryExhausted = true))
                         return null
                     }
                     retries.incrementAndGet()
@@ -737,8 +737,8 @@ internal class BoundedTileNetwork(
             Thread.currentThread().interrupt()
             report("地图请求已中断；可点重试")
             return null
-        } catch (_: Exception) {
-            report("地图网络请求失败，当前瓦片暂缓；可点重试")
+        } catch (error: Exception) {
+            report(nativeTileFailureStatus(error, retryExhausted = false))
             return null
         } finally {
             networkPermit?.let(permitScheduler::release)

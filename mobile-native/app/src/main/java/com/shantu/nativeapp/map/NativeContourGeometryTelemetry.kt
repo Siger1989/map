@@ -11,6 +11,15 @@ internal object NativeContourGeometryTelemetry {
     private val maxLevelRejected = AtomicLong()
     private val refinementDeferred = AtomicLong()
     private val lastRejectedLevel = AtomicLong(-1)
+    private val lastVisibleBytes = AtomicLong()
+    private val lastVisibleBudgetLevel = AtomicLong()
+    private val lastPendingForBudget = AtomicLong()
+
+    fun visibleBudget(bytes: Long, level: Int, pendingForBudget: Int) {
+        lastVisibleBytes.set(bytes.coerceAtLeast(0L))
+        lastVisibleBudgetLevel.set(level.coerceIn(0, NativeContourVisibleBudgetPolicy.MAX_LEVEL).toLong())
+        lastPendingForBudget.set(pendingForBudget.coerceAtLeast(0).toLong())
+    }
 
     fun accepted(logicalVertices: Long) {
         completed.incrementAndGet()
@@ -39,6 +48,9 @@ internal object NativeContourGeometryTelemetry {
             "maxLevelRejections" to maxLevelRejected.get(),
             "refinementDeferred" to refinementDeferred.get(),
             "lastRejectedSourceLevel" to lastRejectedLevel.get(),
+            "visibleContentBytes" to lastVisibleBytes.get(),
+            "visibleBudgetPressureLevel" to lastVisibleBudgetLevel.get(),
+            "pendingForBudgetLastDispatch" to lastPendingForBudget.get(),
             "processAssemblyActiveSlots" to processBudget.activeSlots.toLong(),
             "processAssemblyMaximumActiveSlots" to processBudget.maximumActiveSlots.toLong(),
             "processAssemblyWaits" to processBudget.waits,

@@ -883,6 +883,25 @@ public final class Native149Instrumentation extends Instrumentation {
             case "processAssemblyActiveSlots": case "processAssemblyMaximumActiveSlots": case "processAssemblyWaits": case "processAssemblyQueuedRequests":
             case "activeGeometryEntries": case "activeLeases":
             case "processPreparedActiveSlots": case "processPreparedMaximumActiveSlots": case "processPreparedWaits": case "processPreparedQueuedRequests":
+            case "visibleContentBytes":
+            case "visibleBudgetPressureLevel":
+            case "pendingForBudgetLastDispatch":
+            case "preparationActiveSlots":
+            case "preparationMaximumActiveSlots":
+            case "preparationQueuedRequests":
+            case "sourceLoadCount":
+            case "sourceLoadElapsedNanos":
+            case "sourceLoadMaximumNanos":
+            case "sourceNoDataCount":
+            case "sourceFailureCount":
+            case "assemblyWaitCount":
+            case "assemblyWaitElapsedNanos":
+            case "assemblyWaitMaximumNanos":
+            case "assemblyCount":
+            case "assemblyElapsedNanos":
+            case "assemblyMaximumNanos":
+            case "assemblyFailureCount":
+            case "preparationCancellationCount":
             case "completedBatches": case "maximumLogicalVertices": case "maximumVboBytes":
             case "budgetRejections": case "refinedTiles": case "maxLevelRejections":
             case "refinementDeferred": case "lastRejectedSourceLevel":

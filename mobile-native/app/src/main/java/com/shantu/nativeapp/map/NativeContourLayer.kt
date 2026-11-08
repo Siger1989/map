@@ -195,6 +195,10 @@ internal class NativeContourLayer(
     // this set are obsolete; active work and resident content are deliberately unaffected.
     private val visitedThisFrame = linkedSetOf<TileRequest>()
     private val labelCollision = NativeContourLabelCollision()
+    private val visibleBudgetPolicy = NativeContourVisibleBudgetPolicy(NativeContourVectorGeometry.CONTENT_CACHE_BYTES)
+    private val renderedTileKeysThisFrame = HashSet<NativeContourTileKey>()
+    private var renderedContentBytesThisFrame = 0L
+    private var pendingForBudget = 0
     private val cartesian = Vec3()
     private val screen = Vec3()
 
@@ -372,6 +376,8 @@ internal class NativeContourLayer(
         visitedThisFrame.clear()
         renderedThisFrame.clear()
         drawnSeamsThisFrame.clear()
+        renderedTileKeysThisFrame.clear()
+        renderedContentBytesThisFrame = 0L
         labelCollision.beginFrame()
     }
 
@@ -381,6 +387,14 @@ internal class NativeContourLayer(
         // permits only to requests still represented by that cut.
         pruneUnvisitedPending(visitedThisFrame)
         dispatchGeneration(rc)
+        val visibleBudgetLevel = visibleBudgetPolicy.observe(
+            visibleBytes = renderedContentBytesThisFrame,
+            nowNanos = System.nanoTime(),
+            generationWorkPending = generationQueue.registeredCount > 0,
+        )
+        NativeContourGeometryTelemetry.visibleBudget(
+            renderedContentBytesThisFrame, visibleBudgetLevel, pendingForBudget,
+        )
     }
 
     private fun pruneUnvisitedPending(visited: Set<TileRequest>) {
@@ -395,20 +409,36 @@ internal class NativeContourLayer(
     }
 
     private fun dispatchGeneration(rc: RenderContext) {
-        if (closed || generationQueue.pendingCount == 0 ||
-            generationQueue.activeCount >= NativeContourVectorGeometry.MAX_PREPARED_TILES) return
+        if (closed || generationQueue.pendingCount == 0) {
+            pendingForBudget = 0
+            return
+        }
+        if (generationQueue.activeCount >= NativeContourVectorGeometry.MAX_PREPARED_TILES) return
         // All SDK jobs from this cut must register before any generation slot is awarded.
         // Otherwise the first edge coroutine could win before the centre job even registers.
         if (generationQueue.registeredCount < pendingTileCount) return
         val focus = viewStyle.focusPx ?: TileScreenPoint(rc.viewport.width / 2.0, rc.viewport.height / 2.0)
+        var deferredByBudget = 0
         generationQueue.dispatch { tile ->
             // Traversal pruning, not a corner projection, decides whether work is still needed.
             // Terrain near the horizon can remain SDK-visible even when its projected hull fails.
-            projectedPriority(rc, tile, focus)?.takeIf { it.isFinite() && it >= 0.0 } ?: Double.MAX_VALUE
+            val footprint = projectedFootprint(rc, tile, focus)
+            if (visibleBudgetPolicy.shouldDefer(footprint, rc.viewport.width, rc.viewport.height)) {
+                deferredByBudget++
+                null
+            } else {
+                // A projection failure is not evidence that a tile is far from focus; keep it eligible.
+                footprint?.distanceFromFocusPx?.takeIf { it.isFinite() && it >= 0.0 } ?: Double.MAX_VALUE
+            }
         }
+        pendingForBudget = deferredByBudget
     }
 
-    private fun projectedPriority(rc: RenderContext, tile: TileRequest, focus: TileScreenPoint): Double? {
+    private fun projectedFootprint(
+        rc: RenderContext,
+        tile: TileRequest,
+        focus: TileScreenPoint,
+    ): NativeContourProjectedFootprint? {
         fun project(points: List<Pair<Double, Double>>): List<TileScreenPoint> = points.mapNotNull { (lon, lat) ->
             rc.geographicToCartesian(Position.fromDegrees(lat, lon, 0.0), AltitudeMode.CLAMP_TO_GROUND, cartesian)
             if (!rc.projectWithDepth(cartesian, 0.0, screen)) null
@@ -422,12 +452,32 @@ internal class NativeContourLayer(
             TileProjectedPriority.convexHull(project(grid))
         }
         if (!TileProjectedPriority.intersectsViewport(polygon, rc.viewport.width.toDouble(), rc.viewport.height.toDouble())) return null
-        return TileProjectedPriority.distanceToQuad(focus, polygon)
+        val bounds = TileProjectedPriority.bounds(polygon) ?: return null
+        val visibleWidth = (minOf(bounds.right, rc.viewport.width.toDouble()) - maxOf(bounds.left, 0.0)).coerceAtLeast(0.0)
+        val visibleHeight = (minOf(bounds.bottom, rc.viewport.height.toDouble()) - maxOf(bounds.top, 0.0)).coerceAtLeast(0.0)
+        var twiceArea = 0.0
+        for (index in polygon.indices) {
+            val a = polygon[index]
+            val b = polygon[(index + 1) % polygon.size]
+            twiceArea += a.x * b.y - b.x * a.y
+        }
+        val polygonArea = kotlin.math.abs(twiceArea) * 0.5
+        val longestExtent = maxOf(bounds.right - bounds.left, bounds.bottom - bounds.top)
+        // area/longest extent catches narrow diagonal strips whose axis-aligned bbox looks broad.
+        val projectedThickness = if (longestExtent > 0.0) polygonArea / longestExtent else 0.0
+        return NativeContourProjectedFootprint(
+            distanceFromFocusPx = TileProjectedPriority.distanceToQuad(focus, polygon),
+            minimumVisibleExtentPx = minOf(visibleWidth, visibleHeight, projectedThickness),
+        )
     }
 
     override fun renderTileContent(rc: RenderContext, content: NativeContourTileContent) {
         if (rc.isPickMode) return // Contours are visual overlays, not pick targets.
         val geometry = content.geometryIfActive() ?: return
+        val tileKey = content.tileKey
+        if (tileKey != null && renderedTileKeysThisFrame.add(tileKey)) {
+            renderedContentBytesThisFrame += content.byteWeight.toLong()
+        }
         synchronized(geometry.renderLock) {
             // Close/eviction may win between taking the snapshot and entering this lock.
             if (!content.ownsGeometry(geometry)) return
