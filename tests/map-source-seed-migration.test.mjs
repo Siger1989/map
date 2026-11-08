@@ -131,7 +131,7 @@ test('legacyMapCount defaults to the full old manifest while the array parser st
 test('old marker migration adds only the appended seed and never revives removed legacy or appended maps', async (t) => {
   const oldDrafts = [makeDraft(0), makeDraft(1), makeDraft(2)];
   const retained = { ...oldDrafts[0], id: 'old-retained', bytes: 111, detail: 'user detail' };
-  const userMap = { ...makeDraft(90), id: 'user-map', bytes: 222, custom: true };
+  const userMap = { ...makeDraft(90), id: 'user-enhanced-source', name: '增强', tiles: ['https://enhanced.example.test/{z}/{x}/{y}.png?token=fixture-only'], scheme: 'tms', bytes: 222, custom: true, cacheAssociation: 'keep-existing-provider' };
   const fixture = createIndexedDb({ maps: [retained, userMap], marker: { key: 'default-map-sources-initialized', value: true } });
   const storage = await storageWith(t, fixture, 'legacy-migration');
   const bundle = makeBundle(3, 1);

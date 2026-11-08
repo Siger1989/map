@@ -321,6 +321,7 @@ data class NativeMapSourceCatalog(val sources: List<NativeMapSource>, val errors
                 val isVariable = match.groupValues[1] == "\$"
                 if (isVariable) {
                     if (value.equals("Galileo", ignoreCase = true)) true
+                    else if (value == "y!") true
                     else {
                         val expression = Regex("^(x|y|z)(?:([+*/-])(\\d{1,6}))?$").matchEntire(value) ?: return@all false
                         val operand = expression.groupValues[3].toLongOrNull()
@@ -348,13 +349,16 @@ data class NativeMapSourceCatalog(val sources: List<NativeMapSource>, val errors
 }
 
 private fun renderOvmapTemplate(template: String, z: Int, x: Int, y: Int): String {
-    val maxCoordinate = (1L shl z) - 1
-    require(z in 0..24 && x.toLong() in 0..maxCoordinate && y.toLong() in 0..maxCoordinate)
+    require(z in 0..24)
+    val side = 1L shl z
+    val maxCoordinate = side - 1
+    require(x.toLong() in 0..maxCoordinate && y.toLong() in 0..maxCoordinate)
     var result = template.replace("{\$x}{\$y}{\$z}{4}", ovmapQuadkey(z, x, y))
     result = Regex("\\{(\\$?)([^{}]*)\\}").replace(result) { match ->
         val prefix = match.groupValues[1]
         val expression = match.groupValues[2]
         if (prefix.isEmpty() && expression !in setOf("x", "y", "z")) return@replace match.value
+        if (prefix == "\$" && expression == "y!") return@replace (maxCoordinate - y).toString()
         if (expression.equals("Galileo", ignoreCase = true)) return@replace "Galileo".take((3 * x + y) % 8)
         val parsed = Regex("^(x|y|z)(?:([+*/-])(\\d{1,6}))?$").matchEntire(expression)
             ?: return@replace match.value

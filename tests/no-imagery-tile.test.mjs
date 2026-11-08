@@ -10,12 +10,17 @@ import {
 } from '../modules/mapSources/noImageryTile.ts';
 
 const placeholder = await readFile(new URL('./fixtures/tianditu-no-imagery-placeholder.jpg', import.meta.url));
+const publicNoData = await readFile(new URL('./fixtures/jilin-no-data-placeholder.png', import.meta.url));
 
 test('recognizes only the exact observed no-imagery raster, not ordinary white images', async () => {
   assert.equal(await isKnownNoImageryBytes(placeholder), true);
   assert.equal(await isKnownNoImageryBytes(new Uint8Array(placeholder.length).fill(255)), false);
   const nearMatch=placeholder.slice();nearMatch[100]^=1;
   assert.equal(await isKnownNoImageryBytes(nearMatch), false);
+  assert.equal(await isKnownNoImageryBytes(publicNoData), true);
+  const nearPublicMatch=publicNoData.slice();nearPublicMatch[100]^=1;
+  assert.equal(await isKnownNoImageryBytes(nearPublicMatch), false);
+  assert.equal(await isKnownNoImageryBytes(new Uint8Array(956).fill(255)), false);
 });
 
 test('classifies provider no-tile status and header without treating authorization as missing imagery', () => {

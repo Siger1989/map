@@ -716,7 +716,8 @@ internal class BoundedTileNetwork(
                     if (networkPermit == null) return null
                     continue
                 }
-                if (NativeMissingTileFallback.isExplicitMissing(response.statusCode, response.bingTileInfo)) {
+                if (NativeMissingTileFallback.isExplicitMissing(response.statusCode, response.bingTileInfo) ||
+                    NativeMissingTileFallback.isKnownPlaceholderStatus(response.statusCode, response.body)) {
                     rememberMissing(url)
                     return null
                 }

@@ -406,7 +406,7 @@ object NativeSourceImport {
         require(path.startsWith('/') && path.length <= 8192 && path.none { it.code < 0x21 || it.code == 0x7f || it in "#\\" }) {
             "OVI 瓦片模板不是安全相对路径"
         }
-        require(Regex("\\{\\$?[xyz](?:[+*/-]\\d+)?\\}", RegexOption.IGNORE_CASE).containsMatchIn(path)) {
+        require(Regex("\\{(?:\\\$y!|\\$?[xyz](?:[+*/-]\\d+)?)\\}", RegexOption.IGNORE_CASE).containsMatchIn(path)) {
             "OVI 二维码未提供可识别的瓦片模板"
         }
         val tls = port == 443

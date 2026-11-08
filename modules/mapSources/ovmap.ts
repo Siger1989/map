@@ -249,7 +249,7 @@ export type OvmapLayerTemplate = Pick<
 /** Validate and convert one bounded OVMAP-compatible raster template. */
 export function ovmapTemplateToLayer(record: OvmapLayerTemplate): OvmapTileLayer {
   const path = record.path;
-  if (!/\{\$?[xyz](?:[+*/-]\d+)?\}/i.test(path)) throw new Error('此项不是瓦片图源');
+  if (!/\{\$y!\}|\{\$?[xyz](?:[+*/-]\d+)?\}/i.test(path)) throw new Error('此项不是瓦片图源');
   if (!supportedOvmapTemplate(path)) throw new Error('图源包含未支持的变量');
   const hasWmts = /(?:[?&](?:service)=wmts\b)/i.test(path);
   if (hasWmts) {

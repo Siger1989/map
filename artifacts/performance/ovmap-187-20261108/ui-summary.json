@@ -1,0 +1,74 @@
+{
+  "task": "OVMAP 187 browser QA",
+  "date": "2026-11-08",
+  "environment": {
+    "app": "existing Vite 9174 /phone-preview.html",
+    "component": "real MapSourcesPanel + useMapSources + import/storage flow",
+    "browserSession": "ovmap187-ui",
+    "storageIsolation": "named Playwright browser session with its own origin IndexedDB; only synthetic QA rows were seeded",
+    "fixture": "two-record OVMAP container shaped like the 吉林 import; all URLs use tiles.example.invalid and fakefixturetoken",
+    "sourceChanges": false,
+    "distHybridEntry": false,
+    "userStorageTouched": false
+  },
+  "flow": {
+    "preview": {
+      "recognized": 2,
+      "duplicates": 1,
+      "importable": 1,
+      "selected": 1,
+      "unsupported": 0,
+      "selectedName": "吉林测试源",
+      "duplicateName": "世纪空间",
+      "evidence": "real panel snapshot showed 识别 2 项 · 可导入 1 项 · 已选 1 · 重复 1 项; duplicate row disabled; 吉林 row selected. No unsupported row appeared."
+    },
+    "import": {
+      "action": "clicked actual 导入已选 1 项 control",
+      "result": "returned to 图源 panel with 当前：吉林测试源 and saved count increased from 41 to 42",
+      "retainedCustomSource": "增强 was present in saved-source list after import",
+      "returnedToList": true
+    }
+  },
+  "viewports": [
+    {
+      "css": "390x857",
+      "state": "import preview with duplicate 世纪空间 and selected 吉林测试源",
+      "screenshot": "artifacts/screenshots/ovmap187-preview-390x857.png",
+      "computed": "panel status and actions were visible in screenshot; no source or application CSS was changed"
+    },
+    {
+      "css": "360x780",
+      "state": "same import preview and selectable 吉林 row",
+      "screenshot": "artifacts/screenshots/ovmap187-preview-360x780.png",
+      "computed": {
+        "panel": { "x": 31, "y": 111, "width": 266, "height": 224, "scrollHeight": 224, "clientHeight": 224 },
+        "scrollHost": { "width": 266, "height": 228, "scrollHeight": 228, "clientHeight": 228, "overflowY": "auto" },
+        "horizontalOverflow": false
+      }
+    },
+    {
+      "css": "390x480",
+      "state": "import preview and saved list scrolled to bottom",
+      "previewScreenshot": "artifacts/screenshots/ovmap187-preview-390x480.png",
+      "savedListScreenshot": "artifacts/screenshots/ovmap187-saved-scroll-390x480.png",
+      "previewComputed": {
+        "panel": { "x": 13, "y": 111, "width": 256, "height": 224, "scrollHeight": 224, "clientHeight": 224 },
+        "scrollHost": { "width": 256, "height": 228, "scrollHeight": 228, "clientHeight": 228, "overflowY": "auto" },
+        "horizontalOverflow": false
+      },
+      "savedListScroll": {
+        "scrollHeight": 1848,
+        "clientHeight": 276,
+        "maxScrollTop": 1572,
+        "afterScrollTop": 1572,
+        "enhancementVisible": true,
+        "duplicateFixtureVisible": true
+      }
+    }
+  ],
+  "limits": [
+    "Synthetic OVMAP fixture confirms the browser import flow only; the actual 吉林 file and live provider access were not tested.",
+    "Android device appearance/behavior remains unverified.",
+    "No Gradle, device, APK build, or packaging was run."
+  ]
+}

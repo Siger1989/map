@@ -110,6 +110,37 @@ test('512-pixel OVMAP parent tiles render the four x/y child quadrants', async (
   }
 });
 
+test('real OVMAP tile rendering resolves the explicit reverse row without another scheme flip', async t => {
+  const saved = {
+    fetch: globalThis.fetch,
+    location: globalThis.location,
+    OffscreenCanvas: globalThis.OffscreenCanvas,
+    createImageBitmap: globalThis.createImageBitmap,
+  };
+  const requested = [];
+  globalThis.location = { origin: 'https://app.example.invalid' };
+  globalThis.OffscreenCanvas = undefined;
+  globalThis.createImageBitmap = undefined;
+  globalThis.fetch = async input => {
+    const outer = new URL(String(input));
+    const tile = outer.searchParams.get('url');
+    requested.push(tile);
+    return new Response(new Uint8Array([5, 6, 7]));
+  };
+  t.after(() => {
+    globalThis.fetch = saved.fetch;
+    if (saved.location === undefined) delete globalThis.location;
+    else globalThis.location = saved.location;
+    globalThis.OffscreenCanvas = saved.OffscreenCanvas;
+    globalThis.createImageBitmap = saved.createImageBitmap;
+  });
+
+  const layer = { tiles: ['https://tiles.example.invalid/{$z}/{$x}/{$y!}.png?token=fake-token'], tileSize: 256, minzoom: 0, maxzoom: 24 };
+  const result = await renderOvmapTile([layer], 4, 3, 6, new AbortController().signal);
+  assert.deepEqual(requested, ['https://tiles.example.invalid/4/3/9.png?token=fake-token']);
+  assert.deepEqual([...new Uint8Array(result)], [5, 6, 7]);
+});
+
 test('optional annotation failures preserve the base tile and report a partial result', async t => {
   const originals = {
     fetch: globalThis.fetch,

@@ -11,12 +11,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.SQLiteMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
+@SQLiteMode(SQLiteMode.Mode.NATIVE)
 class NativeMissingTileFallbackTest {
     @Test fun `custom factory replaces missing child with nearest same source ancestor`() = runBlocking {
         val parent = Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888)
@@ -87,14 +90,56 @@ class NativeMissingTileFallbackTest {
     @Test fun `placeholder recognition is exact size and digest gated`() {
         val fixture = listOf(java.io.File("../../tests/fixtures/tianditu-no-imagery-placeholder.jpg"), java.io.File("tests/fixtures/tianditu-no-imagery-placeholder.jpg"))
             .firstOrNull { it.isFile } ?: error("Missing provider placeholder fixture")
+        val publicNoData = listOf(java.io.File("../../tests/fixtures/jilin-no-data-placeholder.png"), java.io.File("tests/fixtures/jilin-no-data-placeholder.png"))
+            .firstOrNull { it.isFile } ?: error("Missing public no-data placeholder fixture")
         assertTrue(NativeMissingTileFallback.isKnownPlaceholder(fixture.readBytes()))
+        assertTrue(NativeMissingTileFallback.isKnownPlaceholder(publicNoData.readBytes()))
         assertEquals("4b399ee12503d2278b244fcb0f3804d0c6c8bb42391c2621a53937b97acc494a", NativeMissingTileFallback.KNOWN_PLACEHOLDER_SHA256)
+        assertEquals("5c61bfbe119dba86e0ed6be8468b72c7bc22248bcd2c52a8079c11a5b2eec5ac", NativeMissingTileFallback.KNOWN_PUBLIC_NO_DATA_SHA256)
         assertFalse(NativeMissingTileFallback.isKnownPlaceholder(ByteArray(4769)))
         assertFalse(NativeMissingTileFallback.isKnownPlaceholder(ByteArray(4768)))
+        val nearMatch = publicNoData.readBytes().also { it[100] = (it[100].toInt() xor 1).toByte() }
+        assertFalse(NativeMissingTileFallback.isKnownPlaceholder(nearMatch))
+        assertFalse(NativeMissingTileFallback.isKnownPlaceholder(ByteArray(956)))
         val snow = Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888)
         snow.eraseColor(Color.WHITE)
         val encoded = java.io.ByteArrayOutputStream().use { output -> snow.compress(Bitmap.CompressFormat.PNG, 100, output); output.toByteArray() }
         assertFalse("white snow imagery must not be rejected by pixel heuristics", NativeMissingTileFallback.isKnownPlaceholder(encoded))
         snow.recycle()
+    }
+
+    @Test fun `known placeholder from HTTP 200 or 202 is missing and never reaches browse cache`() = runBlocking {
+        val fixture = listOf(java.io.File("../../tests/fixtures/jilin-no-data-placeholder.png"), java.io.File("tests/fixtures/jilin-no-data-placeholder.png"))
+            .firstOrNull { it.isFile } ?: error("Missing public no-data placeholder fixture")
+        for (status in listOf(200, 202)) {
+            val cacheFailure = java.util.concurrent.atomic.AtomicReference<String?>()
+            val cache = NativePersistentBrowseCache(RuntimeEnvironment.getApplication(), onCacheFailure = { operation, failureClass ->
+                cacheFailure.set("$operation:$failureClass")
+            })
+            assertNotNull("HTTP $status: persistent cache clear succeeds; diagnostic=${cacheFailure.get()}", runBlocking { cache.clear() })
+            try {
+                val url = "https://fixture.test/no-data/$status.png"
+                val network = BoundedTileNetwork(
+                    java.nio.file.Files.createTempDirectory("known-placeholder-$status-").toFile(), {},
+                    TileHttpClient { TileHttpResponse(status, null, fixture.readBytes()) },
+                    isValidImage = { true }, persistentCache = cache,
+                )
+                try {
+                    assertNull("placeholder response is not returned as a renderable tile", network.fetch(url))
+                    assertTrue("placeholder response records missing coverage", network.isKnownMissing(url))
+                    val stats = cache.stats()
+                    assertNotNull("HTTP $status: persistent cache stats are available; diagnostic=${cacheFailure.get()}", stats)
+                    assertEquals("known missing responses are not persisted as successful tiles", 0L, stats!!.entries)
+                } finally { network.close() }
+            } catch (error: Throwable) {
+                cache.close()
+                throw error
+            }
+            // BoundedTileNetwork.close() owns and asynchronously closes its injected persistent cache.
+        }
+        val placeholderBytes = fixture.readBytes()
+        for (status in listOf(401, 403, 429))
+            assertFalse("HTTP $status cannot be classified as missing from exact placeholder bytes", NativeMissingTileFallback.isKnownPlaceholderStatus(status, placeholderBytes))
+        assertFalse("ordinary bytes in HTTP 202 cannot be classified as missing", NativeMissingTileFallback.isKnownPlaceholderStatus(202, byteArrayOf(1, 2, 3)))
     }
 }

@@ -1,5 +1,6 @@
 /** Exact provider error image observed from Tianditu's img_w service. */
 const KNOWN_NO_IMAGERY_SHA256 = '4b399ee12503d2278b244fcb0f3804d0c6c8bb42391c2621a53937b97acc494a';
+const KNOWN_PUBLIC_NO_DATA_SHA256 = '5c61bfbe119dba86e0ed6be8468b72c7bc22248bcd2c52a8079c11a5b2eec5ac';
 const MISSING_TILE_TTL_MS = 45_000;
 const MAX_MISSING_TILES = 256;
 const recentMissingTiles = new Map<string, number>();
@@ -24,13 +25,14 @@ export function isNoImageryResponse(response: Pick<Response, 'status' | 'headers
 /** Match only the known error image, avoiding heuristics that would reject snow or clouds. */
 export async function isKnownNoImageryBytes(input: ArrayBuffer | Uint8Array): Promise<boolean> {
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
-  if (bytes.byteLength !== 4769) return false;
+  if (bytes.byteLength !== 4769 && bytes.byteLength !== 956) return false;
   const subtle = globalThis.crypto?.subtle;
   if (!subtle) return false;
   try {
     const digest = await subtle.digest('SHA-256', new Uint8Array(bytes).buffer);
     const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
-    return hash === KNOWN_NO_IMAGERY_SHA256;
+    return (bytes.byteLength === 4769 && hash === KNOWN_NO_IMAGERY_SHA256) ||
+      (bytes.byteLength === 956 && hash === KNOWN_PUBLIC_NO_DATA_SHA256);
   } catch { return false; }
 }
 

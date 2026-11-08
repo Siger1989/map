@@ -1,6 +1,7 @@
 package com.shantu.nativeapp.data
 
 import android.util.Base64
+import com.shantu.nativeapp.map.NativeMapSourceCatalog
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -86,16 +87,27 @@ class NativeSourceImportTest {
     }
 
     @Test
+    fun `ovmap container preserves the y bang template and native catalog resolves it`() {
+        val result = NativeSourceImport.parseOvmap(makeOvmap("/{z}/{x}/{\$y!}.png"))
+        assertEquals(1, result.entries.size)
+        val sourceJson = result.entries.single().toJson()
+        val catalog = NativeMapSourceCatalog.fromJson(JSONObject().put("maps", org.json.JSONArray().put(sourceJson)))
+        assertTrue(catalog.errors.toString(), catalog.errors.isEmpty())
+        assertTrue(catalog.sources.single().tileUrl(0, 0, 18).endsWith("/18/0/262143.png"))
+    }
+
+    @Test
     fun `decoded OVI QR imports only supported single raster scan text`() {
         fun b64(value: String) = Base64.encodeToString(value.toByteArray(StandardCharsets.UTF_8), Base64.NO_WRAP)
         val qr = listOf(
             "t" to "37", "id" to "7", "na" to b64("QR fixture"), "gp" to b64("Maps"),
             "po" to "1", "pn" to "0", "mt" to "1", "mf" to "3", "ml" to "16", "pt" to "443",
-            "hn" to b64("tiles.example.invalid"), "ul" to b64("/{z}/{x}/{y}.png"),
+            "hn" to b64("tiles.example.invalid"), "ul" to b64("/{z}/{x}/{\$y!}.png"),
         ).joinToString("&") { (key, value) -> "$key=${URLEncoder.encode(value, "UTF-8")}" }
         val result = NativeSourceImport.parseScannedText("ovobj?$qr")
         assertEquals(NativeSourceImportFormat.OVI_QR, result.format)
         assertEquals("QR fixture", result.entries.single().name)
+        assertTrue(result.entries.single().toJson().getJSONArray("tiles").getString(0).contains("{\$y!}"))
         assertFails("未支持字段") { NativeSourceImport.parseScannedText("ovobj?t=37&secret=x") }
     }
 
@@ -105,8 +117,8 @@ class NativeSourceImportTest {
         assertFails("不是受支持") { NativeSourceImport.parseOvmap(ByteArray(24)) }
     }
 
-    private fun makeOvmap(): ByteArray {
-        val strings = listOf("Fixture OVMAP", "tiles.example.invalid", "/{\$z}/{\$x}/{\$y}.png")
+    private fun makeOvmap(pathTemplate: String = "/{\$z}/{\$x}/{\$y}.png"): ByteArray {
+        val strings = listOf("Fixture OVMAP", "tiles.example.invalid", pathTemplate)
             .map { it.toByteArray(StandardCharsets.UTF_8) }
         val bodyLength = 120 + strings.sumOf { 4 + it.size }
         val body = ByteArray(bodyLength)

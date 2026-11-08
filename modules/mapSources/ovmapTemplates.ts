@@ -8,10 +8,12 @@ const BING_QUADKEY_SEQUENCE = '{$x}{$y}{$z}{4}';
 type TileCoordinate = 'x' | 'y' | 'z';
 type TemplateToken =
   | { kind: 'coordinate'; variable: TileCoordinate; operator?: string; operand?: number }
+  | { kind: 'invertedY' }
   | { kind: 'galileo' };
 
-function parseToken(content: string): TemplateToken | undefined {
+function parseToken(content: string, allowInvertedY = false): TemplateToken | undefined {
   if (content === 'Galileo') return { kind: 'galileo' };
+  if (allowInvertedY && content === 'y!') return { kind: 'invertedY' };
   if (content.length > MAX_EXPRESSION_LENGTH) return;
 
   const match = /^(x|y|z)(?:([+\-*/])(\d{1,6}))?$/.exec(content);
@@ -39,7 +41,7 @@ function scanTemplate(template: string): TemplateToken[] | undefined {
     const isOvmapVariable = match[1] === '$';
     const content = match[2];
     if (isOvmapVariable) {
-      const token = parseToken(content);
+      const token = parseToken(content, true);
       if (!token) return;
       tokens.push(token);
       continue;
@@ -107,12 +109,13 @@ export function renderOvmapTemplate(template: string, z: number, x: number, y: n
     const isOvmapVariable = prefix === '$';
     const isCoordinate = /^[xyz](?:[+\-*/]\d{1,6})?$/.test(content);
     if (!isOvmapVariable && !isCoordinate) return whole;
-    const token = parseToken(content);
+    const token = parseToken(content, isOvmapVariable);
     if (!token) {
       if (!isOvmapVariable) return whole;
       throw new Error('OVMAP 瓦片模板包含不支持的语法');
     }
     if (token.kind === 'galileo') return 'Galileo'.slice(0, (3 * x + y) % 8);
+    if (token.kind === 'invertedY') return String(maxCoordinate - y);
     return String(evaluate(token, values));
   });
 }

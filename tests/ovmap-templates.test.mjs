@@ -54,6 +54,15 @@ test('renders the observed Galileo salt token', () => {
   assert.equal(renderOvmapTemplate('/{$Galileo}', 3, 0, 0), '/');
 });
 
+test('renders only the explicit OVMAP {$y!} reverse-row token', () => {
+  assert.equal(renderOvmapTemplate('/{$z}/{$x}/{$y!}', 0, 0, 0), '/0/0/0');
+  assert.equal(renderOvmapTemplate('/{$z}/{$x}/{$y!}', 4, 3, 0), '/4/3/15');
+  assert.equal(renderOvmapTemplate('/{$z}/{$x}/{$y!}', 4, 3, 15), '/4/3/0');
+  assert.equal(renderOvmapTemplate('/{$z}/{$x}/{$y!}', 24, 1234567, 1234567), '/24/1234567/15542648');
+  assert.equal(renderOvmapTemplate('/{$z}/{x}/{$y}/{$y!}', 4, 3, 6), '/4/3/6/9');
+  assert.equal(supportedOvmapTemplate('/{$y!}'), true, 'the reverse row alone identifies a tile template');
+});
+
 test('rejects unknown variables, executable syntax, unbounded expressions, and zero division', () => {
   for (const template of [
     'https://tiles.example.invalid/{$q}/{$x}/{$y}',
@@ -65,10 +74,20 @@ test('rejects unknown variables, executable syntax, unbounded expressions, and z
     'https://tiles.example.invalid/{$x+1+2}/{$y}/{$z}',
     'https://tiles.example.invalid/{$x/1000001}/{$y}/{$z}',
     'https://tiles.example.invalid/{$x/{$y}}',
+    'https://tiles.example.invalid/{$x!}',
+    'https://tiles.example.invalid/{$z!}',
+    'https://tiles.example.invalid/{$y!!}',
+    'https://tiles.example.invalid/{$y!+1}',
+    'https://tiles.example.invalid/{$y!-1}',
+    'https://tiles.example.invalid/{$y!/2}',
   ]) {
     assert.equal(supportedOvmapTemplate(template), false, template);
     assert.throws(() => renderOvmapTemplate(template, 3, 1, 1), /不支持/);
   }
+});
+
+test('ordinary brace text is never interpreted as the reverse-row operator', () => {
+  assert.equal(renderOvmapTemplate('/{y!}/{$z}/{$x}', 4, 3, 6), '/{y!}/4/3');
 });
 
 test('bounds coordinate inputs and computed values', () => {

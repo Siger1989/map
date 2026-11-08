@@ -1,0 +1,33 @@
+{
+  "version": "0.2.187-test",
+  "versionCode": 194,
+  "package": "com.shantu.oldengine",
+  "nodeCases": 61,
+  "nativeCases": 27,
+  "nativeSuites": {
+    "com.shantu.nativeapp.data.NativeSourceImportTest": 8,
+    "com.shantu.nativeapp.map.NativeMapSourceTest": 13,
+    "com.shantu.nativeapp.map.NativeMissingTileFallbackTest": 6
+  },
+  "javaProxyHarness": "PASS",
+  "tsc": "PASS",
+  "freshPrivateWebBuild": "PASS",
+  "realOvmapParse": {
+    "entries": 2,
+    "skipped": 0,
+    "originalBytes": 418,
+    "originalUnchanged": true
+  },
+  "sourceService": {
+    "realJilinRequests": 6,
+    "httpStatus": 202,
+    "image": "No Data Here placeholder",
+    "genuineSatelliteImageObtained": false,
+    "alignmentVerified": false,
+    "centuryEntryHttpAndHttps": 403,
+    "cause": "unconfirmed"
+  },
+  "customSourcePreservation": "synthetic fixture only; actual phone configuration unread",
+  "physicalDeviceVerified": false,
+  "runtimeValidation": "not started before initial immutable delivery"
+}

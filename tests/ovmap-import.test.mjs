@@ -169,6 +169,20 @@ test('imports HTTP, China Mercator, optional overlays, and scaled templates', ()
   assert.equal(result.drafts[3].ovmap.layers[0].subdivide, true);
 });
 
+test('imports a Jilin-style reverse-row record alongside supported sibling sources', () => {
+  const result = parseOvmap(makeContainer([
+    makeRecord({ id: 801, name: '【世纪空间】卫星图 2024年', path: '/tiles/{z}/{x}/{y}.png?token=fake-token' }),
+    makeRecord({ id: 802, name: '【吉林一号】卫星图2024', maxzoom: 20, path: '/tiles/{$y!}.png?token=fake-token' }),
+  ]));
+
+  assert.equal(result.total, 2);
+  assert.equal(result.skipped.length, 0);
+  assert.deepEqual(result.drafts.map(draft => draft.name), ['【世纪空间】卫星图 2024年', '【吉林一号】卫星图2024']);
+  assert.deepEqual(result.drafts.map(draft => [draft.minzoom, draft.maxzoom]), [[1, 18], [1, 20]]);
+  assert.equal(result.drafts[1].format, 'OVMAP');
+  assert.equal(result.drafts[1].ovmap.layers[0].tiles[0], 'https://tiles.example.invalid/tiles/{$y!}.png?token=fake-token');
+});
+
 test('only enabled layer records attach same-package overlays; missing references preserve the base map', () => {
   const result = parseOvmap(makeContainer([
     makeRecord({ id: 10, name: 'Base with disabled overlay', overlayBig: 11, layerFlags: 0 }),

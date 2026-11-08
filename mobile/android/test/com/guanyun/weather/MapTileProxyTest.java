@@ -12,6 +12,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** JVM checks for address filtering, redirect rules, and real HTTP response parsing. */
@@ -151,6 +153,29 @@ public final class MapTileProxyTest {
         String bingNoTile="HTTP/1.1 200 OK\r\nX-VE-Tile-Info: no-tile\r\nContent-Length: 0\r\n\r\n";
         MapTileProxy.UpstreamResponse noTile=MapTileProxy.parseResponse(new ByteArrayInputStream(bingNoTile.getBytes(StandardCharsets.US_ASCII)));
         check(noTile.status==200 && noTile.missing && noTile.tile==null,"Bing no-tile header is explicit missing coverage");
+
+        byte[] publicNoData = Files.readAllBytes(Paths.get("tests/fixtures/jilin-no-data-placeholder.png"));
+        check(publicNoData.length==956 && MapTileProxy.isKnownNoDataPlaceholder(publicNoData), "exact public no-data fixture hash matches");
+        byte[] tdtNoData = Files.readAllBytes(Paths.get("tests/fixtures/tianditu-no-imagery-placeholder.jpg"));
+        check(tdtNoData.length==4769 && MapTileProxy.isKnownNoDataPlaceholder(tdtNoData), "existing Tianditu placeholder hash remains recognized");
+        byte[] nearNoData = publicNoData.clone(); nearNoData[100]^=1;
+        check(!MapTileProxy.isKnownNoDataPlaceholder(nearNoData), "same-length near match is rejected");
+        for (int status : new int[] {200,202}) {
+            ByteArrayOutputStream placeholderResponse=new ByteArrayOutputStream();
+            placeholderResponse.write(("HTTP/1.1 "+status+" Test\r\nContent-Type: image/png\r\nContent-Length: "+publicNoData.length+"\r\n\r\n").getBytes(StandardCharsets.US_ASCII));
+            placeholderResponse.write(publicNoData);
+            MapTileProxy.UpstreamResponse missingImage=MapTileProxy.parseResponse(new ByteArrayInputStream(placeholderResponse.toByteArray()));
+            check(missingImage.status==status && missingImage.missing && missingImage.tile==null, "known placeholder is missing, never a successful/cacheable tile: HTTP "+status);
+        }
+        byte[] ordinaryPng={(byte)137,80,78,71,13,10,26,10};
+        ByteArrayOutputStream ordinary202=new ByteArrayOutputStream();
+        ordinary202.write(("HTTP/1.1 202 Accepted\r\nContent-Type: image/png\r\nContent-Length: "+ordinaryPng.length+"\r\n\r\n").getBytes(StandardCharsets.US_ASCII));
+        ordinary202.write(ordinaryPng);
+        try { MapTileProxy.parseResponse(new ByteArrayInputStream(ordinary202.toByteArray())); throw new AssertionError("accepted ordinary HTTP 202 image"); }
+        catch (MapTileProxy.TileException expected) { check(expected.status==202 && "http".equals(expected.diagnostic), "ordinary HTTP 202 remains an HTTP failure"); }
+        String noTile202="HTTP/1.1 202 Accepted\r\nX-VE-Tile-Info: no-tile\r\nContent-Length: 0\r\n\r\n";
+        try { MapTileProxy.parseResponse(new ByteArrayInputStream(noTile202.getBytes(StandardCharsets.US_ASCII))); throw new AssertionError("HTTP 202 header alone classified as missing"); }
+        catch (MapTileProxy.TileException expected) { check(expected.status==202 && "http".equals(expected.diagnostic), "HTTP 202 header alone remains a status failure"); }
 
         String http500="HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n";
         try { MapTileProxy.parseResponse(new ByteArrayInputStream(http500.getBytes(StandardCharsets.US_ASCII))); throw new AssertionError("accepted HTTP 500"); }

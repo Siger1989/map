@@ -137,6 +137,46 @@ class NativeMapSourceTest {
     }
 
     @Test
+    fun `ovmap y bang flips only the declared row across zero and maximum zoom without changing tms`() {
+        val catalog = NativeMapSourceCatalog.fromJson(JSONObject("""
+            {"maps":[{"id":"row-flip","format":"OVMAP","scheme":"xyz","minzoom":0,"maxzoom":24,"tiles":["https://tiles.example.invalid/{z}/{x}/{y}/{\u0024y!}/{\u0024y!}/{\u0024x}{\u0024y}{\u0024z}{4}"]}]}
+        """))
+        assertTrue(catalog.errors.toString(), catalog.errors.isEmpty())
+        val source = catalog.sources.single()
+        assertEquals("https://tiles.example.invalid/0/0/0/0/0/", source.tileUrl(0, 0, 0, 0))
+        assertEquals("https://tiles.example.invalid/24/0/0/16777215/16777215/000000000000000000000000", source.tileUrl(0, 0, 0, 24))
+        assertEquals("https://tiles.example.invalid/24/0/16777215/0/0/222222222222222222222222", source.tileUrl(0, 16_777_215, 24))
+
+        val ovmapTmsScheme = NativeMapSourceCatalog.fromJson(JSONObject("""
+            {"maps":[{"id":"ovmap-tms-scheme","format":"OVMAP","scheme":"tms","maxzoom":24,"tiles":["https://tiles.example.invalid/{y}/{\u0024y!}"]}]}
+        """ )).sources.single()
+        assertEquals("https://tiles.example.invalid/3/12", ovmapTmsScheme.tileUrl(2, 3, 4))
+
+        val standardTms = NativeMapSourceCatalog.fromJson(JSONObject("""
+            {"maps":[{"id":"ordinary-tms","scheme":"tms","tiles":["https://tiles.example.invalid/{z}/{x}/{y}"]}]}
+        """ )).sources.single()
+        assertEquals("https://tiles.example.invalid/2/1/2", standardTms.tileUrl(1, 1, 2))
+    }
+
+    @Test
+    fun `ovmap y bang is the only bang expression and is rejected outside ovmap`() {
+        val dollar = '$'
+        val invalid = listOf("${dollar}x!", "${dollar}z!", "${dollar}y!!", "${dollar}y!+1")
+        invalid.forEachIndexed { index, expression ->
+            val catalog = NativeMapSourceCatalog.fromJson(JSONObject("""
+                {"maps":[{"id":"bad-$index","format":"OVMAP","tiles":["https://tiles.example.invalid/{${expression}}"]}]}
+            """))
+            assertTrue("expression $expression must be rejected", catalog.sources.isEmpty())
+            assertEquals(1, catalog.errors.size)
+        }
+        val xyzTemplate = "https://tiles.example.invalid/{${dollar}y!}/{z}/{x}"
+        val xyz = NativeMapSourceCatalog.fromJson(JSONObject().put("maps", org.json.JSONArray().put(JSONObject()
+            .put("id", "not-ovmap").put("tiles", org.json.JSONArray().put(xyzTemplate)))))
+        assertTrue(xyz.sources.isEmpty())
+        assertEquals(1, xyz.errors.size)
+    }
+
+    @Test
     fun `gcj and bd09 datums are accepted for raster reprojection`() {
         val catalog = NativeMapSourceCatalog.fromJson(JSONObject("""
             {"maps":[{"id":"shifted","datum":"gcj02","tiles":["https://tiles.example.invalid/{z}/{x}/{y}"]},{"id":"bd","datum":"bd09","tiles":["https://tiles.example.invalid/{z}/{x}/{y}"]}]}

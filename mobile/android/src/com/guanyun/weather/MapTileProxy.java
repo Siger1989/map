@@ -21,10 +21,15 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.security.MessageDigest;
 
 /** Bounded native transport for user-configured public raster tiles. */
 final class MapTileProxy {
     static final int MAX_BYTES = 8 * 1024 * 1024;
+    private static final int KNOWN_NO_DATA_BYTES = 956;
+    private static final String KNOWN_NO_DATA_SHA256 = "5c61bfbe119dba86e0ed6be8468b72c7bc22248bcd2c52a8079c11a5b2eec5ac";
+    private static final int KNOWN_TDT_NO_IMAGERY_BYTES = 4769;
+    private static final String KNOWN_TDT_NO_IMAGERY_SHA256 = "4b399ee12503d2278b244fcb0f3804d0c6c8bb42391c2621a53937b97acc494a";
     static final int TIMEOUT_MS = 12000;
     private static final int MAX_HEADER_BYTES = 32768;
     private static final int MAX_URL_LENGTH = 8192;
@@ -487,8 +492,8 @@ final class MapTileProxy {
         if (isRedirect(status)) return new UpstreamResponse(status, headers.get("location"), null);
         if (status == 204 || status == 404 || status == 410)
             throw new TileException(status,"missing","Tile coverage unavailable");
-        if (status != 200) throw new TileException(status,"http","Tile provider returned HTTP status");
-        if ("no-tile".equalsIgnoreCase(headers.get("x-ve-tile-info")))
+        if (status != 200 && status != 202) throw new TileException(status,"http","Tile provider returned HTTP status");
+        if (status == 200 && "no-tile".equalsIgnoreCase(headers.get("x-ve-tile-info")))
             return new UpstreamResponse(status,null,null,false,true);
         boolean hasLength = headers.containsKey("content-length");
         boolean hasTransfer = headers.containsKey("transfer-encoding");
@@ -513,6 +518,8 @@ final class MapTileProxy {
             // Content-Length frames the body even if the upstream connection stays open.
             body = declared >= 0 ? readExact(in, (int) declared) : readLimited(in, MAX_BYTES);
         }
+        if (isKnownNoDataPlaceholder(body)) return new UpstreamResponse(status,null,null,false,true);
+        if (status != 200) throw new TileException(status,"http","Tile provider returned HTTP status");
         String actualMime = imageMime(body);
         String declaredMime = headers.getOrDefault("content-type", "").split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
         if (actualMime == null || !isCompatibleImageMime(actualMime,declaredMime)) throw formatError("Invalid tile image");
@@ -521,6 +528,17 @@ final class MapTileProxy {
         boolean reusable = keepAlive && !containsToken(connection,"close")
             && (statusLine.startsWith("HTTP/1.1") || containsToken(connection,"keep-alive"));
         return new UpstreamResponse(status,null,new Tile(body,actualMime),reusable);
+    }
+
+    static boolean isKnownNoDataPlaceholder(byte[] bytes) {
+        if (bytes == null || (bytes.length != KNOWN_NO_DATA_BYTES && bytes.length != KNOWN_TDT_NO_IMAGERY_BYTES)) return false;
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(bytes);
+            StringBuilder hex = new StringBuilder(64);
+            for (byte value : digest) hex.append(String.format(Locale.ROOT, "%02x", value & 0xff));
+            return (bytes.length == KNOWN_NO_DATA_BYTES && KNOWN_NO_DATA_SHA256.contentEquals(hex)) ||
+                (bytes.length == KNOWN_TDT_NO_IMAGERY_BYTES && KNOWN_TDT_NO_IMAGERY_SHA256.contentEquals(hex));
+        } catch (java.security.NoSuchAlgorithmException impossible) { return false; }
     }
 
     static boolean isCompatibleImageMime(String actualMime,String declaredMime) {

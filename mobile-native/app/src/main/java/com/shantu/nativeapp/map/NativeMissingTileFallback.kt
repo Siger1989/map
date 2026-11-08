@@ -11,18 +11,23 @@ import java.security.MessageDigest
 /** Recognizes only provider-declared misses or a byte-for-byte known placeholder. */
 internal object NativeMissingTileFallback {
     const val KNOWN_PLACEHOLDER_SHA256 = "4b399ee12503d2278b244fcb0f3804d0c6c8bb42391c2621a53937b97acc494a"
+    const val KNOWN_PUBLIC_NO_DATA_SHA256 = "5c61bfbe119dba86e0ed6be8468b72c7bc22248bcd2c52a8079c11a5b2eec5ac"
     const val MAX_NEGATIVE_CACHE_MILLIS = 5 * 60 * 1000L
     const val MAX_NEGATIVE_CACHE_ENTRIES = 4096
 
     fun isKnownPlaceholder(bytes: ByteArray): Boolean {
-        if (bytes.size != 4769) return false
+        if (bytes.size != 4769 && bytes.size != 956) return false
         val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 0xff) }
-        return hash == KNOWN_PLACEHOLDER_SHA256
+        return (bytes.size == 4769 && hash == KNOWN_PLACEHOLDER_SHA256) ||
+            (bytes.size == 956 && hash == KNOWN_PUBLIC_NO_DATA_SHA256)
     }
 
     fun isExplicitMissing(statusCode: Int, bingTileInfo: String?): Boolean =
         statusCode == 204 || statusCode == 404 || statusCode == 410 ||
             (statusCode == 200 && bingTileInfo?.trim()?.equals("no-tile", ignoreCase = true) == true)
+
+    fun isKnownPlaceholderStatus(statusCode: Int, bytes: ByteArray?): Boolean =
+        (statusCode == 200 || statusCode == 202) && bytes != null && isKnownPlaceholder(bytes)
 
     data class TdtTile(val layer: String, val x: Int, val y: Int, val z: Int)
 
