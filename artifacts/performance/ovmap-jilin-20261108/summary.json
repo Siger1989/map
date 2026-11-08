@@ -1,0 +1,143 @@
+{
+  "date": "2026-11-08",
+  "scope": "read-only source research; no application/config/APK changes",
+  "file": {
+    "name": "吉林1号.ovmap",
+    "bytes": 418,
+    "sha256": "883ee41dab37c7b8bcd5f502699f74aaf5cb1d60fba1e8c3186d574e3120a555",
+    "originalUnchanged": true,
+    "privateCopyPreserved": true
+  },
+  "parser": {
+    "total": 2,
+    "draftNames": [
+      "【世纪空间】卫星图 2024年"
+    ],
+    "skipped": [
+      {
+        "name": "【吉林一号】卫星图2024",
+        "reason": "图源包含未支持的变量",
+        "tokenName": "{$y!}"
+      }
+    ]
+  },
+  "duplicates": "Configuration equality, not names. Phone existing-source storage unavailable; exact matched saved item unverified.",
+  "firstRecord": {
+    "actualProviderHost": "t0-t7.tianditu.gov.cn",
+    "service": "img_w",
+    "transportInFile": "HTTP",
+    "httpAndHttpsSamples": 403,
+    "rejectionCause": "unconfirmed; do not infer expiry"
+  },
+  "secondRecord": {
+    "actualProviderHost": "tile.charmingglobe.com",
+    "datasetPathLabel": "world2022/tms",
+    "probeAssumption": "conventional TMS row inverse; Ovi-specific variable semantics not independently confirmed from official docs",
+    "results": [
+      {
+        "sample": "china-overview",
+        "zoom": 5,
+        "requestMode": "no explicit proxy, current system network",
+        "rowMode": "tms",
+        "status": 202,
+        "contentType": "application/octet-stream",
+        "bytes": 956,
+        "imageVerified": true,
+        "width": 256,
+        "height": 256,
+        "sha256": "5c61bfbe119dba86e0ed6be8468b72c7bc22248bcd2c52a8079c11a5b2eec5ac",
+        "knownNoDataImage": true,
+        "elapsedMs": 453
+      },
+      {
+        "sample": "chengdu",
+        "zoom": 12,
+        "requestMode": "no explicit proxy, current system network",
+        "rowMode": "tms",
+        "status": 202,
+        "contentType": "application/octet-stream",
+        "bytes": 956,
+        "imageVerified": true,
+        "width": 256,
+        "height": 256,
+        "sha256": "5c61bfbe119dba86e0ed6be8468b72c7bc22248bcd2c52a8079c11a5b2eec5ac",
+        "knownNoDataImage": true,
+        "elapsedMs": 453
+      },
+      {
+        "sample": "singapore",
+        "zoom": 12,
+        "requestMode": "no explicit proxy, current system network",
+        "rowMode": "tms",
+        "status": 202,
+        "contentType": "application/octet-stream",
+        "bytes": 956,
+        "imageVerified": true,
+        "width": 256,
+        "height": 256,
+        "sha256": "5c61bfbe119dba86e0ed6be8468b72c7bc22248bcd2c52a8079c11a5b2eec5ac",
+        "knownNoDataImage": true,
+        "elapsedMs": 453
+      },
+      {
+        "sample": "changchun",
+        "zoom": 16,
+        "requestMode": "no explicit proxy, current system network",
+        "rowMode": "tms",
+        "status": 202,
+        "contentType": "application/octet-stream",
+        "bytes": 956,
+        "imageVerified": true,
+        "width": 256,
+        "height": 256,
+        "sha256": "5c61bfbe119dba86e0ed6be8468b72c7bc22248bcd2c52a8079c11a5b2eec5ac",
+        "knownNoDataImage": true,
+        "elapsedMs": 203
+      },
+      {
+        "sample": "beijing",
+        "zoom": 16,
+        "requestMode": "no explicit proxy, current system network",
+        "rowMode": "tms",
+        "status": 202,
+        "contentType": "application/octet-stream",
+        "bytes": 956,
+        "imageVerified": true,
+        "width": 256,
+        "height": 256,
+        "sha256": "5c61bfbe119dba86e0ed6be8468b72c7bc22248bcd2c52a8079c11a5b2eec5ac",
+        "knownNoDataImage": true,
+        "elapsedMs": 156
+      },
+      {
+        "sample": "chengdu-row-control",
+        "zoom": 12,
+        "requestMode": "no explicit proxy, current system network",
+        "rowMode": "xyz",
+        "status": 202,
+        "contentType": "application/octet-stream",
+        "bytes": 956,
+        "imageVerified": true,
+        "width": 256,
+        "height": 256,
+        "sha256": "5c61bfbe119dba86e0ed6be8468b72c7bc22248bcd2c52a8079c11a5b2eec5ac",
+        "knownNoDataImage": true,
+        "elapsedMs": 172
+      }
+    ],
+    "resultMeaning": "All six probes were256x256 PNG No Data Here, not satellite imagery. Same exact placeholder hash. A202/octet-stream reply can still contain PNG bytes; initial content-type-only classification was corrected.",
+    "tokenExpiryOrCoverageCause": "unconfirmed",
+    "worksInOvi": "awaiting user reply"
+  },
+  "baselineTests": {
+    "cases": 15,
+    "pass": 15
+  },
+  "limitations": [
+    "No connected phone",
+    "No phone custom-source storage read or reset; enhanced source preserved as a requirement",
+    "No new APK built",
+    "No remote source/key substitutions",
+    "No promise of global or current2024 coverage from display names"
+  ]
+}
