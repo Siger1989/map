@@ -891,14 +891,53 @@
   "sourceFindings": {
     "jilin": "detailed imagery unresolved; prior original-credential detailed controls exact known NoData; z0 overview only",
     "officialOviBareYInverse": "static native implementation confirmed 2^z-1-y; same as Shantu; actual headers/issued URL not captured",
-    "oviAndroid": "official original APK installed and launched in owned clean MuMu4 API32 ARM bridge; privacy agreement pending; no login or GPS grant; instance stopped",
+    "oviAndroid": "official original APK10.7.3 installed/launched in owned clean MuMu4 API32 ARM bridge; user approved privacy agreement; original418B file imported as two sources; manual coordinate browsing only; no login; fine/coarse/background GPS permissions all false; instance stopped",
     "oviWindows": "official signed installer configured for isolated D drive; installation not completed due capture/input errors; user deferred manual action",
     "otherSources": [
       "one Google mirror decoded512x512 direct workstation only, Android unverified",
       "legacy imported Tianditu keys provider authorization mismatch; registered built-in config unchanged",
       "representative DNS/TLS/disconnect failures persisted; retirement or expiration not inferred",
       "Tencent canonical row adaptation and HTTP policy already installed-verified in189, retained"
-    ]
+    ],
+    "oviOfficialSameFile": {
+      "fileSha256": "883ee41dab37c7b8bcd5f502699f74aaf5cb1d60fba1e8c3186d574e3120a555",
+      "deviceCopySha256Matched": true,
+      "importedRecords": 2,
+      "selectedCustomMapId": 246,
+      "manualCoordinate": [
+        125.32,
+        43.82
+      ],
+      "gpsInjected": false,
+      "observations": [
+        {
+          "level": 5,
+          "result": "No Data(-5), custom246"
+        },
+        {
+          "level": 12,
+          "result": "No Data(-5), Changchun custom246"
+        },
+        {
+          "level": 16,
+          "result": "No Data(-5), Changchun custom246"
+        },
+        {
+          "level": 16,
+          "result": "actual satellite imagery, official built-in Jilin global control, same place and instance"
+        }
+      ],
+      "inference": "failure is reproducible in the official client with this supplied configuration; not unique to Shantu. Built-in control is not equivalent to this custom endpoint/credential. Service/account scope/coverage/origin-specific route remain unresolved.",
+      "httpHeadersOrPayloadCaptured": false,
+      "officialCredentialExtractedOrReused": false,
+      "screenshotsPublished": false,
+      "localScreenshotHashes": {
+        "190-ovi-custom246-level5.png": "568a0f4330afea65475b7af7af89e9e05554f4a7319a98844f4300df8c0f855d",
+        "190-ovi-custom246-changchun12.png": "47827df56b67bea5e548952d32c06920bd9bfe8760b3fa6cb0be2c2964bfed6a",
+        "190-ovi-custom246-changchun16.png": "1bb6dec161b7291e3d02d017b35fd2b35105ecc8f38eb3ec8c1fa3da018e8343",
+        "190-ovi-builtin-changchun16.png": "190eece6b3cf56fea580a415b164bd64db67fdcfbb77badc34710dcee2180fbc"
+      }
+    }
   },
   "limits": [
     "not OPPO Find X8 validation",
