@@ -1,0 +1,917 @@
+{
+  "date": "2026-11-08",
+  "artifact": {
+    "version": "0.2.190-test",
+    "versionCode": 197,
+    "package": "com.shantu.oldengine",
+    "bytes": 165378621,
+    "sha256": "39bc685c882f673926ae03cae549a6fec78e03b26d53cefffe03b6c13c0aa7ca",
+    "sourceCommit": "23213e208608231c16f8a45abaf4fc5305ec16cd",
+    "originalSignature": true,
+    "crcAndUniqueEntries": true,
+    "seedCount": 39,
+    "privateSeedsMatch": true,
+    "tiandituKeyPresentAndUnchanged": true,
+    "freshWebAssetCount": 1925,
+    "freshNativeUnitCases": 86
+  },
+  "installed": {
+    "version": "0.2.190-test",
+    "code": 197,
+    "sha256": "39bc685c882f673926ae03cae549a6fec78e03b26d53cefffe03b6c13c0aa7ca",
+    "bytes": 165378621,
+    "device": "ShantuPerf34 API34 x86_64 read-only AVD",
+    "phoneVerified": false
+  },
+  "privateRelease": {
+    "url": "https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.190-private",
+    "private": true,
+    "allFiveAssetsFullDownloadHashesMatched": true,
+    "anonymousHead": 404
+  },
+  "build": {
+    "tsc": "PASS",
+    "freshPrivateWebSeconds": 25.93,
+    "nativeDirectedCases": 86,
+    "optimizedBuild": "3m32s",
+    "earlier86CaseRun": "two transport-accounting assertions failed before cleanup-before-future fix; retained logs; final86 passed"
+  },
+  "conditions": {
+    "device": "owned ShantuPerf34 API34 x86_64 read-only AVD",
+    "viewportPx": [
+      390,
+      857
+    ],
+    "syntheticCameraGpsWritten": false,
+    "contourIntervalMeters": 30,
+    "sourceAndRawScreenshotPublication": false,
+    "phoneVerified": false
+  },
+  "baseline189": {
+    "stable45": {
+      "completed": 20,
+      "resident": 20,
+      "samples": 4
+    },
+    "still82": {
+      "completedProgression": [
+        36,
+        86,
+        225
+      ],
+      "queueSequenceProgression": [
+        86,
+        184,
+        320
+      ],
+      "residentRange": [
+        21,
+        24
+      ],
+      "cacheCapacityBytes": 134217728,
+      "activeWorkContinued": true,
+      "maxLevelRejection": 0
+    }
+  },
+  "single190": {
+    "stable82Samples": [
+      {
+        "sample": "static82-2",
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 12.000000000000163,
+          "pitch": 82.0000000000965,
+          "bearing": 19.99999958583156,
+          "detailZoom": 12.000000000000163,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 45,
+        "sourceLoadCount": 65,
+        "activePreparation": 0,
+        "visibleBytes": 89251216,
+        "pressure": 1,
+        "frames": [
+          {
+            "frames": 414,
+            "lastFrameAgeMs": 2484
+          }
+        ],
+        "layers": [
+          {
+            "loaded": 45,
+            "rendered": 28,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 3583,
+              "capacity": 134217728,
+              "entriesCount": 45,
+              "lowWater": 100663296,
+              "usedCapacity": 132315592
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 30,
+              "sequence": 113
+            }
+          }
+        ]
+      },
+      {
+        "sample": "static82-3",
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 12.000000000000163,
+          "pitch": 82.0000000000965,
+          "bearing": 19.99999958583156,
+          "detailZoom": 12.000000000000163,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 45,
+        "sourceLoadCount": 65,
+        "activePreparation": 0,
+        "visibleBytes": 89251216,
+        "pressure": 1,
+        "frames": [
+          {
+            "frames": 414,
+            "lastFrameAgeMs": 11813
+          }
+        ],
+        "layers": [
+          {
+            "loaded": 45,
+            "rendered": 28,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 3583,
+              "capacity": 134217728,
+              "entriesCount": 45,
+              "lowWater": 100663296,
+              "usedCapacity": 132315592
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 30,
+              "sequence": 113
+            }
+          }
+        ]
+      },
+      {
+        "sample": "static82-4",
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 12.000000000000163,
+          "pitch": 82.0000000000965,
+          "bearing": 19.99999958583156,
+          "detailZoom": 12.000000000000163,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 45,
+        "sourceLoadCount": 65,
+        "activePreparation": 0,
+        "visibleBytes": 89251216,
+        "pressure": 1,
+        "frames": [
+          {
+            "frames": 414,
+            "lastFrameAgeMs": 19996
+          }
+        ],
+        "layers": [
+          {
+            "loaded": 45,
+            "rendered": 28,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 3583,
+              "capacity": 134217728,
+              "entriesCount": 45,
+              "lowWater": 100663296,
+              "usedCapacity": 132315592
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 30,
+              "sequence": 113
+            }
+          }
+        ]
+      },
+      {
+        "sample": "static82-5",
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 12.000000000000163,
+          "pitch": 82.0000000000965,
+          "bearing": 19.99999958583156,
+          "detailZoom": 12.000000000000163,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 45,
+        "sourceLoadCount": 65,
+        "activePreparation": 0,
+        "visibleBytes": 89251216,
+        "pressure": 1,
+        "frames": [
+          {
+            "frames": 414,
+            "lastFrameAgeMs": 28132
+          }
+        ],
+        "layers": [
+          {
+            "loaded": 45,
+            "rendered": 28,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 3583,
+              "capacity": 134217728,
+              "entriesCount": 45,
+              "lowWater": 100663296,
+              "usedCapacity": 132315592
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 30,
+              "sequence": 113
+            }
+          }
+        ]
+      },
+      {
+        "sample": "static82-6",
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 12.000000000000163,
+          "pitch": 82.0000000000965,
+          "bearing": 19.99999958583156,
+          "detailZoom": 12.000000000000163,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 45,
+        "sourceLoadCount": 65,
+        "activePreparation": 0,
+        "visibleBytes": 89251216,
+        "pressure": 1,
+        "frames": [
+          {
+            "frames": 414,
+            "lastFrameAgeMs": 36257
+          }
+        ],
+        "layers": [
+          {
+            "loaded": 45,
+            "rendered": 28,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 3583,
+              "capacity": 134217728,
+              "entriesCount": 45,
+              "lowWater": 100663296,
+              "usedCapacity": 132315592
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 30,
+              "sequence": 113
+            }
+          }
+        ]
+      }
+    ],
+    "focusRecovery": {
+      "cameraMovedTo": [
+        103.55,
+        29.52
+      ],
+      "completedBefore": 45,
+      "completedAfter": 57,
+      "sourceLoadsBefore": 65,
+      "sourceLoadsAfter": 77,
+      "stableSamples": 5,
+      "excludedSampleIndices": [
+        5
+      ],
+      "exclusionReason": "sample5 captured after return45 command; retained locally, excluded from fixed82 analysis"
+    },
+    "return45": [
+      {
+        "sample": 0,
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 12.000000000002352,
+          "pitch": 45.00000000034382,
+          "bearing": 19.999999789625527,
+          "detailZoom": 12.000000000002352,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 58,
+        "sourceLoadCount": 78,
+        "activePreparation": 0,
+        "visibleBytes": 32209984,
+        "pressure": 1,
+        "frames": [],
+        "layers": [
+          {
+            "loaded": 44,
+            "rendered": 15,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 4983,
+              "capacity": 134217728,
+              "entriesCount": 44,
+              "lowWater": 100663296,
+              "usedCapacity": 110081064
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 5,
+              "sequence": 141
+            }
+          }
+        ]
+      },
+      {
+        "sample": 1,
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 12.000000000002352,
+          "pitch": 45.00000000034382,
+          "bearing": 19.999999789625527,
+          "detailZoom": 12.000000000002352,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 58,
+        "sourceLoadCount": 78,
+        "activePreparation": 0,
+        "visibleBytes": 32209984,
+        "pressure": 1,
+        "frames": [],
+        "layers": [
+          {
+            "loaded": 44,
+            "rendered": 15,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 4983,
+              "capacity": 134217728,
+              "entriesCount": 44,
+              "lowWater": 100663296,
+              "usedCapacity": 110081064
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 5,
+              "sequence": 141
+            }
+          }
+        ]
+      },
+      {
+        "sample": 2,
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 12.000000000002352,
+          "pitch": 45.00000000034382,
+          "bearing": 19.999999789625527,
+          "detailZoom": 12.000000000002352,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 58,
+        "sourceLoadCount": 78,
+        "activePreparation": 0,
+        "visibleBytes": 32209984,
+        "pressure": 1,
+        "frames": [],
+        "layers": [
+          {
+            "loaded": 44,
+            "rendered": 15,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 4983,
+              "capacity": 134217728,
+              "entriesCount": 44,
+              "lowWater": 100663296,
+              "usedCapacity": 110081064
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 5,
+              "sequence": 141
+            }
+          }
+        ]
+      },
+      {
+        "sample": 3,
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 12.000000000002352,
+          "pitch": 45.00000000034382,
+          "bearing": 19.999999789625527,
+          "detailZoom": 12.000000000002352,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 58,
+        "sourceLoadCount": 78,
+        "activePreparation": 0,
+        "visibleBytes": 32209984,
+        "pressure": 1,
+        "frames": [],
+        "layers": [
+          {
+            "loaded": 44,
+            "rendered": 15,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 4983,
+              "capacity": 134217728,
+              "entriesCount": 44,
+              "lowWater": 100663296,
+              "usedCapacity": 110081064
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 5,
+              "sequence": 141
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "dual190": {
+    "bothCameras": {
+      "main": {
+        "center": [
+          103.35000000000002,
+          29.52
+        ],
+        "zoom": 11.999999999999707,
+        "pitch": 82.00000000001477,
+        "bearing": 19.99999993601717,
+        "detailZoom": 11.999999999999707,
+        "cameraSyncToken": null
+      },
+      "aux-1": {
+        "center": [
+          103.35000000000002,
+          29.52
+        ],
+        "zoom": 11.999999999999707,
+        "pitch": 82.00000000001477,
+        "bearing": 19.99999993601717,
+        "detailZoom": 11.999999999999707,
+        "cameraSyncToken": null
+      }
+    },
+    "stable82Samples": [
+      {
+        "sample": 0,
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 11.999999999999707,
+          "pitch": 82.00000000001477,
+          "bearing": 19.99999993601717,
+          "detailZoom": 11.999999999999707,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 77,
+        "sourceLoadCount": 149,
+        "activePreparation": 0,
+        "visibleBytes": 101286072,
+        "pressure": 2,
+        "frames": [
+          {
+            "frames": 757,
+            "lastFrameAgeMs": 7198,
+            "contoursEnabled": true
+          },
+          {
+            "frames": 205,
+            "lastFrameAgeMs": 4026,
+            "contoursEnabled": true
+          }
+        ],
+        "layers": [
+          {
+            "loaded": 34,
+            "rendered": 32,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 9053,
+              "capacity": 134217728,
+              "entriesCount": 34,
+              "lowWater": 100663296,
+              "usedCapacity": 102355360
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 25,
+              "sequence": 277
+            }
+          }
+        ]
+      },
+      {
+        "sample": 1,
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 11.999999999999707,
+          "pitch": 82.00000000001477,
+          "bearing": 19.99999993601717,
+          "detailZoom": 11.999999999999707,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 77,
+        "sourceLoadCount": 149,
+        "activePreparation": 0,
+        "visibleBytes": 101286072,
+        "pressure": 2,
+        "frames": [
+          {
+            "frames": 757,
+            "lastFrameAgeMs": 15313,
+            "contoursEnabled": true
+          },
+          {
+            "frames": 205,
+            "lastFrameAgeMs": 12140,
+            "contoursEnabled": true
+          }
+        ],
+        "layers": [
+          {
+            "loaded": 34,
+            "rendered": 32,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 9053,
+              "capacity": 134217728,
+              "entriesCount": 34,
+              "lowWater": 100663296,
+              "usedCapacity": 102355360
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 25,
+              "sequence": 277
+            }
+          }
+        ]
+      },
+      {
+        "sample": 2,
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 11.999999999999707,
+          "pitch": 82.00000000001477,
+          "bearing": 19.99999993601717,
+          "detailZoom": 11.999999999999707,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 77,
+        "sourceLoadCount": 149,
+        "activePreparation": 0,
+        "visibleBytes": 101286072,
+        "pressure": 2,
+        "frames": [
+          {
+            "frames": 757,
+            "lastFrameAgeMs": 23443,
+            "contoursEnabled": true
+          },
+          {
+            "frames": 205,
+            "lastFrameAgeMs": 20271,
+            "contoursEnabled": true
+          }
+        ],
+        "layers": [
+          {
+            "loaded": 34,
+            "rendered": 32,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 9053,
+              "capacity": 134217728,
+              "entriesCount": 34,
+              "lowWater": 100663296,
+              "usedCapacity": 102355360
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 25,
+              "sequence": 277
+            }
+          }
+        ]
+      },
+      {
+        "sample": 3,
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 11.999999999999707,
+          "pitch": 82.00000000001477,
+          "bearing": 19.99999993601717,
+          "detailZoom": 11.999999999999707,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 77,
+        "sourceLoadCount": 149,
+        "activePreparation": 0,
+        "visibleBytes": 101286072,
+        "pressure": 2,
+        "frames": [
+          {
+            "frames": 757,
+            "lastFrameAgeMs": 32767,
+            "contoursEnabled": true
+          },
+          {
+            "frames": 205,
+            "lastFrameAgeMs": 29597,
+            "contoursEnabled": true
+          }
+        ],
+        "layers": [
+          {
+            "loaded": 34,
+            "rendered": 32,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 9053,
+              "capacity": 134217728,
+              "entriesCount": 34,
+              "lowWater": 100663296,
+              "usedCapacity": 102355360
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 25,
+              "sequence": 277
+            }
+          }
+        ]
+      },
+      {
+        "sample": 4,
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 11.999999999999707,
+          "pitch": 82.00000000001477,
+          "bearing": 19.99999993601717,
+          "detailZoom": 11.999999999999707,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 77,
+        "sourceLoadCount": 149,
+        "activePreparation": 0,
+        "visibleBytes": 101286072,
+        "pressure": 2,
+        "frames": [
+          {
+            "frames": 757,
+            "lastFrameAgeMs": 40966,
+            "contoursEnabled": true
+          },
+          {
+            "frames": 205,
+            "lastFrameAgeMs": 37793,
+            "contoursEnabled": true
+          }
+        ],
+        "layers": [
+          {
+            "loaded": 34,
+            "rendered": 32,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 9053,
+              "capacity": 134217728,
+              "entriesCount": 34,
+              "lowWater": 100663296,
+              "usedCapacity": 102355360
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 25,
+              "sequence": 277
+            }
+          }
+        ]
+      },
+      {
+        "sample": 5,
+        "camera": {
+          "center": [
+            103.35000000000002,
+            29.52
+          ],
+          "zoom": 11.999999999999707,
+          "pitch": 82.00000000001477,
+          "bearing": 19.99999993601717,
+          "detailZoom": 11.999999999999707,
+          "cameraSyncToken": null
+        },
+        "completedBatches": 77,
+        "sourceLoadCount": 149,
+        "activePreparation": 0,
+        "visibleBytes": 101286072,
+        "pressure": 2,
+        "frames": [
+          {
+            "frames": 757,
+            "lastFrameAgeMs": 49096,
+            "contoursEnabled": true
+          },
+          {
+            "frames": 205,
+            "lastFrameAgeMs": 45923,
+            "contoursEnabled": true
+          }
+        ],
+        "layers": [
+          {
+            "loaded": 34,
+            "rendered": 32,
+            "cache": {
+              "$r8$classId": 0,
+              "age": 9053,
+              "capacity": 134217728,
+              "entriesCount": 34,
+              "lowWater": 100663296,
+              "usedCapacity": 102355360
+            },
+            "queue": {
+              "activeCount": 0,
+              "closed": false,
+              "maximumRequests": 128,
+              "pendingCount": 25,
+              "sequence": 277
+            }
+          }
+        ]
+      }
+    ],
+    "fixture": "same explicit pose applied to both existing map IDs through the installed trusted camera bridge, no GPS",
+    "priorMixedAngleSamplesExcluded": true,
+    "actualSecondaryTouchSynchronizedPrimary": true,
+    "helperContourLayerSnapshots": "primary entry only; process-wide work counters and both map frame counters recorded"
+  },
+  "pixelComparison": [
+    {
+      "scope": "single82",
+      "equal": true,
+      "cropPx": [
+        0,
+        184,
+        390,
+        750
+      ],
+      "snapshotIntervalSeconds": 33.781,
+      "localScreenshotSha256": [
+        "079b4cff4ad11cad0d908c19878354f6422544efa078d9396931cc506a4f9337",
+        "c37b74b6baf33c8cbd1d1170a4433d267f7db8d8c0566e6c1e9c06761b8e0202"
+      ]
+    },
+    {
+      "scope": "dualUpper82",
+      "equal": true,
+      "cropPx": [
+        0,
+        204,
+        390,
+        469
+      ],
+      "snapshotIntervalSeconds": 25.672,
+      "localScreenshotSha256": [
+        "9439ecb2b999c054736afbca9c89c7f22fd421d573c78a71a242817c7ceb2537",
+        "9439ecb2b999c054736afbca9c89c7f22fd421d573c78a71a242817c7ceb2537"
+      ]
+    },
+    {
+      "scope": "dualLower82",
+      "equal": true,
+      "cropPx": [
+        0,
+        501,
+        390,
+        764
+      ],
+      "snapshotIntervalSeconds": 25.672,
+      "localScreenshotSha256": [
+        "9439ecb2b999c054736afbca9c89c7f22fd421d573c78a71a242817c7ceb2537",
+        "9439ecb2b999c054736afbca9c89c7f22fd421d573c78a71a242817c7ceb2537"
+      ]
+    }
+  ],
+  "preservation": {
+    "protectedApkHashChecks": 12,
+    "formalAnd180Through190Unchanged": true,
+    "originalOvmapBytes": 418,
+    "originalOvmapSha256": "883ee41dab37c7b8bcd5f502699f74aaf5cb1d60fba1e8c3186d574e3120a555",
+    "originalAndLocalBackupMatch": true,
+    "phoneCustomSourceReadOrReset": false,
+    "annotationsFinal": 0
+  },
+  "sourceFindings": {
+    "jilin": "detailed imagery unresolved; prior original-credential detailed controls exact known NoData; z0 overview only",
+    "officialOviBareYInverse": "static native implementation confirmed 2^z-1-y; same as Shantu; actual headers/issued URL not captured",
+    "oviAndroid": "official original APK installed and launched in owned clean MuMu4 API32 ARM bridge; privacy agreement pending; no login or GPS grant; instance stopped",
+    "oviWindows": "official signed installer configured for isolated D drive; installation not completed due capture/input errors; user deferred manual action",
+    "otherSources": [
+      "one Google mirror decoded512x512 direct workstation only, Android unverified",
+      "legacy imported Tianditu keys provider authorization mismatch; registered built-in config unchanged",
+      "representative DNS/TLS/disconnect failures persisted; retirement or expiration not inferred",
+      "Tencent canonical row adaptation and HTTP policy already installed-verified in189, retained"
+    ]
+  },
+  "limits": [
+    "not OPPO Find X8 validation",
+    "no phone FPS, full-feature or all-source guarantee",
+    "far thin detail can remain queued under cache pressure; near/focus remains eligible",
+    "not full API/device/360px matrix",
+    "HarmonyOS native HAP not built"
+  ],
+  "cleanup": {
+    "helperStopped": true,
+    "ownedForward23458And23459Removed": true,
+    "ownedSdkAvdStopped": true,
+    "ownMuMu4Stopped": true,
+    "preexistingPreviewLeftRunning": true
+  }
+}
