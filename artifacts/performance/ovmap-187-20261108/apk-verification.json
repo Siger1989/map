@@ -1,0 +1,42 @@
+{
+  "version": "0.2.187-test",
+  "versionCode": 194,
+  "package": "com.shantu.oldengine",
+  "sha256": "56ae48c41b473d9998d4c468681de357e76b71935edaf0ce4ee654d331e7b445",
+  "bytes": 165377241,
+  "originalSignature": true,
+  "identity": true,
+  "zipalign16KiB": true,
+  "crcAndUniqueEntries": true,
+  "seedCount": 39,
+  "privateSeedsMatch": true,
+  "tiandituKeyPresentAndUnchanged": true,
+  "freshWebAssetCount": 1925,
+  "nativeLibrariesUnchangedFrom186": [
+    "lib/arm64-v8a/libshantu_cad.so",
+    "lib/arm64-v8a/libsqliteX.so",
+    "lib/armeabi-v7a/libshantu_cad.so",
+    "lib/armeabi-v7a/libsqliteX.so",
+    "lib/x86/libshantu_cad.so",
+    "lib/x86/libsqliteX.so",
+    "lib/x86_64/libshantu_cad.so",
+    "lib/x86_64/libsqliteX.so"
+  ],
+  "elf64BitLoadSegments16KiB": true,
+  "legacy32BitNativeLibrariesUnchanged": true,
+  "unchangedCadReusedFromVerified183Baseline": true,
+  "googleIncomingManifestPresent": true,
+  "googleRetryBridgeDeclaredInDex": true,
+  "independentDeadlineThreadPresentInDex": true,
+  "actualSdkColorHookMethodsInDex": true,
+  "knownJilinNoDataMatcherInDex": true,
+  "sourceCommit": "e936d5cb39742ffc424b9a100db338c80df4ea1c",
+  "nativeUnitSuites": {
+    "com.shantu.nativeapp.data.NativeSourceImportTest": 8,
+    "com.shantu.nativeapp.map.NativeMapSourceTest": 13,
+    "com.shantu.nativeapp.map.NativeMissingTileFallbackTest": 6
+  },
+  "freshNativeUnitCases": 27,
+  "physicalDeviceVerified": false,
+  "actual187AndroidRuntimeVerified": false
+}

@@ -1,0 +1,31 @@
+{
+  "device": "owned read-only ShantuPerf34 API34 emulator",
+  "package": "com.shantu.oldengine",
+  "versionCode": 194,
+  "installedBaseSha256": "56ae48c41b473d9998d4c468681de357e76b71935edaf0ce4ee654d331e7b445",
+  "matchesDeliveredApk": true,
+  "phoneVerified": false,
+  "androidSystemFilePicker": "actual original418B file, unchanged contents",
+  "preview": {
+    "recognized": 2,
+    "duplicate": 1,
+    "importable": 1,
+    "skipped": 0
+  },
+  "sourceCountBefore": 39,
+  "sourceCountAfter": 40,
+  "selectedName": "【吉林一号】卫星图2024",
+  "annotationCountBefore": 0,
+  "annotationCountAfter": 0,
+  "genuineProviderImageryVerified": false,
+  "dualMapRuntimeVerified": false,
+  "serviceAlignmentVerified": false,
+  "systemUiAnrObserved": true,
+  "systemUiAnrAction": "Wait on observed dialog; target UI continued",
+  "targetFatalMentionInCapturedCrashBuffer": false,
+  "limits": [
+    "initial package install attempted before Android package service existed; retried after boot",
+    "UIAutomator dump unavailable while interactive QA owned automation; used observed screenshots and actual taps",
+    "not phone, performance, long-running stability or genuine Jilin imagery acceptance"
+  ]
+}

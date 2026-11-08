@@ -29,5 +29,11 @@
   },
   "customSourcePreservation": "synthetic fixture only; actual phone configuration unread",
   "physicalDeviceVerified": false,
-  "runtimeValidation": "not started before initial immutable delivery"
+  "runtimeValidation": "After initial immutable delivery: installed base hash/code match; actual original file system-picker import and selected source39-to40 verified. Genuine provider imagery, alignment, dual map and phone unverified.",
+  "privatePublication": {
+    "visibility": "PRIVATE",
+    "attachments": 5,
+    "serverAndCompleteReadbackHashesMatched": true,
+    "anonymousApkHead": 404
+  }
 }
