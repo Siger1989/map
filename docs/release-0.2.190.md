@@ -18,6 +18,8 @@ Representative failed sources were retested without the workstation's system pro
 
 Native errors now distinguish unresolved domain, TLS connection failure, timeout and generic failure by bounded exception type/cause inspection. No exception message, URL, host or credential enters the user status. Retry/cooldown/cache/success logic is unchanged; a TLS error is not automatically labeled as a handshake error.
 
+The first86-case rerun exposed two existing transport-accounting races: response futures could resume `fetch` before the worker released its active permit. The worker now performs timing/state/permit cleanup before completing the response future. Both original assertions remain, without sleeps or relaxed conditions. The failed combined test/build log is retained; directed rerun and packaging are pending.
+
 ## Current validation boundary
 
 Directed native checks and190 compilation are in progress; this document does not yet record a signed190 delivery or installed190 result.189 remains the latest issued package until artifact checks complete. The user receives each immutable verified artifact before subsequent runtime testing. Same-scene82°/45° loading, stationary build counters, focus/pan recovery and dual-map behavior must be checked after delivery. No phone is connected; OPPO Find X8 and HarmonyOS native acceptance remain unverified.

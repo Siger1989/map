@@ -856,13 +856,22 @@ internal class BoundedTileNetwork(
             networkExecutor.submit {
                 if (!workerState.compareAndSet(0, 1)) return@submit
                 val startedAt = System.nanoTime()
-                try { response.complete(client.execute(url, cancellation)) }
-                catch (error: Throwable) { response.completeExceptionally(error) }
-                finally {
+                var tileResponse: TileHttpResponse? = null
+                var failure: Throwable? = null
+                try {
+                    tileResponse = client.execute(url, cancellation)
+                } catch (error: Throwable) {
+                    failure = error
+                } finally {
                     networkMs.addAndGet(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt).coerceAtLeast(0L))
                     workerState.set(3)
                     releasePermitOnce()
                 }
+                // A fetch waiter must not resume until the transport permit and active-work
+                // accounting have been released. Otherwise hasPendingTransportWork() can still
+                // report active work after the corresponding response has completed.
+                if (failure == null) response.complete(checkNotNull(tileResponse))
+                else response.completeExceptionally(checkNotNull(failure))
             }
         } catch (error: Throwable) {
             workerState.compareAndSet(0, 2)

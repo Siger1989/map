@@ -51,7 +51,7 @@ class BoundedTileNetworkTest {
             val identity = TileRequestIdentity("source", "img", 3, 2, 1, "style", "account")
             val url = "https://example.invalid/priority"
             assertArrayEquals(imageBytes, tiles.fetch(url, identity = identity, viewId = "main"))
-            assertFalse(tiles.hasPendingTransportWork())
+            assertFalse("fetch resumes only after its transport permit is released", tiles.hasPendingTransportWork())
             assertArrayEquals(imageBytes, tiles.fetch(url, identity = identity, viewId = "main"))
             assertEquals("memory hits must not wake expensive ranking", 2, callbacks.get())
             assertArrayEquals(imageBytes, tiles.fetch(url, identity = identity, viewId = "main", forceNetwork = true))
@@ -69,7 +69,7 @@ class BoundedTileNetworkTest {
         try {
             assertArrayEquals(imageBytes, tiles.fetch("https://example.invalid/priority-close", viewId = "main"))
             assertEquals(0, calls.get())
-            assertFalse(tiles.hasPendingTransportWork())
+            assertFalse("observer failure cannot leave active transport work after fetch returns", tiles.hasPendingTransportWork())
         } finally { throwing.close(); tiles.close() }
     }
     @Test fun priorityWorkIgnoresBulkButWakesPromotableRefresh() = runBlocking {
