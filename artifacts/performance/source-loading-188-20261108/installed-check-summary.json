@@ -1,0 +1,35 @@
+{
+  "version": "0.2.188-test",
+  "versionCode": 195,
+  "package": "com.shantu.oldengine",
+  "issuedAndInstalledSha256": "30aa4c3acc132ee954c147abbd21f00a480d8ac0261322eed5f9a37c8684fa0b",
+  "device": "Owned read-only ShantuPerf34 API34 x86_64 AVD",
+  "physicalDeviceVerified": false,
+  "mainNativeScale": {
+    "visible": true,
+    "beforeZoom": "1 km",
+    "afterZoom": "500 m",
+    "cssMaxWidth": 72,
+    "localScreenshot": "188-native-current.png"
+  },
+  "dualNativeScale": {
+    "count": 2,
+    "states": [
+      "ready",
+      "ready"
+    ],
+    "labels": [
+      "500 m",
+      "500 m"
+    ],
+    "localScreenshot": "188-native-dual-rulers.png"
+  },
+  "earlierScaleScreenshotAbsent": true,
+  "timeToInitialValidGroundSample": "not measured",
+  "tencentNativeImagery": "FAIL: source selected through UI but no imagery; literal HTTP source blocked by actual Hybrid manifest policy",
+  "originalSourceRecordsChanged": false,
+  "annotationCountBefore": 0,
+  "annotationCountAfter": 0,
+  "systemUiAnr": "observed during AVD startup; chose Wait; not attributed as target app crash",
+  "pendingCorrection": "189 enables imported HTTP requests without WebView/TLS/origin guard changes"
+}

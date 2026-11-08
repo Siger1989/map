@@ -1,0 +1,93 @@
+{
+  "version": "0.2.189-test",
+  "versionCode": 196,
+  "package": "com.shantu.oldengine",
+  "sha256": "bf56e09c40d51d0617847cc651391d81620c3de4d8951f2a22b4424e4d1129a5",
+  "bytes": 165378621,
+  "originalSignature": true,
+  "identity": true,
+  "zipalign16KiB": true,
+  "crcAndUniqueEntries": true,
+  "seedCount": 39,
+  "privateSeedsMatch": true,
+  "tiandituKeyPresentAndUnchanged": true,
+  "freshWebAssetCount": 1925,
+  "nativeLibrariesUnchangedFrom188": [
+    "lib/arm64-v8a/libshantu_cad.so",
+    "lib/arm64-v8a/libsqliteX.so",
+    "lib/armeabi-v7a/libshantu_cad.so",
+    "lib/armeabi-v7a/libsqliteX.so",
+    "lib/x86/libshantu_cad.so",
+    "lib/x86/libsqliteX.so",
+    "lib/x86_64/libshantu_cad.so",
+    "lib/x86_64/libsqliteX.so"
+  ],
+  "elf64BitLoadSegments16KiB": true,
+  "legacy32BitNativeLibrariesUnchanged": true,
+  "unchangedCadReusedFromVerified183Baseline": true,
+  "googleIncomingManifestPresent": true,
+  "httpRasterAllowedInActualManifest": true,
+  "googleRetryBridgeDeclaredInDex": true,
+  "independentDeadlineThreadPresentInDex": true,
+  "actualSdkColorHookMethodsInDex": true,
+  "knownJilinNoDataMatcherInDex": true,
+  "boundedRedirectClientPresentInDex": true,
+  "nativeScaleUiInFreshWebAssets": true,
+  "sourceCommit": "feeec05d1bdfaf1af382cb9dca4319f59a2a8224",
+  "unchangedNativeUnitSuitesFrom188": {
+    "com.shantu.nativeapp.data.NativeSourceImportTest": 8,
+    "com.shantu.nativeapp.map.BoundedTileNetworkTest": 39,
+    "com.shantu.nativeapp.map.NativeImageSourceIdentityTest": 5,
+    "com.shantu.nativeapp.map.NativeMapSourceTest": 14,
+    "com.shantu.nativeapp.map.NativeMissingTileFallbackTest": 6,
+    "com.shantu.nativeapp.map.NativeTileHttpClientTest": 13
+  },
+  "unchangedNativeUnitCasesFrom188": 85,
+  "physicalDeviceVerified": false,
+  "initialIssuanceRuntimeStatus": false,
+  "installedArtifactHashMatched": true,
+  "actualAndroidRuntime": "bounded source/ruler checks PASS; not full acceptance",
+  "mainNativeTencent": "real imagery fills same synthetic Chengdu scene; initial partial-fill screenshot retained",
+  "nativeBuiltinTianditu": "real imagery displayed; registered private Key retained",
+  "nativeDual": "Tencent and Sentinel both rendered; two ready rulers; also45deg tilt27deg rotation",
+  "scaleLabelsAfterZoom": [
+    "500 m",
+    "200 m"
+  ],
+  "recordPreservation": {
+    "mapRecords": 39,
+    "beforeAndAfterSha256": "754027ec7ef37200e93cb99e48a4e5352752d5754f6908ac14435b3888dede17",
+    "annotationCountBefore": 0,
+    "annotationCountAfter": 0,
+    "scope": "emulator fixture; phone not read or backed up"
+  },
+  "jilinDetailedImagery": "unresolved; known No Data responses; user has not tested same file in Ovi",
+  "sourceLoadingSpeedMeasured": false,
+  "allSourcesRegionsZoomsVerified": false,
+  "runtimeLimitations": [
+    "aggregate tile failures remain; not an all-source availability result",
+    "early helper call before READY had empty JSON response; successful retry after READY",
+    "close-panel command timed out after dispatch; subsequent screenshot confirms closed",
+    "earlier owned AVD SystemUI ANR handled with Wait; not target app crash"
+  ],
+  "localScreenshots": [
+    "189-native-tencent-z13.png",
+    "189-native-tencent-settled.png",
+    "189-native-dual-tencent-sentinel.png",
+    "189-native-dual-tilt45.png",
+    "189-native-builtin-tdt.png"
+  ],
+  "privateReleaseReadback": {
+    "hashesMatched": [
+      "Shantu-0.2.189-oldengine-private.apk",
+      "Shantu-0.2.189-oldengine-private.integrity.json",
+      "INSTALL-0.2.189-oldengine-private.txt",
+      "SHA256SUMS.txt",
+      "private-handoff-manifest.json"
+    ],
+    "apkCrc": true,
+    "anonymousHead": 404,
+    "physicalDeviceVerified": false
+  },
+  "ownedRuntimeCleanup": "helper stopped, Playwright detached, owned forwards removed, verified ShantuPerf34 AVD stopped; preexisting preview retained"
+}

@@ -11,7 +11,7 @@
   "nodeCases": 77,
   "tsc": "PASS",
   "freshPrivateWeb": "PASS",
-  "actualInstalled188Runtime": "not yet; continues after immutable delivery",
+  "actualInstalled188Runtime": "installed hash matched; native main/dual rulers PASS; Tencent imagery FAIL until189 HTTP policy correction",
   "phoneVerified": false,
   "initialIssues": [
     "Kotlin Tencent canonical regex dollar was not literal; compilation and native address assertions caught it, fixed using ordinary canonical string plus Regex.escape",
