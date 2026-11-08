@@ -23,10 +23,8 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
 import java.time.ZonedDateTime
@@ -43,7 +41,13 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import java.util.concurrent.Future
 
-internal data class TileHttpResponse(val statusCode: Int, val retryAfter: String?, val body: ByteArray?, val bingTileInfo: String? = null)
+internal data class TileHttpResponse(
+    val statusCode: Int,
+    val retryAfter: String?,
+    val body: ByteArray?,
+    val bingTileInfo: String? = null,
+    val providerErrorCode: Int? = null,
+)
 internal enum class TileCachePolicy { NORMAL, NO_STORE }
 
 /** Per-attempt cancellation hook used to disconnect a live socket when its deadline/last observer ends. */
@@ -131,52 +135,11 @@ internal fun isValidRasterTileImage(bytes: ByteArray): Boolean {
 
 private const val RASTER_VALIDATION_MAX_PIXELS = 64L * 64L
 
-private class UrlConnectionTileHttpClient : TileHttpClient {
-    override fun execute(url: String): TileHttpResponse = execute(url, TileRequestCancellation())
-
-    override fun execute(url: String, cancellation: TileRequestCancellation): TileHttpResponse {
-        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = REQUEST_DEADLINE_MS
-            readTimeout = REQUEST_DEADLINE_MS
-            instanceFollowRedirects = false
-            setRequestProperty("Accept", "image/png,image/*;q=0.9,*/*;q=0.5")
-            setRequestProperty("User-Agent", "ShantuNativeMap/1")
-        }
-        cancellation.register { connection.disconnect() }
-        return try {
-            if (cancellation.isCancelled) throw InterruptedException("cancelled")
-            val code = connection.responseCode
-            val body = if (code in 200..299) connection.inputStream.use { input ->
-                val output = ByteArrayOutputStream()
-                val buffer = ByteArray(8192)
-                var total = 0
-                while (true) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    total += count
-                    if (total > MAX_TILE_BYTES) return@use null
-                    output.write(buffer, 0, count)
-                }
-                output.toByteArray()
-            } else null
-            TileHttpResponse(code, connection.getHeaderField("Retry-After"), body, connection.getHeaderField("X-VE-Tile-Info"))
-        } finally {
-            cancellation.clear()
-            connection.disconnect()
-        }
-    }
-
-    private companion object {
-        const val REQUEST_DEADLINE_MS = 15_000
-        const val MAX_TILE_BYTES = 4 * 1024 * 1024
-    }
-}
-
 /** Shared 20-slot scheduler for foreground tiles, background tiles, bulk work, refreshes and retries. */
 internal class BoundedTileNetwork(
     private val directory: File,
     private val onStatus: (String) -> Unit,
-    private val client: TileHttpClient = UrlConnectionTileHttpClient(),
+    private val client: TileHttpClient = NativeTileHttpClient(),
     private val isValidImage: (ByteArray) -> Boolean = ::isValidRasterTileImage,
     private val persistentCache: NativePersistentBrowseCache? = null,
     private val elapsedRealtimeMillis: () -> Long = SystemClock::elapsedRealtime,
@@ -722,7 +685,7 @@ internal class BoundedTileNetwork(
                     return null
                 }
                 if (response.statusCode !in 200..299) {
-                    report("天地图瓦片加载失败（HTTP ${response.statusCode}）；可点重试")
+                    report(tileHttpFailureMessage(host, response.statusCode, response.providerErrorCode))
                     if (response.statusCode !in RETRYABLE_HTTP_STATUS || retryBudget.get() >= MAX_ATTEMPTS) {
                         retryBudget.set(MAX_ATTEMPTS)
                         return null

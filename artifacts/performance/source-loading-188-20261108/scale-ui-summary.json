@@ -1,0 +1,71 @@
+{
+  "task": "scale UI lower-left QA",
+  "generatedAt": "2026-11-08",
+  "productionCodeFrozen": true,
+  "visualEvidence": {
+    "actualWebScreenshots": [
+      "artifacts/screenshots/scale188/main-390x857.png",
+      "artifacts/screenshots/scale188/main-360x780.png",
+      "artifacts/screenshots/scale188/main-short-390x480.png",
+      "artifacts/screenshots/scale188/tools-panel-short-390x480.png",
+      "artifacts/screenshots/scale188/dual-390x857.png",
+      "artifacts/screenshots/scale188/dual-360x780.png"
+    ],
+    "chartFixture": {
+      "kind": "synthetic DOM fixture using existing route-chart/legend CSS selectors",
+      "label": "合成QA夹具 · 非用户路线",
+      "viewport": "360x780 CSS px",
+      "computed": {
+        "homeLeftControlBottom": "calc(calc(56px + 0px) + max(calc(133px + 0px),0px) + 64px)",
+        "selectedInfoClearance": "133px",
+        "dock": {
+          "x": 8,
+          "y": 607,
+          "width": 264,
+          "height": 109,
+          "right": 272,
+          "bottom": 716
+        },
+        "scale": {
+          "label": "2000 km",
+          "x": 56,
+          "y": 507,
+          "width": 54.484375,
+          "height": 20,
+          "right": 110.484375,
+          "bottom": 527
+        },
+        "chart": {
+          "x": 19,
+          "y": 616,
+          "width": 242,
+          "height": 60,
+          "right": 261,
+          "bottom": 676
+        },
+        "legend": {
+          "x": 19,
+          "y": 678,
+          "width": 242,
+          "height": 13.5,
+          "right": 261,
+          "bottom": 691.5
+        },
+        "chartOverlapsScale": false,
+        "legendOverlapsScale": false
+      },
+      "screenshot": "output/playwright/scale188/chart-legend-short-360x780-synthetic.png"
+    },
+    "syntheticChartScreenshot": "artifacts/screenshots/scale188/chart-legend-short-360x780-synthetic.png"
+  },
+  "nativeProjection": {
+    "dprFixture": "tests/native-map-local-geometry.test.mjs",
+    "ratios": [
+      1,
+      2,
+      3.2
+    ],
+    "result": "CSS coordinates map through existing geometry unproject conversion consistently; fixture is synthetic and does not constitute APK screenshot or device acceptance.",
+    "nativeOverlay": "modules/map/NativeScaleOverlay.tsx reuses client.cameraFrame and geometry.unproject; actual APK screenshot/device acceptance remains pending root validation."
+  }
+}

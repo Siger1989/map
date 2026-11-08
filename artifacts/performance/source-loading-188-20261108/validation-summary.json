@@ -1,0 +1,21 @@
+{
+  "nativeCases": 85,
+  "nativeSuites": {
+    "com.shantu.nativeapp.data.NativeSourceImportTest": 8,
+    "com.shantu.nativeapp.map.BoundedTileNetworkTest": 39,
+    "com.shantu.nativeapp.map.NativeImageSourceIdentityTest": 5,
+    "com.shantu.nativeapp.map.NativeMapSourceTest": 14,
+    "com.shantu.nativeapp.map.NativeMissingTileFallbackTest": 6,
+    "com.shantu.nativeapp.map.NativeTileHttpClientTest": 13
+  },
+  "nodeCases": 77,
+  "tsc": "PASS",
+  "freshPrivateWeb": "PASS",
+  "actualInstalled188Runtime": "not yet; continues after immutable delivery",
+  "phoneVerified": false,
+  "initialIssues": [
+    "Kotlin Tencent canonical regex dollar was not literal; compilation and native address assertions caught it, fixed using ordinary canonical string plus Regex.escape",
+    "Tencent old logical cache identity needed a selective semantic revision; nonmatching sources keep their fingerprint"
+  ],
+  "visual": "root inspected Web main/dual/short-screen/tools plus explicit synthetic chart fixture; native projection DPR1/2/3.2 Node fixture, not native APK acceptance"
+}

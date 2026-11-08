@@ -48,7 +48,7 @@ export class MapSourceLayer {
       const timeout = setTimeout(cancel, 20000);
       try {
         abort.signal.throwIfAborted(); lifetime.throwIfAborted();
-        const data = await renderOvmapLayerTile(layer, Number(match[3]), Number(match[4]), Number(match[5]), controller.signal);
+        const data = await renderOvmapLayerTile(layer, Number(match[3]), Number(match[4]), Number(match[5]), controller.signal, this.selected?.scheme ?? 'xyz');
         if (layerIndex === 0 && !lifetime.aborted) this.status(this.partialOverlay ? '底图已加载，部分叠加注记暂未加载' : '图源影像已加载');
         return { data };
       } catch (error) {

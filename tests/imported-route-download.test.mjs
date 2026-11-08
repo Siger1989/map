@@ -2,11 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { downloadTiles } from '../modules/outdoor/downloadPlan.ts';
-const built = await build({ entryPoints: ['modules/outdoor/importedRouteDownload.ts', 'modules/outdoor/asyncImportedRoutePlan.ts', 'modules/mapSources/coordinates.ts'], bundle: true, platform: 'node', format: 'esm', write: false, outdir: '.openai/imported-route-tests' });
+import { renderOvmapTileAddress } from '../modules/mapSources/ovmapTemplates.ts';
+const built = await build({ entryPoints: ['modules/outdoor/importedRouteDownload.ts', 'modules/outdoor/asyncImportedRoutePlan.ts', 'modules/mapSources/coordinates.ts', 'modules/mapSources/ovmapTiles.ts'], bundle: true, platform: 'node', format: 'esm', write: false, outdir: '.openai/imported-route-tests' });
 const modules = await Promise.all(built.outputFiles.map((file) => import(`data:text/javascript;base64,${Buffer.from(file.contents).toString('base64')}`)));
 const { planImportedRouteDownload, MAX_IMPORTED_DOWNLOAD_BYTES, MAX_IMPORTED_DOWNLOAD_RESOURCES } = modules.find((module) => module.planImportedRouteDownload);
 const { warpPlan } = modules.find((module) => module.warpPlan);
 const { planImportedRouteDownloadAsync, estimateImportedRouteDownloadAsync } = modules.find((module) => module.planImportedRouteDownloadAsync);
+const { renderOvmapLayerTile } = modules.find((module) => module.renderOvmapLayerTile);
 
 const source = (overrides = {}) => ({
   id: 'imported-source', name: 'Imported raster', kind: 'online', format: 'XYZ', attribution: '',
@@ -122,6 +124,35 @@ test('OVMAP layer stack enumerates only active layer URLs and de-duplicates them
   assert.ok(plan.urls.some((url) => url.includes('labels.example.test/19/')));
   assert.ok(!plan.urls.some((url) => url.includes('labels.example.test/18/')));
   assert.equal(plan.count, new Set(plan.urls).size);
+});
+
+test('Tencent map rendering and imported-route download use the same reversed-row address', async () => {
+  const z = 12, x = 3231, y = 1681;
+  const template = 'https://p0.map.gtimg.com/sateTiles/{$z}/{$x/16}/{$y/16}/{$x}_{$y}.jpg';
+  const expectedUrl = renderOvmapTileAddress(template, z, x, y);
+  assert.equal(expectedUrl, 'https://p0.map.gtimg.com/sateTiles/12/201/150/3231_2414.jpg');
+  const map = source({
+    minzoom: z, maxzoom: z, scheme: 'xyz', format: 'OVMAP', tiles: [template],
+    ovmap: { layers: [{ tiles: [template], tileSize: 256, minzoom: z, maxzoom: z }] },
+  });
+  const planned = planImportedRouteDownload(route({
+    segments: [[[104.0185, 30.6379], [104.019, 30.6382]]], bufferKm: 4,
+  }), map, z);
+  assert.ok(planned.urls.includes(expectedUrl), 'the offline plan contains the same canonical address');
+
+  const previousFetch = globalThis.fetch;
+  let requestedTileUrl;
+  globalThis.fetch = async (request) => {
+    const endpoint = new URL(String(request), 'http://localhost');
+    requestedTileUrl = endpoint.searchParams.get('url') ?? endpoint.href;
+    return new Response(Uint8Array.from([1, 2, 3]), { status: 200, headers: { 'Content-Type': 'image/jpeg' } });
+  };
+  try {
+    const bytes = await renderOvmapLayerTile(map.ovmap.layers[0], z, x, y, new AbortController().signal);
+    assert.deepEqual([...new Uint8Array(bytes)], [1, 2, 3]);
+  } finally { globalThis.fetch = previousFetch; }
+  assert.equal(requestedTileUrl, expectedUrl, 'the map request resolves through the same address helper');
+  assert.ok(planned.urls.includes(requestedTileUrl));
 });
 
 test('GCJ02 route plan includes every neighboring raw tile required to warp the displayed WGS84 tiles', () => {

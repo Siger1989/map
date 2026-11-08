@@ -1,0 +1,76 @@
+{
+  "investigationDate": "2026-11-08",
+  "bundle": {
+    "records": 43,
+    "supported": 42,
+    "bytes": 3264,
+    "originalAndBackupUnchanged": true
+  },
+  "jilin": {
+    "currentRoundRequests": 24,
+    "withOriginalCredential": 22,
+    "withoutCredentialControls": 2,
+    "detailTileObtained": false,
+    "globalZ0OverviewObtained": true,
+    "globalOverviewBytes": 5730,
+    "other21CredentialRequests": "same HTTP202/956B exact No Data Here placeholder",
+    "controls": [
+      "TMS versus XYZ",
+      "browser Accept/UA",
+      "referer",
+      "png suffix",
+      "query order",
+      "several cities/zooms up to20",
+      "swapped x/y",
+      "version query omitted",
+      "negative row",
+      "zoom1/2/3/4/8"
+    ],
+    "cause": "legacy layer coverage/account scope/service definition remains unconfirmed",
+    "officialOviComparison": "not run; official APK ARM64, isolated AVD x86_64 without native bridge"
+  },
+  "tianditu": {
+    "oldBundleNativeMode": {
+      "http": 403,
+      "code": 301012
+    },
+    "realBrowserLocalhost": {
+      "http": 403,
+      "code": 301007,
+      "meaning": "domain mismatch"
+    },
+    "existingRegisteredBuiltInNativeMode": {
+      "http": 200,
+      "imageDecoded": true,
+      "bytes": 13472
+    },
+    "keysReplacedOrSpoofed": false
+  },
+  "tencent": {
+    "sameSyntheticSample": {
+      "z": 12,
+      "x": 3231,
+      "inputY": 1681,
+      "correctedY": 2414,
+      "correctedGroupY": 150
+    },
+    "original": {
+      "status": 200,
+      "bytes": 971,
+      "rootViewed": "dark blue Tencent-logo placeholder"
+    },
+    "TmsControl": {
+      "status": 200,
+      "bytes": 15473,
+      "rootViewed": "actual Chengdu-area imagery; compared to same sample Bing, not a precision acceptance"
+    },
+    "fixScope": "exact direct canonical template at request time only; user source records untouched"
+  },
+  "redirect": {
+    "realSample": "humanitarian map follows HTTP to HTTPS and returns decoded PNG",
+    "rootCause": "native client formerly disabled redirects"
+  },
+  "phoneVerified": false,
+  "rawProviderImageryPubliclyPublished": false,
+  "implementationChecks": "in progress; see release-0.2.188.md"
+}

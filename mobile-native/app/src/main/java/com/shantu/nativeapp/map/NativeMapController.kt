@@ -1655,7 +1655,10 @@ class NativeMapController internal constructor(
                     }
                 }
                 val fingerprint = NativeRasterStyleFingerprint.create(fields)
-                List(source.layers.size) { fingerprint }.also { customStyleFingerprints[source] = it }
+                source.layers.indices.map { index ->
+                    source.tileRequestSemanticRevision(index)?.let { revision -> NativeRasterStyleFingerprint.create(fields, revision) }
+                        ?: fingerprint
+                }.also { customStyleFingerprints[source] = it }
             }
         }
         return fingerprints.getOrNull(layerIndex) ?: NativeRasterStyleFingerprint.create(listOf("format=${source.format}", "layer=$layerIndex"))

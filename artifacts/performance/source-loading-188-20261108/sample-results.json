@@ -1,0 +1,283 @@
+[
+  {
+    "index": 0,
+    "layer": 0,
+    "name": "必应卫星图（19级）",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "status": 200,
+    "contentType": "image/jpeg",
+    "redirected": false,
+    "bytes": 26972,
+    "knownMissingImage": false,
+    "imageDecoded": true,
+    "dimensions": [
+      256,
+      256
+    ]
+  },
+  {
+    "index": 1,
+    "layer": 0,
+    "name": "【谷歌】高清卫星图（小字）",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "status": 200,
+    "contentType": "image/jpeg",
+    "redirected": false,
+    "bytes": 27368,
+    "knownMissingImage": false,
+    "imageDecoded": true,
+    "dimensions": [
+      256,
+      256
+    ]
+  },
+  {
+    "index": 11,
+    "layer": 0,
+    "name": "Arcgis卫星影像（19级）",
+    "zoom": 12,
+    "base": true,
+    "scheme": "https",
+    "errorType": "URLError",
+    "bytes": 0
+  },
+  {
+    "index": 11,
+    "layer": 1,
+    "name": "Arcgis卫星影像（19级）",
+    "zoom": 12,
+    "base": false,
+    "scheme": "http",
+    "errorType": "RemoteDisconnected",
+    "bytes": 0
+  },
+  {
+    "index": 13,
+    "layer": 0,
+    "name": "谷歌卫星混合图",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "errorType": "RemoteDisconnected",
+    "bytes": 0
+  },
+  {
+    "index": 15,
+    "layer": 0,
+    "name": "智图水系专题地图",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "status": 200,
+    "contentType": "image/png",
+    "redirected": false,
+    "bytes": 5861,
+    "knownMissingImage": false,
+    "imageDecoded": true,
+    "dimensions": [
+      256,
+      256
+    ]
+  },
+  {
+    "index": 16,
+    "layer": 0,
+    "name": "标准地图",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "errorType": "RemoteDisconnected",
+    "bytes": 0
+  },
+  {
+    "index": 17,
+    "layer": 0,
+    "name": "地形图（带等高线）",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "errorType": "RemoteDisconnected",
+    "bytes": 0
+  },
+  {
+    "index": 19,
+    "layer": 0,
+    "name": "ArcGIS-FireFly（18级）",
+    "zoom": 12,
+    "base": true,
+    "scheme": "https",
+    "status": 200,
+    "contentType": "image/jpeg",
+    "redirected": false,
+    "bytes": 17502,
+    "knownMissingImage": false,
+    "imageDecoded": true,
+    "dimensions": [
+      256,
+      256
+    ]
+  },
+  {
+    "index": 20,
+    "layer": 0,
+    "name": "必应Aerial（19级）",
+    "zoom": 12,
+    "base": true,
+    "scheme": "https",
+    "status": 200,
+    "contentType": "image/jpeg",
+    "redirected": false,
+    "bytes": 26972,
+    "knownMissingImage": false,
+    "imageDecoded": true,
+    "dimensions": [
+      256,
+      256
+    ]
+  },
+  {
+    "index": 23,
+    "layer": 0,
+    "name": "【2026企业】卫星图 无字",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "errorType": "RemoteDisconnected",
+    "bytes": 0
+  },
+  {
+    "index": 24,
+    "layer": 0,
+    "name": "【星图地球】卫星图",
+    "zoom": 12,
+    "base": true,
+    "scheme": "https",
+    "status": 200,
+    "contentType": "image/webp",
+    "redirected": false,
+    "bytes": 18514,
+    "knownMissingImage": false,
+    "imageDecoded": true,
+    "dimensions": [
+      256,
+      256
+    ]
+  },
+  {
+    "index": 31,
+    "layer": 0,
+    "name": "【OSM】人道救援图",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "status": 200,
+    "contentType": "image/png",
+    "redirected": true,
+    "bytes": 33723,
+    "knownMissingImage": false,
+    "imageDecoded": true,
+    "dimensions": [
+      256,
+      256
+    ]
+  },
+  {
+    "index": 32,
+    "layer": 0,
+    "name": "【天地图】卫星图2025",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "status": 403,
+    "bytes": 116,
+    "knownMissingImage": false,
+    "imageDecoded": false,
+    "httpsRequiredText": false
+  },
+  {
+    "index": 33,
+    "layer": 0,
+    "name": "【天地图】电子地图",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "status": 403,
+    "bytes": 116,
+    "knownMissingImage": false,
+    "imageDecoded": false,
+    "httpsRequiredText": false
+  },
+  {
+    "index": 34,
+    "layer": 0,
+    "name": "【天地图】道路标注",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "status": 403,
+    "bytes": 116,
+    "knownMissingImage": false,
+    "imageDecoded": false,
+    "httpsRequiredText": false
+  },
+  {
+    "index": 39,
+    "layer": 0,
+    "name": "【MapBox】卫星图",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "errorType": "URLError",
+    "bytes": 0
+  },
+  {
+    "index": 39,
+    "layer": 1,
+    "name": "【MapBox】卫星图",
+    "zoom": 12,
+    "base": false,
+    "scheme": "http",
+    "errorType": "RemoteDisconnected",
+    "bytes": 0
+  },
+  {
+    "index": 40,
+    "layer": 0,
+    "name": "【腾讯】卫星地图",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "status": 200,
+    "contentType": "image/jpeg",
+    "redirected": false,
+    "bytes": 971,
+    "knownMissingImage": false,
+    "imageDecoded": true,
+    "dimensions": [
+      256,
+      256
+    ]
+  },
+  {
+    "index": 41,
+    "layer": 0,
+    "name": "【高德】卫星地图",
+    "zoom": 12,
+    "base": true,
+    "scheme": "http",
+    "status": 200,
+    "contentType": "image/jpeg",
+    "redirected": false,
+    "bytes": 35916,
+    "knownMissingImage": false,
+    "imageDecoded": true,
+    "dimensions": [
+      256,
+      256
+    ]
+  }
+]

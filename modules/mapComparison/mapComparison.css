@@ -14,9 +14,9 @@
 }
 /* Match the main map's compact scale and keep credits in source information. */
 .observatory.home-map[data-comparing='true'] > .map-canvas .maplibregl-ctrl-bottom-left {
-  top: 8px !important; bottom: auto !important; left: auto !important; right: 8px !important;
+  top: auto !important; bottom: 8px !important; left: 8px !important; right: auto !important;
 }
-.observatory.home-map[data-comparing='true'] > .map-canvas .maplibregl-ctrl-scale { box-sizing: border-box; max-width: 44px; height: auto; min-height: 0; padding: 0 2px 1px; font-size: 9px; line-height: 11px; white-space: nowrap; }
+.observatory.home-map[data-comparing='true'] > .map-canvas .maplibregl-ctrl-scale { box-sizing: border-box; max-width: 72px; height: auto; min-height: 0; padding: 0 2px 1px; font-size: 11px; line-height: 14px; white-space: nowrap; }
 .observatory.home-map[data-comparing='true'] > .map-canvas > .map-imagery-date-label,
 .observatory.home-map[data-comparing='true'] > .map-canvas .maplibregl-ctrl-attrib { display: none; }
 .observatory.home-map[data-comparing='true'] .annotation-marker.is-point[data-presentation='label'] .annotation-marker-body {

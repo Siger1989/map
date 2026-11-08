@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   renderOvmapTemplate,
+  renderOvmapTileAddress,
   supportedOvmapTemplate,
 } from '../modules/mapSources/ovmapTemplates.ts';
 
@@ -61,6 +62,34 @@ test('renders only the explicit OVMAP {$y!} reverse-row token', () => {
   assert.equal(renderOvmapTemplate('/{$z}/{$x}/{$y!}', 24, 1234567, 1234567), '/24/1234567/15542648');
   assert.equal(renderOvmapTemplate('/{$z}/{x}/{$y}/{$y!}', 4, 3, 6), '/4/3/6/9');
   assert.equal(supportedOvmapTemplate('/{$y!}'), true, 'the reverse row alone identifies a tile template');
+});
+
+test('flips only the canonical direct Tencent sateTiles XYZ template at request time', () => {
+  const template = 'https://p0.map.gtimg.com/sateTiles/{$z}/{$x/16}/{$y/16}/{$x}_{$y}.jpg';
+  assert.equal(renderOvmapTileAddress(template, 0, 0, 0), 'https://p0.map.gtimg.com/sateTiles/0/0/0/0_0.jpg');
+  assert.equal(renderOvmapTileAddress(template, 5, 15, 15), 'https://p0.map.gtimg.com/sateTiles/5/0/1/15_16.jpg');
+  assert.equal(renderOvmapTileAddress(template, 5, 16, 16), 'https://p0.map.gtimg.com/sateTiles/5/1/0/16_15.jpg');
+  assert.equal(renderOvmapTileAddress(template, 12, 3231, 1681), 'https://p0.map.gtimg.com/sateTiles/12/201/150/3231_2414.jpg');
+  assert.equal(renderOvmapTileAddress(template, 24, 16_777_215, 0), 'https://p0.map.gtimg.com/sateTiles/24/1048575/1048575/16777215_16777215.jpg');
+  assert.equal(renderOvmapTileAddress(template, 4, 3, 0, 'tms'), 'https://p0.map.gtimg.com/sateTiles/4/0/0/3_0.jpg', 'an explicit TMS source is not auto-flipped');
+  for (const server of ['p0', 'p1', 'p2', 'p3']) {
+    const direct = template.replace('p0.map', `${server}.map`);
+    assert.match(renderOvmapTileAddress(direct, 4, 3, 0), /\/4\/0\/0\/3_15\.jpg$/);
+  }
+});
+
+test('leaves proxies, unknown Tencent paths, and explicitly inverted rows unchanged', () => {
+  const base = 'https://p0.map.gtimg.com/sateTiles/{$z}/{$x/16}/{$y/16}/{$x}_{$y}.jpg';
+  const nonCanonical = [
+    base.replace('p0.map.gtimg.com', 'proxy.example.invalid'),
+    base.replace('/sateTiles/', '/otherTiles/'),
+    base.replace('p0.map.gtimg.com', 'p4.map.gtimg.com'),
+    base + '?key=fixture',
+  ];
+  for (const template of nonCanonical)
+    assert.equal(renderOvmapTileAddress(template, 4, 3, 0), renderOvmapTemplate(template, 4, 3, 0).replaceAll('{', '%7B').replaceAll('}', '%7D'));
+  const declaredReverse = 'https://p0.map.gtimg.com/sateTiles/{$z}/{$x/16}/{$y/16}/{$x}_{$y!}.jpg';
+  assert.equal(renderOvmapTileAddress(declaredReverse, 4, 3, 0), 'https://p0.map.gtimg.com/sateTiles/4/0/0/3_15.jpg');
 });
 
 test('rejects unknown variables, executable syntax, unbounded expressions, and zero division', () => {

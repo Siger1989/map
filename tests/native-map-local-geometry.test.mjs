@@ -33,6 +33,28 @@ test('real projection stays map-local for independent nonzero viewport origins a
   }
 });
 
+test('CSS scale-bar samples stay in CSS pixels for DPR 1, 2 and 3.2',()=>{
+  const inverse = [0,500,0,0, 0,0,500,0, -1000,0,0,0, 6378137,0,0,1];
+  const dem = new NativeDemCache();
+  const frames = [1,2,3.2].map(dpr => ({ id: `dpr-${dpr}`, frame: {
+    sequence: 1, camera: { center: [0,0], zoom: 9, pitch: 0, bearing: 0 },
+    viewProjection: invertMatrix4(inverse), inverseViewProjection: inverse,
+    viewport: { x: 17 * dpr, y: 29 * dpr, width: 300 * dpr, height: 200 * dpr },
+    cssScale: dpr, terrainEnabled: false, clipDepth: 'minusOneToOne', demRevision: 0, capturedAt: 1,
+  } }));
+  const results = [];
+  for (const { id, frame } of frames) {
+    const client = { cameraFrame: key => key === id ? frame : null,
+      geometry: key => ({ unproject: point => unprojectWgs84(point, key === id ? frame : null, dem) }) };
+    results.push(unprojectNativeLocal(client, id, { x: 44, y: 76 }));
+  }
+  assert.ok(results.every(Boolean));
+  for (const coordinate of results.slice(1)) {
+    assert.ok(Math.abs(coordinate[0] - results[0][0]) < 1e-9);
+    assert.ok(Math.abs(coordinate[1] - results[0][1]) < 1e-9);
+  }
+});
+
 test('local geometry refuses unavailable frames and blocked projections',()=>{
   const {client}=fixture();
   assert.equal(projectNativeLocal(client,'missing',[1,2]),null);

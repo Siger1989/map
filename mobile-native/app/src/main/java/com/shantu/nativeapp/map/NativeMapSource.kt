@@ -60,6 +60,13 @@ class NativeMapSource internal constructor(
         format, limitations, kind, localFilePath, bounds,
     )
 
+    /** Version the request semantics only for layers whose canonical Tencent XYZ rows are converted at fetch time. */
+    internal fun tileRequestSemanticRevision(layerIndex: Int): String? {
+        val layer = layers.getOrNull(layerIndex) ?: return null
+        return if (layer.scheme == NativeTileScheme.XYZ && layer.ovmapTemplate && layer.tiles.any(::isCanonicalTencentSateTilesTemplate))
+            TENCENT_SATETILES_TMS_REVISION else null
+    }
+
     /** Creates a tile URL without allowing it to flow into diagnostics or status messages. */
     internal fun tileUrl(x: Int, y: Int, z: Int): String = tileUrl(0, x, y, z)
 
@@ -71,7 +78,7 @@ class NativeMapSource internal constructor(
         val sourceY = if (!layer.ovmapTemplate && layer.scheme == NativeTileScheme.TMS) side - y - 1 else y.toLong()
         val template = layer.tiles[((x.toLong() + y) % layer.tiles.size).toInt()]
             .replace(Regex("\\{s\\}")) { subdomains[((x.toLong() + y + z) % subdomains.size).toInt()] }
-        var result = if (layer.ovmapTemplate) renderOvmapTemplate(template, z, x, y) else {
+        var result = if (layer.ovmapTemplate) renderOvmapTileAddress(template, z, x, y, layer.scheme) else {
             val world = 40_075_016.68557849
             val ratio = side.toDouble()
             val bbox = listOf(
@@ -389,6 +396,23 @@ private fun ovmapQuadkey(z: Int, x: Int, y: Int): String = buildString {
         append(digit)
     }
 }
+
+private const val TENCENT_SATETILES_PATH = "/sateTiles/{\$z}/{\$x/16}/{\$y/16}/{\$x}_{\$y}.jpg"
+private val TENCENT_SATETILES_XYZ_TEMPLATE = Regex(
+    "^https?://p[0-3]\\.map\\.gtimg\\.com" + Regex.escape(TENCENT_SATETILES_PATH) + "$"
+)
+
+/** Apply the verified Tencent row convention only to the exact direct canonical sateTiles template. */
+private fun renderOvmapTileAddress(template: String, z: Int, x: Int, y: Int, scheme: NativeTileScheme): String {
+    val validCoordinate = z in 0..30 && x >= 0 && y >= 0 && x.toLong() < (1L shl z) && y.toLong() < (1L shl z)
+    val maxCoordinate = (1L shl z) - 1L
+    val requestY = if (scheme == NativeTileScheme.XYZ && validCoordinate && isCanonicalTencentSateTilesTemplate(template)) (maxCoordinate - y).toInt() else y
+    return renderOvmapTemplate(template, z, x, requestY)
+}
+
+private fun isCanonicalTencentSateTilesTemplate(template: String): Boolean = TENCENT_SATETILES_XYZ_TEMPLATE.matches(template)
+
+private const val TENCENT_SATETILES_TMS_REVISION = "tencent-satetiles-tms-v1"
 
 private fun nativeQuadkey(z: Int, x: Int, y: Int): String = buildString {
     for (level in z downTo 1) {

@@ -1,6 +1,6 @@
 import type { MapSource, OvmapTileLayer } from './types';
 import { SOURCE_ID } from './types';
-import { renderOvmapTemplate } from './ovmapTemplates';
+import { renderOvmapTileAddress } from './ovmapTemplates';
 import { fetchMapTile, tileResponseError } from './tileTransport';
 import { cropRasterTile, fetchWithParentFallback, isKnownNoImageryBytes, isNoImageryResponse, NoImageryTileError } from './noImageryTile.ts';
 
@@ -28,9 +28,9 @@ function tileCanvas(size: number) {
   throw new Error('无法初始化图源影像');
 }
 
-function tileAddress(layer: OvmapTileLayer, z: number, x: number, y: number) {
+function tileAddress(layer: OvmapTileLayer, z: number, x: number, y: number, scheme: 'xyz' | 'tms') {
   const template = layer.tiles[(x + y) % layer.tiles.length];
-  return renderOvmapTemplate(template, z, x, y).replaceAll('{', '%7B').replaceAll('}', '%7D');
+  return renderOvmapTileAddress(template, z, x, y, scheme);
 }
 
 function validateTile(layer: OvmapTileLayer, z: number, x: number, y: number) {
@@ -41,11 +41,11 @@ function validateTile(layer: OvmapTileLayer, z: number, x: number, y: number) {
 }
 
 /** One independently rendered OVMAP source. Unmodified provider images are returned byte-for-byte. */
-export async function renderOvmapLayerTile(layer: OvmapTileLayer, z: number, x: number, y: number, signal: AbortSignal): Promise<ArrayBuffer> {
+export async function renderOvmapLayerTile(layer: OvmapTileLayer, z: number, x: number, y: number, signal: AbortSignal, scheme: 'xyz' | 'tms' = 'xyz'): Promise<ArrayBuffer> {
   validateTile(layer, z, x, y);
   signal.throwIfAborted();
   const fetchRaw = async (tileZ:number,tileX:number,tileY:number,childSignal:AbortSignal) => {
-    const response = await fetchMapTile(tileAddress(layer,tileZ,tileX,tileY),childSignal);
+    const response = await fetchMapTile(tileAddress(layer,tileZ,tileX,tileY,scheme),childSignal);
     if (isNoImageryResponse(response)) {
       try { void response.body?.cancel().catch(() => {}); } catch { /* Ignore absent-tile body cleanup errors. */ }
       throw new NoImageryTileError();
@@ -74,20 +74,20 @@ export async function renderOvmapLayerTile(layer: OvmapTileLayer, z: number, x: 
   };
   return fetchWithParentFallback({
     z,x,y,minZoom:layer.minzoom,signal,
-    tileKey:(tileZ,tileX,tileY)=>tileAddress(layer,tileZ,tileX,tileY),
+    tileKey:(tileZ,tileX,tileY)=>tileAddress(layer,tileZ,tileX,tileY,scheme),
     fetchTile:fetchLevel,
     cropTile:(bytes,childX,childY,scale,childSignal)=>cropRasterTile(bytes,childX,childY,scale,childSignal,outputTileSize(layer)),
   });
 }
 
 /** Preserve the historical composite helper for offline callers that still request a whole stack. */
-export async function renderOvmapTile(layers: OvmapTileLayer[], z: number, x: number, y: number, signal: AbortSignal, onPartial?: () => void): Promise<ArrayBuffer> {
+export async function renderOvmapTile(layers: OvmapTileLayer[], z: number, x: number, y: number, signal: AbortSignal, onPartial?: () => void, scheme: 'xyz' | 'tms' = 'xyz'): Promise<ArrayBuffer> {
   if (![z, x, y].every(Number.isInteger) || z < 0 || z > 24 || x < 0 || y < 0 || x >= 2 ** z || y >= 2 ** z)
     throw new Error('无效图源瓦片坐标');
   const base = layers[0];
   if (!base || z < base.minzoom || z > base.maxzoom) throw new Error('此级别没有图源底图');
   const active = [base, ...layers.slice(1).filter(layer => z >= layer.minzoom && z <= layer.maxzoom)];
-  if (active.length === 1) return renderOvmapLayerTile(base, z, x, y, signal);
+  if (active.length === 1) return renderOvmapLayerTile(base, z, x, y, signal, scheme);
   const size = outputTileSize(base);
   const canvas = tileCanvas(size);
   let drawn = 0;
@@ -99,7 +99,7 @@ export async function renderOvmapTile(layers: OvmapTileLayer[], z: number, x: nu
     signal.addEventListener('abort', cancel, { once: true });
     const timeout = index > 0 ? setTimeout(() => requestAbort.abort(), 2500) : undefined;
     try {
-      const bytes = await renderOvmapLayerTile(layer, z, x, y, requestAbort.signal);
+      const bytes = await renderOvmapLayerTile(layer, z, x, y, requestAbort.signal, scheme);
       if (index === 0) baseBytes = bytes;
       const bitmap = await createImageBitmap(new Blob([bytes]));
       try { signal.throwIfAborted(); canvas.context.drawImage(bitmap, 0, 0, size, size); drawn++; }

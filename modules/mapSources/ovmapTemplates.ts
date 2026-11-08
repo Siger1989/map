@@ -4,6 +4,7 @@ const MAX_LITERAL = 1_000_000;
 const MAX_RESULT = 1_000_000_000;
 const MAX_ZOOM = 30;
 const BING_QUADKEY_SEQUENCE = '{$x}{$y}{$z}{4}';
+const TENCENT_SATETILES_XYZ_TEMPLATE = /^https?:\/\/p[0-3]\.map\.gtimg\.com\/sateTiles\/\{\$z\}\/\{\$x\/16\}\/\{\$y\/16\}\/\{\$x\}_\{\$y\}\.jpg$/;
 
 type TileCoordinate = 'x' | 'y' | 'z';
 type TemplateToken =
@@ -118,6 +119,15 @@ export function renderOvmapTemplate(template: string, z: number, x: number, y: n
     if (token.kind === 'invertedY') return String(maxCoordinate - y);
     return String(evaluate(token, values));
   });
+}
+
+/** Render a request address, applying the verified Tencent sateTiles row convention only to its canonical direct template. */
+export function renderOvmapTileAddress(template: string, z: number, x: number, y: number, scheme: 'xyz' | 'tms' = 'xyz'): string {
+  const maxCoordinate = 2 ** z - 1;
+  const validCoordinate = Number.isInteger(z) && z >= 0 && z <= MAX_ZOOM &&
+    Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x <= maxCoordinate && y <= maxCoordinate;
+  const requestY = scheme === 'xyz' && validCoordinate && TENCENT_SATETILES_XYZ_TEMPLATE.test(template) ? maxCoordinate - y : y;
+  return renderOvmapTemplate(template, z, x, requestY).replaceAll('{', '%7B').replaceAll('}', '%7D');
 }
 
 function quadkey(z: number, x: number, y: number): string {

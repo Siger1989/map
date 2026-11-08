@@ -28,6 +28,7 @@ import { NativeCameraSync } from './cameraSync.ts';
 import { NativeCameraPersistence } from './cameraPersistence.ts';
 import { createCameraSummaryPublisher } from '../cameraUpdates.ts';
 import { NativeProjectionSyncScheduler, nativePhotoGroupKey, subscribeNativeProjectionEvents } from './projectionSyncScheduler.ts';
+import { NativeScaleOverlay } from '../NativeScaleOverlay';
 import { NativeInitializationRetry } from './initializationRetry.ts';
 import { serializeNativeMapPhoto } from './photoWire.ts';
 import { shouldNotifyNativeMapReady } from './readiness.ts';
@@ -1212,7 +1213,9 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
 
   useImperativeHandle(ref, () => makeHandle(runtime, report, request), []);
 
-  return <div ref={elementRef} className={`map-canvas${props.className ? ` ${props.className}` : ''}`} data-native-map-id={mapId ?? undefined} data-native-map-ready={isCreated ? 'true' : 'false'} />;
+  return <div ref={elementRef} className={`map-canvas${props.className ? ` ${props.className}` : ''}`} data-native-map-id={mapId ?? undefined} data-native-map-ready={isCreated ? 'true' : 'false'}>
+    {isCreated && runtime.client && mapId && <NativeScaleOverlay client={runtime.client} mapId={mapId} />}
+  </div>;
 });
 
 function isNativeFrame(value: unknown): value is NativeProjectionFrame {

@@ -62,4 +62,19 @@ class NativeImageSourceIdentityTest {
         assertEquals(identity(firstStyle), identity(sameConfigNewSource))
         assertNotEquals(identity(firstStyle), identity(changedStyle))
     }
+
+    @Test fun `Tencent request semantic revision prevents prior logical tile cache identity reuse`() {
+        val fields = listOf("format=OVMAP", "scheme=XYZ", "tileSize=256", "canonical-template=true")
+        val oldStyle = NativeRasterStyleFingerprint.create(fields)
+        val unchangedStyle = NativeRasterStyleFingerprint.create(fields, requestSemanticRevision = null)
+        val revisedStyle = NativeRasterStyleFingerprint.create(fields, requestSemanticRevision = "tencent-satetiles-tms-v1")
+        assertEquals("sources without request-semantic changes keep their exact fingerprint", oldStyle, unchangedStyle)
+        assertNotEquals("Tencent request semantics get a distinct persistent identity", oldStyle, revisedStyle)
+
+        fun logicalCacheKey(style: String) = TileRequestIdentity("same-source", "raster-0", 12, 3231, 1681, style, "same-auth").cacheKey
+        assertNotEquals(
+            "an old XYZ-era placeholder entry cannot satisfy the revised TMS-row request for the same tile",
+            logicalCacheKey(oldStyle), logicalCacheKey(revisedStyle),
+        )
+    }
 }

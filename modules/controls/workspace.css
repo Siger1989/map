@@ -344,8 +344,8 @@
   background: #10212bd9 !important;
   border-color: #c1d0d6 !important;
   color: #c1d0d6 !important;
-  font-size: 10px !important;
-  max-width: 64px;
+  font-size: 11px !important;
+  max-width: 72px;
 }
 .observatory.home-map .map-canvas .maplibregl-ctrl-scale {
   display: flex !important;
@@ -361,7 +361,7 @@
   border-radius: 0 !important;
   background: transparent !important;
   color: #f5f8f5 !important;
-  font-size: 9px !important;
+  font-size: 11px !important;
   line-height: 12px !important;
   text-align: center !important;
   white-space: nowrap !important;

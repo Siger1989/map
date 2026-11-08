@@ -54,8 +54,9 @@ internal data class NativeRasterSourceTileKey(val z: Int, val x: Int, val y: Int
 
 /** Fingerprints request-defining source configuration without retaining or exposing templates/tokens. */
 internal object NativeRasterStyleFingerprint {
-    fun create(fields: List<String>): String {
-        val canonical = fields.joinToString(separator = "") { "${it.length}:$it;" }
+    fun create(fields: List<String>, requestSemanticRevision: String? = null): String {
+        val fingerprintFields = if (requestSemanticRevision == null) fields else fields + "requestSemanticRevision=$requestSemanticRevision"
+        val canonical = fingerprintFields.joinToString(separator = "") { "${it.length}:$it;" }
         val digest = MessageDigest.getInstance("SHA-256").digest(canonical.toByteArray(Charsets.UTF_8))
         val hex = CharArray(digest.size * 2); val digits = "0123456789abcdef"
         digest.forEachIndexed { index, item ->

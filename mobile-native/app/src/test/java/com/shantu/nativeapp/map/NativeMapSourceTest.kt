@@ -177,6 +177,39 @@ class NativeMapSourceTest {
     }
 
     @Test
+    fun `Tencent canonical sateTiles flips XYZ row before grouping but preserves explicit TMS and y bang`() {
+        val dollar = '$'
+        val canonical = "https://p0.map.gtimg.com/sateTiles/{${dollar}z}/{${dollar}x/16}/{${dollar}y/16}/{${dollar}x}_{${dollar}y}.jpg"
+        fun source(template: String, scheme: String = "xyz") = NativeMapSourceCatalog.fromJson(JSONObject().put("maps",
+            org.json.JSONArray().put(JSONObject().put("id", "tencent-$scheme").put("format", "OVMAP").put("scheme", scheme)
+                .put("minzoom", 0).put("maxzoom", 24).put("tiles", org.json.JSONArray().put(template)))
+        )).sources.single()
+
+        val tencent = source(canonical)
+        assertEquals("tencent-satetiles-tms-v1", tencent.tileRequestSemanticRevision(0))
+        assertEquals("https://p0.map.gtimg.com/sateTiles/0/0/0/0_0.jpg", tencent.tileUrl(0, 0, 0))
+        assertEquals("XYZ y=15 flips to TMS y=16 before the 16-row group", "https://p0.map.gtimg.com/sateTiles/5/0/1/15_16.jpg", tencent.tileUrl(15, 15, 5))
+        assertEquals("XYZ y=16 flips to TMS y=15 before the 16-row group", "https://p0.map.gtimg.com/sateTiles/5/1/0/16_15.jpg", tencent.tileUrl(16, 16, 5))
+        assertEquals("https://p0.map.gtimg.com/sateTiles/12/201/150/3231_2414.jpg", tencent.tileUrl(3231, 1681, 12))
+        assertEquals("https://p0.map.gtimg.com/sateTiles/24/1048575/1048575/16777215_16777215.jpg", tencent.tileUrl(16_777_215, 0, 24))
+        val explicitTms = source(canonical, "tms")
+        assertEquals("https://p0.map.gtimg.com/sateTiles/4/0/0/3_0.jpg", explicitTms.tileUrl(3, 0, 4))
+        assertEquals(null, explicitTms.tileRequestSemanticRevision(0))
+
+        val declaredReverse = "https://p0.map.gtimg.com/sateTiles/{${dollar}z}/{${dollar}x/16}/{${dollar}y/16}/{${dollar}x}_{${dollar}y!}.jpg"
+        val declaredReverseSource = source(declaredReverse)
+        assertEquals("https://p0.map.gtimg.com/sateTiles/4/0/0/3_15.jpg", declaredReverseSource.tileUrl(3, 0, 4))
+        assertEquals(null, declaredReverseSource.tileRequestSemanticRevision(0))
+        val proxySource = source(canonical.replace("p0.map.gtimg.com", "proxy.example.invalid"))
+        assertEquals("https://proxy.example.invalid/sateTiles/4/0/0/3_0.jpg", proxySource.tileUrl(3, 0, 4))
+        assertEquals(null, proxySource.tileRequestSemanticRevision(0))
+        val unknownHostSource = source(canonical.replace("p0.map.gtimg.com", "p4.map.gtimg.com"))
+        assertEquals("https://p4.map.gtimg.com/sateTiles/4/0/0/3_0.jpg", unknownHostSource.tileUrl(3, 0, 4))
+        assertEquals(null, unknownHostSource.tileRequestSemanticRevision(0))
+        assertEquals("https://p0.map.gtimg.com/otherTiles/4/0/0/3_0.jpg", source(canonical.replace("sateTiles", "otherTiles")).tileUrl(3, 0, 4))
+    }
+
+    @Test
     fun `gcj and bd09 datums are accepted for raster reprojection`() {
         val catalog = NativeMapSourceCatalog.fromJson(JSONObject("""
             {"maps":[{"id":"shifted","datum":"gcj02","tiles":["https://tiles.example.invalid/{z}/{x}/{y}"]},{"id":"bd","datum":"bd09","tiles":["https://tiles.example.invalid/{z}/{x}/{y}"]}]}

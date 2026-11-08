@@ -1,5 +1,5 @@
 import type { MapSource } from '../mapSources/types.ts';
-import { renderOvmapTemplate } from '../mapSources/ovmapTemplates.ts';
+import { renderOvmapTileAddress } from '../mapSources/ovmapTemplates.ts';
 import { warpPlan } from '../mapSources/coordinates.ts';
 import { downloadBounds, downloadTiles, type DownloadArea, type Tile } from './downloadPlan.ts';
 
@@ -143,7 +143,7 @@ export function planImportedRouteDownload(
     for (const layer of layers) {
       const estimate = Math.ceil(layer.tileSize * layer.tileSize * 0.4);
       const urls = source.ovmap
-        ? [renderOvmapTemplate(layer.tiles[(tile.x + tile.y) % layer.tiles.length], tile.z, tile.x, tile.y).replaceAll('{', '%7B').replaceAll('}', '%7D')]
+        ? [renderOvmapTileAddress(layer.tiles[(tile.x + tile.y) % layer.tiles.length], tile.z, tile.x, tile.y, source.scheme ?? 'xyz')]
         : [''].concat(layer.tiles[(tile.x + tile.y) % layer.tiles.length].includes('{ratio}') ? ['@2x'] : [])
           .map((ratio) => regularTileUrl(layer.tiles, tile, source.scheme === 'tms' ? 'tms' : 'xyz', ratio));
       for (const url of urls) {

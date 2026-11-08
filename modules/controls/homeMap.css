@@ -294,9 +294,9 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
   --home-left-control-bottom:calc(var(--home-footer) + var(--map-bottom-clearance) + 64px);
 }
 .observatory.home-map:not([data-comparing='true']) .map-canvas .maplibregl-ctrl-scale {
-  position:fixed; top:calc(var(--home-top) + var(--home-header-height) + 112px);
-  bottom:auto; left:auto; right:calc(var(--home-right) + 3px);
-  box-sizing:border-box; padding:0 2px; font-size:9px; line-height:14px;
+  position:fixed; top:auto;
+  bottom:var(--home-left-control-bottom); left:calc(var(--home-left) + 48px); right:auto;
+  box-sizing:border-box; padding:0 2px; font-size:11px; line-height:15px;
   white-space:nowrap; overflow:visible;
 }
 .observatory.home-map:not([data-comparing='true']) > .map-canvas > .map-imagery-date-label,
