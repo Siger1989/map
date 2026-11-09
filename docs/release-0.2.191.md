@@ -27,3 +27,12 @@ Save drafts/end recording, then overwrite-install 山兔·优化; do not uninsta
 
 
 Final source checks:140/140 Node,8/8 hybrid native tests (3 compass sample/recovery,2 retired terrain payload,3 source-probe scenarios), TSC exit0 and fresh private web35.45s PASS. Logs: `.openai/191-{standalone-node-final,tsc,web-build,native-tests}.log`. Native source/tests compile in the delivery hybrid module. Initial137/136 run remains preserved; final140 rerun passes after the standalone assertion correction. No emulator or phone was started. The first attempt to read build logs used the wrong relative directory; only those reads failed, the optimized Gradle command uses the checked correct absolute stage.
+
+
+## Issued artifact and private synchronization
+
+APK `Shantu-0.2.191-oldengine-private.apk`, 165369673 bytes, SHA256 `d2d7ea201ebdeab883a956807319e58f5692d34a12a17fcc51f4d11f6f6c4d0a`. Application source `b8e93edb2dcfa08c79eb8d6f66ea1343f4271377` on the isolated branch, not main. Optimized build4m35s PASS; original signing certificate, version/package/SDK,1925 current web assets,39 byte-identical private seeds and unchanged registered Tianditu configuration, ZIP CRC/unique entries and16KiB alignment PASS. Eight unchanged native libraries match190;64-bit ELF load segments meet16KiB. Legacy32-bit libraries are only confirmed unchanged, not a full32-bit16KiB claim. Bundle exclusion check confirms no social UI/CloudBase SDK. Prior formal and180–190 package hashes remain unchanged.
+
+The immutable local APK link was sent before any runtime checks; user elected phone UI self-testing. No emulator, phone installation or real sensor/GPS was used. [Private191 download](https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.191-private) contains five attachments; repository PRIVATE verified before/after upload, all server digests and full downloads match, downloaded APK CRC PASS and anonymous HEAD404. [Sanitized evidence](../artifacts/performance/standalone-191-20261109/summary.json). Raw logs/private APK/config/signed artifacts and social archive remain ignored local/private material.
+
+Source changes synchronized to `Siger1989/map` on `codex/old-engine-tilt-dual-20261105`; main/origin unchanged. Separate preexisting Jilin preparation drafts remain local; generated Kotlin session state is not committed. No cloud service/email/account deployment was performed. Browser remained disabled; no alternate browser automation was used to bypass that setting.
