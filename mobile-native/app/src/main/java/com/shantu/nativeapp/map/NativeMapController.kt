@@ -223,6 +223,7 @@ class NativeMapController internal constructor(
         val safe = cssScale.takeIf { it.isFinite() && it > 0.0 } ?: 1.0
         if (safe == bridgeMarkerCssScale) return
         bridgeMarkerCssScale = safe
+        if (photoLayer.setCssScale(safe)) worldWindow.requestRedraw()
         setBridgeMarkerPresentation(bridgeMarkerZoom, bridgeSelectedMarker)
         if (lastPositionState != null) lastPositionState?.let(::setPosition)
     }
