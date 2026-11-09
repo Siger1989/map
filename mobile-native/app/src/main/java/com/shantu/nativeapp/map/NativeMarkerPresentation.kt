@@ -34,11 +34,13 @@ internal object NativeMarkerPresentation {
     fun densityBucket(cssScale: Double): Int =
         if (cssScale.isFinite()) cssScale.roundToInt().coerceIn(1, 4) else 1
 
+    fun symbolSize(mode: String): Double = when (mode) { "label" -> 40.0; "icon" -> 22.0; else -> 9.0 }
+
     /** Match the previous 40 px label (24 px body + 16 px pointer), 22 px icon and 9 px dot. */
     @Suppress("UNUSED_PARAMETER")
     fun imageScale(zoom: Double, cssScale: Double, densityBucket: Int, mode: String): Double {
         val safeCssScale = cssScale.takeIf { it.isFinite() && it > 0.0 } ?: 1.0
-        val pixels = when (mode) { "label" -> 40.0; "icon" -> 22.0; else -> 9.0 }
+        val pixels = symbolSize(mode)
         val sourceHeight = if (mode == "dot") 9.0 else 64.0
         // The old CSS mode rules override the generic markerScale transform.
         // Multiplying that unused curve here would shrink 12 px text near zoom 9.

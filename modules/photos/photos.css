@@ -104,12 +104,25 @@
 }
 .trip-photo-marker {
   box-sizing: border-box;
-  width: 64px;
-  height: 64px;
-  padding: 4px;
+  --photo-scale: 0.785714286;
+  width: max(44px, calc(64px * var(--photo-scale)));
+  height: max(44px, calc(64px * var(--photo-scale)));
+  padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
+}
+.trip-photo-marker-visual {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  box-sizing: border-box;
+  width: 64px;
+  height: 64px;
+  padding: 4px;
+  transform: translateX(-50%) scale(var(--photo-scale));
+  transform-origin: 50% 100%;
+  pointer-events: none;
 }
 .maplibregl-marker-covered.trip-photo-marker {
   visibility: hidden !important;

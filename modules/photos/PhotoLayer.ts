@@ -3,22 +3,36 @@ import type { VisiblePhoto } from './storage';
 import { markerIconElement } from '../annotations/icons';
 import { NearbyMarker } from '../map/NearbyMarker';
 import { getNearbyMarkerRange, isCoordinateWithinNearbyRange } from '../map/nearbyMarkerRange';
+import { photoMapPresentation } from './mapPresentation';
 export class PhotoLayer {
   private photos: VisiblePhoto[] = [];
   private markers: NearbyMarker[] = [];
+  private presentationMode: string | null = null;
   constructor(
     private map: MapLibreMap,
     private onOpen: (ids: string[]) => void,
   ) {
     map.on('moveend', this.draw);
+    map.on('zoom', this.syncScale);
   }
   sync(photos: VisiblePhoto[]) {
     this.photos = photos;
     this.draw();
   }
+  private syncScale = () => {
+    const presentation = photoMapPresentation(this.map.getZoom());
+    if (this.presentationMode === presentation.mode) return;
+    this.presentationMode = presentation.mode;
+    for (const marker of this.markers) {
+      const element = marker.getElement();
+      element.style.setProperty('--photo-scale', String(presentation.scale));
+      element.dataset.presentation = presentation.mode;
+    }
+  };
   private draw = () => {
     this.markers.forEach((m) => m.remove());
     this.markers = [];
+    this.presentationMode = null;
     const groups = new Map<string, VisiblePhoto[]>();
     const nearbyRange = getNearbyMarkerRange(this.map);
     const { clientWidth: w, clientHeight: h } = this.map.getContainer();
@@ -52,21 +66,24 @@ export class PhotoLayer {
           : `查看照片 ${group[0].name}`,
       );
       const img = document.createElement('img');
+      const visual = document.createElement('div');
+      visual.className = 'trip-photo-marker-visual';
       img.src = group[0].url;
       img.alt = '';
-      button.appendChild(img);
+      visual.appendChild(img);
+      button.appendChild(visual);
       if (group[0].kind === 'annotation') {
         const markerBadge = document.createElement('i');
         markerBadge.className = 'photo-annotation-badge';
         markerBadge.setAttribute('aria-hidden', 'true');
         markerBadge.style.color = group[0].mapColor ?? '#176b68';
         markerBadge.appendChild(markerIconElement(group[0].mapIcon));
-        button.appendChild(markerBadge);
+        visual.appendChild(markerBadge);
       }
       if (group.length > 1) {
         const badge = document.createElement('span');
         badge.textContent = String(group.length);
-        button.appendChild(badge);
+        visual.appendChild(badge);
       }
       button.addEventListener('pointerdown', (e) => e.stopPropagation());
       button.addEventListener('click', (e) => {
@@ -84,9 +101,11 @@ export class PhotoLayer {
           .addTo(this.map),
       );
     }
+    this.syncScale();
   };
   dispose() {
     this.map.off('moveend', this.draw);
+    this.map.off('zoom', this.syncScale);
     this.markers.forEach((m) => m.remove());
     this.markers = [];
   }

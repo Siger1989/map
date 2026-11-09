@@ -15,6 +15,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,7 +29,7 @@ import java.util.Base64
 @Config(sdk = [35])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class NativePhotoLayerTest {
-    @Test fun `photo placemark stays a 56 CSS pixel photo above the 40 CSS pixel logo at common device scales`() {
+    @Test fun `photo frame follows shared pin mode sizes at common device scales`() {
         val encoded = jpegFixture()
         val photoLayer = NativePhotoLayer()
         val photos = JSONArray().put(JSONObject()
@@ -41,22 +42,53 @@ class NativePhotoLayerTest {
         for (cssScale in listOf(1.0, 2.8, 3.22)) {
             photoLayer.setCssScale(cssScale)
             photoLayer.replace(photos)
-            val placemark = placemark(photoLayer)
             val density = NativeMarkerPresentation.densityBucket(cssScale)
-            val actualPhotoFrameCss = 56.0 * density * placemark.attributes.imageScale / cssScale
-            val actualLogoCss = 64.0 * density * NativeMarkerPresentation.imageScale(12.0, cssScale, density, "label") / cssScale
-
-            assertEquals("photo frame must stay at 56 CSS px for scale $cssScale", 56.0, actualPhotoFrameCss, 0.01)
-            assertEquals("marker logo reference stays at 40 CSS px for scale $cssScale", 40.0, actualLogoCss, 0.01)
-            assertTrue("photo preview remains larger than its map logo", actualPhotoFrameCss > actualLogoCss)
-            assertEquals(cssScale / density, placemark.attributes.imageScale, 0.0001)
-            assertFalse("screen-sized photo must not shrink again with eye distance", placemark.isEyeDistanceScaling)
-            assertTrue("photo remains terrain-depth tested", placemark.attributes.isDepthTest)
-            assertEquals(AltitudeMode.CLAMP_TO_GROUND, placemark.altitudeMode)
-            assertFalse(placemark.isAlwaysOnTop)
-            assertEquals("shantu-photo:photo-42", placemark.pickDelegate)
-            assertEquals("营地照片", placemark.displayName)
+            val original = placemark(photoLayer)
+            for ((mode, symbolSize) in listOf("label" to 40.0, "icon" to 22.0, "dot" to 9.0)) {
+                photoLayer.setMarkerMode(mode)
+                val photo = placemark(photoLayer)
+                val actualPhotoFrameCss = 56.0 * density * photo.attributes.imageScale / cssScale
+                val actualLogoCss = symbolSize * 1.1
+                assertEquals("photo follows $mode marker frame at scale $cssScale", actualLogoCss, actualPhotoFrameCss, 0.01)
+                assertEquals("logo reference remains $mode symbol size", symbolSize, NativeMarkerPresentation.symbolSize(mode), 0.0)
+                assertSame("mode changes preserve the pickable placemark", original, photo)
+            }
+            photoLayer.setMarkerMode("label")
+            val photo = placemark(photoLayer)
+            assertEquals(44.0 / 56.0 * cssScale / density, photo.attributes.imageScale, 0.0001)
+            assertFalse("screen-sized photo must not shrink again with eye distance", photo.isEyeDistanceScaling)
+            assertTrue("photo remains terrain-depth tested", photo.attributes.isDepthTest)
+            assertEquals(AltitudeMode.CLAMP_TO_GROUND, photo.altitudeMode)
+            assertFalse(photo.isAlwaysOnTop)
+            assertEquals("shantu-photo:photo-42", photo.pickDelegate)
+            assertEquals("营地照片", photo.displayName)
         }
+    }
+
+    @Test fun `zoom mode updates existing placemark scale without rebuilding its photo texture`() {
+        val photos = JSONArray().put(JSONObject()
+            .put("id", "photo-mode")
+            .put("name", "模式照片")
+            .put("coordinates", JSONArray().put(104.1).put(30.2))
+            .put("previewBase64", jpegFixture()))
+        val photoLayer = NativePhotoLayer()
+        photoLayer.setCssScale(2.8)
+        photoLayer.replace(photos)
+        val pin = placemark(photoLayer)
+        val source = pin.attributes.imageSource
+        assertTrue(photoLayer.setMarkerMode("dot"))
+        for ((mode, frameCss) in listOf("label" to 44.0, "icon" to 24.2, "dot" to 9.9)) {
+            assertTrue(photoLayer.setMarkerMode(mode))
+            val current = placemark(photoLayer)
+            assertSame("mode updates the same pickable placemark", pin, current)
+            assertSame("mode does not rebuild the decoded photo texture", source, current.attributes.imageSource)
+            val density = NativeMarkerPresentation.densityBucket(2.8)
+            assertEquals(frameCss, 56.0 * density * current.attributes.imageScale / 2.8, 0.01)
+            assertEquals("shantu-photo:photo-mode", current.pickDelegate)
+            assertEquals("模式照片", current.displayName)
+            assertTrue(current.attributes.isDepthTest)
+        }
+        assertFalse("setting the resolved mode again is a no-op", photoLayer.setMarkerMode("dot"))
     }
 
     @Test fun `density buckets create real high resolution bitmaps with a 56 pixel frame and 52 pixel photo crop`() = runBlocking {
@@ -114,9 +146,26 @@ class NativePhotoLayerTest {
         assertEquals(AltitudeMode.CLAMP_TO_GROUND, updated.altitudeMode)
         assertFalse(updated.isEyeDistanceScaling)
         assertTrue(updated.attributes.isDepthTest)
-        assertEquals(2.8 / NativeMarkerPresentation.densityBucket(2.8), updated.attributes.imageScale, 0.0001)
+        assertEquals(44.0, 56.0 * NativeMarkerPresentation.densityBucket(2.8) * updated.attributes.imageScale / 2.8, 0.0001)
         assertFalse("same CSS scale does not discard or rebuild photo info", photoLayer.setCssScale(2.8))
         assertEquals(1, photoLayer.layer.count)
+    }
+
+    @Test fun `ordinary pin and photo placemarks use the same eye distance scaling policy`() {
+        val marker = NativeModelRenderer.render(JSONObject()
+            .put("id", "ordinary-pin")
+            .put("kind", "pin")
+            .put("coordinates", JSONArray().put(104.1).put(30.2))
+            .put("name", "普通标记")
+            .put("icon", "pin")
+            .put("color", "#176b68")).renderables.single() as Placemark
+        val photoLayer = NativePhotoLayer()
+        photoLayer.replace(JSONArray().put(JSONObject()
+            .put("id", "photo-eye")
+            .put("name", "照片")
+            .put("coordinates", JSONArray().put(104.1).put(30.2))
+            .put("previewBase64", jpegFixture())))
+        assertEquals("photo screen scaling must match the ordinary map pin policy", marker.isEyeDistanceScaling, placemark(photoLayer).isEyeDistanceScaling)
     }
 
     private fun placemark(photoLayer: NativePhotoLayer): Placemark {

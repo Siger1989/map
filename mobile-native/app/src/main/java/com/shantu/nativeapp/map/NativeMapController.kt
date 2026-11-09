@@ -232,6 +232,7 @@ class NativeMapController internal constructor(
         bridgeSelectedMarker = selectedId
         val update = markerPresentation.update(zoom, bridgeMarkerCssScale)
         bridgeMarkerMode = update.mode
+        if (photoLayer.setMarkerMode(update.mode)) worldWindow.requestRedraw()
         if (!update.resize) return
         val documents = markerDocuments.values.toList()
         val rebuild = mutableListOf<org.json.JSONObject>()

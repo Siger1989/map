@@ -19,6 +19,22 @@ class NativePhotoLayer {
     val layer=RenderableLayer("Track photos")
     private var photos=JSONArray()
     private var cssScale=1.0
+    private var markerMode="label"
+
+    /** Use the controller's already resolved marker mode, including its zoom hysteresis. */
+    fun setMarkerMode(value:String):Boolean {
+        val mode=value.takeIf{it=="label"||it=="icon"||it=="dot"}?:"label"
+        if(mode==markerMode)return false
+        markerMode=mode
+        val density=NativeMarkerPresentation.densityBucket(cssScale)
+        for(i in 0 until layer.count){
+            val placemark=layer.getRenderable(i) as? Placemark?:continue
+            placemark.attributes.imageScale=photoImageScale(density)
+        }
+        return true
+    }
+
+    private fun photoImageScale(density:Int)=NativeMarkerPresentation.symbolSize(markerMode)*1.1/56.0*cssScale/density
 
     /** Use the same CSS-to-native ratio as marker logos, including after a viewport change. */
     fun setCssScale(value:Double):Boolean {
@@ -45,7 +61,7 @@ class NativePhotoLayer {
                     photo.optJSONArray("groupIds")?.length()?.coerceAtLeast(1) ?: 1,
                     if(photo.optString("kind")=="annotation")photo.optString("mapIcon","pin") else null,
                     photo.optString("mapColor","#176b68"),density));
-                imageScale=cssScale/density;isDrawLabel=false;isDepthTest=true
+                imageScale=photoImageScale(density);isDrawLabel=false;isDepthTest=true
             }
             layer.addRenderable(Placemark(Position(lat.degrees,lon.degrees,0.0),attributes).apply{
                 altitudeMode=AltitudeMode.CLAMP_TO_GROUND;isAlwaysOnTop=false;isEyeDistanceScaling=false
