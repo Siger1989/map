@@ -15,8 +15,15 @@ const React=await import('react'),{act}=React,{createRoot}=await import('react-d
 const style={color:'#ff4400',width:3};
 function dom(){ const {window}=parseHTML('<html><body><div id="root"></div></body></html>'); window.requestAnimationFrame=callback=>window.setTimeout(()=>callback(Date.now()),0); window.cancelAnimationFrame=window.clearTimeout.bind(window); Object.assign(globalThis,{window,document:window.document,requestAnimationFrame:window.requestAnimationFrame.bind(window),cancelAnimationFrame:window.cancelAnimationFrame.bind(window),IS_REACT_ACT_ENVIRONMENT:true}); globalThis.localStorage={getItem:()=>JSON.stringify({mode:'slope'}),setItem(){}}; return window; }
 function mapMock(){
-  const sources=new Map(),layers=new Map(),stats={writes:0,projects:0,updates:0};
-  return {sources,stats,on(){},off(){},getContainer:()=>document.body,getCanvas:()=>({clientWidth:390,clientHeight:857,getBoundingClientRect:()=>({left:0,top:0})}),getSource:id=>sources.get(id),getLayer:id=>layers.get(id),
+  const sources=new Map(),layers=new Map(),handlers=new Map(),stats={writes:0,projects:0,updates:0};
+  const container=document.createElement('div');
+  Object.defineProperties(container,{clientWidth:{value:400},clientHeight:{value:400}});
+  document.body.append(container);
+  return {sources,stats,getContainer:()=>container,getCanvas:()=>container,isStyleLoaded:()=>true,
+    getLayoutProperty(){return undefined;},getPaintProperty(){return undefined;},queryRenderedFeatures(){return [];},
+    on(type,callback){const entries=handlers.get(type)??new Set();entries.add(callback);handlers.set(type,entries);},
+    off(type,callback){const entries=handlers.get(type);entries?.delete(callback);if(!entries?.size)handlers.delete(type);},
+    getSource:id=>sources.get(id),getLayer:id=>layers.get(id),
     addSource(id,spec){sources.set(id,{data:structuredClone(spec.data),setData(data){this.data=structuredClone(data);if(id==='manual-tracks')stats.writes++;return Promise.resolve();},updateData(diff){if(id==='manual-tracks')stats.updates++;for(const change of diff.update??[]){const feature=this.data.features.find(f=>f.id===change.id);if(feature)for(const {key,value} of change.addOrUpdateProperties??[])feature.properties[key]=value;}return Promise.resolve();}});},
     addLayer(spec){layers.set(spec.id,spec);},getStyle:()=>({layers:[...layers.values()]}),getLayoutProperty:(id,key)=>layers.get(id)?.layout?.[key],getPaintProperty:(id,key)=>layers.get(id)?.paint?.[key],queryRenderedFeatures:()=>[],moveLayer(){},isMoving:()=>false,
     project:([x,y])=>{stats.projects++;return {x:x*1e5,y:y*1e5};}};

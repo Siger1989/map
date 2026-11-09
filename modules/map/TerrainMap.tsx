@@ -98,7 +98,8 @@ import {
 } from '../objectTransform/projection';
 import { TERRAIN_SECTION_ENABLED } from '../../config/features';
 import type { SectionSettings, SectionStatus } from '../section/types';
-import { basemapConfiguration } from '../cartography/basemaps';
+import { basemapConfiguration, tiandituTiles } from '../cartography/basemaps';
+import { SENTINEL_CREDIT, SENTINEL_MAXZOOM, SENTINEL_NAME, SENTINEL_TILES } from '../cartography/sentinel';
 import { RasterLevelLock } from '../cartography/RasterLevelLock';
 import { RasterQuality } from '../cartography/RasterQuality';
 import { applyClearDaySky } from './sky';
@@ -109,6 +110,7 @@ import type { VisiblePhoto } from '../photos/storage';
 import { CadLayer } from '../cad/CadLayer';
 import { PositionLayer } from '../position/PositionLayer';
 import type { PositionFix } from '../position/types';
+import { probeMapSourceHealth, type MapSourceHealthResult } from '../mapSources/health';
 import type { CameraSnapshot } from '../controls/useMapFocusLock';
 import {
   INITIAL_VIEW,
@@ -128,6 +130,7 @@ export type MapHandle = {
   highlightOffline: (trip: TripPackage) => void;
   highlightCollection?: (data: GeoJSON.FeatureCollection) => void;
   cameraSnapshot: () => import('../controls/useMapFocusLock').CameraSnapshot | null;
+  probeSourceAt: (source?: MapSource | null, settings?: LayerSettings, signal?: AbortSignal) => Promise<MapSourceHealthResult>;
   restoreCamera: (camera: import('../controls/useMapFocusLock').CameraSnapshot) => void;
   setTerrainMode: (terrain: boolean) => void;
   syncCameraHash: () => void;
@@ -658,6 +661,28 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         },
         shareMapStyle: () => mapRef.current && loaded.current ? currentShareMapStyle(mapRef.current.getStyle()) : null,
         cameraSnapshot: () => { const m=mapRef.current; return m && loaded.current ? {center:m.getCenter().toArray(), zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing(), detailZoom:cameraDetailZoom(m)} : null; },
+        probeSourceAt: async (sourceOverride, settingsOverride, signal) => {
+          const m = mapRef.current;
+          if (!m || !loaded.current) return { status: 'unknown', message: '地图尚未就绪，暂时无法测试', successes: 0, missing: 0, failures: 0, sampled: 0 };
+          const settings = settingsOverride ?? latest.current.settings;
+          let target = sourceOverride === undefined ? latest.current.mapSource : sourceOverride;
+          if (!target) {
+            const cfg = basemapConfiguration();
+            const configuredTianditu = !settings.offlineBasemap && (settings.satelliteProvider === 'tianditu' || (!settings.satellite && cfg.domestic));
+            if (configuredTianditu && cfg.domestic) {
+              const layer = settings.satellite ? 'img' : 'vec';
+              target = { id: 'probe-tianditu', name: '天地图', kind: 'online', format: 'WMTS', attribution: '天地图',
+                minzoom: 1, maxzoom: 18, tileSize: 256, scheme: 'xyz', bytes: 0, tiles: tiandituTiles(layer, cfg.token) };
+            } else if (!settings.offlineBasemap && settings.satellite && settings.satelliteProvider !== 'tianditu' && settings.imageryMode === 'detail') {
+              target = { id: 'probe-sentinel', name: SENTINEL_NAME, kind: 'online', format: 'XYZ', attribution: SENTINEL_CREDIT,
+                minzoom: 0, maxzoom: SENTINEL_MAXZOOM, tileSize: 256, scheme: 'xyz', bytes: 0, tiles: SENTINEL_TILES };
+            }
+          }
+          if (!target) return { status: 'unknown', message: '当前内置图源暂不支持独立探测，具体原因未知', successes: 0, missing: 0, failures: 0, sampled: 0 };
+          const customId = sourceOverride === undefined ? latest.current.mapSource?.id : sourceOverride?.id;
+          const datum = settings.rasterDatums?.[rasterDatumKey(settings, customId)] ?? defaultRasterDatum(customId ? target : null);
+          return probeMapSourceHealth(target, m.getCenter().toArray() as [number, number], m.getZoom(), signal, datum);
+        },
         restoreCamera: (camera) => { mapRef.current?.easeTo({...camera, duration:600}); },
         setTerrainMode: (terrain) => { terrainMode.current = terrain; },
         syncCameraHash: () => {

@@ -157,7 +157,7 @@
   top: calc(60px + var(--safe-top));
   left: var(--edge-left);
   width: min(300px, calc(100vw - 80px));
-  max-height: min(38dvh, 320px);
+  max-height: min(58dvh, 480px, calc(100dvh - 124px - var(--safe-top) - var(--safe-bottom)));
   overflow-y: auto;
   padding: 7px;
   border-radius: 10px;
@@ -187,7 +187,7 @@
 .trip-photo-viewer .photo-expand img {
   display: block;
   width: 100%;
-  height: min(18dvh, 155px);
+  height: min(32dvh, 280px);
   object-fit: contain;
   background: #09131b;
 }
@@ -323,7 +323,7 @@
 }
 .photo-editor,
 .photo-information {
-  max-height: min(38dvh, 320px);
+  max-height: min(58dvh, 480px, calc(100dvh - 124px - var(--safe-top) - var(--safe-bottom)));
 }
 .photo-editor {
   display: grid;

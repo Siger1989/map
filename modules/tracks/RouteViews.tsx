@@ -339,6 +339,7 @@ export function RouteDetails({
 }
 export function RouteEditToolbar({
   session,
+  linePointSelected = false,
   snapName,
   snapHint,
   error,
@@ -366,6 +367,7 @@ export function RouteEditToolbar({
   onName,
 }: {
   session: RouteEditSession;
+  linePointSelected?: boolean;
   snapName?: string;
   snapHint?: string;
   error: string;
@@ -473,8 +475,7 @@ export function RouteEditToolbar({
               <ComparisonEditorPositionButton kind="路线"/>
             </div>
             <div className="route-edit-heading-actions">
-              <small>{session.history.length ? '未保存' : ''}</small>
-              <button onClick={() => onBack(commitRouteName())}>退出编辑</button>
+                            <button aria-label="退出编辑" title="退出编辑" onClick={() => onBack(commitRouteName())}><ArrowLeft size={18}/></button>
             </div>
           </> : <>
           <strong>{activeView === 'style' ? '线条样式' : activeView === 'marker' ? '添加标记' : `框选备注·${selectedCount}点`}</strong>
@@ -491,10 +492,11 @@ export function RouteEditToolbar({
           </button>
         </div>
         <p className="route-edit-status" role="status">
+          {session.history.length > 0 && '未保存 · '}
           {boxMode ? `框选${boxMode === 'add' ? '加选' : '减选'} · 已选${selectedCount}点 · 直接点节点恢复单点` : snapName
             ? `松手拼合：${snapName}`
             : snapHint ? snapHint
-            : selectedCount ? `已选${selectedCount}点 · ${selectedCount === 1 ? '修改点颜色/备注' : '修改两端都选中的相连线段'}`
+            : selectedCount ? `已选${selectedCount}点 · ${selectedCount === 1 ? '可拖动调整' : '修改两端都选中的相连线段'}`
             : session.sources.some((s) => s.id !== session.original.id)
               ? '已拼合 · 保存后成为一条路线，可撤销'
               : branch
@@ -503,6 +505,8 @@ export function RouteEditToolbar({
                 : '分叉中 · 准星定点，松手连线，双指控图'
                 : session.selected
                   ? '已选节点 · 直接拖动调整位置'
+                  : linePointSelected
+                    ? '已选线段位置 · 点＋添加可拖动节点'
                   : '点选节点调整，或点线段后添加节点'}
         </p>
         <div
@@ -530,7 +534,7 @@ export function RouteEditToolbar({
             <GitBranch size={16} />
             {branch ? '结束' : '分叉'}
           </button>
-          <button onClick={onClearSelection} disabled={!selectedCount}>清空选择</button>
+          <button aria-label="清空选择" onClick={onClearSelection} disabled={!selectedCount && !linePointSelected}>清空</button>
           <button disabled={!session.history.length} onClick={onUndo}>
             <Undo2 size={16} />
             撤销

@@ -92,6 +92,9 @@ export class FeatureDragBridge {
       !this.map.getContainer().contains(event.target as Node)
     )
       return;
+    // A new, independent DOWN is intentional input. Only the previous drag's
+    // trailing click should be suppressed, not the next node selection.
+    if (this.contacts.size === 1 && !this.pending && !this.active) this.suppressUntil = 0;
     const point = this.point(event);
     if (!point) return;
     const target = this.options.hit(point, event.target);

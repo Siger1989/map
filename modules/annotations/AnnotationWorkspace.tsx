@@ -49,6 +49,7 @@ export function AnnotationWorkspace({
   dragging,
   terrainStatus,
   photos = [],
+  pendingPhoto,
   onCapture,
   onImport,
   onAdjust,
@@ -69,6 +70,7 @@ export function AnnotationWorkspace({
   dragging: boolean;
   terrainStatus?: string;
   photos?: VisiblePhoto[];
+  pendingPhoto?: { url: string; name: string; status: string };
   onCapture: (item: Annotation) => void;
   onImport: (item: Annotation) => void;
   onAdjust: () => void;
@@ -198,7 +200,7 @@ export function AnnotationWorkspace({
   } catch {
     /* Exact coordinates remain in details if region cache is unavailable. */
   }
-  if (item.kind === 'pin') return <PinEditor state={state} item={item} photos={photos} onClose={onClose} onShare={onShare} onAdjust={onAdjust} onCapture={onCapture} onImport={onImport} onPhoto={onPhoto} cameraStatus={cameraStatus} cameraBusy={cameraBusy} cameraRetry={cameraRetry} onCameraRetry={onCameraRetry} onAddModel={onAddModel}/>;
+  if (item.kind === 'pin') return <PinEditor state={state} item={item} photos={photos} pendingPhoto={pendingPhoto} onClose={onClose} onShare={onShare} onAdjust={onAdjust} onCapture={onCapture} onImport={onImport} onPhoto={onPhoto} cameraStatus={cameraStatus} cameraBusy={cameraBusy} cameraRetry={cameraRetry} onCameraRetry={onCameraRetry} onAddModel={onAddModel}/>;
   return (
     <section
       ref={root}
@@ -349,9 +351,9 @@ export function AnnotationWorkspace({
           {cameraRetry && <button onClick={onCameraRetry}>重试保存</button>}
         </p>
       )}
-      {!editing && view === 'summary' && photos.length > 0 && (
+      {!editing && view === 'summary' && (photos.length > 0 || pendingPhoto) && (
         <div className="marker-summary-photos">
-          <MarkerPhotos photos={photos} onOpen={onPhoto} />
+          <MarkerPhotos photos={photos} pendingPhoto={pendingPhoto} onOpen={onPhoto} />
         </div>
       )}
       {editing && (
@@ -407,7 +409,7 @@ export function AnnotationWorkspace({
             </dl>
           )}
           {item.note && <p className="marker-detail-note">{item.note}</p>}
-          <MarkerPhotos photos={photos} onOpen={onPhoto} />
+          <MarkerPhotos photos={photos} pendingPhoto={pendingPhoto} onOpen={onPhoto} />
           {item.trackAnchor && (
             <small>
               已关联行程 · 距起点{' '}

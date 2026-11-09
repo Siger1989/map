@@ -113,6 +113,7 @@ val prepareHybridContractTests by tasks.registering(Sync::class) {
         include("com/shantu/nativeapp/map/NativeContourVisibleBudgetPolicyTest.kt")
         include("com/shantu/nativeapp/map/NativeTiandituZoomPolicyTest.kt")
         include("com/shantu/nativeapp/map/NativeMapSourceTest.kt")
+        include("com/shantu/nativeapp/map/NativeMapSourceProbeTest.kt")
         include("com/shantu/nativeapp/map/NativeTileHttpClientTest.kt")
         include("com/shantu/nativeapp/map/NativeTileFailureTest.kt")
         include("com/shantu/nativeapp/data/NativeSourceImportTest.kt")

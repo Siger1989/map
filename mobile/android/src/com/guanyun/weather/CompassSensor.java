@@ -11,6 +11,7 @@ final class CompassSensor implements SensorEventListener {
     private final SensorManager manager;
     private final Sensor sensor;
     private boolean enabled;
+    private boolean registered;
     private volatile String state = "{\"error\":\"等待指南针方向\"}";
     CompassSensor(Activity activity) {
         this.activity=activity;
@@ -19,12 +20,20 @@ final class CompassSensor implements SensorEventListener {
     }
     void start() { enabled=true; resume(); }
     void resume() {
-        if(!enabled) return;
-        state="{\"error\":\"等待指南针方向\"}";
-        if(sensor==null || !manager.registerListener(this,sensor,SensorManager.SENSOR_DELAY_UI))
+        if(!enabled || registered) return;
+        // Keep the last timestamped sample across pause/resume; the web hook rejects it until a fresh event arrives.
+        if(sensor==null) {
             state="{\"error\":\"设备暂不支持指南针，请使用正北模式\"}";
+            return;
+        }
+        registered=manager.registerListener(this,sensor,SensorManager.SENSOR_DELAY_UI);
+        if(!registered)
+            state="{\"error\":\"指南针暂未就绪，请稍候重试\"}";
     }
-    void pause() { manager.unregisterListener(this); }
+    void pause() {
+        if(registered) manager.unregisterListener(this);
+        registered=false;
+    }
     void stop() { enabled=false; pause(); }
     String snapshot() { return state; }
     @Override public void onSensorChanged(SensorEvent event) {

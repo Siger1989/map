@@ -5,6 +5,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FloatingCompassSamplePolicyTest {
+    @Test fun sensorRecoveryRetriesAreBoundedAndResetForTheNextForegroundRun() {
+        val recovery = FloatingCompassRecoveryPolicy(maximumRetries = 3)
+        assertTrue(recovery.takeRetry())
+        assertTrue(recovery.takeRetry())
+        assertTrue(recovery.takeRetry())
+        assertFalse(recovery.takeRetry())
+
+        recovery.reset()
+        assertTrue(recovery.takeRetry())
+    }
+
     @Test fun rejectsStaleFutureAndInvalidAccuracySensorEvents() {
         val policy = FloatingCompassSamplePolicy(maxAgeNanos = 3_000_000_000L, minimumAccuracy = 2)
         val now = 50_000_000_000L

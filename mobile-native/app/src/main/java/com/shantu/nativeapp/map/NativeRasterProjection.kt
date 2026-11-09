@@ -31,7 +31,7 @@ internal object NativeRasterProjection {
         var maxY = Double.NEGATIVE_INFINITY
         for (row in 0..GRID) for (col in 0..GRID) {
             val lngLat = pixelLngLat((x + col.toDouble() / GRID) * tileSize, (y + row.toDouble() / GRID) * tileSize, worldSize)
-            val sourceCoord = toProviderDatum(lngLat.first, lngLat.second, datum)
+            val sourceCoord = providerCoordinate(lngLat.first, lngLat.second, datum)
             val pixel = worldPixel(sourceCoord.first, sourceCoord.second, worldSize)
             val index = (row * (GRID + 1) + col) * 2
             points[index] = pixel.first
@@ -96,7 +96,7 @@ internal object NativeRasterProjection {
         return Bitmap.createBitmap(bitmap, (x and 1) * halfWidth, (y and 1) * halfHeight, halfWidth, halfHeight)
     }
 
-    private fun toProviderDatum(lng: Double, lat: Double, datum: NativeRasterDatum): Pair<Double, Double> {
+    internal fun providerCoordinate(lng: Double, lat: Double, datum: NativeRasterDatum): Pair<Double, Double> {
         if (datum == NativeRasterDatum.WGS84 || outsideChina(lng, lat)) return lng to lat
         val gcj = wgs84ToGcj02(lng, lat)
         return if (datum == NativeRasterDatum.GCJ02) gcj else gcj02ToBd09(gcj.first, gcj.second)

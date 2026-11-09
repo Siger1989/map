@@ -17,7 +17,10 @@
   gap: 4px;
 }
 
-.floating-navigation-controls__kinds { flex-basis: 100%; }
+.floating-navigation-controls__kinds { flex-basis: 100%; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width:100%; }
+.floating-navigation-controls .map-switch { font-size:11px; padding:0 6px; gap:4px; border-radius:4px; }
+.floating-navigation-controls .floating-navigation-controls__modes button { min-height:36px; }
+.floating-navigation-controls > p.floating-navigation-controls__message { margin:0; }
 .floating-navigation-controls button:disabled { opacity: .45; cursor: default; }
 
 .floating-navigation-controls__title {
@@ -81,9 +84,10 @@
 /* The display settings include first-use authorization; keep that action reachable. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel.control-popover--floating-map {
   --map-panel-max-width: 300px;
-  --map-panel-max-height: min(300px, calc(100dvh - var(--home-top) - var(--home-footer) - 24px));
-  width: min(300px, calc(100% - var(--home-left) - var(--home-right) - 62px));
-  max-height: min(300px, calc(100dvh - var(--home-top) - var(--home-footer) - 24px));
+  --map-panel-max-height: min(200px, calc(100dvh - var(--home-top) - var(--home-footer) - 24px));
+  left:var(--home-floating-left,16px);
+  width: min(300px, calc(100% - var(--home-floating-left,16px) - 80px));
+  max-height: min(200px, calc(100dvh - var(--home-top) - var(--home-footer) - 24px));
 }
 
 @media (max-width: 360px) {

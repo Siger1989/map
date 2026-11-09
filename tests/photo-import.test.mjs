@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import exifr from 'exifr';
 import { imageMime, nativeImportOriginalHash, selectPhotoFiles } from '../modules/photos/selection.ts';
+const importPhotoSource = await readFile(new URL('../modules/photos/import.ts', import.meta.url), 'utf8');
 
 test('recognizes common photo formats and keeps a known extension when MIME is stale', () => {
   assert.equal(imageMime({ name: 'camera.HEIC', type: 'application/octet-stream' }), 'image/heic');
@@ -43,4 +44,11 @@ test('the actual EXIF parser returns lowercase binary userComment for a generate
   assert.equal(nativeImportOriginalHash(meta, 'image/jpeg', bytes), 'a'.repeat(64));
   const invalid = { ...meta, userComment: new TextEncoder().encode('ASCII\0\0\0SHANTU_NATIVE_PHOTO_V1:' + 'b'.repeat(64)) };
   assert.equal(nativeImportOriginalHash(invalid, 'image/jpeg', bytes), null, 'mismatched metadata does not override the content digest');
+});
+test('photo import offers a progressive preview and bounds supported decoder allocations', () => {
+  assert.match(importPhotoSource, /onPreview\?: \(preview: Blob\) => void/);
+  assert.match(importPhotoSource, /onPreview\?\.\(preview\)/);
+  assert.match(importPhotoSource, /MAX_DECODER_EDGE = 2560/);
+  assert.match(importPhotoSource, /decoderResizeOptions|boundedBitmapOptions/);
+  assert.match(importPhotoSource, /resizeQuality: 'low'/);
 });

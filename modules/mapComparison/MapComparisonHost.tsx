@@ -195,11 +195,6 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
     if (patch.terrain !== undefined) (index === 0 ? primary : secondary).current?.setTerrainMode(patch.terrain);
   };
   const closeLayers = () => { setLayerPane(null); layerToggle.current?.focus({ preventScroll: true }); };
-  const enableTerrain = (pitch: number) => {
-    if (pitch <= 0) return;
-    changeLayers(0, { terrain: true });
-    changeLayers(1, { terrain: true });
-  };
   const report = (index: 0 | 1, message: string) => setStatus(old => old[index] === message ? old : index === 0 ? [message, old[1]] : [old[0], message]);
   const select = (index: 0 | 1, id: string) => {
     const target = session?.choices.find(item => item.id === id);
@@ -328,7 +323,8 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
           {([0, 1] as const).map(index => <section key={index} className="map-comparison-pane" aria-label={`${side(index)}方地图`}>
             <div className="map-comparison-toolbar">
               <span>{side(index)}</span>
-              <ComparisonSourceSelector side={side(index)} pane={index} choices={session.choices} selectedId={choice(index).id} onSelect={id => select(index, id)} onTriggerRef={element => { sourceControls.current[index] = element; }} />
+              <ComparisonSourceSelector side={side(index)} pane={index} choices={session.choices} selectedId={choice(index).id} onSelect={id => select(index, id)} onTriggerRef={element => { sourceControls.current[index] = element; }}
+                onProbe={(candidate, signal) => (index === 0 ? primary : secondary).current?.probeSourceAt(candidate.source, candidate.settings, signal) ?? Promise.resolve({ status: 'unknown', message: '地图尚未准备好，请稍后测试', successes: 0, missing: 0, failures: 0, sampled: 0 })} />
               <button className="map-comparison-step" aria-label={`${side(index)}图：上一图源`} title="上一图源" disabled={!canStepSource} onClick={() => step(index, -1)}><ChevronUp size={20}/></button>
               <button className="map-comparison-step" aria-label={`${side(index)}图：下一图源`} title="下一图源" disabled={!canStepSource} onClick={() => step(index, 1)}><ChevronDown size={20}/></button>
               <button className="map-comparison-use" aria-label={`使用${side(index)}方图源`} onClick={() => finish(() => onUse(choice(index)))}>选用</button>
@@ -380,11 +376,9 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
         </div>}
         <div className="map-comparison-gizmo">
           <CameraGizmo view={view ?? camera.current ?? session.camera} onView={(pitch, bearing) => {
-            enableTerrain(pitch);
-            primary.current?.view(pitch, bearing, false);
+            primary.current?.view(choice(0).settings.terrain ? pitch : 0, bearing, false);
           }} onGestureView={(pitch, bearing, phase) => {
-            if (phase !== 'cancel') enableTerrain(pitch);
-            primary.current?.viewGesture(pitch, bearing, phase);
+            primary.current?.viewGesture(choice(0).settings.terrain ? pitch : 0, bearing, phase);
           }} />
         </div>
         <div className="map-comparison-actions" aria-label="对比地图操作">
@@ -392,7 +386,13 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
           <button aria-label="缩小对比地图" title="缩小" onClick={() => primary.current?.zoom(-1)}><Minus size={23}/></button>
           <button className="dimension-button" aria-label="切换对比地图二维三维" aria-pressed={(view?.pitch ?? camera.current?.pitch ?? 0) > 0} onClick={() => {
             const current = primary.current?.cameraSnapshot();
-            if (current) { const pitch = current.pitch > 0 ? 0 : 50; enableTerrain(pitch); primary.current?.view(pitch, current.bearing, false); }
+            if (current) {
+              const pitch = current.pitch > 0 ? 0 : 50;
+              // Explicit dimension changes update both panes; joystick input follows the primary pane setting.
+              changeLayers(0, { terrain: pitch > 0 });
+              changeLayers(1, { terrain: pitch > 0 });
+              primary.current?.view(pitch, current.bearing, false);
+            }
           }}>{(view?.pitch ?? camera.current?.pitch ?? 0) > 0 ? '3D' : '2D'}</button>
           {mode === 'browse' ? <button aria-label="添加地点标记" title="添加标记" onClick={() => { setLayerPane(null); markCenter('pin'); }} disabled={!operations}><MapPinPlus size={18}/><small>标记</small></button> : <span className="map-comparison-direction"><DirectionControl mode={operations?.direction ?? 'free'} status={operations?.directionStatus} onChange={mode => operations?.onDirectionChange(mode)} />{operations?.directionStatus && <small className="map-comparison-direction-status" role="status" aria-live="polite">{operations.directionStatus}</small>}</span>}
           {mode === 'draw' ? <>

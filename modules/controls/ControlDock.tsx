@@ -5,19 +5,18 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Route,
   MapPinPlus,
-  X,
   Menu,
   Map as MapIcon,
   Bookmark,
   PencilLine,
   ScanLine,
-  ChevronLeft,
   Ruler,
   NotebookPen,
   PanelsTopLeft,
   PictureInPicture2,
 } from 'lucide-react';
 import { DocumentTextIcon, MapIcon as SolidMapIcon, PencilIcon, StarIcon, BriefcaseIcon } from '@heroicons/react/24/solid';
+import { MapPanelHeader } from '../ui/MapPanelHeader';
 
 export type ControlPanel =
   | 'about'
@@ -146,21 +145,8 @@ export function ControlDock({
           id="map-control-panel"
           ref={panelDock}
         >
-          <div className="dock-heading">
-            {panelBack && onHide && <button className="dock-hide" onClick={onHide} aria-label={`${hideLabel}地图对象`}>{hideLabel}</button>}
-            {panelBack && (
-              <button
-                className="dock-back"
-                aria-label={panelBack.label}
-                title={panelBack.label}
-                disabled={panelBack.disabled}
-                onClick={panelBack.onClick}
-              >
-                <ChevronLeft size={16} aria-hidden="true" />
-                返回
-              </button>
-            )}
-            <h2 id="dock-title">
+          <MapPanelHeader
+            title={<>
               {floatingSubview ? '悬浮小地图' : titleContent ?? title ??
                 (active === 'about'
                   ? '关于山兔'
@@ -172,18 +158,14 @@ export function ControlDock({
                           ? '全部收藏'
                           : active === 'route'
                             ? '路线规划'
-                            : PANELS.find((p) => p.id === active)?.label)}
-            </h2>
-            {!panelBack && onHide && <button className="dock-hide" onClick={onHide} aria-label={`${hideLabel}地图对象`}>{hideLabel}</button>}
-            <button
-              ref={closeButton}
-              className="icon-button"
-              onClick={close}
-              aria-label="关闭面板"
-            >
-              <X size={18} />
-            </button>
-          </div>
+                          : PANELS.find((p) => p.id === active)?.label)}
+            </>}
+            titleId="dock-title"
+            onClose={close}
+            closeButtonRef={(element) => { closeButton.current = element; }}
+            back={panelBack}
+            hide={onHide ? { label: `${hideLabel}地图对象`, onClick: onHide } : undefined}
+          />
           <div className="dock-content" key={active}>
             {floatingSubview ? floatingNavigation : active === 'tools' ? (
               <div className="tool-grid">

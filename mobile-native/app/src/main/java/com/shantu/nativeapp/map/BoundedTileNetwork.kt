@@ -88,6 +88,7 @@ internal data class TileNetworkSnapshot(
     val failedCacheWrites: Long,
     val activeBackgroundRequests: Int,
 )
+internal enum class NativeTileProbeOutcome { OK, MISSING, AUTHORIZATION, DNS, TLS, TIMEOUT, HTTP, INVALID, UNKNOWN }
 
 internal fun interface TileHttpClient {
     fun execute(url: String): TileHttpResponse
@@ -427,6 +428,25 @@ internal class BoundedTileNetwork(
     suspend fun fetchProbe(url: String, identity: TileRequestIdentity, viewId: String? = null, generation: Long? = null): ByteArray? =
         fetch(url, identity = identity, viewId = viewId, generation = generation, cachePolicy = TileCachePolicy.NO_STORE)
 
+    /** One forced network attempt through the normal bounded transport; never reads or writes tile caches. */
+    suspend fun probeTile(url: String): NativeTileProbeOutcome = withContext(Dispatchers.IO) {
+        val generation = System.nanoTime()
+        val key = retryBudgetKey(url, null, generation)
+        var outcome = NativeTileProbeOutcome.UNKNOWN
+        var requestStarted = false
+        try {
+            withTimeout(6_000) {
+                fetchSingle(url, bulkDownload = false, generation = generation,
+                    cachePolicy = TileCachePolicy.NO_STORE, probeMode = true, maxAttempts = 1,
+                    onProbeOutcome = { outcome = it }, onProbeStarted = { requestStarted = true })
+            }
+        } catch (_: TimeoutCancellationException) { outcome = if (requestStarted) NativeTileProbeOutcome.TIMEOUT else NativeTileProbeOutcome.UNKNOWN }
+        catch (_: CancellationException) { throw CancellationException("probe cancelled") }
+        catch (_: Exception) { outcome = NativeTileProbeOutcome.UNKNOWN }
+        finally { synchronized(retryAttemptsByGeneration) { retryAttemptsByGeneration.remove(key) } }
+        outcome
+    }
+
     /** Read-only, URL/key-free cumulative telemetry; safe to call from any thread. */
     fun snapshot(): TileNetworkSnapshot = TileNetworkSnapshot(
         memoryHits = memoryHits.get(),
@@ -566,20 +586,27 @@ internal class BoundedTileNetwork(
         generation: Long? = null,
         backgroundRequest: Boolean = false,
         cachePolicy: TileCachePolicy = TileCachePolicy.NORMAL,
+        probeMode: Boolean = false,
+        maxAttempts: Int = MAX_ATTEMPTS,
+        onProbeOutcome: ((NativeTileProbeOutcome) -> Unit)? = null,
+        onProbeStarted: (() -> Unit)? = null,
     ): ByteArray? {
-        if (closed || cacheOnly || !NativeOfflineDisplayPolicy.permitsNetwork(bulkDownload) || Thread.currentThread().isInterrupted) return null
+        if (closed || cacheOnly || !NativeOfflineDisplayPolicy.permitsNetwork(bulkDownload) || Thread.currentThread().isInterrupted) {
+            onProbeOutcome?.invoke(NativeTileProbeOutcome.UNKNOWN); return null
+        }
         val host = runCatching { URL(url).host.lowercase() }.getOrNull()
-            ?: return reportAndNull("地图瓦片地址无效")
+            ?: run { onProbeOutcome?.invoke(NativeTileProbeOutcome.INVALID); return reportAndNull("地图瓦片地址无效") }
         val serverClass=serverClass(host)
         val generationToken = if (!bulkDownload && cachePolicy == TileCachePolicy.NORMAL) runCatching { persistentCache?.generationToken() }.getOrNull() else null
         if (cooldownRemainingMillis(serverClass) > 0L) {
+            if (probeMode) { onProbeOutcome?.invoke(NativeTileProbeOutcome.UNKNOWN); return null }
             report("${serverLabel(serverClass)}服务器冷却中，约${ceilSeconds(cooldownRemainingMillis(serverClass))}秒后可重试")
             waitForCooldown(serverClass)
         }
         if (closed || cacheOnly || !NativeOfflineDisplayPolicy.permitsNetwork(bulkDownload)) return null
         val retryKey = retryBudgetKey(url, identity, generation)
         val retryBudget = retryBudgetFor(retryKey)
-        if (retryBudget.get() >= MAX_ATTEMPTS) {
+        if (retryBudget.get() >= maxAttempts) {
             report("此瓦片本轮重试次数已用完；可显式重试或更新视野")
             return null
         }
@@ -623,7 +650,7 @@ internal class BoundedTileNetwork(
             }
 
             val cacheFile = cacheFile(url, identity)
-        while (retryBudget.get() < MAX_ATTEMPTS) {
+        while (retryBudget.get() < maxAttempts) {
                 if (closed || cacheOnly || !NativeOfflineDisplayPolicy.permitsNetwork(bulkDownload) || Thread.currentThread().isInterrupted) return null
                 if (cooldownRemainingMillis(serverClass) > 0L) {
                     networkPermit?.let(permitScheduler::release)
@@ -645,6 +672,7 @@ internal class BoundedTileNetwork(
                 if (isLayerInactive(identity, viewId, bulkDownload)) return null
                 networkRequests.incrementAndGet()
                 retryBudget.incrementAndGet()
+                onProbeStarted?.invoke()
                 val response = try {
                     val ioPermit = networkPermit ?: return null
                     networkPermit = null // Ownership moves to the HTTP worker and returns only when that worker exits.
@@ -652,6 +680,15 @@ internal class BoundedTileNetwork(
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
+                    if (probeMode) {
+                        onProbeOutcome?.invoke(when (classifyNativeTileFailure(error)) {
+                            NativeTileFailureKind.DOMAIN_UNRESOLVED -> NativeTileProbeOutcome.DNS
+                            NativeTileFailureKind.TLS_CONNECTION -> NativeTileProbeOutcome.TLS
+                            NativeTileFailureKind.TIMEOUT -> NativeTileProbeOutcome.TIMEOUT
+                            NativeTileFailureKind.OTHER -> NativeTileProbeOutcome.UNKNOWN
+                        })
+                        return null
+                    }
                     if (retryBudget.get() >= MAX_ATTEMPTS) {
                         report(nativeTileFailureStatus(error, retryExhausted = true))
                         return null
@@ -667,6 +704,7 @@ internal class BoundedTileNetwork(
                 if (closed || cacheOnly || !NativeOfflineDisplayPolicy.permitsNetwork(bulkDownload) || Thread.currentThread().isInterrupted) return null
                 response.body?.let { receivedBytes.addAndGet(it.size.toLong()) }
                 if (response.statusCode == 429) {
+                    if (probeMode) { onProbeOutcome?.invoke(NativeTileProbeOutcome.HTTP); return null }
                     val delay = retryAfterMillis(response.retryAfter).coerceAtLeast(MIN_429_COOLDOWN_MS)
                     setCooldown(serverClass, delay)
                     rateLimits.incrementAndGet()
@@ -681,10 +719,15 @@ internal class BoundedTileNetwork(
                 }
                 if (NativeMissingTileFallback.isExplicitMissing(response.statusCode, response.bingTileInfo) ||
                     NativeMissingTileFallback.isKnownPlaceholderStatus(response.statusCode, response.body)) {
-                    rememberMissing(url)
+                    if (!probeMode) rememberMissing(url)
+                    onProbeOutcome?.invoke(NativeTileProbeOutcome.MISSING)
                     return null
                 }
                 if (response.statusCode !in 200..299) {
+                    if (probeMode) {
+                        onProbeOutcome?.invoke(if (response.statusCode == 401 || response.statusCode == 403) NativeTileProbeOutcome.AUTHORIZATION else NativeTileProbeOutcome.HTTP)
+                        return null
+                    }
                     report(tileHttpFailureMessage(host, response.statusCode, response.providerErrorCode))
                     if (response.statusCode !in RETRYABLE_HTTP_STATUS || retryBudget.get() >= MAX_ATTEMPTS) {
                         retryBudget.set(MAX_ATTEMPTS)
@@ -698,6 +741,7 @@ internal class BoundedTileNetwork(
                 }
                 val bytes = response.body
                 if (bytes == null || bytes.size > MAX_TILE_BYTES) {
+                    if (probeMode) { onProbeOutcome?.invoke(NativeTileProbeOutcome.INVALID); return null }
                     report("天地图瓦片响应为空或超过大小限制；可点重试")
                     if (retryBudget.get() >= MAX_ATTEMPTS) return null
                     retries.incrementAndGet()
@@ -706,8 +750,12 @@ internal class BoundedTileNetwork(
                     if (networkPermit == null) return null
                     continue
                 }
-                if (!acceptCachedTile(url, bytes, identity)) return null
+                if (probeMode && NativeMissingTileFallback.isKnownPlaceholder(bytes)) {
+                    onProbeOutcome?.invoke(NativeTileProbeOutcome.MISSING); return null
+                }
+                if (!probeMode && !acceptCachedTile(url, bytes, identity)) return null
                 if (!isValidImageMeasured(bytes)) {
+                    if (probeMode) { onProbeOutcome?.invoke(NativeTileProbeOutcome.INVALID); return null }
                     report("天地图瓦片图像无效，未写入缓存；可点重试")
                     if (retryBudget.get() >= MAX_ATTEMPTS) return null
                     retries.incrementAndGet()
@@ -726,6 +774,7 @@ internal class BoundedTileNetwork(
                 }
                 if (!bulkDownload && generationToken != null && cachePolicy == TileCachePolicy.NORMAL) enqueueCacheWrite(url, identity?.cacheKey, bytes, generationToken)
                 synchronized(retryAttemptsByGeneration) { retryAttemptsByGeneration.remove(retryKey, retryBudget) }
+                onProbeOutcome?.invoke(NativeTileProbeOutcome.OK)
                 // The network loader cannot know whether WorldWind has drawn this tile.
                 // Rendering/idle status belongs to the map renderer, not this HTTP layer.
                 return bytes

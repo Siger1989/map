@@ -68,7 +68,7 @@ function renderedProps(element) {
   return element[propsKey];
 }
 
-test('layer window renders the seven map switches and the roads slider callback', async (t) => {
+test('layer window renders the eight map switches and the roads slider callback', async (t) => {
   const { React, root, LayerWindow } = await renderHarness(t);
   const changes = [];
   await React.act(async () => root.render(React.createElement(LayerWindow, {
@@ -81,8 +81,8 @@ test('layer window renders the seven map switches and the roads slider callback'
   })));
 
   const switches = [...document.querySelectorAll('[role="switch"]')];
-  assert.equal(switches.length, 7);
-  for (const key of ['terrain', 'satellite', 'elevationColors', 'contours', 'geology', 'roads', 'labels']) {
+  assert.equal(switches.length, 8);
+  for (const key of ['terrain', 'satellite', 'elevationColors', 'contours', 'outdoorContours', 'geology', 'roads', 'labels']) {
     const toggle = document.getElementById(`${key}-toggle`);
     assert.ok(toggle, `missing ${key} switch`);
     assert.ok(toggle.getAttribute('aria-labelledby'));
@@ -100,7 +100,7 @@ test('layer window renders the seven map switches and the roads slider callback'
   assert.ok(changes.some(patch => patch.roadsOpacity === 0.4), 'rendered roads slider reports opacity through onChange');
 });
 
-test('custom source hides satellite but retains the six applicable map switches', async (t) => {
+test('custom source hides satellite but retains the seven applicable map switches', async (t) => {
   const { React, root, LayerWindow } = await renderHarness(t);
   await React.act(async () => root.render(React.createElement(LayerWindow, {
     open: true,
@@ -113,7 +113,7 @@ test('custom source hides satellite but retains the six applicable map switches'
   })));
 
   const switches = [...document.querySelectorAll('[role="switch"]')];
-  assert.equal(switches.length, 6);
+  assert.equal(switches.length, 7);
   assert.equal(document.getElementById('satellite-toggle'), null);
   assert.ok(document.getElementById('roads-toggle'));
   assert.ok(document.getElementById('labels-toggle'));
@@ -157,15 +157,14 @@ test('geology details cannot expose an authorization prompt or stale Cloud state
   assert.equal(document.querySelector('img.geology-provider-legend'), null);
 });
 
-test('layer help hosts scene presets and the close button reports closed state', async (t) => {
+test('layer help has no joint terrain-and-contour preset and close reports closed state', async (t) => {
   const { React, root, LayerWindow } = await renderHarness(t);
   const openStates = [];
-  const changes = [];
   await React.act(async () => root.render(React.createElement(LayerWindow, {
     open: true,
     onOpen: value => openStates.push(value),
     settings: settings(),
-    onChange: patch => changes.push(patch),
+    onChange() {},
     onOpenSources() {},
     mapStatus: 'ready',
   })));
@@ -173,13 +172,11 @@ test('layer help hosts scene presets and the close button reports closed state',
   const help = document.querySelector('.layer-help');
   assert.ok(help);
   assert.equal(help.hasAttribute('open'), false);
-  assert.ok(help.querySelector('[aria-label="观察模式"]'), 'scene presets are provided in the layer-help details');
+  assert.equal(help.querySelector('[aria-label="观察模式"]'), null, 'the joint 3D terrain and contour preset is removed');
   const allDetails = [...document.querySelectorAll('details')];
   assert.equal(allDetails.length, 2, 'layer help and display parameters are the two compact disclosures');
-  const terrainPreset = [...help.querySelectorAll('button')].find(button => button.textContent.includes('看清地形'));
-  assert.ok(terrainPreset);
-  await React.act(async () => terrainPreset.click());
-  assert.ok(changes.some(patch => patch.terrain === true && patch.contours === true));
+  assert.ok(document.getElementById('terrain-toggle'), 'the independent terrain switch remains available');
+  assert.ok(document.getElementById('contours-toggle'), 'the independent contour switch remains available');
 
   await React.act(async () => document.querySelector('[aria-label="关闭图层窗口"]').click());
   assert.deepEqual(openStates, [false]);

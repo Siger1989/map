@@ -22,13 +22,30 @@ const chunks = line => {
 function createMap(projectionScale, cameraAware = false, hitCoordinate = route.nodes[1]) {
   const sources = new Map(), layers = new Map(), handlers = new Map(), counts = { project: 0, updateData: 0 };
   const camera = { lng: 0.02, lat: 0, zoom: 10, pitch: 0, bearing: 0, width: 400, height: 400 };
+  const container = {
+    clientWidth: camera.width, clientHeight: camera.height,
+    addEventListener() {}, removeEventListener() {}, querySelectorAll() { return []; },
+    getBoundingClientRect() { return { left: 0, top: 0, right: camera.width, bottom: camera.height, width: camera.width, height: camera.height }; },
+    ownerDocument: { fonts: { addEventListener() {}, removeEventListener() {} } },
+    parentElement: null,
+  };
+  const fire = (type, event) => { for (const callback of handlers.get(type) ?? []) callback(event); };
   const map = {
+    getContainer: () => container,
+    getCanvas: () => ({
+      clientWidth: camera.width, clientHeight: camera.height, width: camera.width, height: camera.height,
+      getBoundingClientRect: () => ({ left: 0, top: 0, right: camera.width, bottom: camera.height, width: camera.width, height: camera.height }),
+    }),
+    isStyleLoaded: () => true,
+    getLayoutProperty() { return undefined; },
+    getPaintProperty() { return undefined; },
     getSource: id => sources.get(id),
     getLayer: id => layers.get(id),
     getStyle: () => ({ layers: [...layers.values()] }),
     isMoving: () => false,
     getTerrain: () => ({ source: 'terrain-dem' }),
-    on(type, callback) { handlers.set(type, callback); },
+    on(type, callback) { const entries = handlers.get(type) ?? new Set(); entries.add(callback); handlers.set(type, entries); },
+    off(type, callback) { const entries = handlers.get(type); entries?.delete(callback); if (!entries?.size) handlers.delete(type); },
     addLayer(spec) { layers.set(spec.id, spec); },
     moveLayer() {},
     ...(cameraAware ? {
@@ -36,7 +53,10 @@ function createMap(projectionScale, cameraAware = false, hitCoordinate = route.n
       getZoom: () => camera.zoom,
       getPitch: () => camera.pitch,
       getBearing: () => camera.bearing,
-      getCanvas: () => ({ clientWidth: camera.width, clientHeight: camera.height, width: camera.width, height: camera.height }),
+    getCanvas: () => ({
+      clientWidth: camera.width, clientHeight: camera.height, width: camera.width, height: camera.height,
+      getBoundingClientRect: () => ({ left: 0, top: 0, right: camera.width, bottom: camera.height, width: camera.width, height: camera.height }),
+    }),
     } : {}),
     project([lng, lat]) {
       counts.project++;
@@ -70,7 +90,7 @@ function createMap(projectionScale, cameraAware = false, hitCoordinate = route.n
       return source;
     },
   };
-  return { map, sources, layers, counts, camera, handlers };
+  return { map, sources, layers, counts, camera, handlers, fire };
 }
 
 const allPoints = Array.from({ length: 400 }, (_, index) => [index * 0.0001, Math.sin(index / 9) * 0.00012]);
@@ -189,7 +209,7 @@ test('terrain source refresh at the same camera keeps committed hidden points fr
   const expectedNodeKeys = beforeNodes.map(point => key(expectedMove.get(key(point)) ?? point)).sort();
 
   layer.preview({ node: picked, coordinate: to });
-  pane.handlers.get('sourcedata')({ sourceId: 'terrain-dem' });
+  pane.fire('sourcedata', { sourceId: 'terrain-dem' });
   const committed = moveEditNode(session, zoomB, to, undefined, picked.controlMove);
   layer.sync(overlay(committed));
   const afterTerrainNodes = routeNodes(pane.sources.get('manual-tracks')).map(feature => feature.geometry.coordinates);
@@ -197,14 +217,14 @@ test('terrain source refresh at the same camera keeps committed hidden points fr
   assert.deepEqual(afterTerrainNodes.map(key).sort(), expectedNodeKeys, 'only the old sampled/explicit handles move with the route');
 
   pane.camera.lng += 0.001;
-  pane.handlers.get('movestart')();
+  pane.fire('movestart');
   layer.sync(overlay(committed));
   const afterPanCount = routeNodes(pane.sources.get('manual-tracks')).length;
   assert.equal(afterPanCount, beforeCount, 'same-zoom panning does not promote stretched hidden vertices to controls');
 
   pane.camera.zoom += 2;
-  pane.handlers.get('zoom')();
-  pane.handlers.get('movestart')();
+  pane.fire('zoom');
+  pane.fire('movestart');
   layer.sync(overlay(committed));
   const afterZoomCount = routeNodes(pane.sources.get('manual-tracks')).length;
   assert.ok(afterZoomCount > beforeCount, `zoom resamples more local handles (${beforeCount} -> ${afterZoomCount})`);
@@ -221,8 +241,8 @@ test('terrain pan drift cannot reveal stretched points in either pane; actual zo
     pane.map.jumpTo = camera => {
       const oldZoom = pane.camera.zoom;
       Object.assign(pane.camera, { lng: camera.center[0], lat: camera.center[1], zoom: camera.zoom, pitch: camera.pitch, bearing: camera.bearing });
-      pane.handlers.get('movestart')();
-      if (oldZoom !== camera.zoom) pane.handlers.get('zoom')();
+      pane.fire('movestart');
+      if (oldZoom !== camera.zoom) pane.fire('zoom');
     };
     return new TrackLayer(pane.map, () => {
       const half = 0.002 / 2 ** (pane.camera.zoom - 10);
@@ -250,7 +270,7 @@ test('terrain pan drift cannot reveal stretched points in either pane; actual zo
   // this correction, but the follower's jumpTo emits one when copying it.
   panes[0].camera.lng -= 0.0003;
   panes[0].camera.zoom += 0.00004699415582898325;
-  panes[0].handlers.get('movestart')();
+  panes[0].fire('movestart');
   syncs[1].apply(panes[1].map, syncs[0].remember(panes[0].map));
   layers.forEach(layer => layer.sync(committedState));
   panes.forEach(pane => {
@@ -259,8 +279,8 @@ test('terrain pan drift cannot reveal stretched points in either pane; actual zo
   });
 
   panes[1].camera.zoom += 0.25;
-  panes[1].handlers.get('zoom')();
-  panes[1].handlers.get('movestart')();
+  panes[1].fire('zoom');
+  panes[1].fire('movestart');
   syncs[0].apply(panes[0].map, syncs[1].remember(panes[1].map));
   layers.forEach(layer => layer.sync(committedState));
   panes.forEach(pane => assert.ok(routeNodes(pane.sources.get('manual-tracks')).some(feature => hidden.has(key(feature.geometry.coordinates))), 'a deliberate quarter-level zoom reveals finer controls on both maps'));

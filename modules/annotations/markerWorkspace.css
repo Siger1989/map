@@ -117,7 +117,8 @@
 .marker-camera-status { font-size: 10px; padding: 2px 0; }
 .marker-photos { gap: 3px; }
 .marker-photos button { padding: 2px; }
-.marker-photos img { width: 48px; height: 42px; }
+.marker-photos img { width: 96px; height: 72px; object-fit: contain; background: var(--ui-field); }
+.marker-photo-pending { display:flex; flex:0 0 auto; flex-direction:column; align-items:center; }
 .marker-photos small, .marker-photos-empty { font-size: 9px; }
 .marker-workspace .marker-photo-count { min-height: 24px; font-size: 10px; }
 .marker-editor-bar { min-height: 30px; }
@@ -152,7 +153,7 @@
 .marker-error, .marker-confirm p { font-size: 11px; }
 .marker-confirm { padding: 4px; gap: 3px; }
 .marker-confirm button { min-height: 30px; }
-.marker-summary-photos { max-height: 68px; }
+.marker-summary-photos { max-height: 84px; }
 .marker-summary-photos .marker-photos { padding: 2px 0; }
 @media (orientation: landscape) and (max-height: 480px) {
   .marker-workspace { width: min(440px, calc(100% - 128px)); max-height: calc(100dvh - 124px - var(--safe-top) - var(--safe-bottom)); }

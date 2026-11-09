@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Annotation } from '../annotations/data';
 import { readPhoto, type PhotoDraft } from './import';
 import { markerPhoto } from './association';
@@ -18,6 +18,8 @@ export function useMarkerCamera(save: (photos: TripPhoto[]) => Promise<void>) {
     draft?: PhotoDraft;
   } | null>(null);
   const working = useRef(false);
+  const [pendingPreview, setPendingPreview] = useState<{ markerId: string; url: string; name: string } | null>(null);
+  useEffect(() => () => { if (pendingPreview) URL.revokeObjectURL(pendingPreview.url); }, [pendingPreview]);
   const [busy, setBusy] = useState(false),
     [status, setStatus] = useState(''),
     [markerId, setMarkerId] = useState(''),
@@ -30,10 +32,13 @@ export function useMarkerCamera(save: (photos: TripPhoto[]) => Promise<void>) {
     setRetry(false);
     setStatus('正在保存照片…');
     try {
-      request.draft ??= await readPhoto(request.file, setStatus);
+      request.draft ??= await readPhoto(request.file, setStatus, preview => {
+        setPendingPreview({ markerId: request.marker.id, url: URL.createObjectURL(preview), name: request.file.name });
+      });
       setStatus('正在写入本机存储…');
       await save([markerPhoto(request.draft, request.marker, request.time)]);
       pending.current = null;
+      setPendingPreview(null);
       setStatus('照片已保存到这个标记点');
     } catch (e) {
       setRetry(true);
@@ -47,6 +52,7 @@ export function useMarkerCamera(save: (photos: TripPhoto[]) => Promise<void>) {
     busy,
     status,
     markerId,
+    pendingPreview,
     retry,
     onRetry: () => void persist(),
     capture: (marker: Annotation) => {

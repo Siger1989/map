@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import {
   Layers,
   Mountain,
@@ -13,6 +12,7 @@ import type { LayerSettings } from '../map/types';
 import { CONTOUR_INTERVALS, contourInterval } from '../terrain/contourInterval';
 import { basemapConfiguration } from '../cartography/basemaps';
 import { usesSentinel, usesTianditu } from '../cartography/sentinel';
+import { MapSwitch } from '../ui/MapSwitch';
 const ITEMS = [
   {
     key: 'terrain',
@@ -78,7 +78,6 @@ export function LayerPanel({
   satelliteStatus,
   onOpenSources,
   customSource,
-  presets,
 }: {
   settings: LayerSettings;
   onChange: (patch: Partial<LayerSettings>) => void;
@@ -86,7 +85,6 @@ export function LayerPanel({
   satelliteStatus?: string;
   onOpenSources?: () => void;
   customSource?: string;
-  presets?: ReactNode;
 }) {
   const domestic = usesTianditu(settings, basemapConfiguration().domestic);
   const nativeMapAvailable = typeof window !== 'undefined' && typeof window.ShantuNativeMap?.postMessage === 'function';
@@ -143,17 +141,15 @@ export function LayerPanel({
                   </p>
                 )}
               </div>
-              <button
-                id={`${key}-toggle`}
-                type="button"
-                className="switch"
-                role="switch"
-                aria-checked={settings[key]}
-                aria-labelledby={`${key}-label`}
-                onClick={() => onChange({ [key]: !settings[key] })}
-              >
-                <span />
-              </button>
+              <MapSwitch
+                inputId={`${key}-toggle`}
+                ariaLabelledBy={`${key}-label`}
+                label={null}
+                checked={Boolean(settings[key])}
+                onChange={(checked) => onChange({ [key]: checked })}
+                size="map"
+                className="layer-panel-switch"
+              />
             </div>
           ),
         )}
@@ -305,10 +301,9 @@ export function LayerPanel({
           </div>
         </details>
         <details className="layer-help">
-          <summary aria-label="图层说明、数据来源与场景预设">
-            说明与场景
+          <summary aria-label="图层说明与数据来源">
+            说明与来源
           </summary>
-          {presets}
           <ul>
             {ITEMS.map(({ key, label, detail }) => (
               <li key={key}>

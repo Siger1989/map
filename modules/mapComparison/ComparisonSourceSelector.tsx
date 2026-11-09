@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Star } from 'lucide-react';
 import type { ComparisonChoice } from './choices';
+import type { MapSourceHealthResult } from '../mapSources/health';
 import {
   COMPARISON_SOURCE_GROUP_ORDER,
   comparisonSourceGroups,
@@ -20,13 +21,45 @@ type Props = {
   choices: ComparisonChoice[];
   selectedId: string;
   onSelect: (id: string) => void;
+  onProbe?: (choice: ComparisonChoice, signal?: AbortSignal) => Promise<MapSourceHealthResult>;
 };
 
-export function ComparisonSourceSelector({ side, pane, choices, selectedId, onSelect, onTriggerRef }: Props) {
+export function ComparisonSourceSelector({ side, pane, choices, selectedId, onSelect, onTriggerRef, onProbe }: Props) {
   const [open, setOpen] = useState(false);
   const [favoriteKeys, setFavoriteKeys] = useState(readFavoriteSourceKeys);
   const [openGroups, setOpenGroups] = useState(readComparisonSourceOpenGroups);
   const [popupLayout, setPopupLayout] = useState<{ side: 'above' | 'below'; maxHeight: number } | null>(null);
+  const [results, setResults] = useState<Record<string, MapSourceHealthResult>>({});
+  const [lastTested, setLastTested] = useState('');
+  const [testing, setTesting] = useState<string | null>(null);
+  const activeRequest = useRef(0);
+  const activeProbe = useRef<AbortController | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; activeRequest.current++; activeProbe.current?.abort(); activeProbe.current = null; }; }, []);
+  const cancelProbe = () => {
+    if (!activeProbe.current) return;
+    activeRequest.current++;
+    activeProbe.current?.abort();
+    activeProbe.current = null;
+    setTesting(null);
+    setLastTested('');
+  };
+  const probe = async (item: ComparisonChoice) => {
+    if (!onProbe || testing || activeProbe.current) return;
+    const serial = ++activeRequest.current;
+    const controller = new AbortController();
+    activeProbe.current = controller;
+    setTesting(item.id); setLastTested(item.id);
+    setResults(old => { const next = { ...old }; delete next[item.id]; return next; });
+    try {
+      const result = await onProbe(item, controller.signal);
+      if (mounted.current && activeRequest.current === serial) setResults(old => ({ ...old, [item.id]: result }));
+    } catch {
+      if (mounted.current && activeRequest.current === serial) setResults(old => ({ ...old, [item.id]: {
+        status: 'unknown', message: '图源测试未完成，请稍后重试', successes: 0, missing: 0, failures: 0, sampled: 0,
+      } }));
+    } finally { if (mounted.current && activeRequest.current === serial) { setTesting(null); activeProbe.current = null; } }
+  };
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const popup = useRef<HTMLDivElement>(null);
@@ -72,12 +105,12 @@ export function ComparisonSourceSelector({ side, pane, choices, selectedId, onSe
       window.visualViewport?.removeEventListener('resize', measure);
       window.visualViewport?.removeEventListener('scroll', measure);
     };
-  }, [open, openGroups, choices.length, favoriteKeys.length]);
+  }, [open, openGroups, choices.length, favoriteKeys.length, results, lastTested, testing]);
   useEffect(() => {
     if (!open) return;
     const outside = (event: Event) => {
       if (root.current?.contains(event.target as Node)) return;
-      setOpen(false);
+      cancelProbe(); setOpen(false);
       trigger.current?.focus({ preventScroll: true });
     };
     document.addEventListener('pointerdown', outside, true);
@@ -100,6 +133,7 @@ export function ComparisonSourceSelector({ side, pane, choices, selectedId, onSe
   }, [open]);
 
   const closeAndRestore = () => {
+    cancelProbe();
     setOpen(false);
     trigger.current?.focus({ preventScroll: true });
   };
@@ -138,7 +172,7 @@ export function ComparisonSourceSelector({ side, pane, choices, selectedId, onSe
 
   return <div className="comparison-source-picker" data-pane={pane} ref={root}>
     <button ref={element => { trigger.current = element; onTriggerRef?.(element); }} type="button" className="comparison-source-trigger" aria-label={`${side}方图源`} aria-haspopup="dialog" aria-expanded={open}
-      onKeyDown={onTriggerKeyDown} onClick={() => setOpen(value => !value)}>
+      onKeyDown={onTriggerKeyDown} onClick={() => { if (open) cancelProbe(); setOpen(!open); }}>
       <span>{selected?.name ?? '选择图源'}</span><span aria-hidden="true">⌄</span>
     </button>
     {open && <div
@@ -150,6 +184,21 @@ export function ComparisonSourceSelector({ side, pane, choices, selectedId, onSe
       aria-label={`${side}方图源选择`}
       onKeyDown={onPopupKeyDown}
     >
+      {onProbe && <div className="comparison-source-health">
+        <button type="button" disabled={!!testing || !selected} onClick={() => selected && void probe(selected)}>
+          {testing ? '正在测试…' : '测试当前图源当前位置'}
+        </button>
+        {results[lastTested] && <p role="status" data-health={results[lastTested]!.status}>
+          上次测试：{results[lastTested]!.sourceName ? `${results[lastTested]!.sourceName} · ` : ''}{results[lastTested]!.message}
+          {results[lastTested]!.sampled > 0 && `（${results[lastTested]!.successes}可读 / ${results[lastTested]!.sampled}）`}
+          {results[lastTested]!.testedZoom !== undefined && ` · z${results[lastTested]!.testedZoom}`}
+          {results[lastTested]!.elapsedMs !== undefined && ` · ${(results[lastTested]!.elapsedMs! / 1000).toFixed(1)}秒`}
+          {results[lastTested]!.testedAt && ` · ${new Date(results[lastTested]!.testedAt!).toLocaleTimeString()}`}
+          {results[lastTested]!.scope === 'base-layer-only' && ' · 仅测OVMAP底层'}
+        </p>}
+        {!testing && lastTested && lastTested !== selectedId && results[lastTested] && <button type="button"
+          onClick={() => { onSelect(lastTested); closeAndRestore(); }}>使用此备用图源，保留视角</button>}
+      </div>}
       {COMPARISON_SOURCE_GROUP_ORDER.map(name => {
         const group = groups.find(item => item.name === name);
         if (!group) return null;
@@ -162,9 +211,11 @@ export function ComparisonSourceSelector({ side, pane, choices, selectedId, onSe
             return <div className="comparison-source-row" key={item.id}>
               <button type="button" role="option" aria-selected={item.id === selectedId} data-choice-id={item.id}
                 ref={element => { if (element) optionRefs.current.set(item.id, element); else optionRefs.current.delete(item.id); }}
-                onClick={() => { onSelect(item.id); closeAndRestore(); }}><span>{item.name}</span>{item.id === selectedId && <span aria-hidden="true">✓</span>}</button>
+                onClick={() => { cancelProbe(); onSelect(item.id); closeAndRestore(); }}><span>{item.name}</span>{item.id === selectedId && <span aria-hidden="true">✓</span>}</button>
               <button type="button" className="comparison-source-favorite" aria-label={`${favorite ? '移出' : '加入'}常用：${item.name}`} aria-pressed={favorite}
                 onClick={() => toggleFavorite(item.id)}><Star size={15} fill={favorite ? 'currentColor' : 'none'}/></button>
+              {onProbe && <button type="button" className="comparison-source-probe" disabled={!!testing}
+                aria-label={`测试${side}方图源：${item.name}`} onClick={() => void probe(item)}>体检</button>}
             </div>;
           })}
         </section>;

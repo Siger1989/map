@@ -126,13 +126,33 @@ export function nativeAnnotationHit(ids: string[], exactIds: string[] | undefine
   return fallback.length === 1 ? fallback[0]! : null;
 }
 
-function hitTrackNode(ids: string[]): TrackNode | null {
-  for (const value of metadata(ids)) {
-    if (value.kind !== 'trackNode' || typeof value.trackId !== 'string') continue;
+export function nativeTrackNodeHit(
+  ids: string[],
+  point: ScreenPoint,
+  project: (coordinate: Coordinate) => ScreenPoint | null,
+  exactIds?: string[],
+  trackId?: string,
+): TrackNode | null {
+  const candidates = ids.flatMap((id) => {
+    const value = metadata([id])[0];
+    if (!value) return [];
+    if (value.kind !== 'trackNode' || typeof value.trackId !== 'string') return [];
+    if (trackId && value.trackId !== trackId) return [];
     const coordinate = readCoordinate(value.coordinate);
-    if (coordinate) return { trackId: value.trackId, coordinate };
-  }
-  return null;
+    const screen = coordinate ? project(coordinate) : null;
+    if (!coordinate) return [];
+    if (!screen && exactIds && !exactIds.includes(id)) return [];
+    const distance = screen ? Math.hypot(screen.x - point.x, screen.y - point.y) : Number.POSITIVE_INFINITY;
+    if (Number.isNaN(distance)) return [];
+    if (exactIds && !exactIds.includes(id) && distance > 22) return [];
+    return [{ trackId: value.trackId, coordinate, distance, exact: exactIds?.includes(id) ?? false }];
+  });
+  const exact = candidates.filter(candidate => candidate.exact);
+  const ranked = exact.length ? exact : candidates;
+  ranked.sort((a, b) => a.distance - b.distance || a.trackId.localeCompare(b.trackId) ||
+    a.coordinate[1] - b.coordinate[1] || a.coordinate[0] - b.coordinate[0]);
+  const nearest = ranked[0];
+  return nearest ? { trackId: nearest.trackId, coordinate: nearest.coordinate } : null;
 }
 
 function hitTrackIds(ids: string[], tracks: TrackOverlay): string[] {
@@ -260,7 +280,8 @@ export function interpretNativeTap(
   const ids = tap.ids;
   const annotation = nativeAnnotationHit(ids, tap.exactIds, state.annotations);
   const hasAnnotationCandidate = annotationIds(ids).some((id) => state.annotations.some((item) => item.visible && item.id === id));
-  const node = hitTrackNode(ids);
+  const node = nativeTrackNodeHit(ids, tap.point, project, tap.exactIds,
+    state.trackOverlay.editing ? state.trackOverlay.movableTrackId ?? undefined : undefined);
   const trackIds = hitTrackIds(ids, state.trackOverlay);
   const hasSemanticPick = !!hitPhoto(ids, state.photos, state.photoGroups)
     || !!annotation || hasAnnotationCandidate || !!node || trackIds.length > 0 || hitRoute(ids, state.routeOverlay)

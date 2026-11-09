@@ -113,7 +113,13 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .
 .pin-style-row i, .pin-color-grid i { width: 14px; height: 14px; }
 .pin-photo-row { min-height: 30px; }
 .pin-photo-row > button:not(.pin-photo-thumb) { min-height: 28px; }
-.pin-photo-row .pin-photo-thumb { width: 28px; min-width: 28px; height: 28px; min-height: 28px; }
+.pin-photo-previews { display:flex; gap:4px; margin-top:4px; overflow-x:auto; overscroll-behavior:contain; scrollbar-width:thin; }
+.pin-photo-previews .pin-photo-thumb { flex:0 0 100px; width:100px; min-width:100px; height:76px; min-height:76px; padding:0; overflow:hidden; background:var(--ui-field); }
+.pin-photo-previews .pin-photo-thumb img { display:block; width:100%; height:100%; object-fit:contain; }
+.pin-photo-pending { position:relative; flex:0 0 100px; width:100px; height:76px; border-radius:4px; overflow:hidden; background:var(--ui-field); }
+.pin-photo-pending img { display:block; width:100%; height:100%; object-fit:contain; }
+.pin-photo-pending small { position:absolute; inset:auto 0 0; text-align:center; font-size:11px; color:var(--ui-ink); background:var(--ui-surface); }
+.pin-editor-main { flex:0 1 auto; overflow-y:auto; overscroll-behavior:contain; }
 .pin-attribute-head { min-height: 28px; }
 .pin-attribute-head button { min-height: 28px; font-size: 10px; }
 .pin-attribute-list { gap: 2px; }

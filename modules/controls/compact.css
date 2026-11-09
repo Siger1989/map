@@ -89,12 +89,12 @@
   gap: 4px;
 }
 .observatory .marker-summary-photos .marker-photos button {
-  height: 44px;
+  height: 80px;
   padding: 2px;
 }
 .observatory .marker-summary-photos .marker-photos img {
-  height: 36px;
-  width: 48px;
+  height: 72px;
+  width: 96px;
 }
 .observatory .marker-summary-photos .marker-photos small {
   display: none;

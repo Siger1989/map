@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MapSource } from './types';
 import './savedMapSources.css';
 import { getMapSourcesSessionState, updateMapSourcesSessionState, type SavedSourceFilter } from './sessionState';
 import { readFavoriteSourceKeys, savedMapSourceFavoriteKey, subscribeFavoriteSourceKeys, writeFavoriteSourceKeys } from './favorites';
+import type { MapSourceHealthResult } from './health.ts';
 
 type Filter = SavedSourceFilter;
 
@@ -12,6 +13,8 @@ export function SavedMapSources({
   ready,
   busy,
   onSelect,
+  onSelectKeepView,
+  onProbe,
   onRemove,
   onAdd,
 }: {
@@ -20,6 +23,8 @@ export function SavedMapSources({
   ready: boolean;
   busy: boolean;
   onSelect: (map: MapSource) => void;
+  onSelectKeepView?: (map: MapSource) => void;
+  onProbe?: (map: MapSource, signal?: AbortSignal) => Promise<MapSourceHealthResult>;
   onRemove: (id: string) => void;
   onAdd: () => void;
 }) {
@@ -28,6 +33,11 @@ export function SavedMapSources({
   const [confirming, setConfirming] = useState('');
   const [favoriteKeys, setFavoriteKeys] = useState(() => readFavoriteSourceKeys());
   const [favoriteError, setFavoriteError] = useState(false);
+  const [healthById, setHealthById] = useState<Record<string, MapSourceHealthResult>>({});
+  const [probingId, setProbingId] = useState('');
+  const activeProbe = useRef<AbortController | null>(null);
+  const probeSerial = useRef(0);
+  useEffect(() => () => { probeSerial.current++; activeProbe.current?.abort(); }, []);
   const favorites = useMemo(() => new Set(favoriteKeys), [favoriteKeys]);
 
   useEffect(() => subscribeFavoriteSourceKeys(setFavoriteKeys), []);
@@ -207,6 +217,18 @@ export function SavedMapSources({
                       移除
                     </button>
                   )}
+                  {(onProbe || onSelectKeepView) && <div className="saved-map-sources__health-actions">
+                    {onProbe && <button type="button" disabled={busy || (probingId !== '' && probingId !== map.id) || map.kind !== 'online'} onClick={async () => {
+                      if (probingId === map.id) { probeSerial.current++; activeProbe.current?.abort(); activeProbe.current = null; setProbingId(''); return; }
+                      const serial = ++probeSerial.current, controller = new AbortController();
+                      activeProbe.current = controller; setProbingId(map.id);
+                      try { const checked = await onProbe(map, controller.signal); if (serial === probeSerial.current) setHealthById(old => ({ ...old, [map.id]: checked })); }
+                      catch { if (serial === probeSerial.current) setHealthById(old => ({ ...old, [map.id]: { status: controller.signal.aborted ? 'cancelled' : 'unknown', message: controller.signal.aborted ? '图源测试已取消' : '图源测试未完成，具体网络原因未知', successes: 0, missing: 0, failures: 0, sampled: 0 } })); }
+                      finally { if (serial === probeSerial.current) { activeProbe.current = null; setProbingId(''); } }
+                    }}>{probingId === map.id ? '取消测试' : '测当前位置'}</button>}
+                    {onSelectKeepView && !isSelected && <button type="button" disabled={busy} onClick={() => onSelectKeepView(map)}>切换并保留视角</button>}
+                    {healthById[map.id] && <small role="status" data-health={healthById[map.id]!.status}>{healthById[map.id]!.sourceName ? `${healthById[map.id]!.sourceName}：` : ''}{healthById[map.id]!.message}{healthById[map.id]!.testedZoom !== undefined ? ` · z${healthById[map.id]!.testedZoom}` : ''}{healthById[map.id]!.elapsedMs !== undefined ? ` · ${(healthById[map.id]!.elapsedMs! / 1000).toFixed(1)} 秒` : ''}{healthById[map.id]!.testedAt ? ` · ${new Date(healthById[map.id]!.testedAt!).toLocaleTimeString()}` : ''}{healthById[map.id]!.scope === 'base-layer-only' ? ' · 仅测试 OVMAP 底层' : ''}</small>}
+                  </div>}
                 </li>
               );
             })}

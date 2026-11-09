@@ -40,7 +40,9 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
           constructor({ element }) { this.element = element; }
           getElement() { return this.element; }
           setLngLat(p) { this.coordinate = p; return this; }
+          getLngLat() { return Array.isArray(this.coordinate) ? { lng: this.coordinate[0], lat: this.coordinate[1] } : this.coordinate; }
           setOffset(p) { this.offset = p; return this; }
+          getOffset() { return this.offset ?? [0, 0]; }
           setOpacity() { return this; }
           addTo() { this.element.classList.add('maplibregl-marker', 'maplibregl-marker-anchor-bottom'); return this; }
           remove() { this.removed = true; }
@@ -77,6 +79,7 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
   const selected = [],
     layer = new AnnotationLayer((id) => selected.push(id));
   layer.map = {
+    on() {},
     off() {},
     getZoom: () => 16,
     getCanvas: () => ({ clientWidth: 400, clientHeight: 400 }),
@@ -351,6 +354,7 @@ function fixture(t, kind = 'track', direct = false, snap) {
     },
   });
   const map = {
+    on() {}, off() {},
     getCanvas: () => canvas,
     getContainer: () => container,
     stop() {},
@@ -452,6 +456,18 @@ test('short taps and quick pans stay native; hold without movement never writes'
   assert.equal(f.commits.length, 0);
   assert.equal(f.map.dragPan.active, true);
   assert.equal(f.map.dragRotate.active, false);
+});
+
+test('a new pointer down clears only the prior drag tail suppression', t => {
+  const f = fixture(t);
+  f.win.fire('pointerdown', f.event());
+  t.mock.timers.tick(480);
+  f.win.fire('pointerup', f.event());
+  assert.equal(f.bridge.blocksClick(), true);
+  f.win.fire('pointerdown', f.event(2));
+  assert.equal(f.bridge.blocksClick(), false, 'an independent node tap need not wait 600ms');
+  f.win.fire('pointerup', f.event(2));
+  assert.equal(f.commits.length, 0);
 });
 
 test('node hold previews without writes, release commits once and suppresses following map click', (t) => {
@@ -604,6 +620,12 @@ test('rendered route features carry selection IDs and exact draggable coordinate
     selectedEdgeData,
     failNextManualDiff = false;
   const map = {
+    on() {}, off() {},
+    getContainer: () => ({ addEventListener() {}, removeEventListener() {}, querySelectorAll() { return []; }, ownerDocument: { fonts: { addEventListener() {}, removeEventListener() {} } }, parentElement: null }),
+    getCanvas: () => ({ clientWidth: 400, clientHeight: 400, width: 400, height: 400, getBoundingClientRect: () => ({ left: 0, top: 0, right: 400, bottom: 400, width: 400, height: 400 }) }),
+    isStyleLoaded: () => true,
+    getLayoutProperty() { return undefined; },
+    getPaintProperty() { return undefined; },
     getSource: (id) => sources.get(id),
     addSource: (id) => {
       const source = {

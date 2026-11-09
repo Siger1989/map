@@ -1,0 +1,4 @@
+.map-panel-header { box-sizing:border-box; }
+.map-panel-header h2 { min-width:0; }
+.map-panel-header__save { flex:0 0 auto; }
+.map-panel-header__spacer { flex:1 1 auto; min-width:0; }

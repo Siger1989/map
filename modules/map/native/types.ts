@@ -22,7 +22,7 @@ export type NativeMapCommand =
   | 'zoom' | 'north' | 'reset' | 'view' | 'fitRoute' | 'fitCollection' | 'focusPoint'
   | 'followPosition' | 'followNavigation' | 'previewNavigation' | 'stop' | 'drawingInput'
   | 'pick' | 'project' | 'unproject' | 'getElevation' | 'capture' | 'setTerrainMode'
-  | 'refreshSection' | 'refreshSatellite' | 'refreshGeology' | 'retrySource' | 'geometryQuery';
+  | 'refreshSection' | 'refreshSatellite' | 'refreshGeology' | 'retrySource' | 'geometryQuery' | 'probeMapSource';
 
 export type NativeMapRequest = {
   version: 1;

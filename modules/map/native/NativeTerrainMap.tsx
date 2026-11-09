@@ -14,7 +14,6 @@ import { CAD_CHANGED } from '../../cad/storage.ts';
 import { NativeMapInteractionAdapter, type NativeHitTest } from './interaction.ts';
 import { projectNativeLocal, unprojectNativeLocal } from './localGeometry.ts';
 import { prepareVisibleNodeMove } from '../../tracks/visibleNodeMove.ts';
-import { closestNativeTrackNodePick } from './trackNodePick.ts';
 import { readNativeOfflineDisplayPolicy, subscribeNativeOfflineDisplayPolicy } from './offlineMode.ts';
 import type { NativeOfflineDisplayPolicyPayload } from './offlineMode.ts';
 import { nativeAnchoredGesture, nativeFocusCamera, nativeFocusPositionCamera, nativeNavigationCamera, nativePreviewNavigationCamera, nativeRouteGapCamera, nativeRouteIssueCamera, nativeViewCamera } from './camera.ts';
@@ -31,8 +30,10 @@ import { NativeProjectionSyncScheduler, nativePhotoGroupKey, subscribeNativeProj
 import { NativeScaleOverlay } from '../NativeScaleOverlay';
 import { NativeInitializationRetry } from './initializationRetry.ts';
 import { serializeNativeMapPhoto } from './photoWire.ts';
+import type { MapSourceHealthResult } from '../../mapSources/health.ts';
+import type { LayerSettings } from '../types.ts';
 import { shouldNotifyNativeMapReady } from './readiness.ts';
-import { interpretNativeTap, nativeAnnotationHit, NativeTapGestureGate } from './tapSemantics.ts';
+import { interpretNativeTap, nativeAnnotationHit, nativeTrackNodeHit, NativeTapGestureGate } from './tapSemantics.ts';
 import type { NativeTapPick } from './tapSemantics.ts';
 import { invalidateNativeDrawingGroundHit, nativeDrawingCoordinateAt, updateNativeDrawingGroundHit } from './drawingGroundHit.ts';
 import type { NativeDrawingGroundHit } from './drawingGroundHit.ts';
@@ -1371,14 +1372,13 @@ function nativePickMetadata(ids: string[]): AnyRecord[] {
 
 function resolveNativeDragTarget(runtime: Runtime, hit: NativeHitTest): DragTarget | null {
   const current = runtime.props;
-  const metadata = nativePickMetadata(hit.ids);
   if (current.trackOverlay.editing && !current.drawingActive && current.trackOverlay.movableTrackId) {
-    const exactMetadata = nativePickMetadata(hit.exactIds ?? []);
-    const nodeHit = closestNativeTrackNodePick(metadata, exactMetadata, current.trackOverlay.movableTrackId,
-      hit.point, (coordinate) => pointFromProjection(runtime.client!, runtime.mapId!, coordinate));
-    const coordinateValue = readPoint(nodeHit?.coordinate);
-    if (nodeHit && coordinateValue) {
-      const trackId = String(nodeHit.trackId);
+    const node = nativeTrackNodeHit(hit.ids, hit.point,
+      coordinateValue => runtime.client && runtime.mapId ? pointFromProjection(runtime.client, runtime.mapId, coordinateValue) : null,
+      hit.exactIds, current.trackOverlay.movableTrackId);
+    const coordinateValue = node?.coordinate;
+    if (node && coordinateValue) {
+      const trackId = node.trackId;
       const segments = trackId === DRAFT_ID ? current.trackOverlay.draft : current.trackOverlay.saved.find((item) => item.id === trackId)?.segments;
       if (!segments) return null;
       const track = current.trackOverlay.saved.find((item) => item.id === trackId);
@@ -1566,6 +1566,43 @@ function makeHandle(
       runtime.syncTransientGeometry?.();
     },
     cameraSnapshot: () => runtime.camera ?? null,
+    probeSourceAt: async (sourceOverride?: MapSource | null, settingsOverride?: LayerSettings, signal?: AbortSignal) => {
+      const client = runtime.client, mapId = runtime.mapId, camera = runtime.camera;
+      if (!client || !mapId || !camera) return { status: 'unknown', message: '地图尚未就绪，暂时无法测试', successes: 0, missing: 0, failures: 0, sampled: 0 };
+      const probeSettings = settingsOverride ?? runtime.props.settings;
+      let target = sourceOverride === undefined ? runtime.props.mapSource : sourceOverride;
+      if (!target && !probeSettings.offlineBasemap && probeSettings.satellite && probeSettings.satelliteProvider !== 'tianditu' && probeSettings.imageryMode === 'detail') {
+        target = { id: 'probe-sentinel', name: 'Sentinel-2 2025', kind: 'online', format: 'XYZ', attribution: 'Sentinel imagery',
+          minzoom: 0, maxzoom: 14, tileSize: 256, scheme: 'xyz', bytes: 0,
+          tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2025_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg'] };
+      }
+      const prepared = await prepareNativeMapSource(client, mapId, target ?? null, signal);
+      const value = await request('probeMapSource', {
+        source: prepared,
+        center: camera.center,
+        zoom: camera.zoom,
+        settings: { satellite: probeSettings.satellite, satelliteProvider: probeSettings.satelliteProvider,
+          imageryMode: probeSettings.imageryMode, tiandituBase: probeSettings.tiandituBase, offlineBasemap: probeSettings.offlineBasemap,
+          rasterDatums: probeSettings.rasterDatums },
+      }, { timeoutMs: 22_000, signal });
+      if (!isRecord(value) || typeof value.status !== 'string' || typeof value.message !== 'string')
+        return { status: 'unknown', message: '图源测试结果无法读取', successes: 0, missing: 0, failures: 0, sampled: 0 };
+      const statuses = new Set(['ok','partial','missing','authorization','dns','tls','timeout','http','invalid','unknown','cancelled']);
+      const result: MapSourceHealthResult = {
+        status: statuses.has(value.status) ? value.status as MapSourceHealthResult['status'] : 'unknown',
+        message: value.message,
+        successes: Number.isInteger(value.successes) ? Number(value.successes) : 0,
+        missing: Number.isInteger(value.missing) ? Number(value.missing) : 0,
+        failures: Number.isInteger(value.failures) ? Number(value.failures) : 0,
+        sampled: Number.isInteger(value.sampled) ? Number(value.sampled) : 0,
+        sourceName: typeof value.sourceName === 'string' ? value.sourceName : undefined,
+        testedZoom: Number.isFinite(value.testedZoom) ? Number(value.testedZoom) : undefined,
+        elapsedMs: Number.isFinite(value.elapsedMs) ? Number(value.elapsedMs) : undefined,
+        testedAt: Number.isFinite(value.testedAtEpochMs) ? new Date(Number(value.testedAtEpochMs)).toISOString() : undefined,
+        scope: value.scope === 'base-layer-only' ? 'base-layer-only' : 'representative-tiles',
+      };
+      return result;
+    },
     restoreCamera: (camera) => { fire('restoreCamera', camera); },
     setTerrainMode: (terrain) => { fire('setTerrainMode', { enabled: terrain }); },
     syncCameraHash: () => { if (runtime.props.persistCamera !== false && runtime.mapId === 'main' && runtime.camera) writeCameraHash(runtime.camera); },

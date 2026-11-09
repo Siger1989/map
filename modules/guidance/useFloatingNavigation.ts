@@ -18,7 +18,6 @@ const emptyStatus: FloatingNavigationStatus = {
   lockscreenEnabled: true,
   energySaving: false,
   lockscreenKeepOn: false,
-  outdoorContours: false,
   mode: 'north',
   kind: 'position',
   message: '',
@@ -79,7 +78,7 @@ export function useFloatingNavigation(
     try {
       const liveSession = currentSession.current;
       const kind = liveSession ? 'route' : 'position';
-      const payload = buildFloatingNavigationPayload(liveSession, nextMode, kind, { outdoorContours: status.outdoorContours });
+      const payload = buildFloatingNavigationPayload(liveSession, nextMode, kind);
       const serialized = serializeFloatingNavigationPayload(payload);
       if (action === 'start') bridge.start(serialized);
       else if (action === 'update') bridge.update(serialized);
@@ -100,7 +99,7 @@ export function useFloatingNavigation(
       refresh();
       return false;
     }
-  }, [refresh, status.outdoorContours]);
+  }, [refresh]);
 
   const restore = useCallback(() => {
     if (options.manageSession === false || typeof window === 'undefined') return;
@@ -174,7 +173,7 @@ export function useFloatingNavigation(
     }
   }, [refresh, send, status]);
 
-  const setBooleanOption = useCallback((key: 'windowEnabled' | 'lockscreenEnabled' | 'energySaving' | 'lockscreenKeepOn' | 'outdoorContours', enabled: boolean) => {
+  const setBooleanOption = useCallback((key: 'windowEnabled' | 'lockscreenEnabled' | 'energySaving' | 'lockscreenKeepOn', enabled: boolean) => {
     const bridge = typeof window === 'undefined' ? undefined : window.ShantuFloatingNavigation;
     if (!bridge) { setLocalMessage('此平台不支持跨App悬浮地图'); return; }
     const changed = { [key]: enabled } as Pick<FloatingNavigationOptions, typeof key>;
@@ -229,7 +228,6 @@ export function useFloatingNavigation(
     lockscreenEnabled: status.lockscreenEnabled,
     energySaving: status.energySaving,
     lockscreenKeepOn: status.lockscreenKeepOn,
-    outdoorContours: status.outdoorContours,
     mode: status.mode,
     kind: session ? 'route' as const : 'position' as const,
     hasRoute: session !== null,
@@ -244,6 +242,5 @@ export function useFloatingNavigation(
     setLockscreenEnabled: (enabled: boolean) => setBooleanOption('lockscreenEnabled', enabled),
     setEnergySaving: (enabled: boolean) => setBooleanOption('energySaving', enabled),
     setLockscreenKeepOn: (enabled: boolean) => setBooleanOption('lockscreenKeepOn', enabled),
-    setOutdoorContours: (enabled: boolean) => setBooleanOption('outdoorContours', enabled),
   };
 }

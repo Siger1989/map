@@ -50,6 +50,8 @@ import kotlinx.coroutines.coroutineScope
 import com.shantu.nativeapp.map.NativeCartographySettings
 import com.shantu.nativeapp.map.NativeBrowserCacheFallback
 import com.shantu.nativeapp.map.NativeTileNetworkPool
+import com.shantu.nativeapp.map.probeNativeMapSource
+import com.shantu.nativeapp.map.tiandituTileUrl
 import earth.worldwind.globe.geoid.AbstractEGM96Geoid
 import earth.worldwind.globe.geoid.EGM96Geoid
 import earth.worldwind.geom.Angle
@@ -104,6 +106,7 @@ class NativeReactMapHost(
     private val maps = linkedMapOf<String, MapEntry>()
     private val hostCommandCostTelemetry = NativeMapFrameCostTelemetry()
     private val shareJobs = linkedMapOf<String, Pair<String, Job>>()
+    private val sourceProbeJobs = linkedMapOf<String, Pair<String, Job>>()
     private val shareScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val assets = NativeReactAssetStore(appContext)
     private var browserCacheFallback: NativeBrowserCacheFallback? = null
@@ -448,6 +451,7 @@ class NativeReactMapHost(
                 "focusRouteIssue", "clearRouteIssue", "highlightOffline" ->
                     cameraCommand(requireMapId(mapId), command, payload, requestId)
                 "refreshSatellite" -> { requireEntry(requireMapId(mapId)).controller.retrySatellite(); send("result", mapId, requestId, JSONObject().put("requested", true)) }
+                "probeMapSource" -> probeMapSource(requireEntry(requireMapId(mapId)), payload, requestId)
                 "refreshGeology" -> { requireEntry(requireMapId(mapId)).controller.retryGeology(); send("result", mapId, requestId, JSONObject().put("requested", true)) }
                 "refreshSection" -> { val e = requireEntry(requireMapId(mapId)); e.sectionInput = null; applySection(e, e.renderState); send("result", mapId, requestId, JSONObject().put("requested", true)) }
                 "gestureCapture" -> gestureCapture(requireMapId(mapId), payload, requestId)
@@ -487,6 +491,97 @@ class NativeReactMapHost(
             .put("capabilities", capabilities())
             .put("mapIds", JSONArray())
         send("result", mapId, requestId, payload)
+    }
+
+    private fun probeMapSource(entry: MapEntry, payload: JSONObject, requestId: String?) {
+        val center = payload.optJSONArray("center")
+        if (center == null || center.length() < 2) {
+            postError(requestId, entry.id, "invalid_payload", "图源测试位置无效")
+            return
+        }
+        val longitude = center.optDouble(0, Double.NaN)
+        val latitude = center.optDouble(1, Double.NaN)
+        val zoom = payload.optDouble("zoom", 12.0)
+        if (!longitude.isFinite() || !latitude.isFinite() || latitude !in -90.0..90.0) {
+            postError(requestId, entry.id, "invalid_payload", "图源测试位置无效")
+            return
+        }
+        val sourceJson = payload.optJSONObject("source")
+        val parsedSource = sourceJson?.let {
+            NativeMapSourceCatalog.fromJson(JSONObject().put("maps", JSONArray().put(it))).sources.singleOrNull()
+        }
+        if (sourceJson != null && parsedSource == null) {
+            postError(requestId, entry.id, "unsupported_source", "此图源格式暂不支持独立测试")
+            return
+        }
+        val sourceSettings = payload.optJSONObject("settings")
+        val sourceDatum = parsedSource?.let { custom ->
+            val datumKey = com.shantu.nativeapp.map.NativeCartographySelection.rasterDatumKey(
+                customSourceId = custom.id,
+                satellite = sourceSettings?.optBoolean("satellite", false) ?: false,
+                offlineBasemap = sourceSettings?.optBoolean("offlineBasemap", false) ?: false,
+                satelliteProvider = sourceSettings?.optString("satelliteProvider", "sentinel") ?: "sentinel",
+                imageryMode = sourceSettings?.optString("imageryMode", "detail") ?: "detail",
+                tiandituBase = sourceSettings?.optString("tiandituBase", "vec") ?: "vec",
+            )
+            val override = sourceSettings?.optJSONObject("rasterDatums")?.optString(datumKey)
+            custom.withDatum(com.shantu.nativeapp.map.NativeRasterDatumOverride.resolve(override))
+        }
+        val source = sourceDatum ?: if (sourceSettings == null) entry.controller.currentCustomSource() else null
+        val currentId = entry.controller.currentSource()?.id.orEmpty()
+        val configuredLayer = sourceSettings?.optString("tiandituBase")?.takeIf { it in setOf("img", "vec", "ter") }
+        val usesTianditu = sourceSettings?.optString("satelliteProvider") == "tianditu" ||
+            (sourceSettings != null && !sourceSettings.optBoolean("offlineBasemap") && !sourceSettings.optBoolean("satellite")) || sourceSettings == null
+        val builtinLayer = configuredLayer ?: when (currentId) {
+            "tianditu-imagery" -> "img"
+            "tianditu-terrain" -> "ter"
+            "tianditu-vector" -> "vec"
+            else -> "vec"
+        }
+        val token = privateConfig.optString("tiandituKey").takeIf(String::isNotBlank)
+        val builtinDatumKey = com.shantu.nativeapp.map.NativeCartographySelection.rasterDatumKey(
+            customSourceId = null,
+            satellite = sourceSettings?.optBoolean("satellite", false) ?: false,
+            offlineBasemap = sourceSettings?.optBoolean("offlineBasemap", false) ?: false,
+            satelliteProvider = sourceSettings?.optString("satelliteProvider", "sentinel") ?: "sentinel",
+            imageryMode = sourceSettings?.optString("imageryMode", "detail") ?: "detail",
+            tiandituBase = builtinLayer,
+        )
+        val builtinDatum = com.shantu.nativeapp.map.NativeRasterDatumOverride.resolve(
+            sourceSettings?.optJSONObject("rasterDatums")?.optString(builtinDatumKey),
+        )
+        if (source == null && !usesTianditu) {
+            send("result", entry.id, requestId, JSONObject().put("status", "unknown")
+                .put("message", "此内置图源暂不支持独立测试，具体网络原因未知")
+                .put("successes", 0).put("missing", 0).put("failures", 0).put("sampled", 0))
+            return
+        }
+        if (source == null && token == null) {
+            send("result", entry.id, requestId, JSONObject().put("status", "authorization")
+                .put("message", "内置天地图尚未配置授权，未发起测试").put("successes", 0).put("missing", 0).put("failures", 0).put("sampled", 0))
+            return
+        }
+        val probeRequestId = requestId ?: return
+        val job = entry.scope.launch {
+            try {
+            val result = withContext(Dispatchers.IO) {
+                probeNativeMapSource(
+                    entry.controller.tileNetwork(), source,
+                    latitude to longitude, zoom,
+                    if (source == null && token != null) { x, y, z -> tiandituTileUrl(builtinLayer, x, y, z, token) } else null,
+                    builtinDisplayName = if (source == null) "天地图 $builtinLayer" else null,
+                    builtinDatum = builtinDatum,
+                )
+            }
+            if (isCurrent(entry)) send("result", entry.id, probeRequestId, JSONObject()
+                .put("status", result.status).put("message", result.message)
+                .put("successes", result.successes).put("missing", result.missing)
+                .put("failures", result.failures).put("sampled", result.sampled)
+                .put("sourceName", result.sourceName).put("testedZoom", result.testedZoom ?: JSONObject.NULL)
+                .put("elapsedMs", result.elapsedMs).put("testedAtEpochMs", result.testedAtEpochMs).put("scope", result.scope))
+            } finally { sourceProbeJobs.remove(probeRequestId) }
+        }
+        sourceProbeJobs[probeRequestId] = entry.id to job
     }
 
     private fun createMap(mapId: String, payload: JSONObject, requestId: String) {
@@ -1471,9 +1566,12 @@ class NativeReactMapHost(
         val share = shareJobs[target]
         val shareCancelled = target.isNotBlank() && share != null && (mapId == null || share.first == mapId)
         if (shareCancelled) { shareJobs.remove(target); share!!.second.cancel() }
+        val probe = sourceProbeJobs[target]
+        val probeCancelled = target.isNotBlank() && probe != null && (mapId == null || probe.first == mapId)
+        if (probeCancelled) { sourceProbeJobs.remove(target); probe!!.second.cancel() }
         // Section and DEM jobs follow render-state ownership; native touch picks follow gesture
         // ownership. A generic bridge abort has neither owner token and cannot cancel them.
-        send("result", mapId, requestId, JSONObject().put("cancelled", shareCancelled).put("targetRequestId", target))
+        send("result", mapId, requestId, JSONObject().put("cancelled", shareCancelled || probeCancelled).put("targetRequestId", target))
     }
 
     private fun renderShareMap(mapId: String, payload: JSONObject, requestId: String) {

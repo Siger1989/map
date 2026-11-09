@@ -3,7 +3,6 @@ import { X } from 'lucide-react';
 import type { ComparisonChoice } from './choices';
 import type { LayerSettings } from '../map/types';
 import { LayerPanel } from '../controls/LayerPanel';
-import { LayerPresets } from '../controls/LayerPresets';
 import { isLayoutInteraction } from '../uiLayout/events';
 import '../controls/layerWindow.css';
 import './comparisonLayers.css';
@@ -102,9 +101,6 @@ export function ComparisonLayerWindow({
             onOpenSources={onSource}
             satelliteDate={satelliteDate}
             satelliteStatus={satelliteStatus}
-            presets={
-              <LayerPresets settings={choice.settings} onChange={onChange} />
-            }
           />
           {status && (
             <p className="map-status" role="status">

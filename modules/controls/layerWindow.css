@@ -48,12 +48,12 @@
    the shared 36px minimum. Expanded controls remain in the scrollable content. */
 .observatory .map-layer-control .layer-window.control-popover {
   width: min(248px, calc(100% - 74px));
-  left: max(8px, var(--home-left, 8px));
+  left: var(--home-floating-left, 16px);
   right: auto;
   padding: 0 6px 6px;
   gap: 2px;
 }
-.observatory.home-map .map-layer-control .layer-window.control-popover > .dock-heading {
+.observatory.home-map .map-layer-control .layer-window.control-popover > .dock-heading:not(.map-panel-header) {
   height: 36px;
   min-height: 36px;
   padding: 0 4px;
@@ -115,33 +115,21 @@
   font-size: 10px;
   line-height: 13px;
 }
-.observatory .map-layer-control .layer-window .layer-panel .switch {
-  box-sizing: border-box;
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
-  min-height: 36px;
-  flex: 0 0 36px;
+.observatory .map-layer-control .layer-window .layer-panel .layer-panel-switch {
+  box-sizing:border-box;
+  width:44px;
+  min-width:44px;
+  height:44px;
+  min-height:44px;
+  flex:0 0 44px;
+  padding:0 4px;
+  background:transparent;
+  border:0;
+  border-radius:var(--ui-radius-control,4px);
+  box-shadow:none;
 }
-.observatory.home-map .map-layer-control .layer-window .layer-panel button.switch {
-  background: transparent;
-  border: 0;
-  border-radius: var(--ui-radius-control, 4px);
-  box-shadow: none;
-}
-.observatory.home-map .map-layer-control .layer-window .layer-panel .switch::before {
-  border-radius: var(--ui-radius-control, 4px);
-  background: var(--ui-line);
-}
-.observatory.home-map .map-layer-control .layer-window .layer-panel .switch[aria-checked='true']::before {
-  background: var(--ui-accent);
-}
-.observatory.home-map .map-layer-control .layer-window .layer-panel .switch span {
-  background: var(--ui-muted);
-}
-.observatory.home-map .map-layer-control .layer-window .layer-panel .switch[aria-checked='true'] span {
-  background: var(--ui-on-accent);
-}
+.observatory .map-layer-control .layer-window .layer-panel .layer-panel-switch .map-switch__track { width:32px; }
+.observatory .map-layer-control .layer-window .layer-panel .layer-panel-switch .map-switch__label { display:none; }
 .observatory .map-layer-control .layer-window .layer-panel .imagery-selector {
   margin-top: 4px;
   padding: 2px;

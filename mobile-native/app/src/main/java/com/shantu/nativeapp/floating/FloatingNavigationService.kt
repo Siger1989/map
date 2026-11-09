@@ -56,7 +56,6 @@ class FloatingNavigationService : Service(), LocationListener {
         private const val EXTRA_ENERGY_SAVING = "energy_saving"
         private const val EXTRA_LOCKSCREEN_KEEP_ON = "lockscreen_keep_on"
         private const val EXTRA_MODE = "mode"
-        private const val EXTRA_OUTDOOR_CONTOURS = "outdoor_contours"
         private const val STATE_PREFS = "floating_navigation_state"
         private const val PREF_WINDOW_ENABLED = "windowEnabled"
         private const val PREF_LOCKSCREEN_ENABLED = "lockscreenEnabled"
@@ -84,7 +83,6 @@ class FloatingNavigationService : Service(), LocationListener {
         private const val MAP_ZOOM = 14
         private const val MAX_TILE_REQUESTS = 16
         private const val TILE_CACHE_CAPACITY = 32
-        private const val TERRAIN_RETRY_DELAY_MS = 15_000L
         private val stateLock = Any()
         @Volatile private var activeService: FloatingNavigationService? = null
         @Volatile private var recordingActionListener: ((String) -> Unit)? = null
@@ -94,7 +92,6 @@ class FloatingNavigationService : Service(), LocationListener {
         @Volatile private var enabledState = false
         @Volatile private var visibleState = false
         @Volatile private var modeState = "north"
-        @Volatile private var outdoorContoursState = false
         @Volatile private var kindState = "position"
         @Volatile private var zoomState = FloatingNavigationGeometry.MIN_ZOOM
         @Volatile private var widthDpState = 184.0
@@ -175,7 +172,8 @@ class FloatingNavigationService : Service(), LocationListener {
             .put("lockscreenEnabled", context?.let(::storedLockscreenEnabled) ?: true)
             .put("energySaving", context?.let(::storedEnergySaving) ?: false)
             .put("lockscreenKeepOn", context?.let(::storedLockscreenKeepOn) ?: false)
-            .put("outdoorContours", context?.let(::storedOutdoorContours) ?: outdoorContoursState)
+            // Kept for older React bundles. The retired floating terrain mode is always disabled.
+            .put("outdoorContours", false)
             .put("optionsConfigured", context?.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)?.getBoolean(PREF_OPTIONS_CONFIGURED, false) ?: false)
             .put("kind", kindState).put("zoom", zoomState).put("widthDp", widthDpState).put("heightDp", heightDpState)
             .put("message", messageState.take(80))
@@ -184,7 +182,7 @@ class FloatingNavigationService : Service(), LocationListener {
                 .put("launchAttempted", lockscreenLaunchAttemptedState).put("message", lockscreenMessageState.take(100)))
             .put("diagnostics", lifecycleDiagnostics(context)
                 .put("mvtDecode", JSONObject(mvtDecodeDiagnostics.toString()))
-                .put("terrain", activeService?.terrainStatusJson() ?: JSONObject().put("loading", false).put("visibleTiles", 0))).also {
+                .put("terrain", JSONObject().put("enabled", false).put("loading", false).put("visibleTiles", 0))).also {
             if (visibleState && windowWidth > 0 && windowHeight > 0) it.put("windowBounds", JSONObject().put("x", windowX).put("y", windowY).put("width", windowWidth).put("height", windowHeight))
         }
 
@@ -236,7 +234,6 @@ class FloatingNavigationService : Service(), LocationListener {
             mode?.let { editor.putString(PREF_MODE, it) }
             energySaving?.let { editor.putBoolean(PREF_ENERGY_SAVING, it) }
             lockscreenKeepOn?.let { editor.putBoolean(PREF_LOCKSCREEN_KEEP_ON, it) }
-            outdoorContours?.let { editor.putBoolean(PREF_OUTDOOR_CONTOURS, it) }
             editor.putBoolean(PREF_OPTIONS_CONFIGURED, true)
             editor.apply()
             val service = activeService
@@ -247,7 +244,6 @@ class FloatingNavigationService : Service(), LocationListener {
                 mode?.let { intent.putExtra(EXTRA_MODE, it) }
                 energySaving?.let { intent.putExtra(EXTRA_ENERGY_SAVING, it) }
                 lockscreenKeepOn?.let { intent.putExtra(EXTRA_LOCKSCREEN_KEEP_ON, it) }
-                outdoorContours?.let { intent.putExtra(EXTRA_OUTDOOR_CONTOURS, it) }
                 app.startService(intent)
             }
         }
@@ -256,7 +252,6 @@ class FloatingNavigationService : Service(), LocationListener {
         private fun storedLockscreenEnabled(context: Context) = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).getBoolean(PREF_LOCKSCREEN_ENABLED, true)
         private fun storedEnergySaving(context: Context) = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).getBoolean(PREF_ENERGY_SAVING, false)
         private fun storedLockscreenKeepOn(context: Context) = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).getBoolean(PREF_LOCKSCREEN_KEEP_ON, false)
-        private fun storedOutdoorContours(context: Context) = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).getBoolean(PREF_OUTDOOR_CONTOURS, false)
         private fun storedMode(context: Context) = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).getString(PREF_MODE, "north")?.takeIf { it in setOf("north", "motion", "compass") } ?: "north"
 
         private fun mergePersistedOptions(context: Context, payload: JSONObject): JSONObject {
@@ -264,17 +259,16 @@ class FloatingNavigationService : Service(), LocationListener {
             val prefs = app.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)
             val configured = prefs.getBoolean(PREF_OPTIONS_CONFIGURED, false)
             val merged = JSONObject(payload.toString())
-            val payloadOutdoorContours = if (payload.has(PREF_OUTDOOR_CONTOURS)) {
+            if (payload.has(PREF_OUTDOOR_CONTOURS)) {
                 require(payload.opt(PREF_OUTDOOR_CONTOURS) is Boolean) { "outdoorContours必须是布尔值" }
-                payload.getBoolean(PREF_OUTDOOR_CONTOURS)
-            } else storedOutdoorContours(app)
+            }
             val payloadMode = payload.optString("mode").takeIf { it in setOf("north", "motion", "compass") }
             merged.put("mode", if (configured) storedMode(app) else payloadMode ?: storedMode(app))
             merged.put(PREF_WINDOW_ENABLED, if (configured) storedWindowEnabled(app) else payload.optBoolean(PREF_WINDOW_ENABLED, storedWindowEnabled(app)))
             merged.put(PREF_LOCKSCREEN_ENABLED, if (configured) storedLockscreenEnabled(app) else payload.optBoolean(PREF_LOCKSCREEN_ENABLED, storedLockscreenEnabled(app)))
             merged.put(PREF_ENERGY_SAVING, if (configured) storedEnergySaving(app) else payload.optBoolean(PREF_ENERGY_SAVING, storedEnergySaving(app)))
             merged.put(PREF_LOCKSCREEN_KEEP_ON, if (configured) storedLockscreenKeepOn(app) else payload.optBoolean(PREF_LOCKSCREEN_KEEP_ON, storedLockscreenKeepOn(app)))
-            merged.put(PREF_OUTDOOR_CONTOURS, if (configured) storedOutdoorContours(app) else payloadOutdoorContours)
+            merged.put(PREF_OUTDOOR_CONTOURS, false)
             return merged
         }
         /** Token is process-local and intentionally omitted from status/JS-facing data. */
@@ -348,7 +342,6 @@ class FloatingNavigationService : Service(), LocationListener {
                     .putBoolean(PREF_LOCKSCREEN_ENABLED, safePayload.getBoolean(PREF_LOCKSCREEN_ENABLED))
                     .putBoolean(PREF_ENERGY_SAVING, safePayload.optBoolean(PREF_ENERGY_SAVING, storedEnergySaving(context.applicationContext)))
                     .putBoolean(PREF_LOCKSCREEN_KEEP_ON, safePayload.optBoolean(PREF_LOCKSCREEN_KEEP_ON, storedLockscreenKeepOn(context.applicationContext)))
-                    .putBoolean(PREF_OUTDOOR_CONTOURS, safePayload.optBoolean(PREF_OUTDOOR_CONTOURS, storedOutdoorContours(context.applicationContext)))
                     .putBoolean(PREF_OPTIONS_CONFIGURED, true)
                     .apply()
                 if (!storedWindowEnabled(context.applicationContext) && !storedLockscreenEnabled(context.applicationContext)) {
@@ -393,9 +386,13 @@ class FloatingNavigationService : Service(), LocationListener {
             val height = optionalDimension(payload, "heightDp", 100.0..400.0)
             val out = JSONObject().put("version", 1).put("kind", kind).put("mode", mode).put("label", label)
                 .put("coordinates", coordinates)
-            for (key in listOf(PREF_WINDOW_ENABLED, PREF_LOCKSCREEN_ENABLED, PREF_ENERGY_SAVING, PREF_LOCKSCREEN_KEEP_ON, PREF_OUTDOOR_CONTOURS)) if (payload.has(key)) {
+            for (key in listOf(PREF_WINDOW_ENABLED, PREF_LOCKSCREEN_ENABLED, PREF_ENERGY_SAVING, PREF_LOCKSCREEN_KEEP_ON)) if (payload.has(key)) {
                 require(payload.opt(key) is Boolean) { "$key 必须是布尔值" }
                 out.put(key, payload.getBoolean(key))
+            }
+            if (payload.has(PREF_OUTDOOR_CONTOURS)) {
+                require(payload.opt(PREF_OUTDOOR_CONTOURS) is Boolean) { "outdoorContours必须是布尔值" }
+                out.put(PREF_OUTDOOR_CONTOURS, false)
             }
             if (payload.has("zoom")) out.put("zoom", zoom)
             if (payload.has("color")) out.put("color", FloatingNavigationGeometry.formatRouteColor(routeColor))
@@ -454,17 +451,6 @@ class FloatingNavigationService : Service(), LocationListener {
     private var lockscreenEnabled = true
     private var energySaving = false
     private var lockscreenKeepOn = false
-    private var outdoorContours = false
-    private var terrainSource: FloatingTerrainSource? = null
-    private var terrainJob: Job? = null
-    private var terrainRequestKey: String? = null
-    private var terrainScene: FloatingTerrainScene? = null
-    private var terrainLoading = false
-    private var terrainRevision = 0L
-    private val terrainGeneration = AtomicLong()
-    private var terrainLastCompletedKey: String? = null
-    private var terrainLastCompletedAt = 0L
-    private var terrainExpectedTiles = 0
     private var routeLabel = "路线"
     private var mode = "north"
     private var lastFix: NativePositionFix? = null
@@ -519,12 +505,11 @@ class FloatingNavigationService : Service(), LocationListener {
         windowWidthDp = prefs.getFloat("widthDp", 184f)
         windowHeightDp = prefs.getFloat("heightDp", 216f)
         mode = storedMode(applicationContext)
-        outdoorContours = storedOutdoorContours(applicationContext)
         windowEnabled = storedWindowEnabled(applicationContext)
         lockscreenEnabled = storedLockscreenEnabled(applicationContext)
         energySaving = storedEnergySaving(applicationContext)
         lockscreenKeepOn = storedLockscreenKeepOn(applicationContext)
-        synchronized(stateLock) { modeState = mode; outdoorContoursState = outdoorContours }
+        synchronized(stateLock) { modeState = mode }
         cleanupOwnedRouteFiles()
         synchronized(stateLock) { visibleState = false }
         scope.launch {
@@ -685,34 +670,6 @@ class FloatingNavigationService : Service(), LocationListener {
         }
     }
 
-    private fun terrainStatusJson(): JSONObject {
-        val scene = terrainScene
-        val validSamples = scene?.tiles?.sumOf { tile -> tile.heights.count(Double::isFinite) } ?: 0
-        val expectedSamples = (scene?.tiles?.size ?: 0) * FloatingTerrainSource.GRID_SIDE * FloatingTerrainSource.GRID_SIDE
-        return JSONObject()
-        .put("enabled", outdoorContours)
-        .put("screenOn", screenOn)
-        .put("visibleMap", terrainMapIsVisible())
-        .put("loading", terrainLoading)
-        .put("visibleTiles", scene?.tiles?.size ?: 0)
-        .put("expectedTiles", terrainExpectedTiles)
-        .put("missingTiles", (terrainExpectedTiles - (scene?.tiles?.size ?: 0)).coerceAtLeast(0))
-        .put("validSamples", validSamples)
-        .put("sampleSlots", expectedSamples)
-        .put("allTilesLoaded", !terrainLoading && terrainExpectedTiles > 0 && (scene?.tiles?.size ?: 0) == terrainExpectedTiles)
-        .put("hasElevation", validSamples > 0)
-        .put("revision", scene?.revision ?: 0L)
-    }
-
-    private fun terrainMapIsVisible(): Boolean {
-        if (!screenOn || !outdoorContours) return false
-        val lockView = lockscreenView
-        if (keyguardLocked && lockscreenEnabled && lockView?.isAttachedToWindow == true && lockView.width > 0 && lockView.height > 0) return true
-        val mapView = overlay
-        return !appVisible && windowEnabled && !(keyguardLocked && lockscreenEnabled) &&
-            mapView?.isAttachedToWindow == true && mapView.visibility == android.view.View.VISIBLE && mapView.width > 0 && mapView.height > 0
-    }
-
     private fun attachLockscreenViewInternal(view: FloatingNavigationView, token: String): Boolean {
         keyguardLocked = (getSystemService(KEYGUARD_SERVICE) as? KeyguardManager)?.isKeyguardLocked ?: false
         if (!alive.get() || !screenOn || !keyguardLocked || token != lockscreenToken) return false
@@ -738,7 +695,6 @@ class FloatingNavigationService : Service(), LocationListener {
         view.onDrag = null; view.onResize = null; view.onContentSizeChanged = null
         view.tiles = emptyList(); view.route = emptyList(); view.recordedSegments = emptyList(); view.center = null
         view.heading = null; view.mapBearing = null; view.hasRealLocation = false
-        view.outdoorContours = false; view.terrainScene = null; view.terrainLoading = false
         reconcileCompassSource()
         publishLockscreenStatus()
         refreshTiles()
@@ -770,13 +726,10 @@ class FloatingNavigationService : Service(), LocationListener {
                 val wasWindowEnabled = windowEnabled
                 val wasLockscreenEnabled = lockscreenEnabled
                 val oldEnergySaving = energySaving
-                val oldOutdoorContours = outdoorContours
                 windowEnabled = storedWindowEnabled(this)
                 lockscreenEnabled = storedLockscreenEnabled(this)
                 energySaving = storedEnergySaving(this)
                 lockscreenKeepOn = storedLockscreenKeepOn(this)
-                outdoorContours = storedOutdoorContours(this)
-                synchronized(stateLock) { outdoorContoursState = outdoorContours }
                 if (wasWindowEnabled != windowEnabled || wasLockscreenEnabled != lockscreenEnabled) {
                     val action = when {
                         wasWindowEnabled && !windowEnabled -> "window_disabled"
@@ -797,14 +750,6 @@ class FloatingNavigationService : Service(), LocationListener {
                     mode = it; persistMode(); updateView(); reconcileCompassSource()
                 }
                 showOrHideOverlay()
-                if (oldOutdoorContours != outdoorContours) {
-                    if (outdoorContours) {
-                        synchronized(tileCache) { tileCache.clear() }
-                        runCatching { synchronized(this) { source?.close(); source = null } }
-                    }
-                    updateView()
-                    refreshTiles()
-                }
                 publishLockscreenStatus(); publishLayoutStatus()
                 return START_NOT_STICKY
             }
@@ -840,8 +785,6 @@ class FloatingNavigationService : Service(), LocationListener {
                     lockscreenEnabled = storedLockscreenEnabled(this)
                     energySaving = storedEnergySaving(this)
                     lockscreenKeepOn = storedLockscreenKeepOn(this)
-                    outdoorContours = storedOutdoorContours(this)
-                    synchronized(stateLock) { outdoorContoursState = outdoorContours }
                     if (!wasLockscreenEnabled && lockscreenEnabled) lockscreenLaunchAttempted = false
                     reconcileWindowOptions()
                     if (!windowEnabled && !lockscreenEnabled) { expectedStopReason = "both_displays_disabled"; stopSelf(); return START_NOT_STICKY }
@@ -1065,9 +1008,6 @@ class FloatingNavigationService : Service(), LocationListener {
         val reliable = presentation.visible && fix != null && fix.accuracyMeters <= 50.0
         val actualPosition = fix?.takeIf { presentation.visible }?.let { FloatingCoordinate(it.longitude, it.latitude) }
         view.hasRealLocation = actualPosition != null
-        view.outdoorContours = outdoorContours
-        view.terrainScene = if (outdoorContours) terrainScene else null
-        view.terrainLoading = outdoorContours && terrainLoading
         val routePreviewAnchor = if (kind == "route") route.firstOrNull() else null
         view.center = actualPosition ?: routePreviewAnchor
         val fixAge = fix?.let { System.currentTimeMillis() - it.timestampMillis }
@@ -1083,7 +1023,6 @@ class FloatingNavigationService : Service(), LocationListener {
         }
         view.heading = if (mode == "compass") freshCompass else freshHeading
         view.stateText = when {
-            outdoorContours && actualPosition == null && routePreviewAnchor != null -> "路线预览·等待定位"
             !presentation.visible -> "等待定位"
             !reliable -> "定位精度不足"
             mode == "motion" && freshHeading == null -> "等待移动方向"
@@ -1094,7 +1033,7 @@ class FloatingNavigationService : Service(), LocationListener {
         val routeProjection = cachedRouteProjection.takeIf { reliable && kind == "route" }
         view.routeRemainingMeters = routeProjection?.remainingMeters
         view.routeOffRoute = routeProjection?.offRoute == true
-        synchronized(tileCache) { view.tiles = if (outdoorContours) emptyList() else tileCache.values.toList() }
+        synchronized(tileCache) { view.tiles = tileCache.values.toList() }
         view.invalidate()
     }
 
@@ -1180,22 +1119,8 @@ class FloatingNavigationService : Service(), LocationListener {
         if (!alive.get()) {
             refreshJob?.cancel()
             refreshJob = null
-            releaseTerrain(clearScene = true, closeSource = true)
             return
         }
-        if (outdoorContours) {
-            // A terrain-only source is selected in this mode; never keep requesting MVTs too.
-            refreshJob?.cancel()
-            refreshJob = null
-            refreshAgain = false
-            if (source != null) {
-                runCatching { synchronized(this) { source?.close(); source = null } }
-                synchronized(tileCache) { tileCache.clear() }
-            }
-            refreshTerrainTiles()
-            return
-        }
-        releaseTerrain(clearScene = true, closeSource = true)
         val fix = lastFix
         val anchor = (fix?.takeIf { NativePositionPolicy.present(NativePositionState(it, System.currentTimeMillis())).visible }
             ?.let { FloatingCoordinate(it.longitude, it.latitude) } ?: if (kind == "route") route.firstOrNull() else null) ?: return
@@ -1267,104 +1192,6 @@ class FloatingNavigationService : Service(), LocationListener {
         }
     }
 
-    /** Loads only the visible lock/overlay scene and publishes immutable partial snapshots. */
-    private fun refreshTerrainTiles() {
-        if (!terrainMapIsVisible()) {
-            releaseTerrain(clearScene = true, closeSource = true)
-            updateView()
-            return
-        }
-        val now = System.currentTimeMillis()
-        val fix = lastFix?.takeIf { NativePositionPolicy.present(NativePositionState(it, now)).visible }
-        val anchor = fix?.let { FloatingCoordinate(it.longitude, it.latitude) }
-            ?: if (kind == "route") route.firstOrNull() else null
-        if (anchor == null) {
-            releaseTerrain(clearScene = true, closeSource = false)
-            updateView()
-            return
-        }
-
-        val z = zoom.coerceIn(FloatingTerrainSource.MIN_ZOOM, FloatingTerrainSource.MAX_ZOOM)
-        val center = tileFor(anchor.longitude, anchor.latitude, z)
-        val requestKey = "$z/${center.x}/${center.y}"
-        val source = terrainSource ?: FloatingTerrainSource(applicationContext).also { terrainSource = it }
-        val targets = source.visibleTileIds(z, center.x, center.y)
-        terrainExpectedTiles = targets.size
-
-        if (terrainRequestKey == requestKey && terrainJob == null &&
-            source.cachedVisibleTiles(z, center.x, center.y).size == targets.size) {
-            terrainLoading = false
-            updateView()
-            return
-        }
-
-        if (terrainRequestKey == requestKey && terrainJob?.isActive == true) {
-            updateView()
-            return
-        }
-        if (terrainRequestKey == requestKey && terrainJob == null && terrainLastCompletedKey == requestKey &&
-            now - terrainLastCompletedAt < TERRAIN_RETRY_DELAY_MS) {
-            updateView()
-            return
-        }
-
-        val generation = terrainGeneration.incrementAndGet()
-        terrainJob?.cancel()
-        terrainRequestKey = requestKey
-        terrainScene = FloatingTerrainScene(source.cachedVisibleTiles(z, center.x, center.y), ++terrainRevision)
-        terrainLoading = true
-        terrainLastCompletedKey = null
-        updateView()
-
-        terrainJob = scope.launch {
-            try {
-                source.loadVisibleTiles(z, center.x, center.y) {
-                    if (!alive.get() || generation != terrainGeneration.get() || !terrainMapIsVisible()) return@loadVisibleTiles
-                    terrainScene = FloatingTerrainScene(source.cachedVisibleTiles(z, center.x, center.y), ++terrainRevision)
-                    updateView()
-                }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                // Unavailable coverage remains nodata; never replace missing samples with zero.
-            } finally {
-                if (generation == terrainGeneration.get()) {
-                    terrainScene = FloatingTerrainScene(source.cachedVisibleTiles(z, center.x, center.y), ++terrainRevision)
-                    terrainLoading = false
-                    terrainJob = null
-                    terrainLastCompletedKey = requestKey
-                    terrainLastCompletedAt = System.currentTimeMillis()
-                    updateView()
-                }
-            }
-        }
-    }
-
-    private fun releaseTerrain(clearScene: Boolean, closeSource: Boolean) {
-        val hadWork = terrainJob != null || terrainLoading ||
-            (clearScene && terrainScene != null) || (closeSource && terrainSource != null)
-        if (!hadWork) return
-        terrainGeneration.incrementAndGet()
-        terrainJob?.cancel()
-        terrainJob = null
-        terrainRequestKey = null
-        terrainLoading = false
-        terrainExpectedTiles = 0
-        terrainLastCompletedKey = null
-        if (clearScene) terrainScene = null
-        if (closeSource) {
-            terrainSource?.close()
-            terrainSource = null
-        }
-        if (clearScene) {
-            terrainRevision++
-            listOfNotNull(overlay, lockscreenView).distinct().forEach { view ->
-                view.terrainScene = null
-                view.terrainLoading = false
-            }
-        }
-    }
-
     private data class TileId(val z: Int, val x: Int, val y: Int) { val key get() = "$z/$x/$y" }
     private fun tileFor(lon: Double, lat: Double, z: Int): TileId {
         val n = 1 shl z; val x = floor((lon + 180.0) / 360.0 * n).toInt().coerceIn(0, n - 1)
@@ -1433,8 +1260,6 @@ class FloatingNavigationService : Service(), LocationListener {
         sendBroadcast(Intent(FloatingLockMapActivity.ACTION_SESSION_ENDED).setPackage(packageName)
             .putExtra(LOCKSCREEN_TOKEN_EXTRA, lockscreenToken))
         alive.set(false); refreshJob?.cancel(); resizeRefreshJob?.cancel()
-        terrainGeneration.incrementAndGet(); terrainJob?.cancel(); terrainJob = null
-        terrainSource?.close(); terrainSource = null; terrainScene = null; terrainLoading = false
         lockscreenLaunchAckJob?.cancel(); screenCheckJob?.cancel()
         screenReceiver?.let { runCatching { unregisterReceiver(it) } }; screenReceiver = null
         compassSource?.stop(); compassSource = null

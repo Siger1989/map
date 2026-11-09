@@ -9,6 +9,8 @@
   --home-right: max(8px, env(safe-area-inset-right, 0px));
   --home-layer-control-width: 58px;
   --home-left: max(8px, env(safe-area-inset-left, 0px));
+  --home-floating-left: max(16px, env(safe-area-inset-left, 0px));
+  --home-floating-right: max(16px, env(safe-area-inset-right, 0px));
   --home-top: env(safe-area-inset-top, 0px);
   --home-header-height: 50px;
   --home-header-item-height: 38px;

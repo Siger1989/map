@@ -72,6 +72,11 @@
   height: 28px; min-height: 28px; padding: 0 6px; background: var(--ui-field); text-align: left;
 }
 .comparison-source-trigger > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.comparison-source-health { display:grid; gap:4px; padding:4px; border-bottom:1px solid var(--ui-line); }
+.comparison-source-health p { margin:0; font-size:11px; line-height:1.35; color:var(--ui-muted); overflow-wrap:anywhere; }
+.comparison-source-health [data-health='ok'] { color:var(--ui-accent); }
+.map-comparison-ui .comparison-source-popup .comparison-source-health button { width:100%; min-height:36px; height:auto; white-space:normal; }
+.map-comparison-ui .comparison-source-row .comparison-source-probe { flex:0 0 40px; width:40px; min-width:40px; min-height:36px; height:36px; padding:0 2px; font-size:11px; }
 .comparison-source-popup {
   position: absolute; z-index: 32; top: calc(100% + 2px); left: 0; width: min(250px, calc(100vw - 16px));
   max-height: min(48dvh, calc(100dvh - 120px));
@@ -88,18 +93,18 @@
 .comparison-source-group-3 { background: color-mix(in srgb, #74b982 9%, var(--ui-surface)); }
 .comparison-source-group-4 { background: color-mix(in srgb, #d5a565 9%, var(--ui-surface)); }
 .map-comparison-ui .comparison-source-popup .comparison-source-group-heading {
-  display: flex; justify-content: space-between; align-items: center; width: 100%; height: 26px; min-height: 26px;
+  display: flex; justify-content: space-between; align-items: center; width: 100%; height: 36px; min-height: 36px;
   padding: 0 6px; background: transparent; color: var(--ui-muted); font-size: 11px; text-align: left;
 }
-.comparison-source-row { display: flex; align-items: center; min-width: 0; height: 28px; }
+.comparison-source-row { display: flex; align-items: center; min-width: 0; min-height: 36px; }
 .map-comparison-ui .comparison-source-row > [role='option'] {
-  display: flex; align-items: center; justify-content: space-between; flex: 1; min-width: 0; height: 28px; min-height: 28px;
+  display: flex; align-items: center; justify-content: space-between; flex: 1; min-width: 0; height: 36px; min-height: 36px;
   padding: 0 6px; overflow: hidden; background: transparent; text-align: left; font-size: 12px;
 }
 .comparison-source-row > [role='option'] > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .comparison-source-row > [role='option'][aria-selected='true'] { color: var(--ui-accent); font-weight: 600; }
 .map-comparison-ui .comparison-source-row .comparison-source-favorite {
-  display: grid; place-items: center; width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0;
+  display: grid; place-items: center; width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0;
   background: transparent; color: var(--ui-accent);
 }
 .comparison-source-popup :is(button):focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
@@ -187,7 +192,7 @@ html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison
   width: 100%;
   max-width: 100%;
   max-height: var(--compare-editor-max-height);
-  padding: 4px;
+  padding: 8px;
   border-radius: 8px;
   box-sizing: border-box;
 }
@@ -240,20 +245,20 @@ html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window {
   --compare-window-max-height: calc((100dvh - var(--compare-top) - var(--home-bottom) - 44px) / 2 - 48px);
   --compare-editor-max-height: var(--compare-window-max-height);
-  position: absolute; z-index: 25; left: 8px; right: auto; top: auto;
-  bottom: calc(44px + var(--home-bottom) + 8px);
+  position: absolute; z-index: 25; left: var(--home-floating-left,16px); right: auto; top: auto;
+  bottom: calc(44px + var(--home-bottom) + 16px);
   display: flex; flex-direction: column; gap: 4px;
-  width: min(300px, calc(100% - 16px)); max-height: var(--compare-window-max-height);
+  width: min(300px, calc(100% - 120px)); max-height: var(--compare-window-max-height);
   padding: 0; border: 0; background: transparent; overflow: visible; pointer-events: auto;
 }
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-pane='0'] {
-  bottom: calc(44px + var(--home-bottom) + var(--compare-half) + 8px);
+  bottom: calc(44px + var(--home-bottom) + var(--compare-half) + 16px);
 }
-html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-kind='marker'] { width: min(210px, calc(100% - 104px)); }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-kind='marker'] { width: min(260px, calc(100% - 112px)); }
 .map-comparison-ui .comparison-editor-position-button { flex: 0 0 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; color: var(--ui-accent); }
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .route-edit-dock .route-edit-dock-heading { height: auto; min-height: 44px; }
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .route-edit-dock .comparison-editor-position-button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; }
-html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .pin-editor .comparison-editor-position-button { flex: 0 0 28px; width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0; }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .pin-editor .comparison-editor-position-button { flex: 0 0 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; }
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .pin-editor-header .pin-heading-label { display: none; }
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .marker-workspace .comparison-editor-position-button { flex: 0 0 28px; width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0; }
 .map-comparison-editor-content { min-height: 0; max-height: var(--compare-editor-max-height); overflow-y: auto; overscroll-behavior: contain; }

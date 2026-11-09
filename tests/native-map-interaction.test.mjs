@@ -171,6 +171,18 @@ test('a non-selected handle that moves before its hold resolves stays a map pan,
   h.adapter.dispose();
 });
 
+test('a fresh native gesture can select the next node without waiting for the previous drag tail', () => {
+  const h = harness();
+  h.emit('touch', h.touch(0, 10, 20));
+  h.emit('hitTest', h.hit());
+  h.emit('touch', h.touch(1, 10, 20));
+  assert.equal(h.adapter.blocksClick(), true, 'the released drag still suppresses its own trailing tap');
+  h.emit('touch', h.touch(0, 40, 60, { gestureId: 8 }));
+  h.emit('hitTest', h.hit({ gestureId: 8, x: 40, y: 60, ids: [] }));
+  assert.equal(h.adapter.blocksClick(), false, 'the next fresh gesture has no inherited suppression');
+  h.adapter.dispose();
+});
+
 test('native node and annotation drags consume only the latest MOVE once per animation frame', () => {
   const cases = [
     { name: 'node', target: { kind: 'track', node: { trackId: 'draft', coordinate: [1, 2] } }, hitId: 'track-node', down: [10, 20], moves: [[20, 30], [35, 45], [50, 60]], expected: [5, 6] },

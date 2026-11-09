@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { interpretNativeTap, NativeTapGestureGate } from '../modules/map/native/tapSemantics.ts';
+import { interpretNativeTap, nativeTrackNodeHit, NativeTapGestureGate } from '../modules/map/native/tapSemantics.ts';
 
 function setup(overrides = {}) {
   const state = {
@@ -120,6 +120,26 @@ test('track editing prioritizes nodes, then line points, then route, and otherwi
   assert.equal(interpretNativeTap(h.tap([bridge({ kind: 'track', trackId: 'track-a' })], [0.5, 0], { x: 50, y: 0 }), h.state, h.project).type, 'trackLine');
   assert.deepEqual(interpretNativeTap(h.tap(['__planned-route']), h.state, h.project), { type: 'route' });
   assert.deepEqual(interpretNativeTap(h.tap([], [2, 3]), h.state, h.project), { type: 'mapPick', coordinate: [2, 3], queryPoint: true });
+});
+
+test('expanded overlapping native route nodes choose the nearest projected vertex deterministically', () => {
+  const h = setup({ trackOverlay: { ...trackOverlay, editing: true } });
+  const farther = bridge({ kind: 'trackNode', trackId: 'track-a', coordinate: [-0.1, 0] });
+  const nearer = bridge({ kind: 'trackNode', trackId: 'track-a', coordinate: [0.04, 0] });
+  const expected = { type: 'trackNode', node: { trackId: 'track-a', coordinate: [0.04, 0] } };
+  assert.deepEqual(interpretNativeTap(h.tap([farther, nearer, bridge({ kind: 'track', trackId: 'track-a' })], [0, 0]), h.state, h.project), expected);
+  assert.deepEqual(interpretNativeTap(h.tap([nearer, farther, bridge({ kind: 'track', trackId: 'track-a' })], [0, 0]), h.state, h.project), expected,
+    'candidate order does not depend on WorldWind rectangle-pick ordering');
+});
+
+test('tap and drag share terrain-aware node ranking, preserve exact GPU hits and reject unprojectable expanded hits', () => {
+  const exact = bridge({ kind: 'trackNode', trackId: 'a', coordinate: [1, 2] });
+  const nearby = bridge({ kind: 'trackNode', trackId: 'a', coordinate: [1.01, 2] });
+  const point = { x: 10, y: 20 };
+  assert.deepEqual(nativeTrackNodeHit([exact], point, () => null, [exact], 'a'), { trackId: 'a', coordinate: [1, 2] });
+  assert.equal(nativeTrackNodeHit([nearby], point, () => null, [], 'a'), null);
+  assert.equal(nativeTrackNodeHit([exact], point, () => ({ x: 1000, y: 1000 }), [], 'a'), null);
+  assert.equal(nativeTrackNodeHit([exact], point, () => point, [exact], 'other'), null);
 });
 
 test('browse selection prioritizes annotations, routes, track geometry, areas, and photo groups', () => {

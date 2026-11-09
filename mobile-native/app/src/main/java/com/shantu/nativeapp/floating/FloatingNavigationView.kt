@@ -51,10 +51,6 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     var routeRemainingMeters: Double? = null; set(value) { field = value; invalidate() }
     var routeOffRoute: Boolean = false; set(value) { field = value; invalidate() }
     var label: String = "路线"; set(value) { field = value; invalidate() }
-    var outdoorContours: Boolean = false; set(value) { field = value; invalidate() }
-    var terrainScene: FloatingTerrainScene? = null; set(value) { field = value; invalidate() }
-    var terrainLoading: Boolean = false; set(value) { field = value; invalidate() }
-    private val contourTerrainRenderer = FloatingContourTerrainRenderer()
     var tiles: List<FloatingTileGeometry> = emptyList(); set(value) {
         field = value
         rebuildTileSummaries(value)
@@ -123,7 +119,7 @@ internal class FloatingNavigationView(context: Context) : View(context) {
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        p.color = if (lockscreenPresentation || outdoorContours) android.graphics.Color.BLACK else 0xff07130e.toInt()
+        p.color = if (lockscreenPresentation) android.graphics.Color.BLACK else 0xff07130e.toInt()
         if (lockscreenPresentation) canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), p)
         else canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), round, round, p)
         val header = if (lockscreenPresentation) 0f else px(32f)
@@ -132,7 +128,7 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         val top = header
         val right = width - left
         val bottom = height.toFloat()
-        p.color = if (lockscreenPresentation || outdoorContours) android.graphics.Color.BLACK else 0xff0a1a12.toInt()
+        p.color = if (lockscreenPresentation) android.graphics.Color.BLACK else 0xff0a1a12.toInt()
         canvas.drawRect(left, top, right, bottom, p)
         canvas.save(); canvas.clipRect(left, top, right, bottom)
         mapLabels.clear()
@@ -145,22 +141,6 @@ internal class FloatingNavigationView(context: Context) : View(context) {
                 text(canvas, stateText.ifBlank { "等待罗盘方向" }, cX, top + (bottom - top) * .72f,
                     10f, 0xffb7c59c.toInt(), Paint.Align.CENTER)
                 drawPositionGlyph(canvas, cX, cY, null)
-            } else if (outdoorContours) {
-                val cameraBearing = if (mode == "north") 0.0 else bearing ?: 0.0
-                renderCounters = FloatingTileRenderCounters()
-                val scene = terrainScene
-                if (scene != null && scene.tiles.isNotEmpty()) {
-                    contourTerrainRenderer.draw(canvas, RectF(left, top, right, bottom), scene, navCenter, zoom,
-                        cameraBearing, route, recordedSegments, routeColor)
-                    if (!contourTerrainRenderer.lastFrameHasTerrain) {
-                        text(canvas, if (terrainLoading) "正在加载真实高程" else "当前位置高程暂不可用", cX,
-                            top + (bottom - top) * .72f, 10f, 0xff9bb477.toInt(), Paint.Align.CENTER)
-                    }
-                } else {
-                    text(canvas, if (terrainLoading) "正在加载真实高程" else "当前高程暂不可用", cX,
-                        top + (bottom - top) * .72f, 10f, 0xff9bb477.toInt(), Paint.Align.CENTER)
-                }
-                drawPositionGlyph(canvas, cX, cY, heading?.minus(cameraBearing))
             } else {
                 canvas.save(); if ((mode == "motion" || mode == "compass") && bearing != null) canvas.rotate(-bearing.toFloat(), cX, cY)
                 drawTiles(canvas, navCenter, cX, cY)

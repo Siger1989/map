@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { useMapSources } from './useMapSources';
 import {
   MAX_CONFIG_BYTES,
@@ -6,6 +6,7 @@ import {
   MAX_MAPS,
   type Bounds,
   type MapDraft,
+  type MapSource,
 } from './types';
 import { parseMapConfig, resolveMapInput } from './online';
 import { inspectOffline } from './offlineClient';
@@ -28,6 +29,7 @@ import { builtinMapSourceFavoriteKey } from './favorites';
 import { parseOvmap } from './ovmap';
 import { existingMapIndexes } from './importReview';
 import { getMapSourcesSessionState, mapSourcesBrowseScrollToRestore, mapSourcesBrowseStepToRestore, rememberMapSourcesBrowseScroll, rememberMapSourcesBrowseStep, updateMapSourcesSessionState, type MapSourcesStep, type SourceCategory } from './sessionState';
+import type { MapSourceHealthResult } from './health.ts';
 
 type Pending = { draft: MapDraft; blob?: Blob };
 export type MapSourcesNavigation = {
@@ -46,6 +48,7 @@ export function MapSourcesPanel({
   incomingFile,
   onIncomingConsumed,
   settings, onSettings,
+  onProbeMapSource,
 }: {
   sources: ReturnType<typeof useMapSources>;
   builtin: 'terrain' | 'detail' | 'latest';
@@ -57,6 +60,7 @@ export function MapSourcesPanel({
   onIncomingConsumed?: () => void;
   settings?: LayerSettings;
   onSettings?: (patch: Partial<LayerSettings>) => void;
+  onProbeMapSource?: (source: MapSource | null, signal?: AbortSignal) => Promise<MapSourceHealthResult>;
 }) {
   const [step, setStepState] = useState<MapSourcesStep>(() => mapSourcesBrowseStepToRestore());
   const setStep = (value: MapSourcesStep) => {
@@ -80,6 +84,60 @@ export function MapSourcesPanel({
   const [previewPage, setPreviewPage] = useState(0);
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
+  const [health, setHealth] = useState<MapSourceHealthResult | null>(null);
+  const [probeBusy, setProbeBusy] = useState(false);
+  const activeProbe = useRef<AbortController | null>(null);
+  const probeSerial = useRef(0);
+  const probeMounted = useRef(true);
+  useEffect(() => {
+    probeMounted.current = true;
+    return () => {
+      probeMounted.current = false;
+      probeSerial.current++;
+      activeProbe.current?.abort();
+      activeProbe.current = null;
+    };
+  }, []);
+  const invalidateProbe = useCallback(() => {
+    probeSerial.current++;
+    activeProbe.current?.abort();
+    activeProbe.current = null;
+    if (probeMounted.current) { setProbeBusy(false); setHealth(null); }
+  }, []);
+  const currentProbeContext = JSON.stringify([sources.selected, sources.source?.id, builtin, step, category]);
+  const probeContext = useRef(currentProbeContext);
+  probeContext.current = currentProbeContext;
+  const committedProbeContext = useRef<string | null>(null);
+  useEffect(() => {
+    if (committedProbeContext.current === null) { committedProbeContext.current = currentProbeContext; return; }
+    if (committedProbeContext.current !== currentProbeContext) { committedProbeContext.current = currentProbeContext; invalidateProbe(); }
+  }, [sources.selected, sources.source?.id, builtin, step, category, invalidateProbe]);
+  const probe = async (source: MapSource | null, signal?: AbortSignal) => {
+    if (!onProbeMapSource || activeProbe.current) return { status: 'unknown', message: '图源测试未完成，具体网络原因未知', successes: 0, missing: 0, failures: 0, sampled: 0 } as MapSourceHealthResult;
+    const controller = new AbortController();
+    const serial = ++probeSerial.current;
+    const requestContext = probeContext.current;
+    const cancelWithParent = () => controller.abort();
+    if (signal?.aborted) controller.abort();
+    else signal?.addEventListener('abort', cancelWithParent, { once: true });
+    activeProbe.current = controller;
+    const requestSignal = controller.signal;
+    setProbeBusy(true);
+    setHealth(null);
+    const isCurrent = () => probeMounted.current && probeSerial.current === serial && activeProbe.current === controller && probeContext.current === requestContext;
+    try {
+      const result = await onProbeMapSource(source, requestSignal);
+      if (isCurrent()) setHealth(result);
+      return result;
+    } catch {
+      const result = { status: requestSignal.aborted ? 'cancelled' : 'unknown', message: requestSignal.aborted ? '图源测试已取消' : '图源测试未完成，具体网络原因未知', successes: 0, missing: 0, failures: 0, sampled: 0 } as MapSourceHealthResult;
+      if (isCurrent()) setHealth(result);
+      return result;
+    } finally {
+      signal?.removeEventListener('abort', cancelWithParent);
+      if (isCurrent()) { activeProbe.current = null; setProbeBusy(false); }
+    }
+  };
   const domestic = basemapConfiguration().domestic;
   const work = useRef<AbortController | null>(null);
   const root = useRef<HTMLElement>(null);
@@ -252,6 +310,8 @@ export function MapSourcesPanel({
           <button data-group="public" aria-pressed={category === 'library'} onClick={() => { setError(''); setCategory('library'); }}>公共库</button>
         </div>
         <p className="map-source-current">当前：{sources.source?.name ?? (settings?.satelliteProvider === 'tianditu' ? '天地图' : builtin === 'detail' ? 'Sentinel-2 2025' : builtin === 'latest' ? '最新云况' : '地形地图')}</p>
+        {onProbeMapSource && <div className="map-source-health"><button type="button" disabled={!sources.ready} onClick={() => { if (probeBusy) activeProbe.current?.abort(); else void probe(sources.source); }}> {probeBusy ? '取消测试' : '测试当前位置'}</button>
+          {health && <p role="status" data-health={health.status}>{health.sourceName ? `${health.sourceName}：` : ''}{health.message}{health.sampled > 0 ? `（${health.successes} 可读 · ${health.missing} 无覆盖 · ${health.failures} 失败 / ${health.sampled}）` : ''}{health.testedZoom !== undefined ? ` · z${health.testedZoom}` : ''}{health.elapsedMs !== undefined ? ` · ${(health.elapsedMs / 1000).toFixed(1)} 秒` : ''}{health.testedAt ? ` · ${new Date(health.testedAt).toLocaleTimeString()}` : ''}{health.scope === 'base-layer-only' ? ' · 仅测试 OVMAP 底层' : ''}</p>}</div>}
         <details className="map-source-settings"><summary>图源与地形署名</summary>
           <p>{(sources.source?.attribution ?? (domestic ? TIANDITU_CREDIT : SENTINEL_CREDIT)).replace(/<[^>]*>/g, '')}</p>
           <p>{TERRAIN_CREDIT.replace(/<[^>]*>/g, '')}</p>
@@ -259,7 +319,9 @@ export function MapSourcesPanel({
         </details>
         {category === 'saved' && <SavedMapSources maps={sources.maps} selected={sources.selected} ready={sources.ready} busy={busy}
           onAdd={openAdd} onRemove={id => void run(async () => { await sources.remove(id); })}
-          onSelect={map => { sources.select(map.id); if (map.bounds) onFocus(map.bounds); }} />}
+          onSelect={map => { sources.select(map.id); if (map.bounds) onFocus(map.bounds); }}
+          onSelectKeepView={map => sources.select(map.id)}
+          onProbe={onProbeMapSource ? probe : undefined} />}
         {category === 'saved' && settings && onSettings && <details className="map-source-settings"><summary>坐标校正</summary>
           <RasterDatumChoice settings={settings} selected={sources.selected} image={sources.source?.kind === 'image'} defaultDatum={defaultRasterDatum(sources.source)} onChange={onSettings} onError={setError}/>
         </details>}

@@ -18,10 +18,11 @@ const MODEL_CHOICES = Object.keys(ANNOTATION_CHOICES).filter(
   (kind): kind is AnnotationChoice => kind !== 'pin',
 );
 
-export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onCapture, onImport, onPhoto, cameraStatus, cameraBusy, cameraRetry, onCameraRetry, onAddModel }: {
+export function PinEditor({ state, item, photos, pendingPhoto, onClose, onShare, onAdjust, onCapture, onImport, onPhoto, cameraStatus, cameraBusy, cameraRetry, onCameraRetry, onAddModel }: {
   state: AnnotationsState;
   item: Annotation;
   photos: VisiblePhoto[];
+  pendingPhoto?: { url: string; name: string; status: string };
   onClose: () => void;
   onShare: (item: Annotation) => void;
   onAdjust: () => void;
@@ -168,9 +169,10 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
         <div className="pin-photo-row">
           <button disabled={cameraBusy} onClick={() => saveForPhoto(onCapture)}><Camera size={15}/>拍照</button>
           <button disabled={cameraBusy} onClick={() => saveForPhoto(onImport)}><Upload size={15}/>导入照片</button>
-          {photos.map(photo => <button key={photo.id} className="pin-photo-thumb" aria-label={`查看照片 ${photo.name}`} onClick={() => saveForPhoto(() => onPhoto(photo.id))}><img src={photo.url} alt={photo.title || photo.name}/></button>)}
+
           {onAddModel && <button type="button" className="pin-add-model-trigger" aria-expanded={addingModel} onClick={() => setAddingModel(value => !value)}>＋添加模型</button>}
         </div>
+        {(photos.length > 0 || pendingPhoto) && <div className="pin-photo-previews" aria-label="标记照片预览">{pendingPhoto && <div className="pin-photo-pending" role="status"><img src={pendingPhoto.url} alt={pendingPhoto.name}/><small>{pendingPhoto.status}</small></div>}{photos.map(photo => <button key={photo.id} className="pin-photo-thumb" aria-label={`查看照片 ${photo.name}`} onClick={() => saveForPhoto(() => onPhoto(photo.id))}><img src={photo.url} alt={photo.title || photo.name}/></button>)}</div>}
         {addingModel && onAddModel && <div className="pin-model-options" aria-label="添加模型类型">
           <AnnotationTypeOptions
             kinds={MODEL_CHOICES}

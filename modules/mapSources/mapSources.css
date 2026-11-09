@@ -301,6 +301,11 @@
 .map-source-tabs button[data-group='saved']:not([aria-pressed='true']) { background:color-mix(in srgb,var(--ui-surface) 78%,var(--ui-field) 22%); }
 .map-source-tabs button[data-group='public']:not([aria-pressed='true']) { background:color-mix(in srgb,var(--ui-surface) 84%,var(--ui-raised) 16%); }
 .map-source-current { color:var(--ui-muted); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.map-source-health { display:grid; gap:3px; min-width:0; }
+.map-source-health > button { justify-self:start; min-height:32px; padding:3px 8px; }
+.map-source-health > p { margin:0; color:var(--ui-muted); font-size:11px; line-height:14px; overflow-wrap:anywhere; }
+.map-source-health > p[data-health='ok'] { color:var(--ui-accent); }
+.map-source-health > p[data-health='authorization'], .map-source-health > p[data-health='dns'], .map-source-health > p[data-health='tls'], .map-source-health > p[data-health='timeout'], .map-source-health > p[data-health='http'], .map-source-health > p[data-health='invalid'] { color:var(--ui-danger); }
 .map-source-import-entry { display:grid; gap:4px; }
 .map-source-import-entry small { color:var(--ui-muted); font-size:11px; }
 .observatory.home-map .map-source-import-entry .map-file-button { background:var(--ui-accent); color:var(--ui-on-accent); min-height:44px; }

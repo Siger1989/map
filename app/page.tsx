@@ -7,6 +7,7 @@ import { objectRecenterPlan } from '@/modules/map/objectCenter';
 import { collectionHighlightData } from '@/modules/collections/selectionHighlight';
 import { cachePackagePreview } from '@/modules/outdoor/cachePackagePreview';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { MapSourceHealthResult } from '@/modules/mapSources/health';
 import { drawingMapProjection } from '@/modules/mapComparison/drawingMapProjection';
 import { AboutPanel } from '@/modules/help/AboutPanel';
 import { PRODUCT_NAME } from '@/config/product';
@@ -1132,6 +1133,7 @@ export default function Home() {
       if (editor.session.branch !== null)
         editor.change((value) => appendEditBranch(value, point.coordinate));
       else if (point.trackId === editor.session.track.id) {
+        setRouteNodeSelection([]);
         setTrackLinePoint(point);
         editor.change((value) => ({ ...value, selected: null }));
       }
@@ -1285,6 +1287,15 @@ export default function Home() {
     setRouteChild(false);
     annotations.select(null);
     editor.start(track);
+    setRouteNodeBox(false);
+    const entryNode = trackLinePoint?.trackId === track.id
+      ? track.segments.flat().find(point => equalCoordinate(point, trackLinePoint.coordinate))
+      : undefined;
+    setRouteNodeSelection(entryNode ? [entryNode] : []);
+    if (entryNode) {
+      setTrackLinePoint(null);
+      editor.change(value => selectEditNode(value, entryNode));
+    } else if (trackLinePoint?.trackId !== track.id) setTrackLinePoint(null);
   };
   const editPlannedPoints = () => {
     const route = navigation.route;
@@ -1292,6 +1303,9 @@ export default function Home() {
     plannedEdit.current = { createdAt: route.createdAt, selectedId: tracks.selectedId };
     guidance.stop();
     routeReturnPoint.current = trackLinePoint;
+    setTrackLinePoint(null);
+    setRouteNodeSelection([]);
+    setRouteNodeBox(false);
     tracks.finish();
     setPanel(null);
     setRouteWindow('card');
@@ -1302,6 +1316,12 @@ export default function Home() {
   const addEditPoint = () => {
     const current = editor.session;
     if (!current) return;
+    const syncAddedNode = (changed: boolean) => {
+      if (!changed) return;
+      const selected = editor.currentSession()?.selected;
+      setRouteNodeSelection(selected ? [selected] : []);
+      setTrackLinePoint(null);
+    };
     if (current.selected) {
       const segment = current.track.segments.find((l) =>
         l.some((p) => equalCoordinate(p, current.selected!)),
@@ -1310,20 +1330,20 @@ export default function Home() {
         segment?.findIndex((p) => equalCoordinate(p, current.selected!)) ?? -1;
       const other = segment?.[index + 1] ?? segment?.[index - 1];
       if (other)
-        editor.change((v) =>
+        syncAddedNode(editor.change((v) =>
           insertEditNode(v, [
             (current.selected![0] + other[0]) / 2,
             (current.selected![1] + other[1]) / 2,
           ]),
-        );
+        ));
     } else if (trackLinePoint?.trackId === current.track.id)
-      editor.change((v) =>
+      syncAddedNode(editor.change((v) =>
         insertEditNode(
           v,
           trackLinePoint.coordinate,
           trackLinePoint.sourceDistance ?? trackLinePoint.distance,
         ),
-      );
+      ));
     else editor.setError('请先点选需要添加节点的线段。');
   };
   const routeVisible =
@@ -1849,6 +1869,7 @@ export default function Home() {
       dragging={!!featureMove || !!annotationPreview}
       terrainStatus={modelTerrainStatus}
       photos={photosForMarker(photos.items, selectedAnnotation.id)}
+      pendingPhoto={markerCamera.pendingPreview?.markerId === selectedAnnotation.id ? { ...markerCamera.pendingPreview, status: markerCamera.busy ? '保存中' : '未保存，可重试' } : undefined}
       onCapture={markerCamera.capture}
       onImport={markerCamera.importPhoto}
       onAdjust={() => {
@@ -1898,6 +1919,7 @@ export default function Home() {
   const routeEditorOverlay = editor.session && panel === null ? <>
     <RouteEditToolbar
       session={editor.session}
+      linePointSelected={trackLinePoint?.trackId === editor.session.track.id && !editor.session.selected}
       snapName={featureMove?.snappedNode ? tracks.saved.find(t => t.id === featureMove.snappedNode!.trackId)?.name : undefined}
       snapHint={featureMove?.snapHint}
       snapping={tracks.snapping}
@@ -1917,7 +1939,7 @@ export default function Home() {
       onSelectionDetails={detail => { editor.change(session => editSelectionDetails(session, routeNodeSelection, detail)); routeDisplay.update({ mode: 'original' }); }}
       onPointMarker={input => routeNodeSelection.length === 1 && editor.change(session => addEditMarker(session, routeNodeSelection[0], input, crypto.randomUUID(), map.current?.groundElevation(routeNodeSelection[0]) ?? null))}
       onSetEnd={() => { if (routeNodeSelection.length === 1) editor.change(session => setEditEnd(session, routeNodeSelection[0])); }}
-      onClearSelection={() => { setRouteNodeSelection([]); editor.change(session => ({ ...session, selected: null })); }}
+      onClearSelection={() => { setRouteNodeSelection([]); setTrackLinePoint(null); editor.change(session => ({ ...session, selected: null })); }}
       onRemove={() => {
         if (!routeNodeSelection.length) editor.change(removeEditNode);
         else if (editor.change(session => removeEditNodes(session, routeNodeSelection))) setRouteNodeSelection([]);
@@ -1928,7 +1950,12 @@ export default function Home() {
         setRouteNodeBox(mode !== null);
       }}
       onBranch={() => editor.change(toggleEditBranch)}
-      onUndo={() => editor.change(undoRouteEdit)}
+      onUndo={() => {
+        if (!editor.change(undoRouteEdit)) return;
+        const selected = editor.currentSession()?.selected;
+        setRouteNodeSelection(selected ? [selected] : []);
+        setTrackLinePoint(null);
+      }}
       onStyle={style => { editor.change(value => styleRouteEdit(value, style)); routeDisplay.update({ mode: 'original' }); }}
     />
     {!comparison && (routeNodeBox || !!routeNodeSelection.length) && <TrackNodeBoxSelect
@@ -1940,7 +1967,7 @@ export default function Home() {
       project={point => map.current?.toScreen(featureMove?.target.kind === 'track' && equalCoordinate(point, featureMove.target.node.coordinate) ? featureMove.coordinate : point) ?? null}
       onTwoFingerMove={(previous, next) => map.current?.panZoomGesture(previous, next)}
       onTwoFingerEnd={() => map.current?.finishPanZoomGesture()}
-      onChange={points => { setRouteNodeSelection(points); editor.change(session => ({ ...session, selected: points.length === 1 ? points[0] : null })); }}
+      onChange={points => { setTrackLinePoint(null); setRouteNodeSelection(points); editor.change(session => ({ ...session, selected: points.length === 1 ? points[0] : null })); }}
       onExit={() => setRouteNodeBox(false)}
     />}
     {!comparison && routeEditorDialog}
@@ -2101,7 +2128,7 @@ export default function Home() {
               project={point => paneMap.current?.toScreen(featureMove?.target.kind === 'track' && equalCoordinate(point, featureMove.target.node.coordinate) ? featureMove.coordinate : point) ?? null}
               onTwoFingerMove={(previous, next) => paneMap.current?.panZoomGesture(previous, next)}
               onTwoFingerEnd={() => paneMap.current?.finishPanZoomGesture()}
-              onChange={points => { setRouteNodeSelection(points); editor.change(session => ({ ...session, selected: points.length === 1 ? points[0] : null })); }}
+              onChange={points => { setTrackLinePoint(null); setRouteNodeSelection(points); editor.change(session => ({ ...session, selected: points.length === 1 ? points[0] : null })); }}
               onExit={() => setRouteNodeBox(false)}
             />
           </div>}
@@ -2337,6 +2364,7 @@ export default function Home() {
                 );
               else if (node.trackId === editor.session.track.id) {
                 setRouteNodeBox(false);
+                setTrackLinePoint(null);
                 setRouteNodeSelection([node.coordinate]);
                 editor.change((value) =>
                   selectEditNode(value, node.coordinate),
@@ -3246,17 +3274,15 @@ export default function Home() {
               onGestureView={(pitch, bearing, phase) => {
                 manualAngleGesture.current = phase === 'move';
                 if (phase !== 'cancel') {
-                  manualNavigationPose.current = { pitch, bearing };
-                  if (pitch > 0 && !layers.terrain && !section.enabled)
-                    update({ terrain: true });
+                  const effectivePitch = layers.terrain ? pitch : 0;
+                  manualNavigationPose.current = { pitch: effectivePitch, bearing };
                 }
-                map.current?.viewGesture(pitch, bearing, phase);
+                map.current?.viewGesture(layers.terrain ? pitch : 0, bearing, phase);
               }}
               onView={(pitch, bearing) => {
-                manualNavigationPose.current = { pitch, bearing };
-                if (pitch > 0 && !layers.terrain && !section.enabled)
-                  update({ terrain: true });
-                map.current?.view(pitch, bearing, false);
+                const effectivePitch = layers.terrain ? pitch : 0;
+                manualNavigationPose.current = { pitch: effectivePitch, bearing };
+                map.current?.view(effectivePitch, bearing, false);
               }}
             />
           }
@@ -3376,7 +3402,7 @@ export default function Home() {
               })
           )}
         <ControlDock
-          floatingNavigation={floatingNavigation.supported ? <FloatingNavigationControls controls={floatingNavigation} /> : undefined}
+          floatingNavigation={floatingNavigation.supported || process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW === '1' ? <FloatingNavigationControls controls={floatingNavigation} preview={process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW === '1'} /> : undefined}
           industryEnabled={showIndustryToolsEntry(INDUSTRY_TOOLS_ENABLED)}
           showRecordingEntry={!desktopShell}
           onArea={TERRAIN_SECTION_ENABLED ? startArea : undefined}
@@ -3526,6 +3552,7 @@ export default function Home() {
             }} />}
           {panel === 'sources' && (
             <MapSourcesPanel
+              onProbeMapSource={(source, signal) => map.current?.probeSourceAt(source, layers, signal) ?? Promise.resolve<MapSourceHealthResult>({ status: 'unknown', message: '地图尚未准备好，请稍后测试', successes: 0, missing: 0, failures: 0, sampled: 0 })}
               incomingFile={incomingRoute.mapSource}
               onIncomingConsumed={incomingRoute.dismissMapSource}
               settings={layers}

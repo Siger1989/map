@@ -181,7 +181,8 @@ export class TrackLayer {
         };
       })
       .filter((hit) => hit.distance <= radius && (!accept || accept(hit)))
-      .sort((a, b) => a.distance - b.distance);
+      .sort((a, b) => a.distance - b.distance || a.trackId.localeCompare(b.trackId) ||
+        a.coordinate[1] - b.coordinate[1] || a.coordinate[0] - b.coordinate[0]);
     return hits[0] ?? null;
   }
   /** Capture the rendered control nodes once, before either pane changes selection. */

@@ -239,7 +239,7 @@ export function usePosition() {
       bridge.compassEnabled(true);
       let last: number | null = null;
       const poll = () => {
-        if (document.hidden) return;
+        if (document.hidden || request !== generation.current) return;
         try {
           const data = JSON.parse(bridge.compassState!());
           if (data.error) { setHeading(null); setDirectionError(data.error); return; }
@@ -248,8 +248,21 @@ export function usePosition() {
           last = value; setHeading(value); setDirectionError('');
         } catch { setHeading(null); setDirectionError('指南针暂未就绪'); }
       };
-      const timer = window.setInterval(poll, 120); poll();
-      sensorCleanup.current = () => { clearInterval(timer); bridge.compassEnabled?.(false); };
+      const onVisibilityChange = () => {
+        if (document.hidden) { last = null; setHeading(null); }
+        else poll();
+      };
+      const onPageShow = () => { last = null; poll(); };
+      document.addEventListener('visibilitychange', onVisibilityChange);
+      window.addEventListener('pageshow', onPageShow);
+      const timer = window.setInterval(poll, 120);
+      poll();
+      sensorCleanup.current = () => {
+        clearInterval(timer);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+        window.removeEventListener('pageshow', onPageShow);
+        bridge.compassEnabled?.(false);
+      };
       return;
     }
     if (!window.isSecureContext || !window.DeviceOrientationEvent) {

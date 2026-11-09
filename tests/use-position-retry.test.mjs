@@ -84,7 +84,7 @@ async function mount(t, nativeBridge) {
       else delete globalThis[key];
     }
   });
-  return { React, state: () => state, watches, cleared, timers, cancelledTimers, intervals, clearedIntervals };
+  return { React, window, document, state: () => state, watches, cleared, timers, cancelledTimers, intervals, clearedIntervals };
 }
 
 function fixAt(timestamp, longitude = 104) {
@@ -208,4 +208,32 @@ test('native locate replaces an expired watcher and ignores its old-generation p
   await f.React.act(async () => f.intervals.at(-1).callback());
   assert.deepEqual(f.state().fix.coordinates, [105, 30], 'the replacement watcher publishes the recovered fresh fix');
   assert.equal(f.state().locating, false);
+});
+
+test('native compass refreshes immediately after foreground and clears stale heading', async t => {
+  let compass = JSON.stringify({ error: '等待指南针方向' });
+  let polls = 0;
+  const bridge = { compassEnabled() {}, compassState() { polls++; return compass; } };
+  const f = await mount(t, bridge);
+  await f.React.act(async () => f.state().device());
+  assert.equal(polls, 1, 'device mode polls immediately');
+  assert.equal(f.state().heading, null);
+
+  compass = JSON.stringify({ heading: 42, time: Date.now() });
+  await f.React.act(async () => f.intervals.at(-1).callback());
+  assert.equal(f.state().heading, 42);
+  Object.defineProperty(f.document, 'hidden', { configurable: true, value: true });
+  await f.React.act(async () => f.document.dispatchEvent(new f.window.Event('visibilitychange')));
+  assert.equal(f.state().heading, null, 'hidden state clears the last live heading');
+
+  const before = polls;
+  compass = JSON.stringify({ heading: 100, time: Date.now() - 5000 });
+  Object.defineProperty(f.document, 'hidden', { configurable: true, value: false });
+  await f.React.act(async () => f.window.dispatchEvent(new f.window.Event('pageshow')));
+  assert.equal(polls, before + 1, 'pageshow polls the resumed sensor immediately');
+  assert.equal(f.state().heading, null, 'cached stale data is rejected');
+
+  compass = JSON.stringify({ heading: 101, time: Date.now() });
+  await f.React.act(async () => f.document.dispatchEvent(new f.window.Event('visibilitychange')));
+  assert.equal(f.state().heading, 101, 'fresh post-resume sensor data is accepted');
 });

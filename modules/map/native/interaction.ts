@@ -134,6 +134,9 @@ export class NativeMapInteractionAdapter {
     }
     if (touch.action === 0) {
       this.cancel(this.pending ? { ...touch, gestureId: this.pending.gestureId } : touch, pointerId);
+      // The old gesture's trailing tap is gated separately by gesture identity.
+      // Do not make the user's next independent tap wait for the 600ms tail guard.
+      this.suppressClickUntil = 0;
       this.pending = {
         gestureId: touch.gestureId, pointerId, downTime: touch.downTime ?? touch.eventTime,
         point, lastPoint: point, target: null, hit: null, hitResolved: false, occupied: false, active: false,

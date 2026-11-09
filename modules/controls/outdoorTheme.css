@@ -52,13 +52,13 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='t
   border-radius:var(--ui-radius-card);
   background:var(--ui-surface);
   top: auto;
-  bottom: calc(var(--home-footer) + 8px);
-  left:var(--home-left); right:auto;
+  bottom: calc(var(--home-footer) + 16px);
+  left:var(--home-floating-left,16px); right:auto;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-heading { height:28px; min-height:28px; gap:var(--tool-panel-gap); margin:0; padding:0; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-heading h2 { margin:0; font-size:13px; line-height:20px; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-heading .icon-button { position:relative; width:28px; min-width:28px; height:28px; min-height:28px; flex-basis:28px; border-radius:var(--ui-radius-control); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-heading .icon-button::before { content:''; position:absolute; top:50%; left:50%; width:32px; height:32px; transform:translate(-50%,-50%); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-heading:not(.map-panel-header) { height:28px; min-height:28px; gap:var(--tool-panel-gap); margin:0; padding:0; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-heading:not(.map-panel-header) h2 { margin:0; font-size:13px; line-height:20px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-heading:not(.map-panel-header) .icon-button { position:relative; width:28px; min-width:28px; height:28px; min-height:28px; flex-basis:28px; border-radius:var(--ui-radius-control); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-heading:not(.map-panel-header) .icon-button::before { content:''; position:absolute; top:50%; left:50%; width:32px; height:32px; transform:translate(-50%,-50%); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-content { margin:0; padding:0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions,.home-position-dock) { padding: 3px; width: 50px; box-sizing: border-box; background: var(--ui-surface); border-radius: var(--ui-radius-card); box-shadow: var(--ui-shadow); gap: 2px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-guiding='true']):not([data-route-edit='true']):not([data-survey='true']):not([data-focus-locked='true']) .home-position-dock { bottom: var(--ui-controls-bottom); }
@@ -118,9 +118,9 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
   color: var(--ui-ink); background: var(--ui-surface); border: 1px solid var(--ui-line);
   border-radius: var(--ui-radius-card); box-shadow: var(--ui-shadow); backdrop-filter: none;
   top: calc(var(--home-top) + var(--home-header-height) + 8px);
-  left: var(--home-left); right: auto;
-  width: min(300px,calc(100% - var(--home-left) - var(--home-right) - 62px));
-  max-width: min(300px,calc(100% - var(--home-left) - var(--home-right) - 62px));
+  left: var(--home-floating-left,16px); right: auto;
+  width: min(300px,calc(100% - var(--home-floating-left,16px) - var(--home-floating-right,16px) - 62px));
+  max-width: min(300px,calc(100% - var(--home-floating-left,16px) - var(--home-floating-right,16px) - 62px));
 }
 /* 2026-09-30: the user requested the same flatter density as the tools sample.
    Only the planning form changes; completed-route cards retain their sizing. */
@@ -141,7 +141,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='r
   backdrop-filter: none;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='route'] #map-control-panel:has(.route-panel) .dock-heading h2 { font-size: 13px; line-height: 20px; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='route'] #map-control-panel:has(.route-panel) .dock-heading .icon-button { width: 28px; min-width: 28px; flex-basis: 28px; border-radius:var(--ui-radius-control); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='route'] #map-control-panel:has(.route-panel) .dock-heading:not(.map-panel-header) .icon-button { width: 28px; min-width: 28px; flex-basis: 28px; border-radius:var(--ui-radius-control); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='route'] #map-control-panel:has(.route-panel) :is(.dock-heading button,.route-load,.route-modes button,.route-edit-actions button) { position: relative; }
 /* Match the tools sample: 28px plates, 32px vertical hits, and 4px between rows. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='route'] #map-control-panel:has(.route-panel) :is(.dock-heading button,.route-load,.route-modes button,.route-edit-actions button)::before { content: ''; position: absolute; left: 0; right: 0; top: -2px; bottom: -2px; background: transparent; }
@@ -196,7 +196,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='t
   gap: 4px;
   overflow: hidden;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel > .dock-heading {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel > .dock-heading:not(.map-panel-header) {
   flex-shrink: 0;
   height: 28px;
   min-height: 28px;
@@ -204,11 +204,11 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='t
   padding: 0;
   gap: 4px;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel > .dock-heading h2 { font-size: 13px; line-height: 20px; margin: 0; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel > .dock-heading:not(.map-panel-header) h2 { font-size: 13px; line-height: 20px; margin: 0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel > .dock-content { min-height: 0; padding: 0; overflow: auto; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel .track-panel { display: flex; flex-direction: column; gap: 4px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel .track-start-actions { gap: 4px; align-items: center; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel :is(.dock-heading button,.track-start-actions button,.track-continue-start) {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel :is(.dock-heading:not(.map-panel-header) button,.track-start-actions button,.track-continue-start) {
   position: relative;
   box-sizing: border-box;
   height: 28px;
@@ -219,9 +219,9 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='t
   line-height: 16px;
   gap: 4px;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel :is(.dock-heading button,.track-start-actions button)::before { content: ''; position: absolute; inset: -2px 0; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel .dock-heading .icon-button { width: 28px; min-width: 28px; flex: 0 0 28px; padding: 0; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel .dock-heading .icon-button::before { left: -2px; right: -2px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel :is(.dock-heading:not(.map-panel-header) button,.track-start-actions button)::before { content: ''; position: absolute; inset: -2px 0; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel .dock-heading:not(.map-panel-header) .icon-button { width: 28px; min-width: 28px; flex: 0 0 28px; padding: 0; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel .dock-heading:not(.map-panel-header) .icon-button::before { left: -2px; right: -2px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel .track-panel button.route-primary { height: 36px; min-height: 36px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel .track-panel .route-note { margin: 0; padding: 0 6px; font-size: 11px; line-height: 16px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel .track-continue-picker { gap: 4px; margin: 0; padding: 2px 6px; border-radius:var(--ui-radius-control); }

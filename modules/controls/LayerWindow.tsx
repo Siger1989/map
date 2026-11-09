@@ -1,9 +1,9 @@
 import { isLayoutInteraction } from '../uiLayout/events';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Layers, X } from 'lucide-react';
+import { Layers } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
 import { LayerPanel } from './LayerPanel';
-import { LayerPresets } from './LayerPresets';
+import { MapPanelHeader } from '../ui/MapPanelHeader';
 import './layerWindow.css';
 
 /** A map-level entry and non-modal window, independent of the bottom tool dock. */
@@ -86,25 +86,20 @@ export function LayerWindow({
           role="region"
           aria-labelledby="layer-window-title"
         >
-          <div className="dock-heading">
-            {detail && <button className="icon-button" aria-label="返回图层设置" onClick={onDetailBack}>‹</button>}
-            <h2 id="layer-window-title">{detail ? '地质图例' : '图层'}</h2>
-            <button
-              ref={closeButton}
-              className="icon-button"
-              onClick={close}
-              aria-label="关闭图层窗口"
-            >
-              <X size={18} />
-            </button>
-          </div>
+          <MapPanelHeader
+            title={detail ? '地质图例' : '图层'}
+            titleId="layer-window-title"
+            onClose={close}
+            closeLabel="关闭图层窗口"
+            closeButtonRef={(element) => { closeButton.current = element; }}
+            back={detail ? { label: '返回图层设置', onClick: () => onDetailBack?.() } : undefined}
+          />
           <div className="dock-content">
             {detail || <>{settings.geology && <button className="layer-geology-detail" onClick={onGeologyDetails}>
               地质图例与说明
             </button>}
 
             <LayerPanel
-              presets={<LayerPresets settings={settings} onChange={onChange} />}
               customSource={customSource}
               onOpenSources={onOpenSources}
               settings={settings}
