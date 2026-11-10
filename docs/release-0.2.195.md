@@ -14,12 +14,27 @@
 
 - Node照片导入/EXIF/GPS标记/保存：16项PASS；TSC PASS。
 - Native权限、拒绝/取消、普通入口、原图URI、旧批次隔离，以及NATIVE位图/EXIF保存：定向9项PASS（45秒）。权限拒绝/关闭的框架Intent队列断言已按独立Activity隔离修正；最终无失败。
-- fresh私人Web7.82秒PASS；optimized APK与包名/版本/签名/资源一致性/实际manifest权限：构建交付中。
+- fresh私人Web7.82秒PASS；optimized3分4秒、包名/版本/原签名/1925 fresh资源/39私人种子和Key一致性/实际manifest位置权限与DEX原图API/CRC/16KiB ZIP与64位ELF PASS；8SO同194。
 - 手机未连接/安装，OPPO权限弹窗、相册URI映射、用户原片GPS成功率尚未验证；浏览器无法证明Android权限流。194定向390/360窗口证据保留，195提示长文本未另作视觉验收，用户自验。
 - 云端账号/好友暂缓；HarmonyOS6.1原生HAP未交付。
 
 ## 交付
 
-待最终产物完整性通过后先发本机独立APK。GitHub私人备份须单独核验：194大文件三次上传均未完成，不能称远端APK交付成功，不以远端网络问题阻塞本机测试包。
+本机独立APK已先交付：[Shantu-0.2.195-oldengine-private.apk](D:/天气系统/APK/Shantu-0.2.195-oldengine-private.apk)。
+
+应用源码 `689d7fb8fcb99dbed373c026373ea1dd9b99aca5`，隔离分支 `codex/old-engine-tilt-dual-20261105`（非main）已核对远端一致。
+
+165391980字节；SHA256 `bfa1840a7127e45904ac4a56bc20951437002d05086118b23302106b98eb2f04`。原签名证书SHA256 `4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f`；正式与180–194包哈希未变。
+
+安装：先保存草稿/结束记录，覆盖安装山兔·优化，工具→照片标记→导入照片，允许照片位置读取权限并重新选择同一张相机原片。不要卸载/清除数据；未连手机，不声称升级与原片GPS已验收。
+
+GitHub私人备份须单独核验：194大文件三次上传均未完成，不能称远端APK交付成功，不以远端网络问题阻塞本机测试包。
 
 官方依据：[Android读取照片位置信息](https://developer.android.com/training/data-storage/shared/media#location-media-captured)、[MediaStore.getMediaUri](https://developer.android.com/reference/android/provider/MediaStore#getMediaUri(android.content.Context,%20android.net.Uri))。
+
+
+195私人仓库有界上传90秒超时，复查仓库仍PRIVATE、Release为草稿，只有4份元数据附件，APK未上传；未完成完整回读，不声称远端交付成功。194不完整Release亦为草稿。本机APK已先交付、完整性验证不受此限制。
+
+## 文件范围
+
+新增PhotoLocationAccess.java和PhotoLocationAccessTest.kt；修改AppFiles.java、MainActivity.java、PhotoImportCache.java、两份AndroidManifest、GpsPhotoPanel.tsx、selection.ts及对应测试与版本文档。没有删除业务功能；地图渲染、路线/罗盘、存储键及已保存照片格式沿用194。
