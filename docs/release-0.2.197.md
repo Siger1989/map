@@ -20,6 +20,18 @@
 
 ## 交付检查
 
-正在构建最终optimized私人包；实际文件、SHA256、签名/资源与远端交付状态在核验后补记，不使用旧196冒充197。
+最终optimized构建3分33秒，fresh私人Web7.53秒。独立本机APK已先交付：[Shantu-0.2.197-oldengine-private.apk](D:/天气系统/APK/Shantu-0.2.197-oldengine-private.apk)。
+
+- 文件大小 165393420B，SHA256 `c34478fec8ed32f338bb031032819f726fdc0391f4b1addb8f92f893a94d919c`。
+- 实际包名 `com.shantu.oldengine`，版本 `0.2.197-test / code204`，minSdk26/target35；原签名证书SHA256 `4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f`，签名校验通过。
+- 1925份fresh Web资源逐文件与实际APK一致，包内JS已含纵向比例字段/共享颜色命中选择器，实际DEX含WORLD顶点预算逻辑及原桥接API。QA页面未入包，社交SDK与入口未纳入。
+- 本人天地图Key存在、Web/原生一致且与196相同，39私人种子逐字节一致；不输出Key。
+- ZIP唯一条目/CRC、16KiB ZIP对齐、64位ELF LOAD对齐通过；8个SO均与196逐字节相同，未变更CAD，仅复用核验过的四ABI库。
+- 本机交付保护核对正式包与180–196全部既有哈希未变，未覆盖旧APK，保留回退文件。
+- 本机安装说明和完整性摘要同目录，原始核验 `.openai/197-package-verification.json`、`197-signature.log`、`197-verification.log`、`197-delivery.log`。
+
+应用源码[043f775](https://github.com/Siger1989/map/commit/043f77590f700457c846304c9305d3c8a74ae939)已推隔离分支 `codex/old-engine-tilt-dual-20261105` 并核对远端SHA一致，未合main。此次本机包已先发给用户，不等待模拟器或远端上传。实际197 Android运行与OPPO体验未验，支持结论仍以本页限制为准。
+
+私人仓库APK上传120秒超时；随后再次核对仓库仍PRIVATE、197 Release仍草稿，只有4份元数据附件，APK未上传完成且未完整回读。本机新包已发，不声称远端APK交付成功。状态记录 `.openai/197-private-upload-status.json`；没有改源码origin或仓库可见性。
 
 安装前保存草稿并结束记录，覆盖安装“山兔·优化”，不要卸载或清除数据。Android8及以上；Android包不是HarmonyOS原生包。
