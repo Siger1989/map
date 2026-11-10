@@ -13,8 +13,9 @@ import { inspectOffline } from './offlineClient';
 import { readQr } from './qr';
 import { QrCamera } from './QrCamera';
 import { ROUTE_QR_PREFIX } from '../routeShare/qrCodec';
-import { basemapConfiguration, TIANDITU_CREDIT } from '../cartography/basemaps';
-import { SENTINEL_CREDIT } from '../cartography/sentinel';
+import { basemapConfiguration, TIANDITU_CREDIT, tiandituTiles } from '../cartography/basemaps';
+import { SENTINEL_CREDIT, SENTINEL_MAXZOOM, SENTINEL_NAME, SENTINEL_TILES } from '../cartography/sentinel';
+import { TIANDITU_LAYERS } from '../cartography/tianditu';
 import { TERRAIN_CREDIT } from '../terrain/terrain';
 import './mapSources.css';
 import { FreeMapLibrary } from './FreeMapLibrary';
@@ -30,8 +31,11 @@ import { parseOvmap } from './ovmap';
 import { existingMapIndexes } from './importReview';
 import { getMapSourcesSessionState, mapSourcesBrowseScrollToRestore, mapSourcesBrowseStepToRestore, rememberMapSourcesBrowseScroll, rememberMapSourcesBrowseStep, updateMapSourcesSessionState, type MapSourcesStep, type SourceCategory } from './sessionState';
 import type { MapSourceHealthResult } from './health.ts';
+import { mapSourceBatchItems, type MapSourceBatchItem } from './batch';
+import type { CameraSnapshot } from '../controls/useMapFocusLock';
 
 type Pending = { draft: MapDraft; blob?: Blob };
+type BatchEntry = { id: string; label: string; state: 'pending' | 'running' | 'done' | 'skipped' | 'cancelled'; reason?: string; result?: MapSourceHealthResult };
 export type MapSourcesNavigation = {
   title: string;
   label: string;
@@ -49,6 +53,7 @@ export function MapSourcesPanel({
   onIncomingConsumed,
   settings, onSettings,
   onProbeMapSource,
+  onCaptureProbeView,
 }: {
   sources: ReturnType<typeof useMapSources>;
   builtin: 'terrain' | 'detail' | 'latest';
@@ -60,7 +65,8 @@ export function MapSourcesPanel({
   onIncomingConsumed?: () => void;
   settings?: LayerSettings;
   onSettings?: (patch: Partial<LayerSettings>) => void;
-  onProbeMapSource?: (source: MapSource | null, signal?: AbortSignal) => Promise<MapSourceHealthResult>;
+  onProbeMapSource?: (source: MapSource | null, signal?: AbortSignal, snapshot?: CameraSnapshot) => Promise<MapSourceHealthResult>;
+  onCaptureProbeView?: () => CameraSnapshot | null;
 }) {
   const [step, setStepState] = useState<MapSourcesStep>(() => mapSourcesBrowseStepToRestore());
   const setStep = (value: MapSourcesStep) => {
@@ -86,7 +92,10 @@ export function MapSourcesPanel({
     [busy, setBusy] = useState(false);
   const [health, setHealth] = useState<MapSourceHealthResult | null>(null);
   const [probeBusy, setProbeBusy] = useState(false);
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [batchEntries, setBatchEntries] = useState<BatchEntry[]>([]);
   const activeProbe = useRef<AbortController | null>(null);
+  const activeBatch = useRef<AbortController | null>(null);
   const probeSerial = useRef(0);
   const probeMounted = useRef(true);
   useEffect(() => {
@@ -94,15 +103,19 @@ export function MapSourcesPanel({
     return () => {
       probeMounted.current = false;
       probeSerial.current++;
+      activeBatch.current?.abort();
+      activeBatch.current = null;
       activeProbe.current?.abort();
       activeProbe.current = null;
     };
   }, []);
   const invalidateProbe = useCallback(() => {
     probeSerial.current++;
+    activeBatch.current?.abort();
+    activeBatch.current = null;
     activeProbe.current?.abort();
     activeProbe.current = null;
-    if (probeMounted.current) { setProbeBusy(false); setHealth(null); }
+    if (probeMounted.current) { setProbeBusy(false); setBatchBusy(false); setHealth(null); }
   }, []);
   const currentProbeContext = JSON.stringify([sources.selected, sources.source?.id, builtin, step, category]);
   const probeContext = useRef(currentProbeContext);
@@ -112,7 +125,7 @@ export function MapSourcesPanel({
     if (committedProbeContext.current === null) { committedProbeContext.current = currentProbeContext; return; }
     if (committedProbeContext.current !== currentProbeContext) { committedProbeContext.current = currentProbeContext; invalidateProbe(); }
   }, [sources.selected, sources.source?.id, builtin, step, category, invalidateProbe]);
-  const probe = async (source: MapSource | null, signal?: AbortSignal) => {
+  const probe = async (source: MapSource | null, signal?: AbortSignal, snapshot?: CameraSnapshot) => {
     if (!onProbeMapSource || activeProbe.current) return { status: 'unknown', message: '图源测试未完成，具体网络原因未知', successes: 0, missing: 0, failures: 0, sampled: 0 } as MapSourceHealthResult;
     const controller = new AbortController();
     const serial = ++probeSerial.current;
@@ -126,7 +139,7 @@ export function MapSourcesPanel({
     setHealth(null);
     const isCurrent = () => probeMounted.current && probeSerial.current === serial && activeProbe.current === controller && probeContext.current === requestContext;
     try {
-      const result = await onProbeMapSource(source, requestSignal);
+      const result = await onProbeMapSource(source, requestSignal, snapshot);
       if (isCurrent()) setHealth(result);
       return result;
     } catch {
@@ -136,6 +149,67 @@ export function MapSourcesPanel({
     } finally {
       signal?.removeEventListener('abort', cancelWithParent);
       if (isCurrent()) { activeProbe.current = null; setProbeBusy(false); }
+    }
+  };
+  const runBatch = async () => {
+    if (!onProbeMapSource || !sources.ready || probeBusy || batchBusy || activeBatch.current) return;
+    const controller = new AbortController();
+    activeBatch.current = controller;
+    setBatchBusy(true);
+    setHealth(null);
+    const configured = basemapConfiguration();
+    const builtinCandidates: MapSourceBatchItem[] = configured.domestic
+      ? [
+          ...(['vec', 'img', 'ter'] as const).map((layer) => ({
+            id: `builtin:tianditu:${layer}`,
+            label: `天地图 ${TIANDITU_LAYERS[layer].name}`,
+            source: {
+              id: `batch-tianditu-${layer}`, name: `天地图 ${TIANDITU_LAYERS[layer].name}`,
+              kind: 'online' as const, format: 'WMTS', tiles: tiandituTiles(layer, configured.token),
+              scheme: 'xyz' as const, minzoom: 1, maxzoom: TIANDITU_LAYERS[layer].maxzoom,
+              tileSize: 256, bytes: 0, attribution: '天地图', datum: 'wgs84' as const,
+            },
+          })),
+          { id: 'builtin:sentinel', label: SENTINEL_NAME, source: { id: 'batch-sentinel', name: SENTINEL_NAME, kind: 'online' as const, format: 'XYZ', tiles: SENTINEL_TILES, scheme: 'xyz' as const, minzoom: 0, maxzoom: SENTINEL_MAXZOOM, tileSize: 256, bytes: 0, attribution: SENTINEL_CREDIT, datum: 'wgs84' as const } },
+        ]
+      : [
+          { id: 'builtin:terrain', label: '地形地图', source: null, skipped: '地形底图没有可独立测试的在线瓦片模板' },
+          { id: 'builtin:sentinel', label: SENTINEL_NAME, source: { id: 'batch-sentinel', name: SENTINEL_NAME, kind: 'online' as const, format: 'XYZ', tiles: SENTINEL_TILES, scheme: 'xyz' as const, minzoom: 0, maxzoom: SENTINEL_MAXZOOM, tileSize: 256, bytes: 0, attribution: SENTINEL_CREDIT, datum: 'wgs84' as const } },
+          { id: 'builtin:latest', label: '最新云况', source: null, skipped: '云况图层没有可独立测试的固定瓦片模板' },
+        ];
+    const candidates = mapSourceBatchItems(sources.maps, sources.source, false, builtinCandidates);
+    let snapshot: CameraSnapshot | null;
+    try {
+      const captured = onCaptureProbeView ? onCaptureProbeView() : null;
+      snapshot = captured ? { ...captured, center: [...captured.center] as CameraSnapshot['center'] } : null;
+    }
+    catch { snapshot = null; }
+    const initial: BatchEntry[] = candidates.map((item) => ({
+      id: item.id,
+      label: item.label,
+      state: item.skipped || (snapshot === null && !item.skipped) ? 'skipped' : 'pending',
+      ...(item.skipped ? { reason: item.skipped } : snapshot === null ? { reason: '未能读取固定地图视角' } : {}),
+    }));
+    setBatchEntries(initial);
+    const updateEntry = (id: string, patch: Partial<BatchEntry>) => setBatchEntries((entries) => entries.map((entry) => entry.id === id ? { ...entry, ...patch } : entry));
+    try {
+      for (const item of candidates) {
+        if (controller.signal.aborted) break;
+        if (item.skipped || snapshot === null) continue;
+        updateEntry(item.id, { state: 'running', reason: undefined, result: undefined });
+        const checked = await probe(item.source, controller.signal, snapshot);
+        if (controller.signal.aborted || checked.status === 'cancelled') {
+          updateEntry(item.id, { state: 'cancelled', result: checked });
+          break;
+        }
+        updateEntry(item.id, { state: 'done', result: checked });
+      }
+    } finally {
+      if (activeBatch.current === controller) {
+        if (controller.signal.aborted) setBatchEntries((entries) => entries.map((entry) => entry.state === 'pending' ? { ...entry, state: 'cancelled', reason: '批量测试已停止' } : entry));
+        activeBatch.current = null;
+        setBatchBusy(false);
+      }
     }
   };
   const domestic = basemapConfiguration().domestic;
@@ -310,18 +384,29 @@ export function MapSourcesPanel({
           <button data-group="public" aria-pressed={category === 'library'} onClick={() => { setError(''); setCategory('library'); }}>公共库</button>
         </div>
         <p className="map-source-current">当前：{sources.source?.name ?? (settings?.satelliteProvider === 'tianditu' ? '天地图' : builtin === 'detail' ? 'Sentinel-2 2025' : builtin === 'latest' ? '最新云况' : '地形地图')}</p>
-        {onProbeMapSource && <div className="map-source-health"><button type="button" disabled={!sources.ready} onClick={() => { if (probeBusy) activeProbe.current?.abort(); else void probe(sources.source); }}> {probeBusy ? '取消测试' : '测试当前位置'}</button>
-          {health && <p role="status" data-health={health.status}>{health.sourceName ? `${health.sourceName}：` : ''}{health.message}{health.sampled > 0 ? `（${health.successes} 可读 · ${health.missing} 无覆盖 · ${health.failures} 失败 / ${health.sampled}）` : ''}{health.testedZoom !== undefined ? ` · z${health.testedZoom}` : ''}{health.elapsedMs !== undefined ? ` · ${(health.elapsedMs / 1000).toFixed(1)} 秒` : ''}{health.testedAt ? ` · ${new Date(health.testedAt).toLocaleTimeString()}` : ''}{health.scope === 'base-layer-only' ? ' · 仅测试 OVMAP 底层' : ''}</p>}</div>}
+        {onProbeMapSource && <div className="map-source-health"><div className="map-source-health__actions">
+          <button type="button" disabled={!sources.ready || batchBusy} onClick={() => { if (probeBusy) activeProbe.current?.abort(); else void probe(sources.source); }}> {probeBusy ? '取消测试' : '测试当前位置'}</button>
+          <button type="button" disabled={!sources.ready || (!batchBusy && probeBusy)} onClick={() => { if (batchBusy) activeBatch.current?.abort(); else void runBatch(); }}>{batchBusy ? '停止全部' : batchEntries.length ? '重试全部' : '全部测试'}</button>
+        </div>
+          {health && <p role="status" data-health={health.status}>{health.sourceName ? `${health.sourceName}：` : ''}{health.message}{health.sampled > 0 ? `（${health.successes} 可读 · ${health.missing} 无覆盖 · ${health.failures} 失败 / ${health.sampled}）` : ''}{health.testedZoom !== undefined ? ` · z${health.testedZoom}` : ''}{health.elapsedMs !== undefined ? ` · ${(health.elapsedMs / 1000).toFixed(1)} 秒` : ''}{health.testedAt ? ` · ${new Date(health.testedAt).toLocaleTimeString()}` : ''}{health.scope === 'base-layer-only' ? ' · 仅测试 OVMAP 底层' : ''}</p>}
+          {batchEntries.length > 0 && <div className="map-source-health__batch" role="region" aria-label="批量图源测试结果">
+          <p className="map-source-health__progress" role="status" aria-live="polite">{batchBusy ? `按顺序测试 ${batchEntries.filter((entry) => entry.state === 'done' || entry.state === 'running').length}/${batchEntries.filter((entry) => entry.state !== 'skipped').length} 项` : '批量测试结果'}</p>
+          <ul>{batchEntries.map((entry) => <li key={entry.id} data-state={entry.state} data-health={entry.result?.status}>
+            <strong>{entry.label}</strong>
+            {entry.state === 'running' ? <span>测试中…</span> : entry.result ? <span>{entry.result.message}{entry.result.sampled > 0 ? ` · ${entry.result.successes}可读/${entry.result.missing}无覆盖/${entry.result.failures}失败` : ''}</span> : <span>{entry.reason ?? (entry.state === 'cancelled' ? '已停止' : entry.state === 'pending' ? '等待测试' : '已跳过')}</span>}
+          </li>)}</ul>
+        </div>}
+        </div>}
         <details className="map-source-settings"><summary>图源与地形署名</summary>
           <p>{(sources.source?.attribution ?? (domestic ? TIANDITU_CREDIT : SENTINEL_CREDIT)).replace(/<[^>]*>/g, '')}</p>
           <p>{TERRAIN_CREDIT.replace(/<[^>]*>/g, '')}</p>
           <p>道路与地名：<a href="https://openfreemap.org/" target="_blank" rel="noreferrer">OpenFreeMap</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></p>
         </details>
-        {category === 'saved' && <SavedMapSources maps={sources.maps} selected={sources.selected} ready={sources.ready} busy={busy}
+        {category === 'saved' && <SavedMapSources maps={sources.maps} selected={sources.selected} ready={sources.ready} busy={busy || batchBusy}
           onAdd={openAdd} onRemove={id => void run(async () => { await sources.remove(id); })}
           onSelect={map => { sources.select(map.id); if (map.bounds) onFocus(map.bounds); }}
           onSelectKeepView={map => sources.select(map.id)}
-          onProbe={onProbeMapSource ? probe : undefined} />}
+          onProbe={onProbeMapSource && !batchBusy ? probe : undefined} />}
         {category === 'saved' && settings && onSettings && <details className="map-source-settings"><summary>坐标校正</summary>
           <RasterDatumChoice settings={settings} selected={sources.selected} image={sources.source?.kind === 'image'} defaultDatum={defaultRasterDatum(sources.source)} onChange={onSettings} onError={setError}/>
         </details>}

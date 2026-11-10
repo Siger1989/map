@@ -316,7 +316,7 @@ export function PhotoPanel({
             <button key={p.id} onClick={() => onOpen(p.id)} title={p.name}>
               <img src={p.url} alt={p.name} />
               <small>
-                {new Date(p.time).toLocaleTimeString('zh-CN', {
+                {p.timeUnknown ? '时间未记录' : new Date(p.time).toLocaleTimeString('zh-CN', {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}

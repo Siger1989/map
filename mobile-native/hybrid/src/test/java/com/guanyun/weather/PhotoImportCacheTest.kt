@@ -59,8 +59,16 @@ class PhotoImportCacheTest {
             // EXIF is read from a real JPEG and copied to the generated JPEG; the source bytes remain untouched.
             val jpegSource = File(fixtures, "metadata.jpg").apply { writeBytes(imageBytes(128, 96, Bitmap.CompressFormat.JPEG)) }
             val expectedDate = "2026:11:07 12:34:56"
+            val expectedLatitude = "37/1,48/1,30/1"
+            val expectedLongitude = "122/1,24/1,15/1"
             ExifInterface(jpegSource.absolutePath).apply {
                 setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL, expectedDate)
+                setAttribute(ExifInterface.TAG_GPS_LATITUDE, expectedLatitude)
+                setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, "N")
+                setAttribute(ExifInterface.TAG_GPS_LONGITUDE, expectedLongitude)
+                setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, "W")
+                setAttribute("GPSHPositioningError", "4/1")
+                setAttribute("GPSMapDatum", "WGS-84")
                 saveAttributes()
             }
             val jpegBefore = jpegSource.readBytes()
@@ -70,6 +78,14 @@ class PhotoImportCacheTest {
             val jpegTarget = File(cache, "photo-imports/${jpegUri.lastPathSegment}")
             val targetExif = ExifInterface(jpegTarget.absolutePath)
             assertEquals(expectedDate, targetExif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL))
+            assertEquals(expectedLatitude, targetExif.getAttribute(ExifInterface.TAG_GPS_LATITUDE))
+            assertEquals("N", targetExif.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF))
+            assertEquals(expectedLongitude, targetExif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE))
+            assertEquals("W", targetExif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF))
+            // android.media.ExifInterface does not expose this optional tag on every API.
+            assertEquals(ExifInterface(jpegSource.absolutePath).getAttribute("GPSHPositioningError"),
+                targetExif.getAttribute("GPSHPositioningError"))
+            assertEquals("WGS-84", targetExif.getAttribute("GPSMapDatum"))
             assertEquals(jpegHash, targetExif.getAttribute(ExifInterface.TAG_IMAGE_UNIQUE_ID))
             assertEquals("SHANTU_NATIVE_PHOTO_V1:$jpegHash", targetExif.getAttribute(ExifInterface.TAG_USER_COMMENT))
 

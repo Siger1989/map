@@ -29,6 +29,7 @@ const INTERACTIVE_SELECTOR = [
   'select:not([disabled])', 'summary', '[role="button"]', '[role="link"]',
   'label.import-file',
   '[role="menuitem"]', '[role="option"]', '[role="checkbox"]', '[role="slider"]',
+  'label.map-switch',
   '[tabindex]:not([tabindex="-1"])', '[draggable="true"]', '[contenteditable="true"]',
   '[data-native-map-ui]', '[data-native-map-interactive]',
   '[role="dialog"]', '[role="alertdialog"]', 'dialog[open]',
@@ -54,6 +55,8 @@ function visibleRect(element: Element, interactive = false): Rect | null {
   const transparentFileInput = interactive && element instanceof HTMLInputElement && element.type === 'file';
   if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0 && !transparentFileInput || element.hasAttribute('hidden')) return null;
   if (interactive && (style.pointerEvents === 'none' || element.closest('[inert]'))) return null;
+  if (interactive && element.matches('label.map-switch') &&
+      (element.dataset.disabled === 'true' || element.querySelector('input:disabled'))) return null;
   if (interactive && element.matches('label.import-file') && element.querySelector('input[type="file"]:disabled')) return null;
   const r = element.getBoundingClientRect();
   const strokePadding = interactive && element instanceof SVGElement && element.matches(STROKE_HIT_SELECTOR)

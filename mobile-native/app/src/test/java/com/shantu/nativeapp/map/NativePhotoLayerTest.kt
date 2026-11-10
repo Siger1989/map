@@ -14,7 +14,6 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -29,7 +28,7 @@ import java.util.Base64
 @Config(sdk = [35])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class NativePhotoLayerTest {
-    @Test fun `photo frame follows shared pin mode sizes at common device scales`() {
+    @Test fun `photo frame follows requested mode at common device scales`() {
         val encoded = jpegFixture()
         val photoLayer = NativePhotoLayer()
         val photos = JSONArray().put(JSONObject()
@@ -44,18 +43,16 @@ class NativePhotoLayerTest {
             photoLayer.replace(photos)
             val density = NativeMarkerPresentation.densityBucket(cssScale)
             val original = placemark(photoLayer)
-            for ((mode, symbolSize) in listOf("label" to 40.0, "icon" to 22.0, "dot" to 9.0)) {
-                photoLayer.setMarkerMode(mode)
+            for ((mode, frameCss) in listOf("label" to 32.0, "icon" to 24.2, "dot" to 9.9)) {
+                photoLayer.setMarkerMode(mode, 16.0)
                 val photo = placemark(photoLayer)
                 val actualPhotoFrameCss = 56.0 * density * photo.attributes.imageScale / cssScale
-                val actualLogoCss = symbolSize * 1.1
-                assertEquals("photo follows $mode marker frame at scale $cssScale", actualLogoCss, actualPhotoFrameCss, 0.01)
-                assertEquals("logo reference remains $mode symbol size", symbolSize, NativeMarkerPresentation.symbolSize(mode), 0.0)
+                assertEquals("photo follows $mode frame at scale $cssScale", frameCss, actualPhotoFrameCss, 0.01)
                 assertSame("mode changes preserve the pickable placemark", original, photo)
             }
             photoLayer.setMarkerMode("label")
             val photo = placemark(photoLayer)
-            assertEquals(44.0 / 56.0 * cssScale / density, photo.attributes.imageScale, 0.0001)
+            assertEquals(32.0 * cssScale / (56.0 * density), photo.attributes.imageScale, 0.0001)
             assertFalse("screen-sized photo must not shrink again with eye distance", photo.isEyeDistanceScaling)
             assertTrue("photo remains terrain-depth tested", photo.attributes.isDepthTest)
             assertEquals(AltitudeMode.CLAMP_TO_GROUND, photo.altitudeMode)
@@ -65,7 +62,7 @@ class NativePhotoLayerTest {
         }
     }
 
-    @Test fun `zoom mode updates existing placemark scale without rebuilding its photo texture`() {
+    @Test fun `every zoom updates photo scale in place and preserves the texture source`() {
         val photos = JSONArray().put(JSONObject()
             .put("id", "photo-mode")
             .put("name", "模式照片")
@@ -76,19 +73,67 @@ class NativePhotoLayerTest {
         photoLayer.replace(photos)
         val pin = placemark(photoLayer)
         val source = pin.attributes.imageSource
-        assertTrue(photoLayer.setMarkerMode("dot"))
-        for ((mode, frameCss) in listOf("label" to 44.0, "icon" to 24.2, "dot" to 9.9)) {
-            assertTrue(photoLayer.setMarkerMode(mode))
+        for ((zoom, zoomScale) in listOf(4.0 to 0.35, 8.0 to 0.5666666666666667, 16.0 to 1.0)) {
+            assertTrue(photoLayer.setMarkerMode("label", zoom))
             val current = placemark(photoLayer)
             assertSame("mode updates the same pickable placemark", pin, current)
             assertSame("mode does not rebuild the decoded photo texture", source, current.attributes.imageSource)
             val density = NativeMarkerPresentation.densityBucket(2.8)
-            assertEquals(frameCss, 56.0 * density * current.attributes.imageScale / 2.8, 0.01)
+            assertEquals(32.0 * zoomScale, 56.0 * density * current.attributes.imageScale / 2.8, 0.01)
             assertEquals("shantu-photo:photo-mode", current.pickDelegate)
             assertEquals("模式照片", current.displayName)
             assertTrue(current.attributes.isDepthTest)
         }
-        assertFalse("setting the resolved mode again is a no-op", photoLayer.setMarkerMode("dot"))
+        assertFalse("same zoom and resolved mode are a no-op", photoLayer.setMarkerMode("label", 16.0))
+    }
+
+    @Test fun `replace incrementally preserves retained photos and removes only deleted ids`() {
+        val photoLayer = NativePhotoLayer()
+        val a = JSONObject().put("id", "photo-a").put("name", "A")
+            .put("coordinates", JSONArray().put(104.1).put(30.2)).put("previewBase64", jpegFixture())
+        val b = JSONObject().put("id", "photo-b").put("name", "B")
+            .put("coordinates", JSONArray().put(105.1).put(31.2)).put("previewBase64", jpegFixture())
+        photoLayer.replace(JSONArray().put(a).put(b))
+        val firstA = photoLayer.layer.getRenderable(0)
+        val firstB = photoLayer.layer.getRenderable(1)
+        val sourceA = (firstA as Placemark).attributes.imageSource
+
+        photoLayer.replace(JSONArray().put(a).put(b))
+        assertSame("unchanged source photo keeps placemark identity", firstA, photoLayer.layer.getRenderable(0))
+        assertSame("unchanged source photo keeps its image source", sourceA, (firstA as Placemark).attributes.imageSource)
+
+        photoLayer.replace(JSONArray().put(b).put(a))
+        assertEquals(2, photoLayer.layer.count)
+        assertSame("reordering preserves the second photo object", firstB, photoLayer.layer.getRenderable(0))
+        assertSame("reordering preserves the first photo object", firstA, photoLayer.layer.getRenderable(1))
+
+        photoLayer.replace(JSONArray().put(a))
+        assertEquals(1, photoLayer.layer.count)
+        assertSame("remaining ID keeps its existing pickable", firstA, photoLayer.layer.getRenderable(0))
+    }
+
+    @Test fun `image changes keep old source as fallback until replacement is ready`() {
+        val photoLayer = NativePhotoLayer()
+        val before = JSONObject().put("id", "photo-update").put("name", "old")
+            .put("coordinates", JSONArray().put(104.1).put(30.2)).put("previewBase64", jpegFixture())
+        photoLayer.replace(JSONArray().put(before))
+        val placemark = placemark(photoLayer) as NativePhotoPlacemark
+        val oldSource = placemark.attributes.imageSource
+
+        val after = JSONObject(before.toString()).put("name", "new").put("previewBase64", jpegFixture(Color.BLUE))
+        photoLayer.replace(JSONArray().put(after))
+
+        assertSame("same ID retains the pickable object", placemark, photoLayer.layer.getRenderable(0))
+        assertSame("pending update retains the previously displayed source", oldSource, placemark.fallbackImageSourceForTest())
+        assertEquals("new metadata is applied immediately", "new", placemark.displayName)
+        assertTrue(placemark.attributes.isDepthTest)
+        assertFalse(placemark.isAlwaysOnTop)
+
+        val displayedFallback = placemark.selectActiveAttributesForTest(currentTextureReady = false, fallbackTextureReady = true)
+        assertSame("ready old texture selects fallback attributes while new texture loads", oldSource, displayedFallback.imageSource)
+        val displayedReplacement = placemark.selectActiveAttributesForTest(currentTextureReady = true, fallbackTextureReady = true)
+        assertSame("ready replacement selects current attributes", placemark.attributes, displayedReplacement)
+        assertEquals("fallback is released after replacement readiness", null, placemark.fallbackImageSourceForTest())
     }
 
     @Test fun `density buckets create real high resolution bitmaps with a 56 pixel frame and 52 pixel photo crop`() = runBlocking {
@@ -127,27 +172,41 @@ class NativePhotoLayerTest {
         }
     }
 
-    @Test fun `css scale rebuild keeps the same photo pick and terrain metadata`() {
+    @Test fun `css scale keeps the pick and only changes source when density bucket changes`() {
         val photos = JSONArray().put(JSONObject()
             .put("id", "photo-stable")
             .put("name", "稳定照片")
             .put("coordinates", JSONArray().put(104.1).put(30.2))
             .put("previewBase64", jpegFixture()))
         val photoLayer = NativePhotoLayer()
+        photoLayer.setCssScale(2.8)
         photoLayer.replace(photos)
         val first = placemark(photoLayer)
         val firstImage = first.attributes.imageSource
 
-        assertTrue(photoLayer.setCssScale(2.8))
+        assertTrue(photoLayer.setCssScale(2.9))
         val updated = placemark(photoLayer)
-        assertNotSame(firstImage, updated.attributes.imageSource)
+        assertSame("same density bucket does not replace photo source", firstImage, updated.attributes.imageSource)
         assertEquals("photo-stable", updated.pickDelegate.toString().removePrefix("shantu-photo:"))
         assertEquals("稳定照片", updated.displayName)
         assertEquals(AltitudeMode.CLAMP_TO_GROUND, updated.altitudeMode)
         assertFalse(updated.isEyeDistanceScaling)
         assertTrue(updated.attributes.isDepthTest)
-        assertEquals(44.0, 56.0 * NativeMarkerPresentation.densityBucket(2.8) * updated.attributes.imageScale / 2.8, 0.0001)
-        assertFalse("same CSS scale does not discard or rebuild photo info", photoLayer.setCssScale(2.8))
+        assertEquals(32.0, 56.0 * NativeMarkerPresentation.densityBucket(2.9) * updated.attributes.imageScale / 2.9, 0.0001)
+        assertFalse("same CSS scale does not discard or rebuild photo info", photoLayer.setCssScale(2.9))
+        val oldSource = updated.attributes.imageSource
+        photoLayer.setCssScale(3.6)
+        assertSame("density re-render preserves the same pick", updated, placemark(photoLayer))
+        assertSame("density update keeps old source as a loading fallback", oldSource, updated.fallbackImageSourceForTest())
+        val oldDensity = NativeMarkerPresentation.densityBucket(2.9)
+        val newDensity = NativeMarkerPresentation.densityBucket(3.6)
+        assertEquals("old bitmap keeps the same CSS frame while replacement loads", 32.0,
+            56.0 * oldDensity * updated.fallbackImageScaleForTest()!! / 3.6, 0.0001)
+        assertEquals("new bitmap keeps the requested CSS frame", 32.0,
+            56.0 * newDensity * updated.attributes.imageScale / 3.6, 0.0001)
+        photoLayer.setMarkerMode("label", 4.0)
+        assertEquals("old density fallback follows the same zoom curve", 11.2,
+            56.0 * oldDensity * updated.fallbackImageScaleForTest()!! / 3.6, 0.0001)
         assertEquals(1, photoLayer.layer.count)
     }
 
@@ -168,16 +227,16 @@ class NativePhotoLayerTest {
         assertEquals("photo screen scaling must match the ordinary map pin policy", marker.isEyeDistanceScaling, placemark(photoLayer).isEyeDistanceScaling)
     }
 
-    private fun placemark(photoLayer: NativePhotoLayer): Placemark {
+    private fun placemark(photoLayer: NativePhotoLayer): NativePhotoPlacemark {
         assertEquals(1, photoLayer.layer.count)
-        return photoLayer.layer.getRenderable(0) as Placemark
+        return photoLayer.layer.getRenderable(0) as NativePhotoPlacemark
     }
 
-    private fun jpegFixture(): String {
+    private fun jpegFixture(color: Int = Color.RED): String {
         val source = Bitmap.createBitmap(128, 128, Bitmap.Config.ARGB_8888)
         try {
             Canvas(source).apply {
-                drawColor(Color.RED)
+                drawColor(color)
                 val paint = Paint()
                 paint.color = Color.GREEN
                 drawRect(RectF(64f, 0f, 128f, 64f), paint)

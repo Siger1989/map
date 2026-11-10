@@ -16,7 +16,7 @@ import java.util.Date
 /** Screen-on, view-scoped device compass. No route/course fallback is provided. */
 internal class FloatingCompassSource(
     context: Context,
-    private val onHeading: (Double?, String, Long?) -> Unit,
+    private val onHeading: (Double?, String, Long?, Boolean) -> Unit,
 ) : SensorEventListener {
     private val appContext = context.applicationContext
     private val sensorManager = appContext.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
@@ -29,13 +29,13 @@ internal class FloatingCompassSource(
     private var lastRegistrationFailed = false
     private var cachedHeading: Double? = null
     private var cachedHeadingAtNanos = 0L
-    private var cachedAccuracy = SensorManager.SENSOR_STATUS_UNRELIABLE
     private var lastDeclinationUpdate = 0L
     private var declination = 0.0
     private var declinationReady = false
     private var latitude: Double? = null
     private var longitude: Double? = null
     private var altitudeMeters = 0f
+    private var locationUpdatedAtNanos = 0L
     private val rotationMatrix = FloatArray(9)
     private val remappedMatrix = FloatArray(9)
     private val orientation = FloatArray(3)
@@ -53,7 +53,7 @@ internal class FloatingCompassSource(
         val sensor = rotationSensor
         if (manager == null || sensor == null) {
             samplePolicy.stop()
-            onHeading(null, "设备不支持罗盘传感器", null)
+            publishCachedPreview("设备不支持罗盘传感器")
             return
         }
         registerSensor()
@@ -66,21 +66,22 @@ internal class FloatingCompassSource(
         if (registered) sensorManager?.unregisterListener(this)
         registered = false
         samplePolicy.stop()
-        onHeading(null, "等待罗盘方向", null)
+        publishCachedPreview("等待罗盘方向")
     }
 
     fun updateLocation(lat: Double, lon: Double, altitude: Double) {
         if (!lat.isFinite() || lat !in -90.0..90.0 || !lon.isFinite() || lon !in -180.0..180.0) return
         latitude = lat
         longitude = lon
+        locationUpdatedAtNanos = SystemClock.elapsedRealtimeNanos()
         altitudeMeters = altitude.toFloat().takeIf { it.isFinite() } ?: 0f
+        // Keep the last valid declination while recalculating for the new fix.
         lastDeclinationUpdate = 0L
-        declinationReady = false
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         if (sensor?.type != Sensor.TYPE_ROTATION_VECTOR) return
-        if (accuracy < SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM) onHeading(null, "罗盘精度不足，请移动手机校准", null)
+        if (accuracy < SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM) publishCachedPreview("罗盘精度不足，请移动手机校准")
     }
 
     override fun onSensorChanged(event: SensorEvent) {
@@ -93,16 +94,12 @@ internal class FloatingCompassSource(
                 event.timestamp <= 0L || elapsedNow - event.timestamp > 3_000_000_000L -> "罗盘数据已过期，等待新方向"
                 else -> "等待罗盘方向"
             }
-            onHeading(null, message, null)
+            publishCachedPreview(message)
             return
         }
         receivedSampleThisRun = true
         handler.removeCallbacks(retryRegistration)
         handler.removeCallbacks(sampleTimeout)
-        if (latitude == null || longitude == null) {
-            onHeading(null, "等待定位以校正罗盘", null)
-            return
-        }
         SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
         val displayRotation = runCatching {
             (appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
@@ -118,21 +115,25 @@ internal class FloatingCompassSource(
         val magneticAzimuth = Math.toDegrees(orientation[0].toDouble())
         if (!magneticAzimuth.isFinite()) return
         updateDeclination(System.currentTimeMillis())
-        if (!declinationReady) { onHeading(null, "等待定位以校正罗盘", null); return }
-        val trueAzimuth = ((magneticAzimuth + declination) % 360.0 + 360.0) % 360.0
-        cachedHeading = trueAzimuth
+        val locationCurrent = locationUpdatedAtNanos > 0L && SystemClock.elapsedRealtimeNanos() - locationUpdatedAtNanos <= 30_000_000_000L
+        val resolved = samplePolicy.resolveHeading(magneticAzimuth, declination.takeIf { declinationReady }, locationCurrent) ?: return
+        samplePolicy.rememberAccepted(event.timestamp, event.accuracy)
+        cachedHeading = resolved.degrees
         cachedHeadingAtNanos = event.timestamp
-        cachedAccuracy = event.accuracy
-        onHeading(trueAzimuth, "", event.timestamp)
+        val label = if (resolved.label == "真北") "" else resolved.label
+        onHeading(resolved.degrees, label, event.timestamp, true)
     }
 
     private fun publishFreshCacheOrWaiting() {
-        val heading = cachedHeading
-        val now = SystemClock.elapsedRealtimeNanos()
-        if (heading != null && samplePolicy.accepts(cachedHeadingAtNanos, now, cachedAccuracy)) {
-            onHeading(heading, "", cachedHeadingAtNanos)
+        publishCachedPreview("等待新的罗盘方向")
+    }
+
+    private fun publishCachedPreview(fallbackMessage: String) {
+        val state = samplePolicy.cacheState(SystemClock.elapsedRealtimeNanos())
+        if (cachedHeading != null && (state == FloatingCompassSamplePolicy.CacheState.FRESH || state == FloatingCompassSamplePolicy.CacheState.PREVIEW)) {
+            onHeading(cachedHeading, "上次方向，正在更新", cachedHeadingAtNanos, false)
         } else {
-            onHeading(null, "等待新的罗盘方向", null)
+            onHeading(null, fallbackMessage, null, false)
         }
     }
 
@@ -155,10 +156,10 @@ internal class FloatingCompassSource(
             registered = false
             registerSensor()
             if (registered) {
-                onHeading(null, "仍在等待罗盘传感器数据，正在重试", null)
+                publishCachedPreview("仍在等待罗盘传感器数据，正在重试")
                 scheduleSampleTimeout()
             } else {
-                onHeading(null, "罗盘传感器暂不可用，正在重试", null)
+                publishCachedPreview("罗盘传感器暂不可用，正在重试")
                 scheduleRetry()
             }
             return
@@ -168,7 +169,7 @@ internal class FloatingCompassSource(
         samplePolicy.stop()
         val message = if (lastRegistrationFailed) "罗盘传感器暂不可用，请稍后重试"
         else "未收到可靠罗盘数据，请移动手机校准或稍后重试"
-        onHeading(null, message, null)
+        publishCachedPreview(message)
     }
 
     private fun scheduleRetry() {
@@ -180,15 +181,15 @@ internal class FloatingCompassSource(
         if (registered || !samplePolicy.isRunning()) return
         if (!recoveryPolicy.takeRetry()) {
             samplePolicy.stop()
-            onHeading(null, "罗盘传感器暂不可用，请稍后重试", null)
+            publishCachedPreview("罗盘传感器暂不可用，请稍后重试")
             return
         }
         registerSensor()
         if (registered) {
-            onHeading(null, "仍在等待罗盘传感器数据，正在重试", null)
+            publishCachedPreview("仍在等待罗盘传感器数据，正在重试")
             scheduleSampleTimeout()
         } else {
-            onHeading(null, "罗盘传感器暂不可用，正在重试", null)
+            publishCachedPreview("罗盘传感器暂不可用，正在重试")
             scheduleRetry()
         }
     }

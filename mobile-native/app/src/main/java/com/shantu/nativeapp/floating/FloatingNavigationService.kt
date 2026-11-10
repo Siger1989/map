@@ -459,6 +459,7 @@ class FloatingNavigationService : Service(), LocationListener {
     private var mapBearing: Double? = null
     private var compassHeading: Double? = null
     private var compassHeadingAtNanos = 0L
+    private var compassHeadingFresh = false
     private var compassMessage = "等待罗盘方向"
     private var compassSource: FloatingCompassSource? = null
     private var lowPowerLocationRequests = false
@@ -489,12 +490,15 @@ class FloatingNavigationService : Service(), LocationListener {
         createChannel()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-        compassSource = FloatingCompassSource(this) { value, message, sampleTimestampNanos ->
+        compassSource = FloatingCompassSource(this) { value, message, sampleTimestampNanos, freshSample ->
             val previous = compassHeading
+            val previousMessage = compassMessage
+            val previousFresh = compassHeadingFresh
             compassHeading = value
             compassHeadingAtNanos = if (value != null) sampleTimestampNanos ?: 0L else 0L
+            compassHeadingFresh = value != null && freshSample
             compassMessage = message
-            if (value == null || previous == null || abs(value - previous) >= .5) updateView()
+            if (value == null || previous == null || abs(value - previous) >= .5 || message != previousMessage || compassHeadingFresh != previousFresh) updateView()
         }
         screenOn = getSystemService(POWER_SERVICE)?.let { (it as PowerManager).isInteractive } ?: false
         keyguardLocked = (getSystemService(KEYGUARD_SERVICE) as? KeyguardManager)?.isKeyguardLocked ?: false
@@ -1015,18 +1019,23 @@ class FloatingNavigationService : Service(), LocationListener {
         // A direction glyph is stricter: require a current fix no older than 3s.
         val freshHeading = presentation.headingDegrees?.takeIf { fixAge != null && fixAge in -3_000..3_000 }
         val compassAgeNanos = android.os.SystemClock.elapsedRealtimeNanos() - compassHeadingAtNanos
-        val freshCompass = compassHeading?.takeIf { compassHeadingAtNanos > 0L && compassAgeNanos in 0..3_000_000_000L }
+        val freshCompass = compassHeading?.takeIf { compassHeadingFresh && compassHeadingAtNanos > 0L && compassAgeNanos in 0..3_000_000_000L }
+        val previewCompass = compassHeading?.takeIf { freshCompass == null && compassHeadingAtNanos > 0L && compassAgeNanos in 0..600_000_000_000L }
+        val compassDirection = freshCompass ?: previewCompass
         view.mapBearing = when (mode) {
-            "compass" -> freshCompass
+            "compass" -> compassDirection
             "motion" -> mapBearing
             else -> null
         }
-        view.heading = if (mode == "compass") freshCompass else freshHeading
+        view.heading = if (mode == "compass") compassDirection else freshHeading
         view.stateText = when {
+            mode == "compass" && freshCompass != null -> compassMessage.ifBlank { if (!presentation.visible) "罗盘方向，等待定位" else "罗盘方向" }
+            mode == "compass" && previewCompass != null -> compassMessage.ifBlank { "上次方向，正在更新" } + if (!presentation.visible) "，等待定位" else ""
+            mode == "compass" && compassMessage.isNotBlank() -> compassMessage
+            mode == "compass" && !presentation.visible -> "等待罗盘方向，等待定位"
             !presentation.visible -> "等待定位"
             !reliable -> "定位精度不足"
             mode == "motion" && freshHeading == null -> "等待移动方向"
-            mode == "compass" && freshCompass == null -> compassMessage.ifBlank { "等待罗盘方向" }
             kind == "position" -> "定位中"
             else -> "导航中"
         }

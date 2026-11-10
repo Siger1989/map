@@ -6,8 +6,11 @@ import { getNearbyMarkerRange, isCoordinateWithinNearbyRange } from '../map/near
 import { photoMapPresentation } from './mapPresentation';
 export class PhotoLayer {
   private photos: VisiblePhoto[] = [];
-  private markers: NearbyMarker[] = [];
-  private presentationMode: string | null = null;
+  private markers = new Map<string, {
+    marker: NearbyMarker; image: HTMLImageElement; badge: HTMLElement;
+    count: HTMLSpanElement; iconKey: string;
+  }>();
+  private presentationKey = '';
   constructor(
     private map: MapLibreMap,
     private onOpen: (ids: string[]) => void,
@@ -21,18 +24,16 @@ export class PhotoLayer {
   }
   private syncScale = () => {
     const presentation = photoMapPresentation(this.map.getZoom());
-    if (this.presentationMode === presentation.mode) return;
-    this.presentationMode = presentation.mode;
-    for (const marker of this.markers) {
+    const key = `${presentation.mode}:${presentation.scale.toFixed(5)}`;
+    if (this.presentationKey === key) return;
+    this.presentationKey = key;
+    for (const { marker } of this.markers.values()) {
       const element = marker.getElement();
       element.style.setProperty('--photo-scale', String(presentation.scale));
       element.dataset.presentation = presentation.mode;
     }
   };
   private draw = () => {
-    this.markers.forEach((m) => m.remove());
-    this.markers = [];
-    this.presentationMode = null;
     const groups = new Map<string, VisiblePhoto[]>();
     const nearbyRange = getNearbyMarkerRange(this.map);
     const { clientWidth: w, clientHeight: h } = this.map.getContainer();
@@ -56,15 +57,15 @@ export class PhotoLayer {
       group.push(photo);
       groups.set(key, group);
     }
+    const keep = new Set<string>();
     for (const group of groups.values()) {
+      const key = group[0].kind === 'annotation' ? `marker:${group[0].annotationId}`
+        : JSON.stringify(group.map(p => p.id).sort());
+      keep.add(key);
+      let entry = this.markers.get(key);
+      if (!entry) {
       const button = document.createElement('button');
       button.className = 'trip-photo-marker';
-      button.setAttribute(
-        'aria-label',
-        group.length > 1
-          ? `查看 ${group.length} 张行程照片`
-          : `查看照片 ${group[0].name}`,
-      );
       const img = document.createElement('img');
       const visual = document.createElement('div');
       visual.className = 'trip-photo-marker-visual';
@@ -72,41 +73,53 @@ export class PhotoLayer {
       img.alt = '';
       visual.appendChild(img);
       button.appendChild(visual);
-      if (group[0].kind === 'annotation') {
         const markerBadge = document.createElement('i');
         markerBadge.className = 'photo-annotation-badge';
         markerBadge.setAttribute('aria-hidden', 'true');
-        markerBadge.style.color = group[0].mapColor ?? '#176b68';
-        markerBadge.appendChild(markerIconElement(group[0].mapIcon));
         visual.appendChild(markerBadge);
-      }
-      if (group.length > 1) {
         const badge = document.createElement('span');
-        badge.textContent = String(group.length);
         visual.appendChild(badge);
-      }
       button.addEventListener('pointerdown', (e) => e.stopPropagation());
       button.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.onOpen(group.map((p) => p.id));
+        this.onOpen(JSON.parse(button.dataset.photoIds ?? '[]') as string[]);
       });
-      this.markers.push(
-        new NearbyMarker({
+      const marker = new NearbyMarker({
           element: button,
           anchor: 'bottom',
           opacity: 1,
           opacityWhenCovered: 0,
         })
           .setLngLat(group[0].coordinates)
-          .addTo(this.map),
-      );
+          .addTo(this.map);
+      entry = { marker, image: img, badge: markerBadge, count: badge, iconKey: '' };
+      this.markers.set(key, entry);
+      }
+      const button = entry.marker.getElement();
+      button.setAttribute('aria-label', group.length > 1 ? `查看 ${group.length} 张照片` : `查看照片 ${group[0].name}`);
+      button.dataset.photoIds = JSON.stringify(group.map(p => p.id));
+      if (entry.image.getAttribute('src') !== group[0].url) entry.image.src = group[0].url;
+      entry.badge.hidden = group[0].kind !== 'annotation';
+      entry.badge.style.color = group[0].mapColor ?? '#176b68';
+      const iconKey = group[0].mapIcon ?? 'pin';
+      if (entry.iconKey !== iconKey) {
+        entry.badge.replaceChildren(markerIconElement(group[0].mapIcon));
+        entry.iconKey = iconKey;
+      }
+      entry.count.hidden = group.length <= 1;
+      entry.count.textContent = String(group.length);
+      entry.marker.setLngLat(group[0].coordinates);
     }
+    for (const [key, entry] of this.markers) {
+      if (!keep.has(key)) { entry.marker.remove(); this.markers.delete(key); }
+    }
+    this.presentationKey = '';
     this.syncScale();
   };
   dispose() {
     this.map.off('moveend', this.draw);
     this.map.off('zoom', this.syncScale);
-    this.markers.forEach((m) => m.remove());
-    this.markers = [];
+    this.markers.forEach(({ marker }) => marker.remove());
+    this.markers.clear();
   }
 }

@@ -1,5 +1,5 @@
 import type { TripPhoto } from './storage';
-import { photoLocationLabel } from './association';
+import { photoLocationLabel, photoTimeLabel } from './association';
 import { PRODUCT_NAME, EXPORT_PREFIX } from '../../config/product';
 import { altitudeLabel, weatherSource } from './details';
 import { describeWeather } from '../weather/data';
@@ -29,7 +29,7 @@ export async function renderPhotoExport(
     const lines = includeInfo
       ? [
           photo.title || photo.name,
-          new Date(photo.time).toLocaleString('zh-CN'),
+          photoTimeLabel(photo),
           altitudeLabel(photo.altitude),
           `${photo.coordinates[1].toFixed(5)}, ${photo.coordinates[0].toFixed(5)} · ${photoLocationLabel(photo)}`,
           ...(photo.timeSource === 'camera' ? ['时间取自相机启动时刻'] : []),

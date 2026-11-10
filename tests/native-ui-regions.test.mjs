@@ -132,3 +132,84 @@ test('publisher sends visible import labels and transparent file inputs but excl
   assert.equal(ids.some((id) => /hidden-label|hidden-file|invisible-label|invisible-file|display-none-label|display-none-file/.test(id)), false);
   assert.equal(ids.some((id) => /pointer-disabled-label|pointer-disabled-file/.test(id)), false);
 });
+
+test('publisher protects visible map switches by their label hit box without blocking a non-scrollable layer card', async () => {
+  const { window, document } = parseHTML(`<!doctype html><html><head></head><body>
+    <div class="map-canvas"></div>
+    <section class="layer-panel">
+      <label id="terrain-switch" class="map-switch" data-disabled="false">
+        <input type="checkbox" role="switch" style="position:absolute;inset:0;opacity:0">
+        <span class="map-switch__track"></span>
+      </label>
+      <label id="disabled-switch" class="map-switch" data-disabled="true">
+        <input type="checkbox" role="switch" disabled style="position:absolute;inset:0;opacity:0">
+        <span class="map-switch__track"></span>
+      </label>
+      <label id="hidden-switch" class="map-switch" data-disabled="false" hidden>
+        <input type="checkbox" role="switch" style="position:absolute;inset:0;opacity:0">
+      </label>
+    </section>
+  </body></html>`);
+  const saved = new Map();
+  const setGlobal = (name, value) => {
+    saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+    Object.defineProperty(globalThis, name, { value, configurable: true, writable: true });
+  };
+  const rect = (left, top, right, bottom) => ({ left, top, right, bottom, x: left, y: top,
+    width: right - left, height: bottom - top, toJSON() {} });
+  const hitBoxes = new Map([
+    ['terrain-switch', rect(16, 64, 60, 108)],
+    ['disabled-switch', rect(16, 116, 60, 160)],
+    ['hidden-switch', rect(16, 168, 60, 212)],
+  ]);
+  for (const element of document.querySelectorAll('*')) {
+    element.getBoundingClientRect = () => hitBoxes.get(element.id) ?? rect(0, 0, 390, 800);
+  }
+  for (const [name, value] of Object.entries({
+    window, document, HTMLElement: window.HTMLElement, HTMLInputElement: window.HTMLInputElement,
+    SVGElement: window.SVGElement, MutationObserver: window.MutationObserver,
+    getComputedStyle: element => {
+      const declarations = Object.fromEntries((element.getAttribute('style') ?? '').split(';').map(part => part.trim()).filter(Boolean).map(part => {
+        const index = part.indexOf(':');
+        return [part.slice(0, index).trim().toLowerCase(), part.slice(index + 1).trim()];
+      }));
+      return {
+        display: element.hasAttribute('hidden') ? 'none' : declarations.display ?? 'block',
+        visibility: declarations.visibility ?? 'visible', opacity: declarations.opacity ?? '1',
+        pointerEvents: declarations['pointer-events'] ?? 'auto',
+        overflowX: declarations['overflow-x'] ?? 'visible', overflowY: declarations['overflow-y'] ?? 'visible',
+        strokeWidth: declarations['stroke-width'] ?? '8',
+      };
+    },
+    requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 0),
+    cancelAnimationFrame: clearTimeout, ResizeObserver: undefined,
+  })) setGlobal(name, value);
+  Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, value: 390 });
+  Object.defineProperty(document.documentElement, 'clientHeight', { configurable: true, value: 800 });
+  window.devicePixelRatio = 2;
+
+  const packets = [];
+  let stop = () => {};
+  try {
+    stop = configureNativeUIRegionTransport({ getSessionId: () => 'layer-switch-fixture', send: packet => packets.push(packet) });
+    await new Promise(resolve => setTimeout(resolve, 25));
+  } finally {
+    stop();
+    for (const [name, descriptor] of saved) {
+      if (descriptor) Object.defineProperty(globalThis, name, descriptor); else delete globalThis[name];
+    }
+  }
+
+  const packet = packets.find(p => p.command === 'uiRegions');
+  assert.ok(packet, 'publisher must collect the actual switch DOM');
+  const regions = packet.payload.regions;
+  const switchRegion = regions.find(({ id }) => id.startsWith('terrain-switch:'));
+  assert.deepEqual(
+    { left: switchRegion?.left, top: switchRegion?.top, right: switchRegion?.right, bottom: switchRegion?.bottom },
+    { left: 16, top: 64, right: 60, bottom: 108 },
+    'the visible switch label is a complete UI hit region even though its checkbox input is transparent',
+  );
+  assert.equal(regions.some(({ id }) => id.startsWith('disabled-switch:')), false, 'disabled switches do not claim an active hit region');
+  assert.equal(regions.some(({ id }) => id.startsWith('hidden-switch:')), false, 'hidden switches do not claim a hit region');
+  assert.equal(regions.some(({ id }) => /layer-panel|map-switch-card/.test(id)), false, 'do not mark the whole layer card as UI-owned');
+});

@@ -164,10 +164,19 @@ internal class FloatingNavigationView(context: Context) : View(context) {
             }
         } else {
             renderCounters = FloatingTileRenderCounters()
-            text(canvas, "等待定位", (left + right) / 2f, (top + bottom) / 2f, 12f, 0xffbdff54.toInt(), Paint.Align.CENTER)
+            val cX = (left + right) / 2f
+            val bearing = mapBearing?.takeIf { mode == "compass" && it.isFinite() && it in 0.0..<360.0 }
+            if (bearing != null) {
+                drawCompassOnly(canvas, cX, top + (bottom - top) * .40f, bearing)
+                text(canvas, stateText.ifBlank { "罗盘方向，等待定位" }, cX, top + (bottom - top) * .72f,
+                    10f, 0xffb7c59c.toInt(), Paint.Align.CENTER)
+            } else {
+                val status = if (mode == "compass") stateText.ifBlank { "等待罗盘方向，等待定位" } else "等待定位"
+                text(canvas, status, cX, (top + bottom) / 2f, 12f, 0xffbdff54.toInt(), Paint.Align.CENTER)
+            }
         }
         canvas.restore()
-        if (mode != "compass" || mapBearing?.let { it.isFinite() && it in 0.0..<360.0 } == true) {
+        if (navCenter != null && (mode != "compass" || mapBearing?.let { it.isFinite() && it in 0.0..<360.0 } == true)) {
             drawNorthReference(canvas, (left + right) / 2f, (top + bottom) / 2f,
                 min(right - left, bottom - top) * .32f)
         }
@@ -197,6 +206,21 @@ internal class FloatingNavigationView(context: Context) : View(context) {
             p.color = 0x5537dfff; canvas.drawCircle(x, y, px(10f), p)
             p.color = 0xff45dbe7.toInt(); canvas.drawCircle(x, y, px(5f), p)
         }
+    }
+
+    /** Shows the device bearing without inventing a map center or a location arrow. */
+    private fun drawCompassOnly(canvas: Canvas, x: Float, y: Float, bearingDegrees: Double) {
+        val radius = px(25f)
+        line.color = 0x8864d9c4.toInt(); line.strokeWidth = px(1.2f)
+        canvas.drawCircle(x, y, radius, line)
+        line.color = 0x5564d9c4.toInt(); line.strokeWidth = px(1f)
+        canvas.drawLine(x, y - radius + px(5f), x, y - radius + px(10f), line)
+        text(canvas, "N", x, y - radius - px(4f), 9f, 0xffbdff54.toInt(), Paint.Align.CENTER)
+        canvas.save(); canvas.translate(x, y); canvas.rotate(bearingDegrees.toFloat())
+        canvas.scale(px(12f), px(19f))
+        p.color = 0xff8af0f3.toInt(); canvas.drawPath(arrowPath, p)
+        canvas.restore()
+        p.color = 0xffbdff54.toInt(); canvas.drawCircle(x, y, px(2f), p)
     }
 
     private fun drawNorthReference(canvas: Canvas, cx: Float, cy: Float, radius: Float) {

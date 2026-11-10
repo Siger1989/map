@@ -27,7 +27,7 @@
 }
 /* Comparison layers set their own heading inset, matching the property card. */
 .observatory .control-popover:not(:where(.comparison-layer-window)) {
-  padding: 0 4px 4px !important;
+  padding: 4px !important;
 }
 .observatory .control-popover .dock-heading {
   padding: 0;

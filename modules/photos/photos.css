@@ -104,7 +104,7 @@
 }
 .trip-photo-marker {
   box-sizing: border-box;
-  --photo-scale: 0.785714286;
+  --photo-scale: 0.571428571;
   width: max(44px, calc(64px * var(--photo-scale)));
   height: max(44px, calc(64px * var(--photo-scale)));
   padding: 0;
@@ -141,6 +141,7 @@
   background: #fff;
   box-shadow: 0 1px 3px #0006;
 }
+.trip-photo-marker [hidden] { display: none; }
 .trip-photo-marker .photo-annotation-badge svg {
   width: 14px;
   height: 14px;

@@ -14,6 +14,7 @@ import {
   NotebookPen,
   PanelsTopLeft,
   PictureInPicture2,
+  Images,
 } from 'lucide-react';
 import { DocumentTextIcon, MapIcon as SolidMapIcon, PencilIcon, StarIcon, BriefcaseIcon } from '@heroicons/react/24/solid';
 import { MapPanelHeader } from '../ui/MapPanelHeader';
@@ -30,6 +31,7 @@ export type ControlPanel =
   | 'outdoor'
   | 'sources'
   | 'cache'
+  | 'photo-markers'
   | null;
 const PANELS = [
   { id: 'outdoor', label: '记录', icon: NotebookPen },
@@ -64,6 +66,7 @@ export function ControlDock({
   keepOpenOnMapInteraction = false,
   mapPicking = false,
   floatingNavigation,
+  onPhotoMarkers,
 }: {
   active: ControlPanel;
   onActive: (panel: ControlPanel) => void;
@@ -86,6 +89,7 @@ export function ControlDock({
   keepOpenOnMapInteraction?: boolean;
   mapPicking?: boolean;
   floatingNavigation?: ReactNode;
+  onPhotoMarkers?: () => void;
 }) {
   const [floatingOpen, setFloatingOpen] = useState(false);
   const floatingSubview = active === 'tools' && floatingOpen && !!floatingNavigation;
@@ -158,6 +162,8 @@ export function ControlDock({
                           ? '全部收藏'
                           : active === 'route'
                             ? '路线规划'
+                          : active === 'photo-markers'
+                            ? '照片标记'
                           : PANELS.find((p) => p.id === active)?.label)}
             </>}
             titleId="dock-title"
@@ -185,6 +191,12 @@ export function ControlDock({
                   <button onClick={onMeasure}>
                     <Ruler size={18} />
                     测量
+                  </button>
+                )}
+                {onPhotoMarkers && (
+                  <button onClick={() => { onActive('photo-markers'); onPhotoMarkers(); }}>
+                    <Images size={18} />
+                    照片标记
                   </button>
                 )}
                 {onScanRoute && (

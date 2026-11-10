@@ -6,12 +6,14 @@ export type TripPhoto = {
   trackId: string;
   trackName: string;
   time: number;
+  /** GPS originals can lack a capture time; zero is a sentinel, never a guessed date. */
+  timeUnknown?: boolean;
   coordinates: Coordinate;
   kind: 'point' | 'interpolated' | 'annotation';
   annotationId?: string;
   timeSource?: 'exif' | 'camera';
   timeSourceDetail?: 'return-estimate' | 'manual';
-  locationSource?: 'track' | 'camera';
+  locationSource?: 'track' | 'camera' | 'exif';
   locationAccuracy?: number;
   locationTimeSource?: 'capture' | 'return';
   preview: Blob;
@@ -58,6 +60,7 @@ export function validPhoto(p: TripPhoto) {
     typeof p.trackId === 'string' &&
     typeof p.trackName === 'string' &&
     Number.isFinite(p.time) &&
+    (p.timeUnknown === undefined || typeof p.timeUnknown === 'boolean') &&
     coordinate(p.coordinates) &&
     ['point', 'interpolated', 'annotation'].includes(p.kind) &&
     (p.kind !== 'annotation' ||
@@ -67,7 +70,7 @@ export function validPhoto(p: TripPhoto) {
         p.trackId === '')) &&
     (p.timeSource === undefined || ['exif', 'camera'].includes(p.timeSource)) &&
     (p.timeSourceDetail === undefined || ['return-estimate', 'manual'].includes(p.timeSourceDetail)) &&
-    (p.locationSource === undefined || ['track', 'camera'].includes(p.locationSource)) &&
+    (p.locationSource === undefined || ['track', 'camera', 'exif'].includes(p.locationSource)) &&
     (p.locationTimeSource === undefined || ['capture', 'return'].includes(p.locationTimeSource)) &&
     (p.locationAccuracy === undefined || (Number.isFinite(p.locationAccuracy) && p.locationAccuracy >= 0 && p.locationAccuracy <= 100000)) &&
     p.preview instanceof Blob &&

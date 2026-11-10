@@ -1,0 +1,89 @@
+.gps-photo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--map-ui-gap, 4px);
+  min-height: 0;
+  padding: 0 0 4px;
+  color: var(--text-primary, inherit);
+}
+
+.gps-photo-panel p {
+  margin: 0;
+}
+
+.gps-photo-intro,
+.gps-photo-note,
+.gps-photo-status,
+.gps-photo-no-gps {
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.gps-photo-actions,
+.gps-photo-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.gps-photo-picker,
+.gps-photo-result-actions button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  max-width: 100%;
+  padding: 4px 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, .18));
+  border-radius: 4px;
+  background: var(--surface-control, rgba(255, 255, 255, .08));
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.gps-photo-picker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.gps-photo-picker:has(input:disabled) {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.gps-photo-status {
+  overflow-wrap: anywhere;
+}
+
+.gps-photo-failures {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  font-size: 10px;
+}
+
+.gps-photo-failures summary {
+  min-height: 28px;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.gps-photo-failures ul {
+  max-height: 72px;
+  margin: 0;
+  padding: 0 4px 4px 20px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+
+.gps-photo-failures li + li {
+  margin-top: 2px;
+}

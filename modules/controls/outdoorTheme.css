@@ -48,7 +48,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='t
   --map-panel-max-width:232px;
   width:min(232px,calc(100% - var(--home-left) - var(--home-right) - 62px));
   gap:calc(var(--tool-panel-gap) / 2);
-  padding:4px 8px !important;
+  padding:4px !important;
   border-radius:var(--ui-radius-card);
   background:var(--ui-surface);
   top: auto;
@@ -59,7 +59,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='t
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-heading:not(.map-panel-header) h2 { margin:0; font-size:13px; line-height:20px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-heading:not(.map-panel-header) .icon-button { position:relative; width:28px; min-width:28px; height:28px; min-height:28px; flex-basis:28px; border-radius:var(--ui-radius-control); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-heading:not(.map-panel-header) .icon-button::before { content:''; position:absolute; top:50%; left:50%; width:32px; height:32px; transform:translate(-50%,-50%); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-content { margin:0; padding:0; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel > .dock-content { margin:0; padding:4px 4px 0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions,.home-position-dock) { padding: 3px; width: 50px; box-sizing: border-box; background: var(--ui-surface); border-radius: var(--ui-radius-card); box-shadow: var(--ui-shadow); gap: 2px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-guiding='true']):not([data-route-edit='true']):not([data-survey='true']):not([data-focus-locked='true']) .home-position-dock { bottom: var(--ui-controls-bottom); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions > button,.home-position-dock .position-dock-button) { color: var(--ui-ink); background: transparent; border: 0; border-radius: var(--ui-radius-control); box-shadow: none; flex-shrink: 0; }

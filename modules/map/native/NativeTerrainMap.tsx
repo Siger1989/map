@@ -1566,8 +1566,8 @@ function makeHandle(
       runtime.syncTransientGeometry?.();
     },
     cameraSnapshot: () => runtime.camera ?? null,
-    probeSourceAt: async (sourceOverride?: MapSource | null, settingsOverride?: LayerSettings, signal?: AbortSignal) => {
-      const client = runtime.client, mapId = runtime.mapId, camera = runtime.camera;
+    probeSourceAt: async (sourceOverride?: MapSource | null, settingsOverride?: LayerSettings, signal?: AbortSignal, cameraSnapshot?: CameraSnapshot) => {
+      const client = runtime.client, mapId = runtime.mapId, camera = cameraSnapshot ?? runtime.camera;
       if (!client || !mapId || !camera) return { status: 'unknown', message: '地图尚未就绪，暂时无法测试', successes: 0, missing: 0, failures: 0, sampled: 0 };
       const probeSettings = settingsOverride ?? runtime.props.settings;
       let target = sourceOverride === undefined ? runtime.props.mapSource : sourceOverride;

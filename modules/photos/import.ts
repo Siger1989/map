@@ -1,6 +1,7 @@
 import { photoTime } from './matching';
 import { imageMime, nativeImportOriginalHash } from './selection';
 import { exifAltitude, type PhotoAltitude } from './details';
+import { exifGpsAccuracy, exifGpsCoordinates } from './gps.ts';
 import type { Coordinate } from '../navigation/types.ts';
 export type PhotoDraft = {
   hash: string;
@@ -14,6 +15,9 @@ export type PhotoDraft = {
   timeSourceDetail?: 'return-estimate' | 'manual';
   cameraCoordinates?: Coordinate;
   cameraAccuracy?: number;
+  /** Original WGS84 coordinates embedded in this image's EXIF; independent of live GPS/track matching. */
+  gpsCoordinates?: Coordinate;
+  gpsAccuracy?: number;
   cameraTrackId?: string;
   cameraLocationTimeSource?: 'capture' | 'return';
 };
@@ -155,6 +159,12 @@ export async function readPhoto(
               'OffsetTimeOriginal',
               'GPSAltitude',
               'GPSAltitudeRef',
+              'GPSLatitude',
+              'GPSLatitudeRef',
+              'GPSLongitude',
+              'GPSLongitudeRef',
+              'GPSHPositioningError',
+              'GPSMapDatum',
               'ImageUniqueID',
               'UserComment',
             ],
@@ -243,6 +253,8 @@ export async function readPhoto(
     .map((n) => n.toString(16).padStart(2, '0'))
     .join('');
   const markedOriginalHash = nativeImportOriginalHash(meta, file.type, buffer);
+  const gpsCoordinates = meta ? exifGpsCoordinates(meta) : undefined;
+  const gpsAccuracy = meta ? exifGpsAccuracy(meta) : undefined;
   return {
     hash: markedOriginalHash ?? calculatedHash,
     name: file.name.slice(0, 200),
@@ -251,6 +263,8 @@ export async function readPhoto(
     preview,
     detail,
     altitude: exifAltitude(meta),
+    ...(gpsCoordinates ? { gpsCoordinates } : {}),
+    ...(gpsAccuracy !== undefined ? { gpsAccuracy } : {}),
     zone: meta?.OffsetTimeOriginal
       ? `拍摄时区 ${meta.OffsetTimeOriginal}`
       : '无时区信息，按本机时区解释',

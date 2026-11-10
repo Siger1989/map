@@ -1,10 +1,9 @@
-import { markerPresentation } from '../annotations/markerScale.ts';
+import { markerPresentation, markerScale } from '../annotations/markerScale.ts';
 
-/** Follow the visible pin sizes; its generic zoom curve is overridden by the pin mode CSS. */
+/** A compact photo frame follows both the marker modes and the shared continuous zoom curve. */
 export function photoMapPresentation(zoom: number) {
   const mode = markerPresentation(zoom, false);
-  const markerSize = mode === 'label' ? 40 : mode === 'icon' ? 22 : 9;
-  const frameCss = markerSize * 1.1;
+  const frameCss = (mode === 'label' ? 32 : mode === 'icon' ? 24.2 : 9.9) * markerScale(zoom);
   const scale = frameCss / 56;
   return { mode, frameCss, scale, canvasCss: 64 * scale };
 }

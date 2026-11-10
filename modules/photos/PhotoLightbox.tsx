@@ -149,7 +149,7 @@ export function PhotoLightbox({
         <>
           <div className="photo-summary">
             <p>
-              {new Date(photo.time).toLocaleString('zh-CN')} ·{' '}
+              {photoTimeLabel(photo)} ·{' '}
               {altitudeLabel(photo.altitude)}
             </p>
             <p>{weatherLabel(photo)}</p>
@@ -245,7 +245,7 @@ export function PhotoLightbox({
         <div className="photo-information">
           <p>{photo.note || '暂无备注，可在“编辑”中填写。'}</p>
           <p>
-            {photo.trackName} · {photo.coordinates[1].toFixed(5)},{' '}
+            {photo.trackName || (photo.kind === 'annotation' ? '照片标记' : '行程照片')} · {photo.coordinates[1].toFixed(5)},{' '}
             {photo.coordinates[0].toFixed(5)} ·{' '}
             {photoLocationLabel(photo)}{photo.locationSource === 'camera' && Number.isFinite(photo.locationAccuracy) ? ` · ±${Math.round(photo.locationAccuracy!)} 米` : ''}{photo.timeSourceDetail === 'return-estimate' ? ' · 相机返回时间（估计）' : photo.timeSource === 'camera' && ' · 时间取自拍摄会话'}
           </p>
@@ -341,4 +341,4 @@ export function PhotoLightbox({
     </dialog>
   );
 }
-import { photoLocationLabel } from './association';
+import { photoLocationLabel, photoTimeLabel } from './association';

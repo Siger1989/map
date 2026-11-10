@@ -302,10 +302,25 @@
 .map-source-tabs button[data-group='public']:not([aria-pressed='true']) { background:color-mix(in srgb,var(--ui-surface) 84%,var(--ui-raised) 16%); }
 .map-source-current { color:var(--ui-muted); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .map-source-health { display:grid; gap:3px; min-width:0; }
-.map-source-health > button { justify-self:start; min-height:32px; padding:3px 8px; }
+.map-source-health__actions { display:flex; flex-wrap:wrap; gap:4px; }
+.map-source-health__actions button { min-height:32px; padding:3px 8px; }
 .map-source-health > p { margin:0; color:var(--ui-muted); font-size:11px; line-height:14px; overflow-wrap:anywhere; }
 .map-source-health > p[data-health='ok'] { color:var(--ui-accent); }
 .map-source-health > p[data-health='authorization'], .map-source-health > p[data-health='dns'], .map-source-health > p[data-health='tls'], .map-source-health > p[data-health='timeout'], .map-source-health > p[data-health='http'], .map-source-health > p[data-health='invalid'] { color:var(--ui-danger); }
+.map-source-health__batch { display:flex; flex-direction:column; gap:2px; min-height:0; max-height:112px; padding:3px 4px; overflow:hidden; border:1px solid var(--ui-border); border-radius:4px; }
+.map-source-health__progress { flex:none; margin:0; color:var(--ui-muted); font-size:10px; line-height:13px; }
+.map-source-health__batch ul { display:grid; gap:2px; min-height:0; margin:0; padding:0 3px 0 0; overflow-y:auto; overscroll-behavior:contain; list-style:none; }
+.map-source-health__batch li { display:grid; grid-template-columns:minmax(70px, .8fr) minmax(0, 1.2fr); gap:4px; align-items:start; font-size:10px; line-height:1.25; overflow-wrap:anywhere; }
+.map-source-health__batch li strong { min-width:0; color:var(--ui-text); font-weight:600; }
+.map-source-health__batch li span { min-width:0; color:var(--ui-muted); }
+.map-source-health__batch li[data-state='running'] span { color:var(--ui-accent); }
+.map-source-health__batch li[data-health='ok'] span { color:var(--ui-accent); }
+.map-source-health__batch li[data-health='authorization'] span,
+.map-source-health__batch li[data-health='dns'] span,
+.map-source-health__batch li[data-health='tls'] span,
+.map-source-health__batch li[data-health='timeout'] span,
+.map-source-health__batch li[data-health='http'] span,
+.map-source-health__batch li[data-health='invalid'] span { color:var(--ui-danger); }
 .map-source-import-entry { display:grid; gap:4px; }
 .map-source-import-entry small { color:var(--ui-muted); font-size:11px; }
 .observatory.home-map .map-source-import-entry .map-file-button { background:var(--ui-accent); color:var(--ui-on-accent); min-height:44px; }

@@ -1,0 +1,40 @@
+{
+  "stage": "private preview source only; no APK built, installed or published",
+  "sourceVersion": "0.2.193-test + uncommitted feedback changes",
+  "nodeTests": 48,
+  "tsc": "PASS",
+  "privateWebBuild": "PASS 9.22s; isolated .openai output",
+  "nativeTests": [
+    {
+      "name": "com.guanyun.weather.PhotoImportCacheTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.shantu.nativeapp.floating.FloatingCompassSamplePolicyTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.shantu.nativeapp.map.NativePhotoLayerTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "visual": {
+    "390x857": "GPS import 3 synthetic positioned photos -> 2 markers; no-GPS skipped; folder saved, group paging; source batch first 8 completed and ninth cancelled; view unchanged",
+    "360x780": "GPS import panel 276x164.35 CSSpx, no overflow, back-close-body horizontal inset aligned",
+    "photoScale": "same label mode: measured frame 25.18px -> 23.78px during zoom-out; retained native object/source tested",
+    "reimport": "3 repeated synthetic GPS originals -> 0 new photos, 0 new markers, 3 duplicates; photo folder expanded and visible"
+  },
+  "unverified": [
+    "physical phone compass wake latency",
+    "physical phone photo flicker",
+    "physical phone switches after update",
+    "full unrelated UI/platform matrix"
+  ],
+  "protected": "Existing user records, private map seeds, Tianditu key, saved APKs; only synthetic GPS fixtures added to local browser preview."
+}

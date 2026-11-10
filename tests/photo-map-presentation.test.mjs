@@ -1,19 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { markerPresentation } from '../modules/annotations/markerScale.ts';
+import { markerPresentation, markerScale } from '../modules/annotations/markerScale.ts';
 import { photoMapPresentation } from '../modules/photos/mapPresentation.ts';
 
 test('photo presentation follows the shared pin mode thresholds and physical frame sizes', () => {
   const cases = [
-    { zoom: 9, mode: 'label', frameCss: 44 },
-    { zoom: 8.999, mode: 'icon', frameCss: 24.2 },
-    { zoom: 8, mode: 'icon', frameCss: 24.2 },
-    { zoom: 7.999, mode: 'dot', frameCss: 9.9 },
-    { zoom: 0, mode: 'dot', frameCss: 9.9 },
-    { zoom: Number.NaN, mode: 'label', frameCss: 44 },
+    { zoom: 9, mode: 'label', base: 32 },
+    { zoom: 8.999, mode: 'icon', base: 24.2 },
+    { zoom: 8, mode: 'icon', base: 24.2 },
+    { zoom: 7.999, mode: 'dot', base: 9.9 },
+    { zoom: 0, mode: 'dot', base: 9.9 },
+    { zoom: Number.NaN, mode: 'label', base: 32 },
   ];
 
-  for (const { zoom, mode, frameCss } of cases) {
+  for (const { zoom, mode, base } of cases) {
+    const frameCss = base * markerScale(zoom);
     const result = photoMapPresentation(zoom);
     assert.equal(result.mode, markerPresentation(zoom, false));
     assert.equal(result.mode, mode);
@@ -23,13 +24,18 @@ test('photo presentation follows the shared pin mode thresholds and physical fra
   }
 });
 
-test('photo frame follows pin mode size without applying the generic zoom scale curve', () => {
+test('photos shrink through normal map zooms and never exceed the compact 32 pixel frame', () => {
   const distant = photoMapPresentation(4);
   const close = photoMapPresentation(18);
   assert.equal(distant.mode, 'dot');
   assert.equal(close.mode, 'label');
-  assert.equal(distant.frameCss, 9.9);
-  assert.equal(close.frameCss, 44);
-  assert.equal(photoMapPresentation(7.9).frameCss, photoMapPresentation(4).frameCss);
-  assert.equal(photoMapPresentation(12).frameCss, photoMapPresentation(18).frameCss);
+  assert.ok(Math.abs(distant.frameCss - 9.9 * .35) < 1e-10);
+  assert.equal(close.frameCss, 32);
+  assert.ok(photoMapPresentation(7.9).frameCss > photoMapPresentation(4).frameCss);
+  assert.ok(photoMapPresentation(10).frameCss < photoMapPresentation(12).frameCss);
+  assert.ok(photoMapPresentation(12).frameCss < photoMapPresentation(14).frameCss);
+  assert.ok(photoMapPresentation(14).frameCss < photoMapPresentation(18).frameCss);
+  for (let zoom = 0; zoom <= 24; zoom += .1) {
+    assert.ok(photoMapPresentation(zoom).frameCss <= 32);
+  }
 });

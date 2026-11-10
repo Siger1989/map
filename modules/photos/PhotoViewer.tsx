@@ -4,7 +4,7 @@ import type { ManualTrack } from '../tracks/drawing';
 import type { PhotoDetails } from './details';
 import { matchPhoto } from './matching';
 import { PhotoLightbox } from './PhotoLightbox';
-import { photoLocationLabel } from './association';
+import { photoLocationLabel, photoTimeLabel } from './association';
 export function PhotoViewer({
   photo,
   group,
@@ -38,7 +38,7 @@ export function PhotoViewer({
     <section
       className="trip-photo-viewer glass"
       role="dialog"
-      aria-label="行程照片预览"
+      aria-label={photo.kind === 'annotation' ? '标记照片预览' : '行程照片预览'}
       onKeyDown={(e) => {
         if (e.key === 'Escape') {
           e.stopPropagation();
@@ -62,11 +62,11 @@ export function PhotoViewer({
         <span>放大查看 · 编辑 / 标记 / 分享</span>
       </button>
       <p>
-        {new Date(photo.time).toLocaleString('zh-CN')} ·{' '}
+        {photoTimeLabel(photo)} ·{' '}
         {photoLocationLabel(photo)}{photo.locationSource === 'camera' && Number.isFinite(photo.locationAccuracy) ? ` · ±${Math.round(photo.locationAccuracy!)} 米` : ''}{photo.timeSourceDetail === 'return-estimate' ? ' · 相机返回时间（估计）' : photo.timeSource === 'camera' && ' · 时间取自拍摄会话'}
       </p>
       <p>
-        {photo.trackName} · {photo.coordinates[1].toFixed(5)},{' '}
+        {photo.trackName || (photo.kind === 'annotation' ? '照片标记' : '行程照片')} · {photo.coordinates[1].toFixed(5)},{' '}
         {photo.coordinates[0].toFixed(5)}
       </p>
       <footer>

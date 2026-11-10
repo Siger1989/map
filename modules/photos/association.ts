@@ -64,13 +64,21 @@ export function markerPhoto(
   };
 }
 export function photoLocationLabel(photo: Pick<TripPhoto, 'kind' | 'locationSource' | 'locationTimeSource'>) {
-  return photo.locationSource === 'camera'
+  return photo.locationSource === 'exif'
+    ? '照片 GPS · WGS84'
+    : photo.locationSource === 'camera'
     ? photo.locationTimeSource === 'return' ? '返回时定位' : '拍摄时定位'
     : photo.kind === 'annotation'
     ? '拍照时标记点位置'
     : photo.kind === 'interpolated'
       ? '轨迹时间估算位置'
       : '对应轨迹点';
+}
+
+export function photoTimeLabel(photo: Pick<TripPhoto, 'time' | 'timeUnknown'>, dateOnly = false) {
+  return photo.timeUnknown ? '拍摄时间未记录' : dateOnly
+    ? new Date(photo.time).toLocaleDateString('zh-CN')
+    : new Date(photo.time).toLocaleString('zh-CN');
 }
 export function photosForMarker<T extends TripPhoto>(
   photos: T[],

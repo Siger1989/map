@@ -27,6 +27,8 @@ import {
 } from '@/modules/mapSources/MapSourcesPanel';
 import { useTripPhotos } from '@/modules/photos/useTripPhotos';
 import { PhotoPanel } from '@/modules/photos/PhotoPanel';
+import { GpsPhotoPanel } from '@/modules/photos/GpsPhotoPanel';
+import { saveGpsPhotoMarkers } from '@/modules/photos/saveGpsMarkers';
 import { useRecordingTracks } from '@/modules/outdoor/useRecordingTracks';
 import { composeTrackOverlay } from '@/modules/workbench/trackOverlay';
 import { PhotoViewer } from '@/modules/photos/PhotoViewer';
@@ -344,6 +346,10 @@ export default function Home() {
   const annotations = useAnnotations();
   const recorder = useRecording();
   const photos = useTripPhotos();
+  const [gpsPhotoBusy, setGpsPhotoBusy] = useState(false);
+  const [photoCollectionOpen, setPhotoCollectionOpen] = useState(false);
+  useEffect(() => { if (panel !== 'favorites') setPhotoCollectionOpen(false); }, [panel]);
+  const gpsPhotoPoints = useRef<Coordinate[]>([]);
   const markerCamera = useMarkerCamera(photos.save);
   const measurement = useMeasurement();
   const [routeNodeBox, setRouteNodeBox] = useState(false);
@@ -3440,6 +3446,7 @@ export default function Home() {
             setPanel(null);
             setRouteQr('');
           }}
+          onPhotoMarkers={() => { gpsPhotoPoints.current = []; }}
           onSection={TERRAIN_SECTION_ENABLED ? toggleSection : undefined}
           sectionActive={sectionEditing || survey.active}
           sectionReady={sectionReady}
@@ -3469,8 +3476,8 @@ export default function Home() {
                 }
               : panel === 'cache'
                 ? { label: routeCacheTarget.returnPanel === null ? '返回地图路线' : routeCacheTarget.returnPanel === 'route' ? '返回路线' : '返回收藏', onClick: () => setPanel(routeCacheTarget.returnPanel === undefined ? 'favorites' : routeCacheTarget.returnPanel) }
-              : panel === 'industry'
-                ? { label: '返回工具', onClick: () => setPanel('tools') }
+              : panel === 'industry' || panel === 'photo-markers'
+                ? { label: '返回工具', onClick: () => setPanel('tools'), disabled: panel === 'photo-markers' && gpsPhotoBusy }
                 : routeChild
                 ? {
                     label: '返回路线',
@@ -3489,6 +3496,7 @@ export default function Home() {
                   : undefined
           }
           onActive={(next) => {
+            if (gpsPhotoBusy && next !== panel) return;
             // Persist active route edits and line drafts before another feature
             // takes over. A failed write leaves the current operation open.
             if (next !== null && !prepareFeatureSwitch(next !== 'track', next !== 'track')) return;
@@ -3552,7 +3560,8 @@ export default function Home() {
             }} />}
           {panel === 'sources' && (
             <MapSourcesPanel
-              onProbeMapSource={(source, signal) => map.current?.probeSourceAt(source, layers, signal) ?? Promise.resolve<MapSourceHealthResult>({ status: 'unknown', message: '地图尚未准备好，请稍后测试', successes: 0, missing: 0, failures: 0, sampled: 0 })}
+              onCaptureProbeView={() => map.current?.cameraSnapshot() ?? null}
+              onProbeMapSource={(source, signal, snapshot) => map.current?.probeSourceAt(source, layers, signal, snapshot) ?? Promise.resolve<MapSourceHealthResult>({ status: 'unknown', message: '地图尚未准备好，请稍后测试', successes: 0, missing: 0, failures: 0, sampled: 0 })}
               incomingFile={incomingRoute.mapSource}
               onIncomingConsumed={incomingRoute.dismissMapSource}
               settings={layers}
@@ -3586,6 +3595,22 @@ export default function Home() {
               }
             />
           )}
+          {panel === 'photo-markers' && <GpsPhotoPanel
+            onBusyChange={setGpsPhotoBusy}
+            onImport={async drafts => {
+              const result = await saveGpsPhotoMarkers(drafts);
+              gpsPhotoPoints.current = result.coordinates;
+              photos.setVisible(true);
+              return result;
+            }}
+            onShow={() => {
+              const points = gpsPhotoPoints.current;
+              if (points.length === 1) map.current?.focusPoint(points[0]);
+              else if (points.length > 1) map.current?.fitRoute(points);
+              setPanel(null);
+            }}
+            onOpenFavorites={() => { setPhotoCollectionOpen(true); setPanel('favorites'); }}
+          />}
           {panel === 'outdoor' && (
             <OutdoorPanel
               onImport={openRouteImportDialog}
@@ -3686,6 +3711,7 @@ export default function Home() {
           )}
           {panel === 'favorites' && (
             <CollectionsPanel
+              initialFolderName={photoCollectionOpen ? '照片' : undefined}
               recording={recorder.record}
               onCacheRoutes={keys => {
                 const routeIds = keys.map(key => key.startsWith('track:') ? key.slice(6) : key.startsWith('route:') ? `favorite:${key.slice(6)}` : '').filter(id => cacheRoutes.some(route => route.id === id));

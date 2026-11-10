@@ -39,6 +39,7 @@ import type { TripPhoto } from '../photos/storage';
 import type { Recording } from '../outdoor/recording';
 import type { TripPackage } from '../outdoor/offline';
 type Props = ComponentProps<typeof RouteCollectionsPanel> & {
+  initialFolderName?: string;
   onImport?: () => void;
   onImportedData?: (data: Transfer) => void;
   annotations: Annotation[];
@@ -262,6 +263,7 @@ export function CollectionsPanel(props: Props) {
   if (legacy)
     return (
       <WorkbenchPanel
+        initialFolderName={props.initialFolderName}
         onImport={() => setImportOpen(true)}
         center={props.mapCenter}
         onClose={props.onClose}

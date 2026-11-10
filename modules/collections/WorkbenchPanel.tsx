@@ -58,6 +58,7 @@ import { CachePackageList } from './CachePackageList';
 import type { TripPackage } from '../outdoor/offline';
 
 type Props = {
+  initialFolderName?: string;
   onImport?: () => void;
   center: [number, number];
   onClose: () => void;
@@ -78,6 +79,19 @@ export function WorkbenchPanel(props: Props) {
   const items = useMemo(() => store.items, [store.data]);
   const allItems = useMemo(() => new Map(flattenWorkbench(items).map((item) => [item.id, item])), [items]);
   const [expanded, setExpanded] = useState(new Set<string>(['unfiled']));
+  const initialFolderOpened = useRef(false);
+  const panelRoot = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (initialFolderOpened.current || !props.initialFolderName) return;
+    const folder = items.find(item => item.kind === 'folder' && item.name === props.initialFolderName);
+    if (folder) {
+      setExpanded(old => new Set([...old, folder.id]));
+      initialFolderOpened.current = true;
+      window.requestAnimationFrame(() => panelRoot.current?.querySelector<HTMLElement>(
+        `[data-workbench-drop="${CSS.escape(folder.id)}"]`,
+      )?.scrollIntoView({ block: 'nearest' }));
+    }
+  }, [items, props.initialFolderName]);
   const [query, setQuery] = useState(''),
     [type, setType] = useState('all'),
     [regionMode, setRegionMode] = useState(false);
@@ -545,7 +559,7 @@ export function WorkbenchPanel(props: Props) {
   return (
     <div className="collection-workbench">
       <div className="workbench-split">
-        <section className="workbench-collections" aria-label="上方收藏列表">
+        <section ref={panelRoot} className="workbench-collections" aria-label="上方收藏列表">
           <header className="workbench-heading">
             <img src="/brand/shantu-logo.png" alt="山兔" />
             <div>
