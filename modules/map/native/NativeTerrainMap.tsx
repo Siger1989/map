@@ -40,6 +40,7 @@ import type { NativeDrawingGroundHit } from './drawingGroundHit.ts';
 import { createMagnifierCapturePump } from './magnifierCapture.ts';
 import { magnifierCropWindow } from './magnifierCrop.ts';
 import { nextSnapGeometryState } from './snapGeometryState.ts';
+import { nativeRoadContinuation } from './roadContinuation.ts';
 import { ProjectedPointIndex } from './projectedPointIndex.ts';
 import type { NativeMapPhoto, NativeMapRenderState, NativeMapViewport, NativeProjectionFrame } from './types.ts';
 import { INITIAL_VIEW } from '../types.ts';
@@ -56,13 +57,12 @@ import type { TrackContinuationHit } from '../../tracks/prepareTrackContinuation
 import { pickTrackContinuation } from '../../tracks/prepareTrackContinuation.ts';
 import { DRAFT_ID } from '../../tracks/editing.ts';
 import type { TrackRenderReceipt, TrackRenderHandoffResult } from '../../tracks/trackRenderHandoff.ts';
-import { roadSection, type RoadLine, type RoadMatch, type RoadSnapResult, type RoadSnapper } from '../../tracks/roadSnapping.ts';
+import type { RoadLine, RoadMatch, RoadSnapResult, RoadSnapper } from '../../tracks/roadSnapping.ts';
 import { nearestRoad, roadSnapResult } from '../../tracks/roadSnapping.ts';
 import { emptyNativeRoadSnapAnchorState, rememberNativeRoadSnapCandidate, resolveNativeRoadSnapAnchor, type NativeRoadSnapAnchorState } from './roadSnapAnchor.ts';
 import { ProjectedRoadIndex } from '../../tracks/projectedRoadIndex.ts';
 import { riverLines } from '../../tracks/riverSnapping.ts';
 import { roadLines as readRoadLines } from '../../tracks/roadSnapping.ts';
-import { roadPathDetailed } from '../../tracks/roadPath.ts';
 import { directSharedVertexRoadSection } from '../../tracks/directRoadContinuation.ts';
 import { snapNativeEditCoordinate } from './editSnapping.ts';
 import type { SnapViewport } from '../../tracks/snapping.ts';
@@ -1455,7 +1455,7 @@ function snapNativeTrackNode(runtime: Runtime, target: DragTarget, point: Screen
 function createNativeRoadSnapper(runtime: Runtime, kind: 'road' | 'river'): RoadSnapper {
   let anchorState: NativeRoadSnapAnchorState = emptyNativeRoadSnapAnchorState();
   const clearAnchor = () => { anchorState = emptyNativeRoadSnapAnchorState(); };
-  return (point, previous, from) => {
+  return (point, previous, from, mode) => {
     const enabled = kind === 'road' ? runtime.props.roadSnapping : runtime.props.riverSnapping;
     if (!enabled) { clearAnchor(); return { status: 'hidden', match: null }; }
     const geometryStatus = kind === 'road' ? runtime.roadGeometryStatus : runtime.riverGeometryStatus;
@@ -1487,12 +1487,7 @@ function createNativeRoadSnapper(runtime: Runtime, kind: 'road' | 'river'): Road
       const screen = project(from);
       const start = anchor.start ?? (screen ? nearestRoad(screen, lines, project, null, cache.index) : null);
       let path = start
-        ? start.line.id === match.line.id
-          ? (() => {
-              const section = roadSection(start, match, project);
-              return section ? { status: 'ready' as const, section } : { status: 'disconnected' as const };
-            })()
-          : roadPathDetailed(start, match, lines)
+        ? nativeRoadContinuation(start, match, lines, project, mode)
         : { status: 'disconnected' as const };
       if (kind === 'road' && start && path.status === 'limited') {
         // A crowded viewport may exceed the full graph budget even when the

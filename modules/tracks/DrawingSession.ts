@@ -240,6 +240,7 @@ export class DrawingSession {
             tip,
             s.road,
             o.strictNetwork ? s.points.at(-1) : s.road?.coordinate,
+            'freehand',
           )
         : undefined;
       let roadMatch = road?.match ?? null;
@@ -333,7 +334,7 @@ export class DrawingSession {
     const snap = o.snapping ? this.snap(aim, o) : null;
     const from = o.mode === 'points' ? o.lastVertex : null;
     const road = o.roadSnapping
-      ? o.snapRoad?.(aim, null, from ?? undefined)
+      ? o.snapRoad?.(aim, null, from ?? undefined, 'points')
       : undefined;
     const blocked = !!(
       !snap &&

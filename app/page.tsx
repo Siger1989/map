@@ -2156,10 +2156,10 @@ export default function Home() {
                 snapping={tracks.snapping}
                 roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
                 riverSnapping={tracks.riverSnapping}
-                snapRoad={(point, previous, from) =>
+                snapRoad={(point, previous, from, mode) =>
                   (tracks.riverSnapping
-                    ? mapRef.current?.snapRiver(point, previous, from)
-                    : mapRef.current?.snapRoad(point, previous, from)) ?? {
+                    ? mapRef.current?.snapRiver(point, previous, from, mode)
+                    : mapRef.current?.snapRoad(point, previous, from, mode)) ?? {
                     status: 'loading', match: null,
                   }
                 }
@@ -2759,10 +2759,10 @@ export default function Home() {
           snapping={tracks.snapping}
           roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
           riverSnapping={tracks.riverSnapping}
-          snapRoad={(point, previous, from) =>
+          snapRoad={(point, previous, from, mode) =>
             (tracks.riverSnapping
-              ? map.current?.snapRiver(point, previous, from)
-              : map.current?.snapRoad(point, previous, from)) ?? {
+              ? map.current?.snapRiver(point, previous, from, mode)
+              : map.current?.snapRoad(point, previous, from, mode)) ?? {
               status: 'loading',
               match: null,
             }

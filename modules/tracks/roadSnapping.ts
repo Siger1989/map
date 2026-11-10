@@ -25,6 +25,7 @@ export type RoadSnapper = (
   point: ScreenPoint,
   previous: RoadMatch | null,
   from?: Coordinate,
+  mode?: 'points' | 'freehand',
 ) => RoadSnapResult;
 export type RoadProject = (point: Coordinate) => ScreenPoint | null;
 
