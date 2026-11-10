@@ -25,4 +25,12 @@
 
 ## 交付
 
-最终包正在构建核验。安装前保存草稿并结束记录，覆盖安装“山兔·优化”，不要卸载清数据。Android8及以上；账号好友仍暂缓，HarmonyOS6.1原生包未交付。手机自定义“增强”未读取/重置，实际升级保留未验。
+最终私人Web34.60秒、optimized构建3分53秒通过；独立新包已先发用户：[Shantu-0.2.198-oldengine-private.apk](D:/天气系统/APK/Shantu-0.2.198-oldengine-private.apk)。
+
+大小165393488B，SHA256 `84b8d73b8b2b2b6a6ea44fa3a071c384ee9ae50ada13e9f6d4b6aed5b14ac5a4`，实际版本 `0.2.198-test/code205/com.shantu.oldengine`，minSdk26/target35。原证书SHA256 `4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f` 验证通过；1925份fresh网页资源逐文件与实际APK一致、私人Key原生/Web一致且与197不变、39种子逐字节一致、QA与社交未入包、ZIP CRC/唯一条目/16KiB对齐及64位ELF对齐通过；8SO同197未变，四ABI CAD复用库核对通过。正式与180–197哈希未变。
+
+原生Kotlin本轮未改，Git diff已核对；23项Native仅沿用197同源码基线，不冒充198重新运行或手机验收。本轮新跑59Node/TSC与完整构建；未启动模拟器/连接手机。完整性与安装说明放APK同目录，日志 `.openai/198-verification.log`、`198-package-verification.json`、`198-delivery.log`。
+
+应用源码[e412988](https://github.com/Siger1989/map/commit/e412988344c875820fdad7f117f70287faa0d706)已推隔离分支 `codex/old-engine-tilt-dual-20261105`，远端SHA已核对，未合main。私人仓库APK上传45秒超时；再次核对仍PRIVATE、Release草稿、仅4份元数据附件，无完整APK且未回读。不声称云端APK备份成功，本机新包已先交付。状态 `.openai/198-private-upload-status.json`。
+
+安装前保存草稿并结束记录，覆盖安装“山兔·优化”，不要卸载清数据。Android8及以上；账号好友仍暂缓，HarmonyOS6.1原生包未交付。手机自定义“增强”未读取/重置，实际升级保留未验。
