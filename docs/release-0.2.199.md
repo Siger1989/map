@@ -11,3 +11,5 @@ Android 包名 `com.shantu.oldengine`，versionCode 206，最低 Android 8。基
 安装前保存草稿并结束轨迹记录，然后覆盖安装“山兔·优化”。不要卸载旧版或清除数据。
 
 本机交付：[199 私人 APK](D:/天气系统/APK/Shantu-0.2.199-oldengine-private.apk)，165394068 字节。SHA-256：`0b9dc2fb9698c2f81305aeec985b517405e18e327809fcb4b4ddd6e60338ab5a`。旧198实包哈希复核未变。原签名、版本及包名、1925份新网页资源与打包内容逐文件一致、内置天地图原生/网页配置、39种子、8份原生库、ZIP CRC与16 KiB对齐均已核对。Android 构建用时5分20秒。
+
+[私人测试 Release](https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.199-private) 已发布，发布后再次核对仓库为 PRIVATE。两份附件服务端摘要匹配；重新下载完整 APK 后 SHA-256 与本机一致。
