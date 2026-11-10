@@ -35,6 +35,11 @@ test('GPS save creates a real photo folder and marker, links photos and skips re
   const again = await saveGpsPhotoMarkers([draft(111)], storage);
   assert.equal(again.added, 0);
   assert.equal(again.duplicates, 1);
+  assert.deepEqual(again.coordinates, [annotations[0].coordinates]);
+  const missingGps = await saveGpsPhotoMarkers([draft(111, { gpsCoordinates: undefined })], storage);
+  assert.equal(missingGps.added, 0);
+  assert.equal(missingGps.missingGps.length, 1);
+  assert.deepEqual(missingGps.coordinates, [], 'a GPS-less input cannot trigger a camera move using an old matching photo');
   assert.equal(storage.getItem(ANNOTATION_STORAGE), raw);
   assert.equal(storage.getItem('unrelated-setting'), 'preserved');
 });

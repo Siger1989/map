@@ -43,7 +43,7 @@ class NativePhotoLayerTest {
             photoLayer.replace(photos)
             val density = NativeMarkerPresentation.densityBucket(cssScale)
             val original = placemark(photoLayer)
-            for ((mode, frameCss) in listOf("label" to 32.0, "icon" to 24.2, "dot" to 9.9)) {
+            for ((mode, frameCss) in listOf("label" to 32.0, "icon" to 24.2, "dot" to 20.0)) {
                 photoLayer.setMarkerMode(mode, 16.0)
                 val photo = placemark(photoLayer)
                 val actualPhotoFrameCss = 56.0 * density * photo.attributes.imageScale / cssScale
@@ -79,7 +79,7 @@ class NativePhotoLayerTest {
             assertSame("mode updates the same pickable placemark", pin, current)
             assertSame("mode does not rebuild the decoded photo texture", source, current.attributes.imageSource)
             val density = NativeMarkerPresentation.densityBucket(2.8)
-            assertEquals(32.0 * zoomScale, 56.0 * density * current.attributes.imageScale / 2.8, 0.01)
+            assertEquals((32.0 * zoomScale).coerceAtLeast(20.0), 56.0 * density * current.attributes.imageScale / 2.8, 0.01)
             assertEquals("shantu-photo:photo-mode", current.pickDelegate)
             assertEquals("模式照片", current.displayName)
             assertTrue(current.attributes.isDepthTest)
@@ -205,7 +205,7 @@ class NativePhotoLayerTest {
         assertEquals("new bitmap keeps the requested CSS frame", 32.0,
             56.0 * newDensity * updated.attributes.imageScale / 3.6, 0.0001)
         photoLayer.setMarkerMode("label", 4.0)
-        assertEquals("old density fallback follows the same zoom curve", 11.2,
+        assertEquals("old density fallback follows the same minimum frame", 20.0,
             56.0 * oldDensity * updated.fallbackImageScaleForTest()!! / 3.6, 0.0001)
         assertEquals(1, photoLayer.layer.count)
     }

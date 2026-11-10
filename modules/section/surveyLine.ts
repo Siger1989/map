@@ -26,6 +26,8 @@ export type SurveyLine = {
   interval: number;
   halfWidth: number;
   printScale?: number;
+  /** Omitted means match the effective horizontal scale, including auto-fill. */
+  verticalPrintScale?: number;
   info?: SurveySheetInfo;
   pointData?: Record<string, SurveyPointData>;
 };
@@ -167,6 +169,7 @@ export function validSurveyLine(value: unknown): value is SurveyLine {
     !v ||
     v.version !== 1 ||
     (v.printScale !== undefined && !SURVEY_SCALES.includes(v.printScale)) ||
+    (v.verticalPrintScale !== undefined && !SURVEY_SCALES.includes(v.verticalPrintScale)) ||
     (v.info !== undefined && !validSurveyInfo(v.info)) ||
     !validCoordinate(v.a) ||
     !validCoordinate(v.b) ||

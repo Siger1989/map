@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addSurveyStation, moveSurveyStation, newSurveyLine, projectSurveyPoint, surveyBasis, surveyCoordinate, surveyHeight, surveyKey, surveyRange, surveySettings, validSurveyTerrain, emptySurveyInfo } from '../modules/section/surveyLine.ts';
+import { addSurveyStation, moveSurveyStation, newSurveyLine, projectSurveyPoint, surveyBasis, surveyCoordinate, surveyHeight, surveyKey, surveyRange, surveySettings, validSurveyLine, validSurveyTerrain, emptySurveyInfo } from '../modules/section/surveyLine.ts';
 import { surveyContours } from '../modules/section/surveyContours.ts';
 import { surveyDrawing } from '../modules/section/surveyDrawing.ts';
 import { withSurveySettings } from '../modules/section/surveyStore.ts';
@@ -13,7 +13,7 @@ import { collectionTransfer } from '../modules/collections/export.ts';
 import { withoutEntries } from '../modules/collections/remove.ts';
 import { saveWorkbench } from '../modules/collections/workbenchStore.ts';
 import { COLLECTION_STORAGE, defaultLayout, validateLayout } from '../modules/collections/data.ts';
-import { completeTabOrder, moveCollectionTab } from '../modules/collections/tabOrder.ts';
+import { completeTabOrder, moveCollectionTab, DEFAULT_TAB_ORDER } from '../modules/collections/tabOrder.ts';
 import { parseSavedMeasurements, SAVED_MEASUREMENTS_KEY } from '../modules/measurement/saved.ts';
 import { SECTION_OBJECTS_KEY } from '../modules/section/sectionObjects.ts';
 
@@ -85,9 +85,26 @@ test('baseline rotation atomically repositions only associated markers and inval
   assert.equal(after.sections[0].settings.surveyTerrain,undefined);assert.deepEqual(after.annotations[1],unrelated);assert.equal(after.annotations[0].sectionAnchor.distance,marker.sectionAnchor.distance);assert.equal(after.annotations[0].groundElevation,null);
   const detached=withoutEntries(after,['section:section1']);assert.equal(detached.annotations[0].sectionAnchor,undefined);assert.deepEqual(detached.annotations[0].coordinates,after.annotations[0].coordinates);
 });
+test('vertical print scale validates, persists with the survey, and does not invalidate terrain sampling',()=>{
+  const original=line(),settings={...surveySettings(original),objectId:'section1',surveyTerrain:terrain(original)};
+  const before={...base(),sections:[{id:'section1',name:'剖面',settings}]};
+  assert.ok(validSurveyLine(original));
+  assert.ok(validSurveyLine({...original,verticalPrintScale:5000}));
+  assert.equal(validSurveyLine({...original,verticalPrintScale:3000}),false);
+  const adjusted={...original,verticalPrintScale:1000};
+  assert.equal(surveyKey(adjusted),surveyKey(original));
+  const adjustedSettings=surveySettings(adjusted,settings);
+  assert.equal(adjustedSettings.surveyTerrain,settings.surveyTerrain);
+  const committed=withSurveySettings(before,'section1',adjustedSettings);
+  assert.equal(committed.sections[0].settings.survey.verticalPrintScale,1000);
+  assert.equal(committed.sections[0].settings.surveyTerrain,settings.surveyTerrain);
+  const roundTrip=validateTransfer(JSON.parse(JSON.stringify(committed)));
+  assert.equal(roundTrip.sections[0].settings.survey.verticalPrintScale,1000);
+});
 test('category order accepts old saves, rejects duplicates and survives measurement folder export',()=>{
   const order=moveCollectionTab(completeTabOrder(),'measurement',0),layout={...defaultLayout(),tabOrder:order};validateLayout(layout);
-  assert.equal(layout.tabOrder[0],'measurement');assert.equal(new Set(completeTabOrder(['section'])).size,10);
+  assert.equal(layout.tabOrder[0],'measurement');
+  assert.deepEqual(new Set(completeTabOrder(['section'])),new Set(DEFAULT_TAB_ORDER));
   assert.equal(completeTabOrder(['regions','all','route','track','pin','model','area','section','measurement'])[2],'hidden');
   assert.throws(()=>validateLayout({...layout,tabOrder:['all','all']}));
   const storage=store([[COLLECTION_STORAGE,JSON.stringify(layout)]]);const before=collectData(storage),after=mergeData({...base(),collections:{...defaultLayout(),tabOrder:['section']}},storage);

@@ -7,7 +7,7 @@ import { newAnnotation, parseAnnotations } from '../modules/annotations/data.ts'
 import { newSurveyLine, addSurveyStation, surveySettings, surveyRange, surveyKey, surveyCoordinate, moveSurveyStation, removeSurveyStation } from '../modules/section/surveyLine.ts';
 import { withSurveyMarker, withSurveySettings } from '../modules/section/surveyStore.ts';
 import { surveyDrawing } from '../modules/section/surveyDrawing.ts';
-import { surveyScaleWidth, SURVEY_PX_PER_MM } from '../modules/section/surveyScale.ts';
+import { surveyScaleWidth, surveyHorizontalScale, surveyProfileHeight, SURVEY_PX_PER_MM } from '../modules/section/surveyScale.ts';
 import { validateTransfer, mergeData, collectData } from '../modules/outdoor/exchange.ts';
 import { ANNOTATION_STORAGE } from '../modules/annotations/data.ts';
 import { SECTION_OBJECTS_KEY } from '../modules/section/sectionObjects.ts';
@@ -109,6 +109,38 @@ test('scale changes horizontal geometry and sheet prints every station coordinat
   assert.equal(surveyScaleWidth(100,4000)*2,surveyScaleWidth(100,2000));
   assert.throws(()=>surveyScaleWidth(50000,500),/无法容纳/);
   const unknown={...annotation,borehole:{depth:null}};const unknownDrawing=surveyDrawing(line,grid,'测试',[unknown]);assert.match(unknownDrawing.svg,/深度未填/);assert.doesNotMatch(unknownDrawing.svg,/class="borehole"/);
+});
+test('vertical scale changes only profile geometry, preserves print text sizes, and follows horizontal by default',()=>{
+  const baseLine={...section().sections[0].settings.survey,printScale:2000},baseGrid=terrain(baseLine);
+  const defaultDrawing=surveyDrawing(baseLine,baseGrid,'比例尺验证');
+  assert.match(defaultDrawing.svg,/水平 1:2000 · 纵向 1:2000/);
+  assert.match(defaultDrawing.svg,/剖面纵向放大 1 倍/);
+  const axis=svg=>svg.match(/<line x1="100" y1="200" x2="100" y2="([\d.]+)" class="profile-axis" data-profile-range="([\d.]+)" data-print-scale="([\d.]+)"/);
+  const defaultAxis=axis(defaultDrawing.svg);
+  assert.ok(Number(defaultAxis[1])-200>=280);
+  assert.ok(Math.abs((Number(defaultAxis[1])-200)/Number(defaultAxis[2])-SURVEY_PX_PER_MM*1000/2000)<0.01);
+  const autoLine=section().sections[0].settings.survey,autoSpan=surveyRange(autoLine).end-surveyRange(autoLine).start;
+  const autoScale=Number(surveyHorizontalScale(autoSpan,1180).toFixed(2));
+  const autoDrawing=surveyDrawing(autoLine,terrain(autoLine),'自动比例验证');
+  assert.ok(autoDrawing.svg.includes(`水平 1:${autoScale} · 纵向 1:${autoScale}`));
+  assert.match(autoDrawing.svg,/剖面纵向放大 1 倍/);
+  const row=Math.floor(baseGrid.rows/2)*baseGrid.columns;
+  const relief={...baseGrid,heights:baseGrid.heights.map((h,i)=>i>=row&&i<row+baseGrid.columns?[0,250,500,750,1000][i-row]:h)};
+  const sameWidth={...baseLine,verticalPrintScale:1000},otherScale={...baseLine,verticalPrintScale:5000};
+  const tall=surveyDrawing(sameWidth,relief,'比例尺验证'),short=surveyDrawing(otherScale,relief,'比例尺验证');
+  assert.match(tall.svg,/水平 1:2000 · 纵向 1:1000/);
+  assert.match(tall.svg,/剖面纵向放大 2 倍/);
+  assert.match(short.svg,/水平 1:2000 · 纵向 1:5000/);
+  const tallAxis=axis(tall.svg),shortAxis=axis(short.svg);
+  const metresPerSvgUnit=match=>(Number(match[1])-200)/Number(match[2]);
+  assert.ok(Math.abs(metresPerSvgUnit(tallAxis)/metresPerSvgUnit(shortAxis)-5)<1e-3);
+  const planWidth=svg=>Number(svg.match(/<rect x="100" y="[\d.]+" width="([\d.]+)" height="[\d.]+"\/>/)[1]);
+  assert.equal(planWidth(tall.svg),planWidth(short.svg));
+  assert.equal((tall.svg.match(/font-size="/g)||[]).length,(short.svg.match(/font-size="/g)||[]).length);
+  assert.ok(tall.height>short.height);
+  assert.ok(Math.abs(surveyProfileHeight(1200,1000)-1200*1000*SURVEY_PX_PER_MM/1000)<1e-8);
+  assert.throws(()=>surveyDrawing({...baseLine,verticalPrintScale:500},
+    {...relief,heights:relief.heights.map((h,i)=>i>=row&&i<row+relief.columns?[0,5000,10000,15000,20000][i-row]:h)},'过高图纸'),/图纸过高.*更大的比例尺分母/);
 });
 test('colour notes survive drawing, connect, merge, QR scan and the complete route package',()=>{
   const red={...track('red','#ff0000',[a,b]),colorConditions:{'#ff0000':'铺装路'}},green={...track('green','#00ff00',[c,d]),colorConditions:{'#00ff00':'非铺装 <碎石> & 小心'}};

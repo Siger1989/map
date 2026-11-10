@@ -5,6 +5,7 @@ import com.shantu.nativeapp.map.NativeCallbackOwner
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.SystemClock
 import earth.worldwind.WorldWindow
 import earth.worldwind.geom.AltitudeMode
 import earth.worldwind.geom.Angle.Companion.degrees
@@ -43,6 +44,15 @@ internal fun geologyCloudFailureStatus(httpStatus:Int)=if(httpStatus==401||httpS
 data class NativeGeologyUnit(val key:String,val name:String,val age:String,val lithology:String,val color:String,val description:String,val source:String,val sourceUrl:String?)
 data class NativeGeologyState(val source:NativeGeologySource=NativeGeologySource.WORLD,val status:NativeGeologyStatus=NativeGeologyStatus.OFF,val message:String="",val units:List<NativeGeologyUnit> = emptyList(),val selected:NativeGeologyUnit?=null,val legendImage:ByteArray?=null,val opacity:Double=.85,val attribution:String="")
 data class NativeMvtFeature(val layer:String,val type:Int,val extent:Int,val properties:Map<String,String>,val paths:List<List<Pair<Int,Int>>>)
+
+internal data class NativeWorldMvtLimits(
+    val maxFeatures: Int = 8_192,
+    val maxVertices: Int = 100_000,
+    val maxPaths: Int = 16_384,
+    val maxVerticesPerFeature: Int = 16_384,
+)
+
+internal class NativeMvtTileLimitException(message: String) : IllegalArgumentException(message)
 
 /** Explicit work ceilings for the compact floating map; legacy geology decoding remains unchanged. */
 internal data class NativeMvtDecodeLimits(
@@ -90,6 +100,155 @@ internal object NativeMvtDecoder {
         val tile=Pb(bytes); val out=mutableListOf<NativeMvtFeature>()
         while(tile.more()) { val (field,wire)=tile.tag(); if(field==3&&wire==2) out+=layer(tile.blob(wire)) else tile.skip(wire) }
         return out
+    }
+
+    /** Strict all-or-nothing decoder for the public WORLD geology overlay. */
+    fun decodeWorld(
+        bytes: ByteArray,
+        limits: NativeWorldMvtLimits = NativeWorldMvtLimits(),
+        checkCancelled: () -> Unit = {},
+    ): List<NativeMvtFeature> {
+        if (bytes.size > 4 * 1024 * 1024) throw NativeMvtTileLimitException("MVT tile byte limit exceeded")
+        require(limits.maxFeatures in 1..8_192 && limits.maxVertices in 1..100_000 &&
+            limits.maxPaths in 1..16_384 && limits.maxVerticesPerFeature in 1..16_384) {
+            "WORLD MVT limits cannot exceed their hard ceilings"
+        }
+        val budget = WorldMvtBudget(limits)
+        val tile = Pb(bytes)
+        val out = mutableListOf<NativeMvtFeature>()
+        while (tile.more()) {
+            val (field, wire) = tile.tag()
+            if (field == 3 && wire == 2) out += worldLayer(tile.blob(wire), budget, checkCancelled)
+            else tile.skip(wire)
+        }
+        return out
+    }
+
+    private class WorldMvtBudget(val limits: NativeWorldMvtLimits) {
+        var features = 0
+        var vertices = 0
+        var paths = 0
+    }
+
+    private fun worldLayer(data: ByteArray, budget: WorldMvtBudget, checkCancelled: () -> Unit): List<NativeMvtFeature> {
+        val p = Pb(data)
+        var name = ""
+        var extent = 4096
+        val encodedFeatures = mutableListOf<ByteArray>()
+        val keys = mutableListOf<String>()
+        val values = mutableListOf<String>()
+        while (p.more()) {
+            checkCancelled()
+            val (field, wire) = p.tag()
+            when (field) {
+                1 -> name = p.string(wire)
+                2 -> {
+                    if (++budget.features > budget.limits.maxFeatures)
+                        throw NativeMvtTileLimitException("MVT feature limit exceeded")
+                    encodedFeatures += p.blob(wire)
+                }
+                3 -> keys += p.string(wire)
+                4 -> values += decodeValue(p.blob(wire))
+                5 -> extent = p.varint(wire).toInt().coerceAtLeast(1)
+                else -> p.skip(wire)
+            }
+        }
+        return encodedFeatures.mapNotNull { worldFeature(it, name, extent, keys, values, budget, checkCancelled) }
+    }
+
+    private fun worldFeature(
+        data: ByteArray,
+        layer: String,
+        extent: Int,
+        keys: List<String>,
+        values: List<String>,
+        budget: WorldMvtBudget,
+        checkCancelled: () -> Unit,
+    ): NativeMvtFeature? {
+        checkCancelled()
+        val p = Pb(data)
+        var type = 0
+        var tags = byteArrayOf()
+        var geometry = byteArrayOf()
+        while (p.more()) {
+            val (field, wire) = p.tag()
+            when (field) {
+                2 -> tags = p.blob(wire)
+                3 -> type = p.varint(wire).toInt()
+                4 -> geometry = p.blob(wire)
+                else -> p.skip(wire)
+            }
+        }
+        if (type !in 1..3 || geometry.isEmpty()) return null
+        val tagReader = Pb(tags)
+        val tagInts = mutableListOf<Int>()
+        while (tagReader.more()) { checkCancelled(); tagInts += tagReader.varint(0).toInt() }
+        val properties = tagInts.chunked(2).mapNotNull { pair ->
+            if (pair.size == 2 && pair[0] in keys.indices && pair[1] in values.indices) keys[pair[0]] to values[pair[1]] else null
+        }.toMap()
+
+        val geometryReader = Pb(geometry)
+        val paths = mutableListOf<List<Pair<Int, Int>>>()
+        var x = 0L
+        var y = 0L
+        var command = 0
+        var left = 0
+        var commandCount = 0
+        var localVertices = 0
+        var localPaths = 0
+        var coordinateChecks = 0
+        var path = mutableListOf<Pair<Int, Int>>()
+        val commandLimit = budget.limits.maxVerticesPerFeature * 3 + budget.limits.maxPaths
+        fun reserveVertex() {
+            localVertices++
+            if (localVertices > budget.limits.maxVerticesPerFeature)
+                throw NativeMvtTileLimitException("MVT per-feature vertex limit exceeded")
+            if (budget.vertices + localVertices > budget.limits.maxVertices)
+                throw NativeMvtTileLimitException("MVT tile vertex limit exceeded")
+        }
+        fun finish(closeRing: Boolean = false) {
+            if (path.isEmpty()) return
+            if (closeRing && type == 3 && path.size >= 3 && path.first() != path.last()) {
+                reserveVertex()
+                path += path.first()
+            }
+            localPaths++
+            if (localPaths > budget.limits.maxPaths || budget.paths + localPaths > budget.limits.maxPaths)
+                throw NativeMvtTileLimitException("MVT tile path limit exceeded")
+            paths += path
+            path = mutableListOf()
+        }
+        while (geometryReader.more()) {
+            if ((coordinateChecks++ and 0xff) == 0) checkCancelled()
+            if (left == 0) {
+                val packedLong = geometryReader.varint(0)
+                if (packedLong !in 0..Int.MAX_VALUE.toLong()) throw IllegalArgumentException("Invalid MVT geometry command")
+                val packed = packedLong.toInt()
+                command = packed and 7
+                left = packed shr 3
+                commandCount += left
+                if (commandCount > commandLimit) throw NativeMvtTileLimitException("MVT geometry command limit exceeded")
+                if (left <= 0) throw IllegalArgumentException("Invalid MVT geometry command")
+                if (command == 7) {
+                    finish(closeRing = true)
+                    left = 0
+                    continue
+                }
+                if (command !in setOf(1, 2)) throw IllegalArgumentException("Unsupported MVT geometry command")
+                if (command == 1 && path.isNotEmpty()) finish()
+            }
+            if (command == 1 || command == 2) {
+                x += zig(geometryReader.varint(0).toInt()).toLong()
+                y += zig(geometryReader.varint(0).toInt()).toLong()
+                reserveVertex()
+                path += x.coerceIn(-extent.toLong(), 2L * extent).toInt() to y.coerceIn(-extent.toLong(), 2L * extent).toInt()
+                left--
+            }
+        }
+        finish()
+        budget.vertices += localVertices
+        budget.paths += localPaths
+        return NativeMvtFeature(layer, type, extent, properties, paths)
     }
 
     /**
@@ -618,9 +777,14 @@ class NativeGeologyLayer(private val window:WorldWindow,private val onState:(Nat
     val cloudRenderLayer=RenderableLayer("Geology cloud WMTS")
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
     private val callbackOwner=NativeCallbackOwner(this)
-    private val cached=linkedMapOf<String,List<Renderable>>()
+    private data class WorldTileScene(val renderables: List<Renderable>, val units: List<NativeGeologyUnit>)
+    private val worldDisplayed=linkedMapOf<String,WorldTileScene>()
+    private val worldPending=linkedMapOf<String,WorldTileScene>()
+    private val worldRequests=NativeGeologyWorldRequests(MAX_ACTIVE_WORLD_REQUESTS)
+    private val worldJobs=linkedMapOf<NativeGeologyWorldTileRequest,Job>()
+    private val worldFailedUntil=mutableMapOf<String,Long>()
+    private var worldWanted=emptySet<String>()
     private val featureUnits=linkedMapOf<String,NativeGeologyUnit>()
-    private val requested=mutableSetOf<String>()
     private var state=NativeGeologyState()
     private var enabled=false
     private var source=NativeGeologySource.WORLD
@@ -631,14 +795,148 @@ class NativeGeologyLayer(private val window:WorldWindow,private val onState:(Nat
     private val viewportTick=object:Runnable{override fun run(){if(closed)return;if(enabled){if(source==NativeGeologySource.WORLD)requestVisibleWorldTiles() else requestCloudMetadata()};main.postDelayed(this,750)}}
     private val main=android.os.Handler(android.os.Looper.getMainLooper())
     init { renderLayer.isEnabled=false;cloudRenderLayer.isEnabled=false;main.post(viewportTick) }
-    fun setEnabled(value:Boolean){enabled=value;renderLayer.isEnabled=value&&source==NativeGeologySource.WORLD;cloudRenderLayer.isEnabled=value&&source==NativeGeologySource.GEO_CLOUD_200K;if(!enabled){poll++;scope.coroutineContext.cancelChildren();cloud?.cancelRequests();requested.clear();cached.clear();featureUnits.clear();renderLayer.clearRenderables();cloudRenderLayer.clearRenderables();cloudMetadata=null;publish(state.copy(status=NativeGeologyStatus.OFF,units=emptyList(),selected=null,legendImage=null))}else publish(state.copy(status=NativeGeologyStatus.LOADING,message="正在读取当前视口地质",opacity=opacity))}
-    fun setSource(value:NativeGeologySource){if(source==value)return;source=value;renderLayer.isEnabled=enabled&&source==NativeGeologySource.WORLD;cloudRenderLayer.isEnabled=enabled&&source==NativeGeologySource.GEO_CLOUD_200K;poll++;scope.coroutineContext.cancelChildren();cloud?.cancelRequests();requested.clear();cached.clear();renderLayer.clearRenderables();cloudRenderLayer.clearRenderables();cloudMetadata=null;publish(NativeGeologyState(source,if(enabled)NativeGeologyStatus.LOADING else NativeGeologyStatus.OFF,opacity=opacity));if(enabled){if(value==NativeGeologySource.WORLD)requestVisibleWorldTiles()else requestCloudMetadata()}}
+    fun setEnabled(value:Boolean){
+        if(enabled==value||closed)return
+        enabled=value
+        renderLayer.isEnabled=value&&source==NativeGeologySource.WORLD
+        cloudRenderLayer.isEnabled=value&&source==NativeGeologySource.GEO_CLOUD_200K
+        if(!enabled){
+            poll++;cancelWorldRequests();scope.coroutineContext.cancelChildren();cloud?.cancelRequests()
+            clearWorldScene();worldWanted=emptySet();worldFailedUntil.clear();featureUnits.clear()
+            renderLayer.clearRenderables();cloudRenderLayer.clearRenderables();cloudMetadata=null
+            publish(state.copy(status=NativeGeologyStatus.OFF,units=emptyList(),selected=null,legendImage=null))
+        }else publish(state.copy(status=NativeGeologyStatus.LOADING,message="正在读取当前视口地质",opacity=opacity))
+    }
+    fun setSource(value:NativeGeologySource){
+        if(source==value||closed)return
+        source=value;renderLayer.isEnabled=enabled&&source==NativeGeologySource.WORLD;cloudRenderLayer.isEnabled=enabled&&source==NativeGeologySource.GEO_CLOUD_200K
+        poll++;cancelWorldRequests();scope.coroutineContext.cancelChildren();cloud?.cancelRequests()
+        clearWorldScene();worldWanted=emptySet();worldFailedUntil.clear();featureUnits.clear()
+        renderLayer.clearRenderables();cloudRenderLayer.clearRenderables();cloudMetadata=null
+        publish(NativeGeologyState(source,if(enabled)NativeGeologyStatus.LOADING else NativeGeologyStatus.OFF,opacity=opacity))
+        if(enabled){if(value==NativeGeologySource.WORLD)requestVisibleWorldTiles()else requestCloudMetadata()}
+    }
     fun setOpacity(value:Double){require(value.isFinite()&&value in 0.0..1.0);opacity=value;renderLayer.opacity=value.toFloat();cloudRenderLayer.opacity=value.toFloat();publish(state.copy(opacity=value));window.requestRedraw()}
-    fun retry(){if(!enabled)return;poll++;scope.coroutineContext.cancelChildren();cloud?.cancelRequests();requested.clear();cloudMetadata=null;if(source==NativeGeologySource.WORLD)requestVisibleWorldTiles()else requestCloudMetadata()}
+    fun retry(){
+        if(!enabled||closed)return
+        if(source==NativeGeologySource.WORLD){
+            worldFailedUntil.clear()
+            if(!nativeGeologySceneMatchesByIdentity(worldDisplayed,worldPending,worldWanted))
+                publish(state.copy(status=NativeGeologyStatus.LOADING,message="正在重试当前视口地质数据"))
+            requestVisibleWorldTiles()
+        }else{
+            poll++;scope.coroutineContext.cancelChildren();cloud?.cancelRequests();cloudMetadata=null;requestCloudMetadata()
+        }
+    }
     /** Call with the exact WorldWind picked delegate; no bounds-based substitute. */
     fun selectFeature(delegate:String){publish(state.copy(selected=featureUnits[delegate.removePrefix("geology:")]))}
-    private fun requestVisibleWorldTiles(){if(!enabled||source!=NativeGeologySource.WORLD||closed)return;val cam=window.engine.camera;val altitude=cam.position.altitude.coerceAtLeast(100.0);val fov=cam.fieldOfView.inDegrees.coerceIn(5.0,120.0);val width=window.engine.viewport.width.coerceAtLeast(1);val groundWidth=2*altitude*kotlin.math.tan(Math.toRadians(fov/2))*width.toDouble()/window.engine.viewport.height.coerceAtLeast(1);val z=kotlin.math.floor(kotlin.math.ln((40_075_016.0/groundWidth.coerceAtLeast(1.0))/256.0)/kotlin.math.ln(2.0)+4).toInt().coerceIn(0,5);val n=1 shl z;val lat=cam.position.latitude.inDegrees.coerceIn(-85.0,85.0);val lon=cam.position.longitude.inDegrees;val cx=(((lon+180)/360*n).toInt()).coerceIn(0,n-1);val sinLat=kotlin.math.sin(Math.toRadians(lat));val cy=((.5-kotlin.math.ln((1+sinLat)/(1-sinLat))/(4*PI))*n).toInt().coerceIn(0,n-1);val radius=if(z<2)0 else 1;val visible=buildSet{for(dy in -radius..radius)for(dx in -radius..radius){val xx=Math.floorMod(cx+dx,n);val yy=cy+dy;if(yy in 0 until n)add("$z/$xx/$yy")}};cached.keys.filter{it !in visible}.forEach{key->cached.remove(key)?.forEach(renderLayer::removeRenderable)};val retained=cached.values.flatten().mapNotNull{it.pickDelegate?.toString()?.removePrefix("geology:")}.toSet();featureUnits.keys.filter{it !in retained}.toList().forEach(featureUnits::remove);visible.filter{it !in cached&&it !in requested}.forEach{key->requested+=key;val parts=key.split('/').map(String::toInt);val generation=poll;scope.launch{try{val features=loadWorldTile(parts[0],parts[1],parts[2]);if(!enabled||source!=NativeGeologySource.WORLD||generation!=poll)return@launch;drawWorldTile(key,features,parts[0],parts[1],parts[2])}catch(_:CancellationException){}catch(_:Exception){if(enabled&&generation==poll)publish(state.copy(status=NativeGeologyStatus.ERROR,message="世界地质数据请求失败，点击重试"))}finally{requested.remove(key)}}}}
-    private suspend fun loadWorldTile(z:Int,x:Int,y:Int):List<NativeMvtFeature>{val b=cancellableHttp(URL("https://tiles.macrostrat.org/carto/$z/$x/$y.mvt"));return NativeMvtDecoder.decode(b)}
+    private fun requestVisibleWorldTiles(){
+        if(!enabled||source!=NativeGeologySource.WORLD||closed)return
+        val camera=window.engine.camera
+        val plan=nativeGeologyViewportPlan(
+            camera.position.altitude,camera.fieldOfView.inDegrees,
+            window.engine.viewport.width,window.engine.viewport.height,
+            camera.position.latitude.inDegrees,camera.position.longitude.inDegrees,
+        )
+        reconcileWorldViewport(plan.tileKeys)
+    }
+
+    private fun reconcileWorldViewport(wanted:Set<String>){
+        val changed=wanted!=worldWanted
+        if(changed){
+            worldWanted=wanted
+            worldPending.keys.retainAll(wanted)
+            worldFailedUntil.keys.retainAll(wanted)
+            // Share already-rendered tiles with the staging scene while the new viewport loads.
+            wanted.forEach{key->worldDisplayed[key]?.let{worldPending.putIfAbsent(key,it)}}
+            if(worldPending.isEmpty())publish(state.copy(status=NativeGeologyStatus.LOADING,message="正在准备当前视口地质"))
+        }
+        val eligible=nativeGeologyWorldTilesToRequest(wanted,worldPending.keys,worldFailedUntil,SystemClock.uptimeMillis())
+        val work=worldRequests.reconcile(wanted,eligible)
+        work.cancel.forEach{worldJobs[it]?.cancel()}
+        launchWorldRequests(work.start)
+        commitWorldSceneIfReady()
+    }
+
+    private fun launchWorldRequests(requests:List<NativeGeologyWorldTileRequest>){
+        if(!enabled||source!=NativeGeologySource.WORLD||closed)return
+        requests.forEach{request->
+            val job=scope.launch(start=CoroutineStart.LAZY){
+                try{
+                    val parts=request.key.split('/').map(String::toInt)
+                    val features=loadWorldTile(parts[0],parts[1],parts[2])
+                    if(isCurrentWorldRequest(request)){
+                        val scene=buildWorldTile(features,parts[0],parts[1],parts[2])
+                        if(isCurrentWorldRequest(request)){
+                            worldPending[request.key]=scene
+                            worldFailedUntil.remove(request.key)
+                            commitWorldSceneIfReady()
+                        }
+                    }
+                }catch(_:CancellationException){}
+                catch(error:Exception){
+                    if(isCurrentWorldRequest(request)){
+                        worldFailedUntil[request.key]=SystemClock.uptimeMillis()+WORLD_RETRY_DELAY_MS
+                        val message=if(error is NativeMvtTileLimitException)
+                            "世界地质瓦片超过安全绘制上限，已保留上一幅地图；可重试"
+                        else "当前视口部分地质数据加载失败，已保留上一幅地图；可重试"
+                        publish(state.copy(status=NativeGeologyStatus.ERROR,message=message))
+                    }
+                }finally{
+                    worldJobs.remove(request)
+                    val work=worldRequests.finish(request)
+                    launchWorldRequests(work.start)
+                }
+            }
+            worldJobs[request]=job
+            job.start()
+        }
+    }
+
+    private fun isCurrentWorldRequest(request:NativeGeologyWorldTileRequest)=
+        enabled&&!closed&&source==NativeGeologySource.WORLD&&worldRequests.isCurrent(request)
+
+    private fun commitWorldSceneIfReady(){
+        if(!enabled||source!=NativeGeologySource.WORLD||closed||worldWanted.isEmpty())return
+        if(!worldPending.keys.containsAll(worldWanted))return
+        val next=linkedMapOf<String,WorldTileScene>()
+        worldWanted.forEach{key->next[key]=worldPending[key]?:return}
+        if(nativeGeologySceneMatchesByIdentity(worldDisplayed,next,worldWanted))return
+        // This runs on the main scope: replace the complete scene in one turn and request one frame.
+        val old=worldDisplayed.values.flatMap{it.renderables}
+        val fresh=next.values.flatMap{it.renderables}
+        old.forEach(renderLayer::removeRenderable)
+        fresh.forEach(renderLayer::addRenderable)
+        worldDisplayed.clear();worldDisplayed.putAll(next)
+        worldPending.clear();worldPending.putAll(next)
+        featureUnits.clear()
+        next.values.flatMap{it.units}.forEach{featureUnits.putIfAbsent(it.key,it)}
+        val units=featureUnits.values.toList()
+        val selected=state.selected?.key?.let(featureUnits::get)
+        renderLayer.opacity=opacity.toFloat()
+        window.requestRedraw()
+        publish(state.copy(
+            status=if(units.isEmpty())NativeGeologyStatus.EMPTY else NativeGeologyStatus.READY,
+            message="",units=units,selected=selected,
+            attribution="Macrostrat · CC BY 4.0 · Chorlton / Geological Survey of Canada (2007), world overview, source coverage through zoom 5",
+        ))
+    }
+
+    private fun cancelWorldRequests(){
+        worldRequests.cancelAll().forEach{worldJobs[it]?.cancel()}
+    }
+
+    private fun clearWorldScene(){
+        worldDisplayed.clear();worldPending.clear();renderLayer.clearRenderables()
+    }
+
+    private suspend fun loadWorldTile(z:Int,x:Int,y:Int):List<NativeMvtFeature>{
+        val bytes=cancellableHttp(URL("https://tiles.macrostrat.org/carto/$z/$x/$y.mvt"))
+        return withContext(Dispatchers.Default){
+            val context=currentCoroutineContext()
+            NativeMvtDecoder.decodeWorld(bytes,checkCancelled={context.ensureActive()})
+        }
+    }
     private fun requestCloudMetadata(){if(cloudMetadata!=null||!enabled||source!=NativeGeologySource.GEO_CLOUD_200K)return;val client=cloud?:run{publish(state.copy(status=NativeGeologyStatus.AUTHORIZATION,message="尚未配置地质云授权，请在设置中添加已获授权的服务凭据"));return};val generation=poll;scope.launch{try{val meta=client.capabilities();if(!enabled||generation!=poll)return@launch;cloudMetadata=meta;cloudRenderLayer.clearRenderables();val raster=buildCloudSurface(meta,client);cloudRenderLayer.addRenderable(raster);cloudRenderLayer.opacity=opacity.toFloat();window.requestRedraw();val legend=if(meta.hasLegend)client.legend(meta)else null;publish(state.copy(status=NativeGeologyStatus.LOADING,message="授权通过，等待当前视口原图瓦片",attribution=meta.attribution,legendImage=legend));}catch(_:CancellationException){}catch(e:NativeGeologyAuthorizationException){if(generation==poll)publish(state.copy(status=NativeGeologyStatus.AUTHORIZATION,message=e.message.orEmpty()))}catch(_:Exception){if(generation==poll)publish(state.copy(status=NativeGeologyStatus.ERROR,message="地质云WMTS服务读取失败，可重试"))}}}
     private fun buildCloudSurface(meta:CloudMetadata,client:NativeGeologyCloudClient):MercatorTiledSurfaceImage {
         val owner=callbackOwner
@@ -659,15 +957,59 @@ class NativeGeologyLayer(private val window:WorldWindow,private val onState:(Nat
             }
         }
     }
-    private fun drawWorldTile(tileKey:String,fs:List<NativeMvtFeature>,z:Int,x:Int,y:Int){val items=mutableListOf<Renderable>();val unitKeys=mutableSetOf<String>();fs.filter{it.layer=="units"&&it.type==3}.forEach{feature->val unit=geologyUnit(feature.properties);unitKeys+=unit.key;featureUnits[unit.key]=unit;val paths=feature.paths.map{ring->ring.map{(px,py)->tilePosition(z,x,y,px,py,feature.extent)}};if(paths.isEmpty())return@forEach;val rgb=parseColor(unit.color);val attrs=ShapeAttributes().apply{isDepthTest=true;isDrawInterior=true;isDrawOutline=true;interiorColor=Color(rgb[0],rgb[1],rgb[2],(.85*opacity).toFloat());outlineColor=Color(.16f,.18f,.22f,.5f);outlineWidth=.65f};val outerRings=paths.filter{it.size>=4&&ringArea(it)<0};val holes=paths.filter{it.size>=4&&ringArea(it)>0};outerRings.forEach{outer->val polygon=Polygon(outer,attrs).apply{altitudeMode=AltitudeMode.CLAMP_TO_GROUND};holes.filter{pointInRing(it.first(),outer)}.forEach(polygon::addBoundary);polygon.pickDelegate="geology:${unit.key}";items+=polygon}}
-        fs.filter{it.layer=="lines"&&it.type==2}.forEach{feature->val unit=geologyUnit(feature.properties);unitKeys+=unit.key;featureUnits[unit.key]=unit;feature.paths.forEach{line->if(line.size>=2){val color=if(feature.properties["type"].orEmpty().contains("fault",true))Color(.55f,.09f,.15f,1f) else Color(.14f,.24f,.44f,1f);val path=Path(line.map{(px,py)->tilePosition(z,x,y,px,py,feature.extent)},ShapeAttributes().apply{isDepthTest=true;isDrawInterior=false;isDrawOutline=true;outlineColor=color;outlineWidth=1.6f}).apply{altitudeMode=AltitudeMode.CLAMP_TO_GROUND;pickDelegate="geology:${unit.key}"};items+=path}}}
-        cached[tileKey]=items;items.forEach(renderLayer::addRenderable);window.requestRedraw();val allUnits=(state.units+unitKeys.mapNotNull(featureUnits::get)).distinctBy{it.key};publish(state.copy(status=if(allUnits.isEmpty())NativeGeologyStatus.EMPTY else NativeGeologyStatus.READY,units=allUnits,attribution="Macrostrat · CC BY 4.0 · Chorlton / Geological Survey of Canada (2007), world overview, source coverage through zoom 5"))}
+    private suspend fun buildWorldTile(fs:List<NativeMvtFeature>,z:Int,x:Int,y:Int):WorldTileScene{
+        val items=mutableListOf<Renderable>()
+        val units=linkedMapOf<String,NativeGeologyUnit>()
+        var work=0
+        suspend fun checkpoint(){if((work++ and 0xff)==0)yield()}
+        for(feature in fs){
+            checkpoint()
+            if(feature.layer!="units"||feature.type!=3)continue
+            val unit=geologyUnit(feature.properties);units.putIfAbsent(unit.key,unit)
+            val paths=mutableListOf<List<Position>>()
+            for(ring in feature.paths){
+                val positions=ArrayList<Position>(ring.size)
+                for((px,py) in ring){checkpoint();positions+=tilePosition(z,x,y,px,py,feature.extent)}
+                paths+=positions
+            }
+            if(paths.isEmpty())continue
+            val rgb=parseColor(unit.color)
+            val attrs=ShapeAttributes().apply{isDepthTest=true;isDrawInterior=true;isDrawOutline=true;interiorColor=Color(rgb[0],rgb[1],rgb[2],(.85*opacity).toFloat());outlineColor=Color(.16f,.18f,.22f,.5f);outlineWidth=.65f}
+            val outerRings=mutableListOf<List<Position>>();val holes=mutableListOf<List<Position>>()
+            for(ring in paths){if(ring.size<4)continue;val area=ringArea(ring,::checkpoint);if(area<0)outerRings+=ring else if(area>0)holes+=ring}
+            for(outer in outerRings){
+                checkpoint()
+                val polygon=Polygon(outer,attrs).apply{altitudeMode=AltitudeMode.CLAMP_TO_GROUND}
+                for(hole in holes){checkpoint();if(pointInRing(hole.first(),outer,::checkpoint))polygon.addBoundary(hole)}
+                polygon.pickDelegate="geology:${unit.key}";items+=polygon
+            }
+        }
+        for(feature in fs){
+            checkpoint()
+            if(feature.layer!="lines"||feature.type!=2)continue
+            val unit=geologyUnit(feature.properties);units.putIfAbsent(unit.key,unit)
+            val color=if(feature.properties["type"].orEmpty().contains("fault",true))Color(.55f,.09f,.15f,1f) else Color(.14f,.24f,.44f,1f)
+            for(line in feature.paths){
+                checkpoint();if(line.size<2)continue
+                val positions=ArrayList<Position>(line.size)
+                for((px,py) in line){checkpoint();positions+=tilePosition(z,x,y,px,py,feature.extent)}
+                val path=Path(positions,ShapeAttributes().apply{isDepthTest=true;isDrawInterior=false;isDrawOutline=true;outlineColor=color;outlineWidth=1.6f}).apply{altitudeMode=AltitudeMode.CLAMP_TO_GROUND;pickDelegate="geology:${unit.key}"}
+                items+=path
+            }
+        }
+        return WorldTileScene(items,units.values.toList())
+    }
     private fun tilePosition(z:Int,x:Int,y:Int,px:Int,py:Int,extent:Int):Position{val n=2.0.pow(z);val lon=(x+px.toDouble()/extent)/n*360-180;val merc=PI*(1-2*(y+py.toDouble()/extent)/n);return Position(Math.toDegrees(atan(sinh(merc))).degrees,lon.degrees,0.0)}
-    private fun ringArea(p:List<Position>):Double=p.indices.sumOf{i->val a=p[i];val b=p[(i+1)%p.size];a.longitude.inDegrees*b.latitude.inDegrees-b.longitude.inDegrees*a.latitude.inDegrees}
-    private fun pointInRing(p:Position,ring:List<Position>):Boolean{var inside=false;var j=ring.lastIndex;for(i in ring.indices){val a=ring[i];val b=ring[j];if((a.latitude.inDegrees>p.latitude.inDegrees)!=(b.latitude.inDegrees>p.latitude.inDegrees)&&p.longitude.inDegrees<(b.longitude.inDegrees-a.longitude.inDegrees)*(p.latitude.inDegrees-a.latitude.inDegrees)/(b.latitude.inDegrees-a.latitude.inDegrees)+a.longitude.inDegrees)inside=!inside;j=i};return inside}
+    private suspend fun ringArea(p:List<Position>,checkpoint:suspend()->Unit):Double{var area=0.0;for(i in p.indices){if((i and 0xff)==0)checkpoint();val a=p[i];val b=p[(i+1)%p.size];area+=a.longitude.inDegrees*b.latitude.inDegrees-b.longitude.inDegrees*a.latitude.inDegrees};return area}
+    private suspend fun pointInRing(p:Position,ring:List<Position>,checkpoint:suspend()->Unit):Boolean{var inside=false;var j=ring.lastIndex;for(i in ring.indices){if((i and 0xff)==0)checkpoint();val a=ring[i];val b=ring[j];if((a.latitude.inDegrees>p.latitude.inDegrees)!=(b.latitude.inDegrees>p.latitude.inDegrees)&&p.longitude.inDegrees<(b.longitude.inDegrees-a.longitude.inDegrees)*(p.latitude.inDegrees-a.latitude.inDegrees)/(b.latitude.inDegrees-a.latitude.inDegrees)+a.longitude.inDegrees)inside=!inside;j=i};return inside}
     private fun parseColor(s:String):FloatArray{val n=s.removePrefix("#").toLongOrNull(16)?:0xa8b5be;return floatArrayOf(((n shr 16)and 255)/255f,((n shr 8)and 255)/255f,(n and 255)/255f,1f)}
     private fun publish(s:NativeGeologyState){state=s;onState(s)}
-    override fun close(){callbackOwner.detach();closed=true;main.removeCallbacks(viewportTick);poll++;enabled=false;scope.cancel();cloud?.close();renderLayer.clearRenderables();cloudRenderLayer.clearRenderables();cached.clear();requested.clear();featureUnits.clear()}
+    override fun close(){callbackOwner.detach();closed=true;main.removeCallbacks(viewportTick);poll++;enabled=false;cancelWorldRequests();scope.cancel();cloud?.close();clearWorldScene();renderLayer.clearRenderables();cloudRenderLayer.clearRenderables();worldFailedUntil.clear();worldWanted=emptySet();featureUnits.clear()}
+
+    private companion object {
+        const val MAX_ACTIVE_WORLD_REQUESTS=2
+        const val WORLD_RETRY_DELAY_MS=3_000L
+    }
 }
 
 internal suspend fun cancellableHttp(url:URL):ByteArray {

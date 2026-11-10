@@ -129,7 +129,7 @@ class NativePhotoLayer {
         val frameCss = when (markerMode) { "icon" -> 24.2; "dot" -> 9.9; else -> 32.0 }
         val zoomScale = (0.35 + (zoom - 4.0) * 0.65 / 12.0).coerceIn(0.35, 1.0)
         val density = NativeMarkerPresentation.densityBucket(cssScale)
-        return frameCss * zoomScale * cssScale / (56.0 * density)
+        return (frameCss * zoomScale).coerceAtLeast(20.0) * cssScale / (56.0 * density)
     }
 
     private fun differs(a: Double, b: Double) = abs(a - b) > 1e-6

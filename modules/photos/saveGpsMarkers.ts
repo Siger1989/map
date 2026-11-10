@@ -3,6 +3,7 @@ import { COLLECTION_STORAGE, parseLayout, validateLayout, type CollectionLayout 
 import type { PhotoDraft } from './import.ts';
 import { planGpsPhotoMarkers } from './gpsMarkers.ts';
 import { readPhotos, writePhotos } from './storage.ts';
+import { coordinate } from '../navigation/types.ts';
 
 type Store = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
@@ -30,7 +31,7 @@ async function commitGpsPhotos(drafts: PhotoDraft[], storage: Store) {
   const existingPhotos = await readPhotos();
   const plan = planGpsPhotoMarkers(drafts, annotations, existingPhotos);
   const groupIds = new Set([...plan.photos, ...existingPhotos.filter(p =>
-    drafts.some(d => p.id === `gps-photo:${d.hash}`))].flatMap(p => p.annotationId ? [p.annotationId] : []));
+    drafts.some(d => coordinate(d.gpsCoordinates) && p.id === `gps-photo:${d.hash}`))].flatMap(p => p.annotationId ? [p.annotationId] : []));
   const coordinates = [...annotations, ...plan.annotations]
     .filter(a => groupIds.has(a.id)).map(a => a.coordinates);
   if (!plan.photos.length) return { ...plan, coordinates };

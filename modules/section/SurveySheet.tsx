@@ -17,8 +17,14 @@ import type { Annotation } from '../annotations/data';
 import { deliverPhoto } from '../photos/export';
 import { surveyDrawing } from './surveyDrawing';
 import { sectionImageName } from './exportName';
-import { surveyBasis, surveySettings } from './surveyLine';
-import { SURVEY_SCALES, surveyScaleWidth } from './surveyScale';
+import { surveyBasis, surveyRange, surveySettings } from './surveyLine';
+import {
+  SURVEY_PLOT_WIDTH,
+  SURVEY_PX_PER_MM,
+  SURVEY_SCALES,
+  surveyHorizontalScale,
+  surveyScaleWidth,
+} from './surveyScale';
 import type { SurveySectionState } from './useSurveySection';
 
 /** Full-screen viewer; keeps the engineering sheet's original landscape geometry. */
@@ -37,7 +43,12 @@ export function SurveySheet({
 }) {
   const object = state.object!,
     line = object.settings.survey!,
-    terrain = object.settings.surveyTerrain;
+    terrain = object.settings.surveyTerrain,
+    range = terrain ?? surveyRange(line),
+    horizontalScale = line.printScale ?? surveyHorizontalScale(
+      range.end - range.start,
+      SURVEY_PLOT_WIDTH,
+    );
   const [zoom, setZoom] = useState(1),
     [page, setPage] = useState(0);
   const [exporting, setExporting] = useState(false),
@@ -53,6 +64,8 @@ export function SurveySheet({
     }
   }, [line, terrain, object.name, markers]);
   const pages = drawing && 'pages' in drawing ? drawing.pages : [];
+  const drawingError = drawing && 'error' in drawing ? drawing.error : '';
+  const scaleError = /比例尺|图纸过高/.test(drawingError);
   const shownPage = Math.min(page, Math.max(0, pages.length - 1));
   const imagePage = pages[shownPage] ?? null;
   const changePage = (next: number) => {
@@ -164,13 +177,35 @@ export function SurveySheet({
                 return (
                   <option key={n} value={n} disabled={!fits}>
                     1:{n}
-                    {fits ? '' : '（容不下全线）'}
+                    {fits ? '' : '（单页放不下）'}
                   </option>
                 );
               })}
             </select>
           </label>
-          <p>比例尺按完整图纸宽 420 mm 打印。平面图等比，剖面纵向比例另注。</p>
+          <label>
+            纵向比例尺
+            <select
+              aria-label="纵向比例尺"
+              value={line.verticalPrintScale ?? 0}
+              onChange={(e) =>
+                state.commit(
+                  surveySettings(
+                    {
+                      ...line,
+                      verticalPrintScale: Number(e.target.value) || undefined,
+                    },
+                    object.settings,
+                  ),
+                )
+              }
+            >
+              <option value={0}>跟随横向（1:{Number(horizontalScale.toFixed(2))}）</option>
+              {SURVEY_SCALES.map((n) => (
+                <option key={n} value={n}>1:{n}</option>
+              ))}
+            </select>
+          </label>
           <label>
             等高距
             <select
@@ -192,6 +227,12 @@ export function SurveySheet({
               ))}
             </select>
           </label>
+          <details className="survey-sheet-scale-help">
+            <summary>比例尺说明 / 单页放不下</summary>
+            <p>绘图区约 {Math.round(SURVEY_PLOT_WIDTH / SURVEY_PX_PER_MM)} mm。“单页放不下”表示当前全线（含延长段）按该比例超出绘图区；请选择更大的分母或自动铺满。</p>
+            <p>纵向默认跟随水平。分母越小，地形起伏越明显；字号不随比例改变。平缓地形会向外扩展高程轴，保持刻度可读。</p>
+            <p>导出图片打印时，请将整图宽度设为 420 mm，勿再按纸张自适应缩放。手机预览缩放不改变工程比例。</p>
+          </details>
           <div>
             <button
               disabled={state.busy}
@@ -233,8 +274,8 @@ export function SurveySheet({
                     ? drawing.error
                     : '地形尚未就绪'}
               </p>
-              <button onClick={state.retry} disabled={state.busy}>
-                重新读取地形
+              <button onClick={scaleError ? () => setSettingsOpen(true) : state.retry} disabled={state.busy}>
+                {scaleError ? '调整比例尺' : '重新读取地形'}
               </button>
             </div>
           )}

@@ -14,7 +14,7 @@ test('photo presentation follows the shared pin mode thresholds and physical fra
   ];
 
   for (const { zoom, mode, base } of cases) {
-    const frameCss = base * markerScale(zoom);
+    const frameCss = Math.max(20, base * markerScale(zoom));
     const result = photoMapPresentation(zoom);
     assert.equal(result.mode, markerPresentation(zoom, false));
     assert.equal(result.mode, mode);
@@ -29,13 +29,14 @@ test('photos shrink through normal map zooms and never exceed the compact 32 pix
   const close = photoMapPresentation(18);
   assert.equal(distant.mode, 'dot');
   assert.equal(close.mode, 'label');
-  assert.ok(Math.abs(distant.frameCss - 9.9 * .35) < 1e-10);
+  assert.equal(distant.frameCss, 20);
   assert.equal(close.frameCss, 32);
-  assert.ok(photoMapPresentation(7.9).frameCss > photoMapPresentation(4).frameCss);
+  assert.equal(photoMapPresentation(7.9).frameCss, 20);
   assert.ok(photoMapPresentation(10).frameCss < photoMapPresentation(12).frameCss);
   assert.ok(photoMapPresentation(12).frameCss < photoMapPresentation(14).frameCss);
   assert.ok(photoMapPresentation(14).frameCss < photoMapPresentation(18).frameCss);
   for (let zoom = 0; zoom <= 24; zoom += .1) {
+    assert.ok(photoMapPresentation(zoom).frameCss >= 20);
     assert.ok(photoMapPresentation(zoom).frameCss <= 32);
   }
 });

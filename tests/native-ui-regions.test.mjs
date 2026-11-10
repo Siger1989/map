@@ -133,6 +133,94 @@ test('publisher sends visible import labels and transparent file inputs but excl
   assert.equal(ids.some((id) => /pointer-disabled-label|pointer-disabled-file/.test(id)), false);
 });
 
+test('publisher routes only visible enabled track color rows, clipping them to their scroll panel', async () => {
+  const { window, document } = parseHTML(`<!doctype html><html><head></head><body>
+    <label id="drawing-color" class="track-color-picker" title="画线颜色">
+      <i></i><span>画线颜色</span><input type="color" aria-label="画线颜色" value="#123456" style="position:absolute;inset:0;opacity:0">
+    </label>
+    <input id="transparent-color-only" type="color" style="opacity:0">
+    <label id="disabled-color" class="track-color-picker"><span>禁用颜色</span><input type="color" disabled style="opacity:0"></label>
+    <label id="readonly-color" class="track-color-picker"><span>只读颜色</span><input type="color" readonly style="opacity:0"></label>
+    <label id="orphan-color" class="track-color-picker"><span>无颜色输入</span></label>
+    <label id="hidden-color" class="track-color-picker" hidden><input type="color" style="opacity:0"></label>
+    <div id="clipped-panel" style="overflow-y:hidden">
+      <label id="clipped-color" class="track-color-picker"><span>裁剪颜色</span><input type="color" style="opacity:0"></label>
+    </div>
+  </body></html>`);
+  for (const input of document.querySelectorAll('input[readonly]')) Object.defineProperty(input, 'readOnly', { value: true });
+  const saved = new Map();
+  const setGlobal = (name, value) => {
+    saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+    Object.defineProperty(globalThis, name, { value, configurable: true, writable: true });
+  };
+  const rect = (left, top, right, bottom) => ({ left, top, right, bottom, x: left, y: top,
+    width: right - left, height: bottom - top, toJSON() {} });
+  const hitBoxes = new Map([
+    ['drawing-color', rect(16, 40, 196, 76)],
+    ['disabled-color', rect(16, 84, 196, 120)],
+    ['readonly-color', rect(16, 128, 196, 164)],
+    ['orphan-color', rect(16, 128, 196, 164)],
+    ['hidden-color', rect(16, 128, 196, 164)],
+    ['clipped-panel', rect(8, 180, 220, 220)],
+    ['clipped-color', rect(16, 168, 196, 204)],
+  ]);
+  for (const element of document.querySelectorAll('*')) {
+    element.getBoundingClientRect = () => hitBoxes.get(element.id) ?? rect(0, 0, 390, 800);
+  }
+  for (const [name, value] of Object.entries({
+    window, document, HTMLElement: window.HTMLElement, HTMLInputElement: window.HTMLInputElement,
+    SVGElement: window.SVGElement, MutationObserver: window.MutationObserver,
+    getComputedStyle: element => {
+      const declarations = Object.fromEntries((element.getAttribute('style') ?? '').split(';').map(part => part.trim()).filter(Boolean).map(part => {
+        const index = part.indexOf(':');
+        return [part.slice(0, index).trim().toLowerCase(), part.slice(index + 1).trim()];
+      }));
+      return {
+        display: element.hasAttribute('hidden') ? 'none' : declarations.display ?? 'block',
+        visibility: declarations.visibility ?? 'visible', opacity: declarations.opacity ?? '1',
+        pointerEvents: declarations['pointer-events'] ?? 'auto',
+        overflowX: declarations['overflow-x'] ?? 'visible', overflowY: declarations['overflow-y'] ?? 'visible',
+        strokeWidth: declarations['stroke-width'] ?? '8',
+      };
+    },
+    requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 0),
+    cancelAnimationFrame: clearTimeout, ResizeObserver: undefined,
+  })) setGlobal(name, value);
+  Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, value: 390 });
+  Object.defineProperty(document.documentElement, 'clientHeight', { configurable: true, value: 800 });
+  window.devicePixelRatio = 2;
+
+  const packets = [];
+  let stop = () => {};
+  try {
+    stop = configureNativeUIRegionTransport({ getSessionId: () => 'track-color-fixture', send: packet => packets.push(packet) });
+    await new Promise(resolve => setTimeout(resolve, 25));
+  } finally {
+    stop();
+    for (const [name, descriptor] of saved) {
+      if (descriptor) Object.defineProperty(globalThis, name, descriptor); else delete globalThis[name];
+    }
+  }
+
+  const packet = packets.find(p => p.command === 'uiRegions');
+  assert.ok(packet, 'publisher must collect actual track color DOM');
+  const regions = packet.payload.regions;
+  const drawingRegion = regions.find(({ id }) => id.startsWith('drawing-color:'));
+  assert.deepEqual(
+    { left: drawingRegion?.left, top: drawingRegion?.top, right: drawingRegion?.right, bottom: drawingRegion?.bottom },
+    { left: 16, top: 40, right: 196, bottom: 76 },
+    'the enabled color row owns its complete visible label hit box',
+  );
+  const clippedRegion = regions.find(({ id }) => id.startsWith('clipped-color:'));
+  assert.deepEqual(
+    { left: clippedRegion?.left, top: clippedRegion?.top, right: clippedRegion?.right, bottom: clippedRegion?.bottom },
+    { left: 16, top: 180, right: 196, bottom: 204 },
+    'the color row cannot claim the portion clipped by its scroll panel',
+  );
+  assert.equal(regions.some(({ id }) => /transparent-color-only|disabled-color|readonly-color|orphan-color|hidden-color/.test(id)), false,
+    'transparent standalone, disabled, read-only, missing-input, and hidden color rows do not claim map hit regions');
+});
+
 test('publisher protects visible map switches by their label hit box without blocking a non-scrollable layer card', async () => {
   const { window, document } = parseHTML(`<!doctype html><html><head></head><body>
     <div class="map-canvas"></div>

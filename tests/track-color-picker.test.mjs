@@ -6,11 +6,13 @@ import { parseHTML } from 'linkedom';
 
 const bundle = await build({ stdin: { contents: `
   export { TrackColorPicker } from './modules/tracks/TrackColorPicker';
+  export { TrackDrawingStyle } from './modules/tracks/TrackDrawingStyle';
+  export { RouteSelectionFields } from './modules/tracks/RouteSelectionFields';
   export { AppColorPicker } from './modules/appearance/AppColorPicker';
 `, resolveDir: process.cwd(), loader: 'tsx' }, bundle: true, platform: 'node', format: 'esm',
   packages: 'external', jsx: 'automatic', loader: { '.css': 'empty' }, write: false, logLevel: 'silent' });
 await writeFile('.openai/track-color-picker-test-bundle.mjs', bundle.outputFiles[0].text);
-const { TrackColorPicker, AppColorPicker } = await import('../.openai/track-color-picker-test-bundle.mjs');
+const { TrackColorPicker, TrackDrawingStyle, RouteSelectionFields, AppColorPicker } = await import('../.openai/track-color-picker-test-bundle.mjs');
 const React = await import('react');
 const { act } = React;
 
@@ -25,13 +27,18 @@ async function setup(t) {
     HTMLInputElement: window.HTMLInputElement, IS_REACT_ACT_ENVIRONMENT: true });
   const { createRoot } = await import('react-dom/client');
   const colors = {};
+  const writes = { selection: [] };
   function Probe() {
-    const [drawing, setDrawing] = React.useState('#123456');
+    const [drawing, setDrawing] = React.useState({ color: '#123456', width: 2 });
     const [selection, setSelection] = React.useState('#abcdef');
-    colors.drawing = drawing; colors.selection = selection;
+    colors.drawing = drawing.color; colors.selection = selection;
     return React.createElement(React.Fragment, null,
-      React.createElement(TrackColorPicker, { label: '画线颜色', value: drawing, onChange: setDrawing }),
+      React.createElement(TrackDrawingStyle, { style: drawing, onChange: setDrawing, condition: '', onCondition: () => {} }),
       React.createElement(TrackColorPicker, { label: '相连4段颜色', value: selection, onChange: setSelection }),
+      React.createElement(RouteSelectionFields, {
+        track: { segments: [[[0, 0], [1, 1]]] }, points: [[0, 0], [1, 1]],
+        onApply: detail => writes.selection.push(detail), onMarker: () => {}, onSetEnd: () => {},
+      }),
       React.createElement(AppColorPicker));
   }
   const root = createRoot(document.getElementById('root'));
@@ -39,7 +46,7 @@ async function setup(t) {
     try { await act(async () => root.unmount()); }
     finally { for (const [key, descriptor] of saved) descriptor ? Object.defineProperty(globalThis, key, descriptor) : delete globalThis[key]; }
   });
-  return { window, root, colors, render: async () => act(async () => root.render(React.createElement(Probe))),
+  return { window, root, colors, writes, render: async () => act(async () => root.render(React.createElement(Probe))),
     input: label => document.querySelector(`input[aria-label="${label}"]`),
     click: async node => { assert.ok(node); const event = new window.Event('click', { bubbles: true, cancelable: true }); await act(async () => node.dispatchEvent(event)); return event; } };
 }
@@ -64,6 +71,12 @@ test('drawing and selection triggers share the same app palette, suppress native
   assert.equal(!!document.querySelector('[role="dialog"]'), false, 'valid HEX applies and closes immediately');
   assert.equal(f.input('画线颜色').value, '#12abef');
   assert.equal(f.input('相连4段颜色').value, '#abcdef', 'drawing color does not alter selection color');
+
+  await f.click(f.input('相连1段颜色'));
+  assert.ok(document.querySelector('.app-color-picker'), 'selected segment note color opens the shared palette');
+  await f.click(document.querySelector('button[aria-label="红色"]'));
+  assert.deepEqual(f.writes.selection.at(-1), { color: '#e41a1c' }, 'selected segment color writes through RouteSelectionFields');
+  assert.equal(f.input('相连1段颜色').value, '#e41a1c');
 
   await f.click(f.input('相连4段颜色'));
   assert.deepEqual([...document.querySelectorAll('.app-color-grid [data-color]')].map(button => button.dataset.color), palette);

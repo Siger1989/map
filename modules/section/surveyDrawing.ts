@@ -11,8 +11,11 @@ import type { Annotation } from '../annotations/data.ts';
 import { surveyPointData, surveyRecordPages } from './surveyRecords.ts';
 import {
   SURVEY_PX_PER_MM,
+  SURVEY_MIN_PROFILE_HEIGHT,
+  SURVEY_MAX_SHEET_HEIGHT,
   surveyScaleWidth,
   surveyHorizontalScale,
+  surveyProfileHeight,
 } from './surveyScale.ts';
 
 const xml = (s: string) =>
@@ -40,11 +43,11 @@ export function surveyDrawing(
     width = surveyScaleWidth(data.end - data.start, line.printScale),
     right = left + width,
     top = 200,
-    bottom = 670;
-  const span = data.end - data.start,
-    planTop = 810,
-    planHeight = (width * data.halfWidth * 2) / span,
-    planBottom = planTop + planHeight;
+    span = data.end - data.start,
+    horizontal = surveyHorizontalScale(span, width),
+    vertical = line.verticalPrintScale ?? horizontal,
+    planHeight = (width * data.halfWidth * 2) / span;
+  if (!Number.isFinite(vertical) || vertical <= 0) throw new Error('纵向比例尺无效');
   const stations = surveyStations(line).map((s) => ({
     ...s,
     ...surveyPointData(line, s.id, s.label, markers),
@@ -81,13 +84,29 @@ export function surveyDrawing(
     ),
     low = Math.floor((lo - step) / step) * step,
     high = Math.ceil((hi + step) / step) * step;
-  const coordinatesTop = planBottom + 155;
+  const rawRange = high - low,
+    minimumRange =
+      (SURVEY_MIN_PROFILE_HEIGHT * vertical) / (1000 * SURVEY_PX_PER_MM),
+    paddingSteps = Math.max(0, Math.ceil((minimumRange - rawRange) / (2 * step))),
+    plotLow = low - paddingSteps * step,
+    plotHigh = high + paddingSteps * step,
+    plotRange = plotHigh - plotLow,
+    plotHeight = Math.max(
+      SURVEY_MIN_PROFILE_HEIGHT,
+      surveyProfileHeight(plotRange, vertical),
+    ),
+    bottom = top + plotHeight,
+    planTop = bottom + 140,
+    planBottom = planTop + planHeight,
+    coordinatesTop = planBottom + 155;
   const H = Math.max(
       1480,
       coordinatesTop + Math.ceil(stations.length / 3) * 68 + 130,
-    ),
-    x = (s: number) => left + ((s - data.start) / span) * width,
-    y = (h: number) => bottom - ((h - low) / (high - low)) * (bottom - top);
+    );
+  if (!Number.isFinite(H) || H > SURVEY_MAX_SHEET_HEIGHT)
+    throw new Error('当前图纸过高；请改用更大的比例尺分母，或缩小平面覆盖宽度。');
+  const x = (s: number) => left + ((s - data.start) / span) * width,
+    y = (h: number) => bottom - ((h - plotLow) / plotRange) * plotHeight;
   const text = (xx: number, yy: number, label: string, size = 23, extra = '') =>
     `<text x="${num(xx)}" y="${num(yy)}" font-size="${size}" ${extra}>${xml(label)}</text>`;
   const segment = (
@@ -132,7 +151,7 @@ export function surveyDrawing(
     text(left, 155, `${num((bearing + 180) % 360)}° ←`, 20) +
     text(right, 187, `→ ${num(bearing)}°`, 20, 'text-anchor="end"');
   for (let i = 0; i <= 5; i++) {
-    const height = low + ((high - low) * i) / 5,
+    const height = plotLow + (plotRange * i) / 5,
       yy = y(height),
       distance = data.start + (span * i) / 5,
       xx = x(distance);
@@ -144,7 +163,13 @@ export function surveyDrawing(
       text(xx, bottom + 33, String(num(distance)), 19, 'text-anchor="middle"');
   }
   svg +=
-    segment(left, top, left, bottom) +
+    segment(
+      left,
+      top,
+      left,
+      bottom,
+      `class="profile-axis" data-profile-range="${num(plotRange)}" data-print-scale="${num(vertical)}"`,
+    ) +
     segment(left, bottom, right, bottom) +
     text(
       (left + right) / 2,
@@ -269,18 +294,17 @@ export function surveyDrawing(
       20,
       'text-anchor="middle"',
     );
-  const horizontal = surveyHorizontalScale(span, width),
-    vertical = ((high - low) * 1000 * SURVEY_PX_PER_MM) / (bottom - top);
+  const verticalExaggeration = horizontal / vertical;
   svg += text(
     left,
     planBottom + 36,
-    `水平 1:${num(horizontal)} · 纵向 1:${num(vertical)} · 全图打印宽 420 mm`,
+    `水平 1:${num(horizontal)} · 纵向 1:${num(vertical)} · 按全图宽 420 mm 打印`,
     21,
   );
   svg += text(
     left,
     planBottom + 66,
-    `剖面纵向放大 ${num((bottom - top) / (high - low) / (width / span))} 倍 · 局部平面距离`,
+    `剖面纵向放大 ${num(verticalExaggeration)} 倍 · 手机预览缩放不改变工程比例`,
     19,
   );
   svg += text(left, coordinatesTop - 8, '测点坐标（WGS84，经度 / 纬度）', 22);

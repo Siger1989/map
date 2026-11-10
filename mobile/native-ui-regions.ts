@@ -30,6 +30,7 @@ const INTERACTIVE_SELECTOR = [
   'label.import-file',
   '[role="menuitem"]', '[role="option"]', '[role="checkbox"]', '[role="slider"]',
   'label.map-switch',
+  'label.track-color-picker',
   '[tabindex]:not([tabindex="-1"])', '[draggable="true"]', '[contenteditable="true"]',
   '[data-native-map-ui]', '[data-native-map-interactive]',
   '[role="dialog"]', '[role="alertdialog"]', 'dialog[open]',
@@ -58,6 +59,10 @@ function visibleRect(element: Element, interactive = false): Rect | null {
   if (interactive && element.matches('label.map-switch') &&
       (element.dataset.disabled === 'true' || element.querySelector('input:disabled'))) return null;
   if (interactive && element.matches('label.import-file') && element.querySelector('input[type="file"]:disabled')) return null;
+  if (interactive && element.matches('label.track-color-picker')) {
+    const colorInput = element.querySelector<HTMLInputElement>('input[type="color"]');
+    if (!colorInput || colorInput.matches(':disabled') || colorInput.readOnly) return null;
+  }
   const r = element.getBoundingClientRect();
   const strokePadding = interactive && element instanceof SVGElement && element.matches(STROKE_HIT_SELECTOR)
     ? Math.max(4, (parseFloat(style.strokeWidth) || 8) / 2) : 0;

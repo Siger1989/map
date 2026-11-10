@@ -29,6 +29,7 @@ import { useTripPhotos } from '@/modules/photos/useTripPhotos';
 import { PhotoPanel } from '@/modules/photos/PhotoPanel';
 import { GpsPhotoPanel } from '@/modules/photos/GpsPhotoPanel';
 import { saveGpsPhotoMarkers } from '@/modules/photos/saveGpsMarkers';
+import { focusGpsPhotoMarkers } from '@/modules/photos/focusGpsMarkers';
 import { useRecordingTracks } from '@/modules/outdoor/useRecordingTracks';
 import { composeTrackOverlay } from '@/modules/workbench/trackOverlay';
 import { PhotoViewer } from '@/modules/photos/PhotoViewer';
@@ -3601,12 +3602,15 @@ export default function Home() {
               const result = await saveGpsPhotoMarkers(drafts);
               gpsPhotoPoints.current = result.coordinates;
               photos.setVisible(true);
+              if (result.coordinates.length) {
+                userBrowse();
+                focusGpsPhotoMarkers(map.current, result.coordinates);
+              }
               return result;
             }}
             onShow={() => {
-              const points = gpsPhotoPoints.current;
-              if (points.length === 1) map.current?.focusPoint(points[0]);
-              else if (points.length > 1) map.current?.fitRoute(points);
+              userBrowse();
+              focusGpsPhotoMarkers(map.current, gpsPhotoPoints.current, false);
               setPanel(null);
             }}
             onOpenFavorites={() => { setPhotoCollectionOpen(true); setPanel('favorites'); }}

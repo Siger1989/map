@@ -4,6 +4,8 @@ export const SURVEY_SCALES = [
 ];
 export const SURVEY_PX_PER_MM = 1800 / 420;
 export const SURVEY_PLOT_WIDTH = 1180;
+export const SURVEY_MIN_PROFILE_HEIGHT = 280;
+export const SURVEY_MAX_SHEET_HEIGHT = 8192;
 export function surveyScaleWidth(span: number, scale?: number) {
   const width = scale
     ? (span * 1000 * SURVEY_PX_PER_MM) / scale
@@ -14,4 +16,9 @@ export function surveyScaleWidth(span: number, scale?: number) {
 }
 export function surveyHorizontalScale(span: number, width: number) {
   return (span * 1000 * SURVEY_PX_PER_MM) / width;
+}
+export function surveyProfileHeight(elevationSpan: number, scale: number) {
+  if (!Number.isFinite(elevationSpan) || elevationSpan <= 0 || !Number.isFinite(scale) || scale <= 0)
+    throw new Error('纵向比例尺或高程范围无效');
+  return (elevationSpan * 1000 * SURVEY_PX_PER_MM) / scale;
 }

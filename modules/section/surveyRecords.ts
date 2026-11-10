@@ -1,4 +1,5 @@
 import type { Annotation } from '../annotations/data.ts';
+import { surveyHorizontalScale, surveyScaleWidth } from './surveyScale.ts';
 import {
   surveyCoordinate,
   surveyHeight,
@@ -40,6 +41,11 @@ export function surveyRecordPages(
   name: string,
   markers: Annotation[],
 ): SurveyDrawingPage[] {
+  const span = data.end - data.start,
+    plotWidth = surveyScaleWidth(span, line.printScale),
+    horizontalScale = surveyHorizontalScale(span, plotWidth),
+    verticalScale = line.verticalPrintScale ?? horizontalScale,
+    verticalExaggeration = horizontalScale / verticalScale;
   type Row = { text: string };
   const rows: Row[] = [];
   const add = (label: string, value: string) => {
@@ -63,10 +69,10 @@ export function surveyRecordPages(
   add('方向角 A→B', surveyBasis(line).bearing.toFixed(2) + '°（真北起顺时针）');
   add(
     '水平比例尺',
-    line.printScale
-      ? `1:${line.printScale}，按完整主图宽 420 mm 打印`
-      : '自动铺满，数值见主图',
+    `1:${Number(horizontalScale.toFixed(2))}${line.printScale ? '' : '（自动铺满）'}，按全图宽 420 mm 打印`,
   );
+  add('纵向比例尺', `1:${Number(verticalScale.toFixed(2))}`);
+  add('剖面纵向放大倍数', `${Number(verticalExaggeration.toFixed(2))} 倍`);
   for (const station of surveyStations(line)) {
     const point = surveyPointData(line, station.id, station.label, markers),
       p = surveyCoordinate(line, station.distance),

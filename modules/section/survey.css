@@ -462,17 +462,24 @@
   right: 4px;
   width: min(260px, calc(100% - 8px));
   max-height: 200px;
+  box-sizing: border-box;
   overflow: auto;
-  background: #fafbf7;
-  border: 1px solid #cad4cb;
-  border-radius: 10px;
+  overscroll-behavior: contain;
+  background: var(--ui-surface, #fafbf7);
+  color: var(--ui-ink, #1b302b);
+  border: 1px solid var(--ui-line, #cad4cb);
+  border-radius: var(--ui-radius-card, 8px);
   padding: 0 4px 4px;
   box-shadow: 0 4px 16px #19372f33;
 }
 .survey-sheet-settings header {
+  position: sticky;
+  z-index: 1;
+  top: 0;
   display: flex;
   align-items: center;
   gap: 4px;
+  background: var(--ui-surface, #fafbf7);
 }
 .survey-sheet-settings header strong {
   flex: 1;
@@ -480,8 +487,13 @@
 .survey-sheet-settings header button {
   border: 0;
 }
+.survey-sheet-settings button,
+.survey-sheet-settings select {
+  border-radius: var(--ui-radius-control, 4px);
+}
 .survey-sheet-settings p {
   margin: 4px 0;
+  color: var(--ui-muted, #53645d);
 }
 .survey-sheet-settings label {
   display: flex;
@@ -491,6 +503,15 @@
 }
 .survey-sheet-settings label select {
   flex: 1;
+  min-width: 0;
+  background: var(--ui-raised, #fafbf7);
+  color: var(--ui-ink, #1b302b);
+}
+.survey-sheet-scale-help > summary {
+  box-sizing: border-box;
+  min-height: 28px;
+  padding: 4px 0;
+  cursor: pointer;
 }
 .survey-sheet-settings > div {
   display: flex;
