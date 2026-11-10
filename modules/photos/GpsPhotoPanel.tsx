@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { readPhoto, type PhotoDraft } from './import';
 import { PHOTO_ACCEPT, GPS_PHOTO_PICKER_ACCEPT, GPS_PHOTO_FOLDER_ACCEPT, selectPhotoFiles } from './selection';
+import { parseNativePhotoImportInfo, type NativePhotoImportInfo } from './nativeImportStatus';
 import './gpsPhotoPanel.css';
 
 type ImportSummary = {
@@ -30,6 +31,7 @@ export function GpsPhotoPanel({
   const [message, setMessage] = useState('');
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [failures, setFailures] = useState<string[]>([]);
+  const [nativeInfo, setNativeInfo] = useState<NativePhotoImportInfo | null>(null);
   const active = useRef(true);
 
   useEffect(() => {
@@ -37,8 +39,36 @@ export function GpsPhotoPanel({
     const bridge = window.GuanyunNative;
     setNative(!!bridge);
     setFolderSupported(!bridge || bridge.photoFolders?.() === true);
-    return () => { active.current = false; onBusyChange?.(false); };
+    let previous = '';
+    const refresh = () => {
+      if (document.visibilityState === 'hidden' || !bridge?.photoImportInfo) return;
+      try {
+        const raw = bridge.photoImportInfo();
+        if (raw === previous) return;
+        const info = parseNativePhotoImportInfo(raw);
+        if (!info) return;
+        previous = raw;
+        setNativeInfo(info);
+      } catch { /* An older bridge or a background activity may not expose diagnostics. */ }
+    };
+    refresh();
+    const timer = bridge?.photoImportInfo ? window.setInterval(refresh, 400) : undefined;
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      active.current = false;
+      onBusyChange?.(false);
+      if (timer !== undefined) window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, []);
+
+  const beginSelection = () => {
+    setMessage('');
+    setSummary(null);
+    setFailures([]);
+    setProgress('');
+    setNativeInfo(null);
+  };
 
   const setBusyState = (value: boolean) => {
     setBusy(value);
@@ -110,7 +140,7 @@ export function GpsPhotoPanel({
       <div className="gps-photo-actions">
         <label className="gps-photo-picker">
           导入照片
-          <input type="file" accept={native ? GPS_PHOTO_PICKER_ACCEPT : PHOTO_ACCEPT} multiple aria-label="导入GPS照片" disabled={busy} onChange={(event) => handleInput(event, false)} />
+          <input type="file" accept={native ? GPS_PHOTO_PICKER_ACCEPT : PHOTO_ACCEPT} multiple aria-label="导入GPS照片" disabled={busy || nativeInfo?.status === 'preparing'} onClick={beginSelection} onChange={(event) => handleInput(event, false)} />
         </label>
         {folderReady && <label className="gps-photo-picker">
           选择照片文件夹
@@ -120,7 +150,8 @@ export function GpsPhotoPanel({
             accept={native ? GPS_PHOTO_FOLDER_ACCEPT : PHOTO_ACCEPT}
             {...(native ? {} : { webkitdirectory: '', directory: '' })}
             multiple
-            disabled={busy || !folderSupported}
+            disabled={busy || nativeInfo?.status === 'preparing' || !folderSupported}
+            onClick={beginSelection}
             onChange={(event) => handleInput(event, true)}
           />
         </label>}
@@ -129,6 +160,7 @@ export function GpsPhotoPanel({
       <p className="gps-photo-note">多选最多30张、文件夹最多200张；单张不超过20 MB。请选原图，社交软件可能会移除GPS信息。</p>
       {busy && <p className="gps-photo-status" role="status" aria-live="polite">{progress || message}</p>}
       {!busy && message && <p className="gps-photo-status" role="status" aria-live="polite">{message}</p>}
+      {!busy && !message && nativeInfo?.message && <p className="gps-photo-status" role="status" aria-live="polite">{nativeInfo.message}</p>}
       {summary && summary.added + summary.duplicates > 0 && <div className="gps-photo-result-actions">
         <button type="button" onClick={onShow}>查看地图</button>
         <button type="button" onClick={onOpenFavorites}>打开照片收藏</button>
@@ -143,6 +175,14 @@ export function GpsPhotoPanel({
       {failures.length > 0 && <details className="gps-photo-failures">
         <summary>读取失败（{failures.length}）</summary>
         <ul>{failures.map((failure, index) => <li key={`${index}-${failure}`}>{failure}</li>)}</ul>
+      </details>}
+      {!!nativeInfo?.failures.length && <details className="gps-photo-failures" open>
+        <summary>文件读取未完成（{nativeInfo.failures.length}）</summary>
+        <ul>{nativeInfo.failures.map((failure, index) => <li key={`${index}-${failure}`}>{failure}</li>)}</ul>
+      </details>}
+      {!!nativeInfo?.notes.length && <details className="gps-photo-failures">
+        <summary>照片读取详情（{nativeInfo.notes.length}）</summary>
+        <ul>{nativeInfo.notes.map((note, index) => <li key={`${index}-${note}`}>{note}</li>)}</ul>
       </details>}
     </section>
   );

@@ -22,6 +22,7 @@ declare global {
       recordState(): string;
       saveFile(name: string, mime: string, text: string): void;
       photoFolders?(): boolean;
+      photoImportInfo?(): string;
       photoOutput?(name: string, base64: string, share: boolean): string;
       routeOutput?(name: string, base64: string, share: boolean): string;
       archiveBegin?(name: string, size: number): string;

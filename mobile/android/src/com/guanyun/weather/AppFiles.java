@@ -19,11 +19,15 @@ final class AppFiles {
     private boolean preparingPhotos;
     private boolean gpsPhotoImport;
     private boolean gpsPermissionPending;
+    private final PhotoImportStatus photoImportStatus = new PhotoImportStatus();
+    private long gpsPhotoBatchId;
     private boolean pickerFolder, pickerImages, pickerMultiple, pickerCapture;
     final CameraCapture camera;
     AppFiles(Activity activity) { this.activity=activity; camera=new CameraCapture(activity); }
+    String photoImportInfo() { return photoImportStatus.json(); }
     boolean choose(ValueCallback<Uri[]> callback, android.webkit.WebChromeClient.FileChooserParams params) {
         camera.cancel();
+        if (gpsPhotoImport) photoImportStatus.update(gpsPhotoBatchId, "cancelled", "已取消照片选择。", 0, 0, null, null);
         gpsPermissionPending = false;
         if (folderScan != null) { folderScan.cancel(); folderScan = null; }
         if (pending != null) pending.onReceiveValue(null);
@@ -35,6 +39,7 @@ final class AppFiles {
             String[] accepted = params.getAcceptTypes();
             boolean folder = PhotoLocationAccess.hasAcceptType(accepted, "application/x-guanyun-photo-folder");
             gpsPhotoImport = PhotoLocationAccess.hasAcceptType(accepted, PhotoLocationAccess.GPS_PHOTO_ACCEPT);
+            if (gpsPhotoImport) gpsPhotoBatchId = photoImportStatus.begin("正在选择照片。");
             boolean images = java.util.Arrays.stream(params.getAcceptTypes()).anyMatch(t -> t.startsWith("image/"));
             preparingPhotos = images;
             pickerFolder = folder; pickerImages = images;
@@ -48,7 +53,7 @@ final class AppFiles {
             }
             launchPendingPicker();
         }
-        catch(Exception e) { finishPendingWithMessage("无法打开文件选择器，请从文件管理器用山兔打开路线文件"); }
+        catch(Exception e) { finishPendingWithMessage("无法打开文件选择器，请从文件管理器用山兔打开路线文件", "failed"); }
         return true;
     }
     private void launchPendingPicker() throws Exception {
@@ -66,19 +71,24 @@ final class AppFiles {
         if (requestCode != PhotoLocationAccess.REQUEST || !gpsPermissionPending) return;
         boolean granted = grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED && PhotoLocationAccess.hasPermission(activity);
         if (!granted) {
-            finishPendingWithMessage("未授予照片位置读取权限，本次未开始选择；可确认系统权限后重新尝试");
+            finishPendingWithMessage("未授予照片位置读取权限，本次未开始选择；可确认系统权限后重新尝试", "failed");
             return;
         }
         try { launchPendingPicker(); }
-        catch (Exception e) { finishPendingWithMessage("无法打开照片选择器，请重试"); }
+        catch (Exception e) { finishPendingWithMessage("无法打开照片选择器，请重试", "failed"); }
     }
     private void finishPendingWithMessage(String message) {
+        finishPendingWithMessage(message, "cancelled");
+    }
+    private void finishPendingWithMessage(String message, String status) {
+        boolean gpsImport = gpsPhotoImport;
+        if (gpsImport) photoImportStatus.update(gpsPhotoBatchId, status, message, 0, 0, null, null);
         gpsPermissionPending = false;
         preparingPhotos = false; gpsPhotoImport = false;
         pickerFolder = pickerImages = pickerMultiple = pickerCapture = false;
         if (pending != null) pending.onReceiveValue(null);
         pending = null;
-        android.widget.Toast.makeText(activity, message, android.widget.Toast.LENGTH_LONG).show();
+        if (!gpsImport) android.widget.Toast.makeText(activity, message, android.widget.Toast.LENGTH_LONG).show();
     }
     void save(String name,String mime,String text) {
         if (output != null || outputFile != null || saving) { android.widget.Toast.makeText(activity,"请先完成当前文件保存",0).show();return; }
@@ -106,19 +116,20 @@ final class AppFiles {
         if(camera.result(request,result))return;
         Uri uri = result==Activity.RESULT_OK && intent!=null ? intent.getData():null;
         if (request==FOLDER && pending!=null) {
-            if (uri==null) { pending.onReceiveValue(null); pending=null; preparingPhotos=false; gpsPhotoImport=false; return; }
+            if (uri==null) { if (gpsPhotoImport) photoImportStatus.update(gpsPhotoBatchId, "cancelled", "已取消照片选择。", 0, 0, null, null); pending.onReceiveValue(null); pending=null; preparingPhotos=false; gpsPhotoImport=false; return; }
             ValueCallback<Uri[]> callback = pending;
             boolean gpsImport = gpsPhotoImport;
+            long batchId = gpsPhotoBatchId;
             android.os.CancellationSignal cancel = new android.os.CancellationSignal();
             folderScan = cancel;
             android.widget.Toast.makeText(activity,"正在读取所选文件夹的照片…",0).show();
             new Thread(() -> {
                 try {
                     Uri[] selected = PhotoDirectory.collect(activity.getContentResolver(), uri, cancel);
-                    preparePhotos(callback, selected, cancel, gpsImport);
+                    preparePhotos(callback, selected, cancel, gpsImport, batchId);
                 } catch (Exception e) {
-                    String message = e.getMessage()==null ? "无法读取文件夹，请重试或多选照片" : e.getMessage();
-                    activity.runOnUiThread(() -> finishPhotoSelection(callback, cancel, null, message));
+                    String message = gpsImport ? "所选文件夹读取失败，请重试或多选照片。" : e.getMessage()==null ? "无法读取文件夹，请重试或多选照片" : e.getMessage();
+                    activity.runOnUiThread(() -> finishPhotoSelection(callback, cancel, null, message, gpsImport, batchId, 0, null, null));
                 }
             }, "guanyun-photo-folder").start();
             return;
@@ -127,18 +138,29 @@ final class AppFiles {
             Uri[] selected = uri==null?null:new Uri[]{uri};
             if (result==Activity.RESULT_OK && intent!=null && intent.getClipData()!=null) {
                 int count=intent.getClipData().getItemCount();
-                if(count>30) { selected=null;android.widget.Toast.makeText(activity,"每次最多选择30张照片",0).show(); }
+                if(count>30) {
+                    selected=null;
+                    boolean gpsImport = gpsPhotoImport;
+                    if (gpsImport) photoImportStatus.update(gpsPhotoBatchId, "failed", "单次最多选择30张照片，本次未导入。", count, 0, null, null);
+                    else android.widget.Toast.makeText(activity,"每次最多选择30张照片",0).show();
+                    pending.onReceiveValue(null); pending=null; preparingPhotos=false; gpsPhotoImport=false;
+                    return;
+                }
                 else { selected=new Uri[count]; for(int i=0;i<count;i++) selected[i]=intent.getClipData().getItemAt(i).getUri(); }
             }
             if (selected==null || selected.length==0) {
+                boolean gpsImport = gpsPhotoImport;
+                if (gpsImport) photoImportStatus.update(gpsPhotoBatchId, "cancelled", result == Activity.RESULT_OK ? "系统未返回所选文件。" : "已取消照片选择。", 0, 0, null, null);
                 pending.onReceiveValue(null); pending=null; preparingPhotos=false; gpsPhotoImport=false;
-                if (result==Activity.RESULT_OK) android.widget.Toast.makeText(activity,"没有收到所选文件，请保存到本机后重试",android.widget.Toast.LENGTH_LONG).show();
+                if (result==Activity.RESULT_OK && !gpsImport) android.widget.Toast.makeText(activity,"没有收到所选文件，请保存到本机后重试",android.widget.Toast.LENGTH_LONG).show();
                 return;
             }
             if (preparingPhotos) {
                 android.os.CancellationSignal cancel = new android.os.CancellationSignal(); folderScan = cancel;
                 boolean gpsImport = gpsPhotoImport;
-                preparePhotos(pending, selected, cancel, gpsImport);
+                long batchId = gpsPhotoBatchId;
+                if (gpsImport) photoImportStatus.update(batchId, "preparing", "正在读取所选照片。", selected.length, 0, null, null);
+                preparePhotos(pending, selected, cancel, gpsImport, batchId);
             } else { pending.onReceiveValue(selected);pending=null; gpsPhotoImport=false; }
         }
         if (request==SAVE && (output!=null || outputFile!=null)) {
@@ -158,11 +180,13 @@ final class AppFiles {
             },"shantu-save-file").start();
         }
     }
-    private void preparePhotos(ValueCallback<Uri[]> callback, Uri[] selected, android.os.CancellationSignal cancel, boolean gpsImport) {
+    private void preparePhotos(ValueCallback<Uri[]> callback, Uri[] selected, android.os.CancellationSignal cancel, boolean gpsImport, long batchId) {
+        if (gpsImport) photoImportStatus.update(batchId, "preparing", "正在读取所选照片。", selected == null ? 0 : selected.length, 0, null, null);
         activity.runOnUiThread(() -> android.widget.Toast.makeText(activity,"正在采样并压缩照片…",android.widget.Toast.LENGTH_SHORT).show());
         new Thread(() -> {
             java.util.ArrayList<Uri> prepared = new java.util.ArrayList<>();
             java.util.ArrayList<String> errors = new java.util.ArrayList<>();
+            java.util.ArrayList<String> notes = new java.util.ArrayList<>();
             if (selected != null) for (int i=0; i<selected.length; i++) {
                 if (cancel.isCanceled()) break;
                 Uri source = selected[i]; String name = "照片" + (i+1);
@@ -172,25 +196,36 @@ final class AppFiles {
                 try { prepared.add(gpsImport ? PhotoImportCache.prepareGps(activity, source, name, cancel) : PhotoImportCache.prepare(activity, source, name, cancel)); }
                 catch (PhotoLocationAccess.AccessException e) {
                     if (e.reason.equals(PhotoLocationAccess.PERMISSION_DENIED)) {
-                        if (!cancel.isCanceled() && errors.size()<4) errors.add(name+"：系统权限未通过，照片原始GPS未读取");
+                        if (!cancel.isCanceled()) errors.add(name+"：系统权限未通过，照片未读取");
                     } else if (!cancel.isCanceled()) {
                         // Keep processing the user's selected URI when the provider cannot expose its MediaStore original.
                         try {
                             prepared.add(PhotoImportCache.prepare(activity, source, name, cancel));
-                            if (errors.size()<4) errors.add(name+"：系统未提供原图，已按所选文件读取；GPS可能缺失，原文件未修改");
+                            if (gpsImport) notes.add(name+"：已通过所选文件读取。");
+                            else if (errors.size()<4) errors.add(name+"：系统未提供原图，已按所选文件读取；原文件未修改");
                         } catch (Exception fallback) {
-                            if (errors.size()<4) errors.add(name+"：系统未提供原图，照片处理失败");
+                            if (gpsImport || errors.size()<4) errors.add(name+"：系统未提供原图，照片处理失败");
                         }
                     }
                 }
-                catch (Exception e) { if (!cancel.isCanceled() && errors.size()<4) errors.add(name+"："+(e.getMessage()==null?"照片处理失败":e.getMessage())); }
+                catch (Exception e) {
+                    if (!cancel.isCanceled()) {
+                        if (gpsImport) errors.add(name+"：照片处理失败");
+                        else if (errors.size()<4) errors.add(name+"："+(e.getMessage()==null?"照片处理失败":e.getMessage()));
+                    }
+                }
             }
             Uri[] uris = prepared.isEmpty() ? null : prepared.toArray(new Uri[0]);
-            String message = errors.isEmpty() ? null : String.join("\n", errors) + (errors.size()==4 ? "\n另有照片需要查看提示" : "");
-            activity.runOnUiThread(() -> finishPhotoSelection(callback, cancel, uris, message));
+            String message;
+            if (gpsImport) message = errors.isEmpty() ? null : "照片读取失败："+errors.size()+"项未能读取。";
+            else message = errors.isEmpty() ? null : String.join("\n", errors) + (errors.size()==4 ? "\n另有照片需要查看提示" : "");
+            activity.runOnUiThread(() -> finishPhotoSelection(callback, cancel, uris, message, gpsImport, batchId, selected == null ? 0 : selected.length, notes, errors));
         }, "shantu-photo-import").start();
     }
     void finishPhotoSelection(ValueCallback<Uri[]> callback, android.os.CancellationSignal cancel, Uri[] files, String message) {
+        finishPhotoSelection(callback, cancel, files, message, false, 0, 0, null, null);
+    }
+    void finishPhotoSelection(ValueCallback<Uri[]> callback, android.os.CancellationSignal cancel, Uri[] files, String message, boolean gpsImport, long batchId, int selected, java.util.List<String> notes, java.util.List<String> failures) {
         if (folderScan == cancel) folderScan = null;
         if (pending != callback || cancel.isCanceled()) {
             if (files != null) for (Uri file : files) PhotoShareProvider.deleteImport(activity, file);
@@ -200,18 +235,26 @@ final class AppFiles {
         gpsPhotoImport = false;
         pending = null;
         if (files == null || files.length == 0) {
+            if (gpsImport) photoImportStatus.update(batchId, "failed", message == null ? "所选照片读取失败。" : message, selected, 0, notes, failures);
             callback.onReceiveValue(null);
-            android.widget.Toast.makeText(activity, message==null?"所选照片无法解码":message, android.widget.Toast.LENGTH_LONG).show();
+            if (!gpsImport) android.widget.Toast.makeText(activity, message==null?"所选照片无法解码":message, android.widget.Toast.LENGTH_LONG).show();
             return;
         }
         if (!PhotoShareProvider.importsAvailable(activity, files)) {
             for (Uri file : files) PhotoShareProvider.deleteImport(activity, file);
             callback.onReceiveValue(null);
+            if (gpsImport) photoImportStatus.update(batchId, "failed", "照片临时缓存不完整，请重新选择。", selected, 0, notes, failures);
             android.widget.Toast.makeText(activity, "照片临时缓存不完整，请重新选择", android.widget.Toast.LENGTH_LONG).show();
             return;
         }
+        if (gpsImport) {
+            String statusMessage = failures == null || failures.isEmpty()
+                ? "所选照片读取完成："+files.length+"张。"
+                : "所选照片读取完成："+files.length+"张成功，"+failures.size()+"项失败。";
+            photoImportStatus.update(batchId, "complete", statusMessage, selected, files.length, notes, failures);
+        }
         callback.onReceiveValue(files);
-        if (message != null) android.widget.Toast.makeText(activity, "照片导入提示：\n"+message, android.widget.Toast.LENGTH_LONG).show();
+        if (!gpsImport && message != null) android.widget.Toast.makeText(activity, "照片导入提示：\n"+message, android.widget.Toast.LENGTH_LONG).show();
     }
-    void close() { camera.cancel();if(folderScan!=null)folderScan.cancel();folderScan=null;if(pending!=null)pending.onReceiveValue(null);pending=null;preparingPhotos=false;gpsPhotoImport=false;gpsPermissionPending=false;pickerFolder=pickerImages=pickerMultiple=pickerCapture=false;output=null;if(outputFile!=null)outputFile.delete();outputFile=null; }
+    void close() { if(gpsPhotoImport)photoImportStatus.update(gpsPhotoBatchId,"cancelled","已取消照片选择。",0,0,null,null);camera.cancel();if(folderScan!=null)folderScan.cancel();folderScan=null;if(pending!=null)pending.onReceiveValue(null);pending=null;preparingPhotos=false;gpsPhotoImport=false;gpsPermissionPending=false;pickerFolder=pickerImages=pickerMultiple=pickerCapture=false;output=null;if(outputFile!=null)outputFile.delete();outputFile=null; }
 }
