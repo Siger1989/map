@@ -124,6 +124,23 @@ export function GuidanceCard({
       : kind === 'uturn' ? Undo2
         : kind === 'arrival' ? Flag
           : kind === 'straight' ? ArrowUp : Navigation;
+  const compactCard = compact && !expanded && !displayPanel;
+  const showReturnShortcut = compactCard && s.offRoute && !s.arrived &&
+    !s.departurePending && !s.quality && (!!g.rejoin || g.returnToOriginalSupported);
+  const showFinishShortcut = compactCard && s.arrived;
+  const finishButton = <button type="button" onClick={onStop}>结束导航</button>;
+  const accessButton = !s.arrived && (s.offRoute || s.departurePending || s.replanned || !!g.rejoin) && (
+    <button
+      type="button"
+      title={s.departurePending ? '当前位置 → 原路线起点；不会改写原路线' : g.rejoin ? '查看当前位置接回原路线的路径' : '从当前位置接回原路线并保留原路线进度'}
+      onClick={s.departurePending ? g.retry : g.rejoin ? onShow : g.returnToOriginal}
+      disabled={g.loading || g.replanning || (!s.departurePending && (!!s.quality || (!g.rejoin && !g.returnToOriginalSupported)))}
+    >
+      {s.departurePending ? (
+        <><RefreshCw size={14} />{g.loading ? '规划到路线起点中…' : '规划到路线起点'}</>
+      ) : g.rejoin ? '查看接回路径' : g.returnToOriginalSupported ? '接回原路线' : '原路线进度无法映射'}
+    </button>
+  );
   return (
     <>
     <section
@@ -158,7 +175,9 @@ export function GuidanceCard({
             <span className="guidance-mode-tag">{TRAVEL_MODES.find(m => m.id === s.route.mode)?.label}</span>
           </button>}
           <div className="guidance-header-actions">
-            {!displayPanel && !s.arrived && onFirstPerson && <button
+            {showFinishShortcut && <span className="guidance-quick-action">{finishButton}</span>}
+            {showReturnShortcut && <span className="guidance-quick-action">{accessButton}</span>}
+            {!displayPanel && !s.arrived && !showReturnShortcut && onFirstPerson && <button
               className="guidance-first-person"
               type="button"
               aria-label={cameraMode === 'forward' ? `切回俯视导航${cameraWaiting ? ' · 等待定位' : ''}` : '开启第一人称导航'}
@@ -244,25 +263,8 @@ export function GuidanceCard({
           <div className="guidance-actions">
             {!s.arrived && <button type="button" onClick={() => void g.replan()} disabled={g.replanning} title="从当前位置重新规划到原路线终点，不改写原路线">{g.replanning ? '规划到终点中…' : '重新规划到终点'}</button>}
             {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(true); onDisplay(); }}>路线显示</button>}
-            {!s.arrived && (s.offRoute || s.departurePending || s.replanned || !!g.rejoin) && (
-              <button
-                type="button"
-                title={s.departurePending ? '当前位置 → 原路线起点；不会改写原路线' : g.rejoin ? '查看当前位置接回原路线的路径' : '从当前位置接回原路线并保留原路线进度'}
-                onClick={s.departurePending ? g.retry : g.rejoin ? onShow : g.returnToOriginal}
-                disabled={
-                  g.loading || (!s.departurePending && !!s.quality) || (!s.departurePending && !g.rejoin && !g.returnToOriginalSupported)
-                }
-              >
-                {s.departurePending ? (
-                  <><RefreshCw size={14} />{g.loading ? '规划到路线起点中…' : '规划到路线起点'}</>
-                ) : g.rejoin ? (
-                  '查看接回路径'
-                ) : (
-                  g.returnToOriginalSupported ? '接回原路线' : '原路线进度无法映射'
-                )}
-              </button>
-            )}
-            <button type="button" onClick={onStop}>结束导航</button>
+            {!showReturnShortcut && accessButton}
+            {!showFinishShortcut && finishButton}
           </div>
         {s.departurePending && <p className="guidance-departure-note">当前位置 → 原路线起点 · 不改写原路线</p>}
         {s.gap && (

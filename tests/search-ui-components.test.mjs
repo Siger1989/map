@@ -465,7 +465,8 @@ test('RoutePanel keeps route search options stable while filters collapse and fo
   assert.ok(input);
   await React.act(async () => input.dispatchEvent(new window.Event('focusin', { bubbles: true })));
   assert.equal(document.querySelector('[data-search-owner="route"]'), null, 'empty focused route input does not mount a result popup');
-  assert.ok(document.querySelector('.route-search-inline-hint'), 'empty focused route input shows the inline minimum-query hint');
+  assert.equal(document.querySelector('.route-search-inline-hint'), null, 'empty input needs no minimum-query warning');
+  assert.equal(document.querySelector('.route-primary'), null, 'do not offer planning before both endpoints have coordinates');
   const reactProps = (node) => node[Object.keys(node).find((key) => key.startsWith('__reactProps$'))];
   const setStartQuery = async (query) => {
     input = document.querySelector('[data-stop-id="start"] input');
@@ -554,6 +555,11 @@ test('RoutePanel keeps route search options stable while filters collapse and fo
   assert.equal(navigation.stops[0].place?.name, 'Route result 1', 'selecting an origin result preserves the endpoint');
   assert.equal(document.activeElement?.getAttribute('aria-label'), '终点',
     'selecting the origin transfers keyboard focus to the destination input');
+  assert.equal(document.querySelector('.route-primary'), null);
+  navigation.stops[1] = { ...navigation.stops[1], place: { name: '终点', coordinates: [105, 31] } };
+  await React.act(async () => root.render(render()));
+  assert.equal(document.querySelector('.route-primary')?.textContent, '规划路线');
+
 });
 
 test('route FloatingSearch uses the live map-control-panel rectangle for above/below placement', async (t) => {

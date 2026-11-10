@@ -3,10 +3,10 @@
 .observatory #map-control-panel .route-summary .route-summary-actions-primary,
 .observatory #map-control-panel .route-summary .route-summary-actions-secondary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
   gap: 3px;
 }
-.observatory #map-control-panel .route-summary .route-summary-actions-secondary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.observatory #map-control-panel .route-summary .route-summary-actions-secondary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .observatory #map-control-panel .route-summary .route-summary-actions-secondary .route-removal-trigger {
   border-color: var(--ui-danger, #c2410c) !important;
   color: var(--ui-danger, #c2410c) !important;
@@ -23,9 +23,29 @@
 }
 .observatory #map-control-panel .route-summary .route-summary-quick-controls > * { flex:0 1 auto; min-width:0; }
 .observatory #map-control-panel .route-summary .route-summary-quick-controls button:first-of-type { margin-left:0 !important; }
-.observatory #map-control-panel .route-summary-detail .route-summary-actions { flex-wrap: wrap; }
-.observatory #map-control-panel .route-summary-detail .route-mode-select { flex: 1 0 100%; justify-content: flex-start; }
-.observatory #map-control-panel .route-summary-detail .route-summary-actions > button { flex: 1 1 0; min-width: 0; }
+.observatory #map-control-panel .route-summary-more:not([hidden]) {
+  display: grid;
+  gap: 4px;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* Keep only the management list scrollable; the return action stays in reach. */
+html[data-ui-theme] .observatory.home-map #map-control-panel:has(.route-summary-back-row) {
+  height: min(200px, calc(100dvh - var(--home-footer) - var(--home-top) - var(--home-header-height) - 16px)) !important;
+  max-height: 200px !important;
+  box-sizing: border-box;
+}
+html[data-ui-theme] .observatory.home-map #map-control-panel:has(.route-summary-back-row) .dock-content {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden !important;
+}
+.observatory #map-control-panel .route-summary:has(.route-summary-back-row) { width: 100%; min-height: 0; }
+.observatory #map-control-panel .route-summary .route-summary-back-row { display: flex; flex: 0 0 auto; }
+.observatory #map-control-panel .route-summary-more .route-mode-select { justify-content: flex-start; }
 .observatory #map-control-panel .route-summary .route-summary-endpoints > .route-endpoint-row {
   grid-column: 1;
   display: flex;

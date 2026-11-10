@@ -99,11 +99,11 @@ export function WorkbenchAction(p: Props) {
             撤销上次修改
           </button>
         )}
+        {item && (item.kind === 'track' || item.kind === 'route') && (
+          <button onClick={() => p.onNavigate(item.id)}>使用此路线</button>
+        )}
         {item && item.kind !== 'folder' && (
           <button onClick={() => p.onOpen(item.id)}>打开 / 编辑详情</button>
-        )}
-        {item && (item.kind === 'track' || item.kind === 'route') && (
-          <button onClick={() => p.onNavigate(item.id)}>开始导航</button>
         )}
         {item && (item.kind === 'track' || item.kind === 'route') && (
           <button onClick={() => p.onCacheRoute(item.id)}>缓存地图</button>

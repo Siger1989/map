@@ -262,13 +262,13 @@ test('navigation card and route summary expose first-person camera and route pre
   await React.act(async () => root.render(React.createElement(RouteResultSummary, summaryProps(null))));
   assert.equal(host.querySelector('.route-summary-endpoints'), null, 'endpoints stay inside collapsed details');
   assert.equal(host.querySelector('.route-mode-select'), null, 'route mode stays inside collapsed details');
-  assert.equal(host.querySelectorAll('.route-summary-actions')[0].querySelectorAll('button').length, 3, 'first action row has three controls');
-  assert.equal(host.querySelectorAll('.route-summary-actions')[1].querySelectorAll('button').length, 3, 'second action row has three controls');
-  await React.act(async () => host.querySelector('[aria-expanded="false"]').click());
+  assert.deepEqual([...host.querySelectorAll('.route-summary-actions-primary button')].map(button => button.textContent), ['开始导航', '看全程', '编辑', '更多']);
+  await React.act(async () => host.querySelector('[aria-controls="route-summary-more"]').click());
+  await React.act(async () => host.querySelector('[aria-controls="route-summary-detail"]').click());
   assert.ok(host.querySelector('.route-summary-detail'), 'route details can be opened before preview');
   assert.ok(host.querySelector('.route-summary-endpoints'), 'details reveal editable route endpoints');
   assert.ok(host.querySelector('.route-mode-select'), 'details reveal route mode');
-  await React.act(async () => [...host.querySelectorAll('.route-summary-detail button')].find((button) => button.textContent === '第一人称预览').click());
+  await React.act(async () => [...host.querySelectorAll('.route-summary-actions-secondary button')].find((button) => button.textContent === '第一人称预览').click());
   assert.deepEqual(previewEvents, ['preview'], 'starting preview calls onPreview');
 
   await React.act(async () => root.render(React.createElement(RouteResultSummary, summaryProps('forward'))));
@@ -294,7 +294,8 @@ test('navigation card and route summary expose first-person camera and route pre
 
   await React.act(async () => root.render(React.createElement(RouteResultSummary, summaryProps(null))));
   assert.ok(host.querySelector('.route-summary-endpoints'), 'exiting preview restores route endpoints');
-  assert.ok(host.querySelector('.route-summary-metrics'), 'exiting preview restores route metrics');
+  assert.equal(host.querySelector('.route-summary-metrics'), null, 'exiting preview returns to the management subpage');
+  assert.deepEqual([...host.querySelectorAll('.route-summary-actions-primary button')].map(b => b.textContent), ['‹ 返回路线摘要']);
   assert.ok(host.querySelector('.route-mode-select'), 'exiting preview restores route management controls');
   assert.ok(host.querySelector('.route-summary-detail'), 'exiting preview restores mounted route details');
 });

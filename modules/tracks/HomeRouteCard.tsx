@@ -1,7 +1,7 @@
 import { recordedStats, recordedDuration } from './recordedStats';
 import { trackSourceLabel, hasTrackTime } from './provenance';
 import { useMemo, useState } from 'react';
-import { Mountain, ChevronRight, Navigation, Bookmark, Pencil, FileText, Trash2, ChartNoAxesCombined } from 'lucide-react';
+import { Mountain, ChevronLeft, Navigation, Bookmark, Pencil, FileText, Trash2, ChartNoAxesCombined } from 'lucide-react';
 import type { ManualTrack } from './drawing';
 import type { TrackLinePoint } from './linePoint';
 import { trackAlternatives } from './alternatives';
@@ -24,7 +24,7 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
   onRecenter?: () => void;
 }) {
   const [name, setName] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [actions, setActions] = useState<'main' | 'more' | 'delete'>('main');
   const [renameError, setRenameError] = useState('');
   const dock = useDockClearance('--route-card-clearance');
   const choices = useMemo(() => trackAlternatives(track.segments), [track.segments]);
@@ -59,7 +59,11 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
         onClick={() => { setName(track.name); setRenameError(''); }}>
         <strong>{track.name}</strong><span>改名</span>
       </button>
-      <button className="home-route-back" onClick={onBack} aria-label="返回"><span>返回</span><ChevronRight size={17} /></button>
+      <button className="home-route-back" onClick={() => {
+        if (actions === 'delete') setActions('more');
+        else if (actions === 'more') setActions('main');
+        else onBack();
+      }} aria-label={actions === 'more' ? '返回路线常用操作' : actions === 'delete' ? '返回更多操作' : '返回'}><ChevronLeft size={17} /><span>返回</span></button>
     </header>
     <div className="home-route-metrics">
       <span className="home-route-source">{track.source === 'recorded' && !track.simulation ? '实走原件' : trackSourceLabel(track)}</span>
@@ -68,20 +72,23 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
       {(timed || duration != null) && <span>{timed ? `用时 ${recordedDuration(measured.elapsed)}` : `预计 ${formatDuration(duration!)}`}</span>}
       {timed && measured.averageSpeed !== null && <span>均速 {measured.averageSpeed.toFixed(1)} km/h</span>}
     </div>
-    <nav className="home-route-actions" aria-label="路线主要操作">
-      <button className="is-primary" onClick={onNavigate}><Navigation size={18} fill="currentColor" />导航</button>
-      {onRecenter && <button type="button" onClick={onRecenter}>回中</button>}
-      <button disabled={!point} onClick={onMarker} aria-label="添加标记"><Bookmark size={18} />标记</button>
+    {actions === 'main' && <nav className="home-route-actions home-route-primary-actions" data-has-point={Boolean(point)} aria-label="路线主要操作">
+      <button className="is-primary" onClick={onNavigate}><Navigation size={18} fill="currentColor" />使用此路线</button>
       <button onClick={onEdit}><Pencil size={18} />编辑</button>
+      {onRecenter && <button type="button" onClick={onRecenter}>回中</button>}
+      {point && <button onClick={onMarker} aria-label="添加标记"><Bookmark size={18} />标记</button>}
+      <button type="button" onClick={() => setActions('more')}>更多</button>
+    </nav>}
+    {actions === 'more' && <nav className="home-route-actions home-route-secondary-actions" aria-label="路线更多操作">
       <button onClick={onDetails}><FileText size={18} />详情</button>
       {onCache && <button onClick={onCache}>缓存地图</button>}
       {onDisplay && <button onClick={onDisplay} aria-label="路线显示设置"><ChartNoAxesCombined size={18} />路线显示</button>}
-      {onDelete && <button onClick={() => setConfirmDelete(true)} aria-label="删除当前路线"><Trash2 size={18}/>删除</button>}
-    </nav></>}
-    {confirmDelete && <div className="home-route-delete-confirm" role="group" aria-label="确认删除路线">
+      {onDelete && <button onClick={() => setActions('delete')} aria-label="删除当前路线"><Trash2 size={18}/>删除</button>}
+    </nav>}</>}
+    {name === null && actions === 'delete' && <div className="home-route-delete-confirm" role="group" aria-label="确认删除路线">
       <span>删除这条路线？关联照片、标记及来源路线保留。</span>
-      <button onClick={() => setConfirmDelete(false)}>取消</button>
-      <button className="route-danger" onClick={() => { if (onDelete?.()) setConfirmDelete(false); }}>确认删除</button>
+      <button onClick={() => setActions('more')}>取消</button>
+      <button className="route-danger" onClick={() => { if (onDelete?.()) setActions('main'); }}>确认删除</button>
     </div>}
     {error && <div className="home-route-error" role="alert">
       {onLocateGap

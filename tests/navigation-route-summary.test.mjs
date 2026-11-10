@@ -93,10 +93,16 @@ test('route details show the bounded elevation profile without turn instructions
   };
 
   await act(async () => root.render(React.createElement(RouteResultSummary, props)));
-  assert.equal(host.querySelector('[aria-expanded="false"]')?.textContent, '详情');
+  const more = host.querySelector('[aria-controls="route-summary-more"]');
+  const details = host.querySelector('[aria-controls="route-summary-detail"]');
+  assert.equal(more.textContent, '更多');
+  assert.equal(host.querySelector('#route-summary-more').hidden, true);
+  assert.equal(host.querySelector('.route-summary-metrics').textContent.includes('驾车'), true);
+  await act(async () => more.click());
+  assert.equal(host.querySelector('.route-elevation'), null, 'opening more does not request the profile');
+  await act(async () => details.click());
   assert.equal(host.querySelector('.route-endpoint-start')?.nextElementSibling.textContent, '绿色起点');
   assert.equal(host.querySelector('.route-endpoint-end')?.nextElementSibling.textContent, '红色终点');
-  assert.equal(host.querySelector('.route-elevation'), null, 'profile is deferred until details are opened');
   await act(async () => host.querySelector('[aria-label="交换起点和终点"]').click());
   assert.equal(swapCalls, 1, 'endpoint exchange stays on the route card');
   const modeSelect = host.querySelector('[aria-label="当前导航方式"]');
@@ -104,9 +110,8 @@ test('route details show the bounded elevation profile without turn instructions
   await act(async () => modeSelect.dispatchEvent(new window.Event('change', { bubbles: true })));
   assert.deepEqual(appliedModes, ['bicycle'], 'mode selection is wired to automatic replanning');
 
-  await act(async () => host.querySelector('[aria-expanded="false"]').click());
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
-  assert.equal(host.querySelector('[aria-expanded="true"]')?.textContent, '详情');
+  assert.equal(details.textContent, '收起详情');
   assert.equal(profileRequests.length, 1);
   assert.ok(profileRequests[0].length > 100 && profileRequests[0].length <= 192, 'long routes use the bounded sample count');
   assert.equal(host.querySelector('[data-testid="profile-chart"]') !== null, true, 'available height still renders a profile');
@@ -117,9 +122,9 @@ test('route details show the bounded elevation profile without turn instructions
   assert.equal(showCalls, 0, 'opening details does not move the map');
   assert.equal(JSON.stringify(route), originalRoute, 'the planned route stays unchanged');
 
-  await act(async () => host.querySelector('[aria-expanded="true"]').click());
+  await act(async () => details.click());
   assert.equal(host.querySelector('#route-summary-detail').hidden, true);
-  await act(async () => host.querySelector('[aria-expanded="false"]').click());
+  await act(async () => details.click());
   assert.equal(host.querySelector('#route-summary-detail').hidden, false);
   assert.equal(profileRequests.length, 1, 'closing and reopening retains the loaded elevation profile');
   assert.equal(showCalls, 0);

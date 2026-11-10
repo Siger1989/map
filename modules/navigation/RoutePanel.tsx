@@ -272,29 +272,7 @@ export function RoutePanel({
         ))}
       </div>
 
-      <button
-        className="route-primary"
-        disabled={n.loading}
-        onClick={async () => {
-          const missing = n.stops.find((s) => !s.place);
-          setActive(missing?.id ?? null);
-          const route = await n.calculate(onRouteApplied);
-          if (missing) {
-            rows.current
-              ?.querySelector<HTMLInputElement>(
-                `[data-stop-id="${missing.id}"] input`,
-              )
-              ?.focus({ preventScroll: true });
-          }
-          if (route) onShow(route);
-        }}
-      >
-        {n.loading
-          ? '规划中…'
-          : `规划路线${n.stops.length > 2 ? ` · ${n.stops.length - 2} 个途经点` : ''}`}
-      </button>
       {n.route && <div className="route-edit-actions"><button onClick={() => { setEditing(false); onShow(n.route!); }}>返回路线概览</button></div>}
-      <RouteProviderNote />
       <span className="route-sort-status" role="status">
         {announcement}
       </span>
@@ -530,7 +508,15 @@ export function RoutePanel({
           );
         })}
       </div>
+      {missingIndex < 0 && <button type="button" className="route-primary" disabled={n.loading}
+        onClick={async () => { const route = await n.calculate(onRouteApplied); if (route) onShow(route); }}>
+        {n.loading ? '规划中…' : `规划路线${n.stops.length > 2 ? ` · ${n.stops.length - 2} 个途经点` : ''}`}
+      </button>}
       <div className="route-edit-actions">
+        <button className="route-current-position" disabled={locating} onClick={onCurrentPosition}>
+          <LocateFixed size={16} aria-hidden="true" />
+          {locating ? '定位中…' : '我的位置'}
+        </button>
         <button
           disabled={n.stops.length >= MAX_ROUTE_STOPS}
           onClick={() => {
@@ -541,11 +527,7 @@ export function RoutePanel({
           <Plus size={14} />
           途经点
         </button>
-        <button className="route-current-position" disabled={locating} onClick={onCurrentPosition}>
-          <LocateFixed size={16} aria-hidden="true" />
-          {locating ? '定位中…' : '我的位置'}
-        </button>
-        <button
+        {n.stops.some(s => s.place || s.query.trim()) && <button
           onClick={() => {
             setActive(null); setListExpanded(false); setFiltersOpen(false);
             n.swap(onRouteApplied);
@@ -553,17 +535,17 @@ export function RoutePanel({
         >
           <ArrowDownUp size={13} />
           反向
-        </button>
-        <button
+        </button>}
+        {(n.error || n.stops.length > 2 || n.stops.some(s => s.place || s.query.trim())) && <button
           onClick={() => {
             setActive(null); setListExpanded(false); setFiltersOpen(false);
             n.clear();
           }}
         >
           清除
-        </button>
+        </button>}
       </div>
-
+      <RouteProviderNote />
     </div>
   );
 }

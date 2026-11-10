@@ -307,14 +307,14 @@ export function RouteCollectionsPanel({
                       </button>
                       <button
                         className="collection-navigate"
-                        aria-label={`导航 ${e.name}`}
+                        aria-label={`使用路线 ${e.name}`}
                         onClick={() =>
                           e.kind === 'route'
                             ? onNavigateRoute(e.route)
                             : onNavigateTrack(e.track.id)
                         }
                       >
-                        导航
+                        使用路线
                       </button>
                       <button
                         className="collection-navigate"

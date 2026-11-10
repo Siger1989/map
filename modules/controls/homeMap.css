@@ -243,6 +243,9 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions button.is-primary { height:var(--ui-compact-control-height,28px); min-height:var(--ui-compact-control-height,28px); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions button + button { border-radius:var(--ui-radius-control); border-left:0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions button svg { width:15px; height:15px; flex:0 0 15px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-primary-actions .is-primary { grid-column:span 2; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-primary-actions[data-has-point='false'] .is-primary { grid-column:1/-1; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions.home-route-secondary-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
 /* Keep every route action and both delete choices visible in compact screens. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card:has(.home-route-delete-confirm) {
   max-height:min(200px,calc(100dvh - var(--home-top) - var(--home-header-height) - var(--home-footer) - 16px));

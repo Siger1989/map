@@ -404,7 +404,7 @@ export function CollectionsPanel(props: Props) {
                     : props.onNavigateTrack(item.track.id)
                 }
               >
-                开始导航
+                使用此路线
               </button>
               <button
                 onClick={() =>

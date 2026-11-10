@@ -174,6 +174,31 @@ test('navigation display settings replace card data and return to expanded navig
       assert.doesNotMatch(host.querySelector('.guidance-compact-context')?.textContent ?? '', /运动方向等待确认/, 'priority route state is not covered by auxiliary motion guidance');
     }
   }
+  const offRoute = makeGuidance();
+  offRoute.session.offRoute = true;
+  offRoute.returnToOriginalSupported = true;
+  let returnCalls = 0, showCalls = 0, endCalls = 0;
+  offRoute.returnToOriginal = () => { returnCalls++; };
+  const renderShortcut = () => render({ guidance: offRoute, onShow: () => { showCalls++; }, onStop: () => { endCalls++; } });
+  const shortcut = () => host.querySelector('.guidance-quick-action button');
+  await renderShortcut();
+  assert.equal(shortcut()?.textContent, '接回原路线');
+  await act(async () => shortcut().click());
+  assert.equal(returnCalls, 1);
+  offRoute.rejoin = {};
+  await renderShortcut();
+  assert.equal(shortcut()?.textContent, '查看接回路径');
+  await act(async () => shortcut().click());
+  assert.equal(showCalls, 1);
+  offRoute.session.quality = '定位精度不足';
+  await renderShortcut();
+  assert.equal(shortcut(), null);
+  offRoute.session.arrived = true;
+  await renderShortcut();
+  assert.equal(shortcut()?.textContent, '结束导航');
+  assert.equal([...host.querySelectorAll('button')].filter(b => b.textContent === '结束导航').length, 1);
+  await act(async () => shortcut().click());
+  assert.equal(endCalls, 1);
   await render();
   await act(async () => host.querySelector('[aria-label="展开导航详情"]').click());
   assert.equal(host.querySelector('.guidance-card')?.getAttribute('data-expanded'), 'true', 'expanded details stay within the viewport-bounded card');

@@ -55,6 +55,14 @@
 .guidance-card header .guidance-first-person[aria-pressed='true'] { color:var(--ui-accent,var(--accent)); }
 .guidance-card header .guidance-first-person[data-waiting='true'] { color:var(--ui-muted,var(--muted)); }
 .guidance-card header .guidance-expand { flex:0 0 44px; }
+.observatory.home-map .guidance-card .guidance-quick-action button {
+  width:auto;
+  padding-inline:8px;
+  color:var(--ui-accent,var(--accent));
+  background:var(--ui-raised,var(--surface));
+  white-space:nowrap;
+}
+.guidance-quick-action button:disabled { opacity:.55; }
 .guidance-card button:focus-visible { outline:2px solid var(--ui-accent,var(--accent)); outline-offset:-2px; }
 .guidance-compact-primary { display:flex; align-items:center; gap:5px; min-height:42px; padding:0 3px 2px; }
 .guidance-maneuver-icon { display:grid; place-items:center; flex:0 0 28px; width:28px; height:28px; color:var(--ui-ink,var(--text)); }

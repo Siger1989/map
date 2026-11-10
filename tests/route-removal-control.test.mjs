@@ -48,7 +48,7 @@ const routeProps = onCancel => ({
   saveMessage: '', onCancel,
 });
 
-test('planned route summary keeps four second-row actions and delete cancel leaves the plan untouched', async t => {
+test('planned route summary places removal under more and cancelling preserves the plan', async t => {
   setupDom();
   const React = await import('react');
   const { createRoot } = await import('react-dom/client');
@@ -60,10 +60,12 @@ test('planned route summary keeps four second-row actions and delete cancel leav
   t.after(async () => React.act(async () => root.unmount()));
   await React.act(async () => root.render(React.createElement(RouteResultSummary, routeProps(() => { removals++; }))));
 
+  assert.equal(host.querySelector('#route-summary-more').hidden, true);
+  await React.act(async () => host.querySelector('[aria-controls="route-summary-more"]').click());
   const secondary = host.querySelector('.route-summary-actions-secondary');
   assert.ok(secondary);
-  assert.deepEqual([...secondary.querySelectorAll('button')].map(button => button.textContent), ['收藏', '分享', '详情', '删除']);
-  await React.act(async () => secondary.querySelector('[aria-label="删除"]').click());
+  assert.deepEqual([...secondary.querySelectorAll('button')].map(button => button.textContent), ['收藏', '分享', '路线详情', '清除当前规划']);
+  await React.act(async () => secondary.querySelector('[aria-label="清除当前规划"]').click());
   const dialog = host.querySelector('[role="alertdialog"][aria-label="确认删除当前规划路线"]');
   assert.ok(dialog);
   assert.equal(dialog.getAttribute('aria-modal'), 'true');
@@ -74,17 +76,17 @@ test('planned route summary keeps four second-row actions and delete cancel leav
   Object.defineProperty(escape, 'key', { value: 'Escape' });
   await React.act(async () => dialog.dispatchEvent(escape));
   assert.equal(host.querySelector('[role="alertdialog"]'), null, 'Escape closes without removing');
-  assert.equal(document.activeElement.getAttribute('aria-label'), '删除', 'Escape returns focus to the delete button');
+  assert.equal(document.activeElement.getAttribute('aria-label'), '清除当前规划', 'Escape returns focus to the delete button');
 
-  await React.act(async () => secondary.querySelector('[aria-label="删除"]').click());
+  await React.act(async () => secondary.querySelector('[aria-label="清除当前规划"]').click());
   const reopened = host.querySelector('[role="alertdialog"]');
   assert.ok(reopened);
   await React.act(async () => reopened.querySelector('button').click());
   assert.equal(host.querySelector('[role="alertdialog"]'), null);
   assert.equal(removals, 0, 'cancel returns to the card without changing navigation state');
-  assert.equal(document.activeElement.getAttribute('aria-label'), '删除');
+  assert.equal(document.activeElement.getAttribute('aria-label'), '清除当前规划');
 
-  await React.act(async () => secondary.querySelector('[aria-label="删除"]').click());
+  await React.act(async () => secondary.querySelector('[aria-label="清除当前规划"]').click());
   await React.act(async () => host.querySelector('button[aria-label="确认删除当前规划路线"]').click());
   assert.equal(removals, 1, 'explicit confirmation calls route removal once');
   assert.equal(host.querySelector('[role="alertdialog"]'), null);
