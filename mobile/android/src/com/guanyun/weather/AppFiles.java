@@ -17,28 +17,68 @@ final class AppFiles {
     private boolean saving;
     private android.os.CancellationSignal folderScan;
     private boolean preparingPhotos;
+    private boolean gpsPhotoImport;
+    private boolean gpsPermissionPending;
+    private boolean pickerFolder, pickerImages, pickerMultiple, pickerCapture;
     final CameraCapture camera;
     AppFiles(Activity activity) { this.activity=activity; camera=new CameraCapture(activity); }
     boolean choose(ValueCallback<Uri[]> callback, android.webkit.WebChromeClient.FileChooserParams params) {
         camera.cancel();
+        gpsPermissionPending = false;
         if (folderScan != null) { folderScan.cancel(); folderScan = null; }
         if (pending != null) pending.onReceiveValue(null);
+        pending = null;
+        preparingPhotos = false; gpsPhotoImport = false; gpsPermissionPending = false;
+        pickerFolder = pickerImages = pickerMultiple = pickerCapture = false;
         pending=callback;
         try {
-            boolean folder = java.util.Arrays.stream(params.getAcceptTypes()).anyMatch(t -> "application/x-guanyun-photo-folder".equals(t));
-            if (folder) {
-                activity.startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), FOLDER);
-                return true;
-            }
+            String[] accepted = params.getAcceptTypes();
+            boolean folder = PhotoLocationAccess.hasAcceptType(accepted, "application/x-guanyun-photo-folder");
+            gpsPhotoImport = PhotoLocationAccess.hasAcceptType(accepted, PhotoLocationAccess.GPS_PHOTO_ACCEPT);
             boolean images = java.util.Arrays.stream(params.getAcceptTypes()).anyMatch(t -> t.startsWith("image/"));
             preparingPhotos = images;
-            if(images && params.isCaptureEnabled()) { pending=null;camera.start(callback);return true; }
-            Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(images ? "image/*" : "*/*");
-            picker.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.getMode() == android.webkit.WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE);
-            activity.startActivityForResult(picker, OPEN);
+            pickerFolder = folder; pickerImages = images;
+            pickerMultiple = params.getMode() == android.webkit.WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE;
+            pickerCapture = images && params.isCaptureEnabled();
+            if (gpsPhotoImport && pickerCapture) pickerCapture = false;
+            if (PhotoLocationAccess.needsPickerPermission(android.os.Build.VERSION.SDK_INT, gpsPhotoImport) && !PhotoLocationAccess.hasPermission(activity)) {
+                gpsPermissionPending = true;
+                PhotoLocationAccess.request(activity);
+                return true;
+            }
+            launchPendingPicker();
         }
-        catch(Exception e) { if(pending!=null)pending.onReceiveValue(null);pending=null;android.widget.Toast.makeText(activity,"无法打开文件选择器，请从文件管理器用山兔打开路线文件",android.widget.Toast.LENGTH_LONG).show(); }
+        catch(Exception e) { finishPendingWithMessage("无法打开文件选择器，请从文件管理器用山兔打开路线文件"); }
         return true;
+    }
+    private void launchPendingPicker() throws Exception {
+        gpsPermissionPending = false;
+        if (pickerFolder) {
+            activity.startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), FOLDER);
+            return;
+        }
+        if (pickerCapture) { ValueCallback<Uri[]> callback = pending; pending = null; camera.start(callback); return; }
+        Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(pickerImages ? "image/*" : "*/*");
+        picker.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, pickerMultiple);
+        activity.startActivityForResult(picker, OPEN);
+    }
+    void photoLocationPermissionResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode != PhotoLocationAccess.REQUEST || !gpsPermissionPending) return;
+        boolean granted = grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED && PhotoLocationAccess.hasPermission(activity);
+        if (!granted) {
+            finishPendingWithMessage("未授予照片位置读取权限，本次未开始选择；可确认系统权限后重新尝试");
+            return;
+        }
+        try { launchPendingPicker(); }
+        catch (Exception e) { finishPendingWithMessage("无法打开照片选择器，请重试"); }
+    }
+    private void finishPendingWithMessage(String message) {
+        gpsPermissionPending = false;
+        preparingPhotos = false; gpsPhotoImport = false;
+        pickerFolder = pickerImages = pickerMultiple = pickerCapture = false;
+        if (pending != null) pending.onReceiveValue(null);
+        pending = null;
+        android.widget.Toast.makeText(activity, message, android.widget.Toast.LENGTH_LONG).show();
     }
     void save(String name,String mime,String text) {
         if (output != null || outputFile != null || saving) { android.widget.Toast.makeText(activity,"请先完成当前文件保存",0).show();return; }
@@ -66,15 +106,16 @@ final class AppFiles {
         if(camera.result(request,result))return;
         Uri uri = result==Activity.RESULT_OK && intent!=null ? intent.getData():null;
         if (request==FOLDER && pending!=null) {
-            if (uri==null) { pending.onReceiveValue(null); pending=null; preparingPhotos=false; return; }
+            if (uri==null) { pending.onReceiveValue(null); pending=null; preparingPhotos=false; gpsPhotoImport=false; return; }
             ValueCallback<Uri[]> callback = pending;
+            boolean gpsImport = gpsPhotoImport;
             android.os.CancellationSignal cancel = new android.os.CancellationSignal();
             folderScan = cancel;
             android.widget.Toast.makeText(activity,"正在读取所选文件夹的照片…",0).show();
             new Thread(() -> {
                 try {
                     Uri[] selected = PhotoDirectory.collect(activity.getContentResolver(), uri, cancel);
-                    preparePhotos(callback, selected, cancel);
+                    preparePhotos(callback, selected, cancel, gpsImport);
                 } catch (Exception e) {
                     String message = e.getMessage()==null ? "无法读取文件夹，请重试或多选照片" : e.getMessage();
                     activity.runOnUiThread(() -> finishPhotoSelection(callback, cancel, null, message));
@@ -90,14 +131,15 @@ final class AppFiles {
                 else { selected=new Uri[count]; for(int i=0;i<count;i++) selected[i]=intent.getClipData().getItemAt(i).getUri(); }
             }
             if (selected==null || selected.length==0) {
-                pending.onReceiveValue(null); pending=null; preparingPhotos=false;
+                pending.onReceiveValue(null); pending=null; preparingPhotos=false; gpsPhotoImport=false;
                 if (result==Activity.RESULT_OK) android.widget.Toast.makeText(activity,"没有收到所选文件，请保存到本机后重试",android.widget.Toast.LENGTH_LONG).show();
                 return;
             }
             if (preparingPhotos) {
                 android.os.CancellationSignal cancel = new android.os.CancellationSignal(); folderScan = cancel;
-                preparePhotos(pending, selected, cancel);
-            } else { pending.onReceiveValue(selected);pending=null; }
+                boolean gpsImport = gpsPhotoImport;
+                preparePhotos(pending, selected, cancel, gpsImport);
+            } else { pending.onReceiveValue(selected);pending=null; gpsPhotoImport=false; }
         }
         if (request==SAVE && (output!=null || outputFile!=null)) {
             final byte[] bytes=output;final java.io.File source=outputFile;output=null;outputFile=null;
@@ -116,7 +158,7 @@ final class AppFiles {
             },"shantu-save-file").start();
         }
     }
-    private void preparePhotos(ValueCallback<Uri[]> callback, Uri[] selected, android.os.CancellationSignal cancel) {
+    private void preparePhotos(ValueCallback<Uri[]> callback, Uri[] selected, android.os.CancellationSignal cancel, boolean gpsImport) {
         activity.runOnUiThread(() -> android.widget.Toast.makeText(activity,"正在采样并压缩照片…",android.widget.Toast.LENGTH_SHORT).show());
         new Thread(() -> {
             java.util.ArrayList<Uri> prepared = new java.util.ArrayList<>();
@@ -127,21 +169,35 @@ final class AppFiles {
                 try (android.database.Cursor cursor = activity.getContentResolver().query(source, new String[]{android.provider.OpenableColumns.DISPLAY_NAME}, null, null, null)) {
                     if (cursor != null && cursor.moveToFirst()) name = cursor.getString(0);
                 } catch (Exception ignored) { }
-                try { prepared.add(PhotoImportCache.prepare(activity, source, name, cancel)); }
+                try { prepared.add(gpsImport ? PhotoImportCache.prepareGps(activity, source, name, cancel) : PhotoImportCache.prepare(activity, source, name, cancel)); }
+                catch (PhotoLocationAccess.AccessException e) {
+                    if (e.reason.equals(PhotoLocationAccess.PERMISSION_DENIED)) {
+                        if (!cancel.isCanceled() && errors.size()<4) errors.add(name+"：系统权限未通过，照片原始GPS未读取");
+                    } else if (!cancel.isCanceled()) {
+                        // Keep processing the user's selected URI when the provider cannot expose its MediaStore original.
+                        try {
+                            prepared.add(PhotoImportCache.prepare(activity, source, name, cancel));
+                            if (errors.size()<4) errors.add(name+"：系统未提供原图，已按所选文件读取；GPS可能缺失，原文件未修改");
+                        } catch (Exception fallback) {
+                            if (errors.size()<4) errors.add(name+"：系统未提供原图，照片处理失败");
+                        }
+                    }
+                }
                 catch (Exception e) { if (!cancel.isCanceled() && errors.size()<4) errors.add(name+"："+(e.getMessage()==null?"照片处理失败":e.getMessage())); }
             }
             Uri[] uris = prepared.isEmpty() ? null : prepared.toArray(new Uri[0]);
-            String message = errors.isEmpty() ? null : String.join("\n", errors) + (errors.size()==4 ? "\n另有照片未处理" : "");
+            String message = errors.isEmpty() ? null : String.join("\n", errors) + (errors.size()==4 ? "\n另有照片需要查看提示" : "");
             activity.runOnUiThread(() -> finishPhotoSelection(callback, cancel, uris, message));
         }, "shantu-photo-import").start();
     }
-    private void finishPhotoSelection(ValueCallback<Uri[]> callback, android.os.CancellationSignal cancel, Uri[] files, String message) {
+    void finishPhotoSelection(ValueCallback<Uri[]> callback, android.os.CancellationSignal cancel, Uri[] files, String message) {
         if (folderScan == cancel) folderScan = null;
-        preparingPhotos = false;
         if (pending != callback || cancel.isCanceled()) {
             if (files != null) for (Uri file : files) PhotoShareProvider.deleteImport(activity, file);
             return;
         }
+        preparingPhotos = false;
+        gpsPhotoImport = false;
         pending = null;
         if (files == null || files.length == 0) {
             callback.onReceiveValue(null);
@@ -155,7 +211,7 @@ final class AppFiles {
             return;
         }
         callback.onReceiveValue(files);
-        if (message != null) android.widget.Toast.makeText(activity, "部分照片未处理：\n"+message, android.widget.Toast.LENGTH_LONG).show();
+        if (message != null) android.widget.Toast.makeText(activity, "照片导入提示：\n"+message, android.widget.Toast.LENGTH_LONG).show();
     }
-    void close() { camera.cancel();if(folderScan!=null)folderScan.cancel();folderScan=null;if(pending!=null)pending.onReceiveValue(null);pending=null;preparingPhotos=false;output=null;if(outputFile!=null)outputFile.delete();outputFile=null; }
+    void close() { camera.cancel();if(folderScan!=null)folderScan.cancel();folderScan=null;if(pending!=null)pending.onReceiveValue(null);pending=null;preparingPhotos=false;gpsPhotoImport=false;gpsPermissionPending=false;pickerFolder=pickerImages=pickerMultiple=pickerCapture=false;output=null;if(outputFile!=null)outputFile.delete();outputFile=null; }
 }

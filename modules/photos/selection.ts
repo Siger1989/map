@@ -2,6 +2,9 @@ export const PHOTO_ACCEPT =
   'image/*,.heic,.heif,.avif,.jpg,.jpeg,.png,.webp,.gif,.bmp';
 // The Android bridge routes this input to the system directory picker.
 export const PHOTO_FOLDER_ACCEPT = 'application/x-guanyun-photo-folder';
+export const GPS_PHOTO_ACCEPT = 'application/x-shantu-gps-photo';
+export const GPS_PHOTO_PICKER_ACCEPT = `${PHOTO_ACCEPT},${GPS_PHOTO_ACCEPT}`;
+export const GPS_PHOTO_FOLDER_ACCEPT = `${PHOTO_FOLDER_ACCEPT},${GPS_PHOTO_ACCEPT}`;
 const MIME_BY_EXTENSION: Record<string, string> = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',

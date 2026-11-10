@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { readPhoto, type PhotoDraft } from './import';
-import { PHOTO_ACCEPT, PHOTO_FOLDER_ACCEPT, selectPhotoFiles } from './selection';
+import { PHOTO_ACCEPT, GPS_PHOTO_PICKER_ACCEPT, GPS_PHOTO_FOLDER_ACCEPT, selectPhotoFiles } from './selection';
 import './gpsPhotoPanel.css';
 
 type ImportSummary = {
@@ -84,7 +84,7 @@ export function GpsPhotoPanel({
       if (!active.current) return;
       setSummary(saved);
       const noGps = saved.missingGps.length;
-      setMessage(`已添加 ${saved.added} 张照片，生成 ${saved.groups} 个标记；无拍摄位置 ${noGps} 张，重复跳过 ${saved.duplicates} 张。`);
+      setMessage(`已添加 ${saved.added} 张照片，生成 ${saved.groups} 个标记；未读取到可用 GPS ${noGps} 张，重复跳过 ${saved.duplicates} 张。`);
     } catch (error) {
       if (!active.current) return;
       setMessage(error instanceof Error ? `保存失败：${error.message}` : '保存失败，请稍后重试。');
@@ -106,18 +106,18 @@ export function GpsPhotoPanel({
 
   return (
     <section className="gps-photo-panel" aria-label="照片标记导入">
-      <p className="gps-photo-intro">按照片 GPS 生成标记，存入收藏“照片”；距标记中心50米内合并。没有拍摄位置的照片会跳过。</p>
+      <p className="gps-photo-intro">按照片 GPS 生成标记，存入收藏“照片”；距标记中心50米内合并。未读取到可用 GPS 的照片会跳过，可能原图未记录或文件提供方未提供。</p>
       <div className="gps-photo-actions">
         <label className="gps-photo-picker">
           导入照片
-          <input type="file" accept={PHOTO_ACCEPT} multiple aria-label="导入GPS照片" disabled={busy} onChange={(event) => handleInput(event, false)} />
+          <input type="file" accept={native ? GPS_PHOTO_PICKER_ACCEPT : PHOTO_ACCEPT} multiple aria-label="导入GPS照片" disabled={busy} onChange={(event) => handleInput(event, false)} />
         </label>
         {folderReady && <label className="gps-photo-picker">
           选择照片文件夹
           <input
             type="file"
             aria-label="选择照片文件夹"
-            accept={native ? PHOTO_FOLDER_ACCEPT : PHOTO_ACCEPT}
+            accept={native ? GPS_PHOTO_FOLDER_ACCEPT : PHOTO_ACCEPT}
             {...(native ? {} : { webkitdirectory: '', directory: '' })}
             multiple
             disabled={busy || !folderSupported}
@@ -134,9 +134,9 @@ export function GpsPhotoPanel({
         <button type="button" onClick={onOpenFavorites}>打开照片收藏</button>
       </div>}
       {summary?.missingGps.length ? <>
-        <p className="gps-photo-no-gps">{summary.missingGps.length} 张照片没有拍摄位置，已跳过。请选相机原图；不会使用当前定位。</p>
+        <p className="gps-photo-no-gps">{summary.missingGps.length} 张照片未读取到可用 GPS，已跳过；可能原图未记录或文件提供方未提供。不会使用当前定位。</p>
         <details className="gps-photo-failures">
-          <summary>没有拍摄位置（{summary.missingGps.length}）</summary>
+          <summary>未读取到可用 GPS（{summary.missingGps.length}）</summary>
           <ul>{summary.missingGps.map((name, index) => <li key={`${index}-${name}`}>{name}</li>)}</ul>
         </details>
       </> : null}

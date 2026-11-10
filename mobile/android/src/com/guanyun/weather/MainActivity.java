@@ -159,6 +159,7 @@ public class MainActivity extends Activity {
         if (requestCode == LocationPermissions.REQUEST && locationPermissions != null) locationPermissions.resolve();
         if (requestCode == CameraPermissions.REQUEST && locationPermissions != null) locationPermissions.camera.resolve();
         if (requestCode == CameraCapture.PERMISSION && appFiles != null) appFiles.camera.permission();
+        if (appFiles != null) appFiles.photoLocationPermissionResult(requestCode, permissions, results);
         if (requestCode == ForegroundLocation.REQUEST && nativeBridge != null) nativeBridge.position.resolvePermission();
     }
     @Override protected void onActivityResult(int request, int result, Intent data) { super.onActivityResult(request,result,data); if(appFiles!=null)appFiles.result(request,result,data); }

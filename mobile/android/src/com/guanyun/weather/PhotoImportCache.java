@@ -28,6 +28,39 @@ final class PhotoImportCache {
     private PhotoImportCache() {}
 
     static Uri prepare(Context context, Uri source, String name, CancellationSignal cancel) throws Exception {
+        return prepareSource(context, source, name, cancel);
+    }
+
+    static Uri prepareGps(Context context, Uri source, String name, CancellationSignal cancel) throws Exception {
+        Uri original = PhotoLocationAccess.requireOriginalUri(context, source);
+        if (!original.equals(source)) {
+            try (InputStream probe = context.getContentResolver().openInputStream(original)) {
+                if (probe == null)
+                    throw new PhotoLocationAccess.AccessException(PhotoLocationAccess.ORIGINAL_UNAVAILABLE,
+                        "系统未能读取所选照片的原始元数据");
+            } catch (PhotoLocationAccess.AccessException failure) {
+                throw failure;
+            } catch (SecurityException | java.io.IOException failure) {
+                throw new PhotoLocationAccess.AccessException(PhotoLocationAccess.ORIGINAL_UNAVAILABLE,
+                    "系统未能读取所选照片的原始元数据", failure);
+            }
+        }
+        try {
+            return prepareSource(context, original, name, cancel);
+        } catch (SecurityException failure) {
+            if (!original.equals(source))
+                throw new PhotoLocationAccess.AccessException(PhotoLocationAccess.ORIGINAL_UNAVAILABLE,
+                    "系统未能读取所选照片的原始元数据", failure);
+            throw failure;
+        } catch (java.io.IOException failure) {
+            if (!original.equals(source))
+                throw new PhotoLocationAccess.AccessException(PhotoLocationAccess.ORIGINAL_UNAVAILABLE,
+                    "系统未能读取所选照片的原始元数据", failure);
+            throw failure;
+        }
+    }
+
+    private static Uri prepareSource(Context context, Uri source, String name, CancellationSignal cancel) throws Exception {
         ContentResolver resolver = context.getContentResolver();
         cancel.throwIfCanceled();
         long length = sourceLength(resolver, source);

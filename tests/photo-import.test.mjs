@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import exifr from 'exifr';
-import { imageMime, nativeImportOriginalHash, selectPhotoFiles } from '../modules/photos/selection.ts';
+import { imageMime, nativeImportOriginalHash, selectPhotoFiles, PHOTO_ACCEPT, PHOTO_FOLDER_ACCEPT, GPS_PHOTO_PICKER_ACCEPT, GPS_PHOTO_FOLDER_ACCEPT } from '../modules/photos/selection.ts';
 const importPhotoSource = await readFile(new URL('../modules/photos/import.ts', import.meta.url), 'utf8');
 
 test('recognizes common photo formats and keeps a known extension when MIME is stale', () => {
@@ -25,6 +25,13 @@ test('folder selection includes formats with stale provider MIME values', () => 
     { name: 'c.dng', type: 'image/dng' },
   ], true);
   assert.deepEqual(selected.map((file) => file.name), ['a.avif', 'b.heic']);
+});
+
+test('GPS metadata permission sentinel is native-only and preserves existing folder route', () => {
+  assert.equal(PHOTO_ACCEPT, 'image/*,.heic,.heif,.avif,.jpg,.jpeg,.png,.webp,.gif,.bmp');
+  assert.equal(PHOTO_FOLDER_ACCEPT, 'application/x-guanyun-photo-folder');
+  assert.equal(GPS_PHOTO_PICKER_ACCEPT, `${PHOTO_ACCEPT},application/x-shantu-gps-photo`);
+  assert.equal(GPS_PHOTO_FOLDER_ACCEPT, `${PHOTO_FOLDER_ACCEPT},application/x-shantu-gps-photo`);
 });
 
 test('only a marked generated JPEG can supply the preserved source hash', () => {

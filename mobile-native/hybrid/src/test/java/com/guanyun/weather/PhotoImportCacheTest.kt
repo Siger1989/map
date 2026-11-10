@@ -73,7 +73,7 @@ class PhotoImportCacheTest {
             }
             val jpegBefore = jpegSource.readBytes()
             val jpegHash = sha256(jpegBefore)
-            val jpegUri = PhotoImportCache.prepare(context, Uri.fromFile(jpegSource), "metadata.jpg", CancellationSignal())
+            val jpegUri = PhotoImportCache.prepareGps(context, Uri.fromFile(jpegSource), "metadata.jpg", CancellationSignal())
             assertArrayEquals(jpegBefore, jpegSource.readBytes())
             val jpegTarget = File(cache, "photo-imports/${jpegUri.lastPathSegment}")
             val targetExif = ExifInterface(jpegTarget.absolutePath)
