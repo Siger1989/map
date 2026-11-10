@@ -16,11 +16,20 @@
 ## 验证
 
 - 19项Node照片导入/EXIF/GPS保存/桥接状态边界，12项Native权限/EXIF缓存/终态与批次状态通过。TSC通过，fresh私人Web8.14秒通过。
-- 实际浏览器390/360合成组件检查：276px宽/最高200px，无横向溢出，长提示可完整查看；12失败末项滚动可达（72px列表，386px内容），返回/关闭通过。合成GPS原片经真实readPhoto解析，在不写用户数据的QA回调显示1照片/1标记、0缺GPS；这是组件检查，不证明Android系统原片读取。原图通道受限→中性详情、拒权限完整文案均已检查。
+- 实际浏览器390×857与360×857合成组件检查（本轮未另验360×780）：276px宽/最高200px，无横向溢出，长提示可完整查看；12失败末项滚动可达（72px列表，386px内容），返回/关闭通过。合成GPS原片经真实readPhoto解析，在不写用户数据的QA回调显示1照片/1标记、0缺GPS；这是组件检查，不证明Android系统原片读取。原图通道受限→中性详情、拒权限完整文案均已检查。
 - 截图本机：`artifacts/screenshots/photo-status-196/fallback-info-390.jpg`与`full-message-360.jpg`。临时QA页面已移出mobile并归档`.openai`，不会进入APK。右侧私人390默认地图保持，用户原数据未写。
-- optimized APK/原签名/包名版本/实际getter DEX/私人资源/16KiB完整性：构建交付中；未连接/安装手机，不称196提示体验真机验收。
+- optimized3分10秒，原签名/包名版本/实际photoImportInfo getter DEX与fresh JS接线/1925资源/39私人种子与Key一致/CRC/16KiB ZIP及64位ELF完整性PASS；8SO同195，QA页面未打入APK；未连接/安装手机，不称196提示体验真机验收。
 - 云端账号好友继续暂缓；HarmonyOS6.1原生HAP未交付。
 
 ## 交付
 
-完整性通过后先发本机独立APK。194/195私人仓库大文件上传未完成，保持草稿；196也只在实际上传和回读核验后才报告远端交付成功，不以网络问题阻塞本机包。
+本机独立APK已先交付：[Shantu-0.2.196-oldengine-private.apk](D:/天气系统/APK/Shantu-0.2.196-oldengine-private.apk)。
+
+包名`com.shantu.oldengine`，0.2.196-test / code203，165392384B；SHA256 `769b6e97bb33a5447584e57cf99a799f05ff416cffb882e8ea034ca206ff3de7`。原证书SHA256 `4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f`；正式与180–195包哈希未变。
+
+应用源码[`c76c73c`](https://github.com/Siger1989/map/commit/c76c73cd938512354351682fc5b100f6b022c6b6)已推`codex/old-engine-tilt-dual-20261105`并核对远端一致，非main。安装前保存草稿/结束记录，覆盖安装山兔·优化；不要卸载或清除数据。已成功导入的照片无需重导。
+
+194/195私人仓库大文件上传未完成，保持草稿；196也只在实际上传和回读核验后才报告远端交付成功，不以网络问题阻塞本机包。
+
+
+196私人仓库APK上传45秒超时，复查仍PRIVATE、Release为草稿、仅4份元数据附件，APK未完成上传；未完整回读，不声称远端交付成功。本机独立包已交付，哈希和资源核验不受影响。
