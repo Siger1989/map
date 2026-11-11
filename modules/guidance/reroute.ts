@@ -1,8 +1,9 @@
 import type { GuidanceSession } from './session';
-import { createSession, deviationLimit, freshFix, onRouteLimit, reliableGpsFix } from './session.ts';
+import { createSession, deviationLimit, onRouteLimit, reliableGpsFix } from './session.ts';
 import { pathOf, project } from './geometry.ts';
 import type { PlannedRoute, RoutePlace, TravelMode } from '../navigation/types';
 import type { PositionFix } from '../position/types';
+import { checkPlanningPosition, planningFixIssue } from '../position/planningFix.ts';
 
 export type RoutePlanner = (
   start: RoutePlace,
@@ -75,9 +76,9 @@ export function replacementSession(
   now = Date.now(),
 ) {
   const next = createSession(target, now);
-  const fix = freshFix(latestFix, now)
+  const fix = reliableGpsFix(latestFix, now)
     ? latestFix
-    : freshFix(previous.last, now)
+    : reliableGpsFix(previous.last, now)
       ? previous.last
       : null;
   next.originalRoute = target;
@@ -97,9 +98,13 @@ export async function calculateReroute(
   latestFix: () => PositionFix | null,
   planner: RoutePlanner,
   now = Date.now(),
+  policy: 'automatic' | 'manual' = 'automatic',
 ) {
   signal.throwIfAborted();
-  if (!reliableGpsFix(origin, now)) throw new Error('请等待有效定位后重新规划');
+  if (policy === 'manual') {
+    const issue = planningFixIssue(origin, now);
+    if (issue) throw new Error(issue);
+  } else if (!reliableGpsFix(origin, now)) throw new Error('请等待有效定位后重新规划');
   const { end, via } = remainingRoutePlaces(session);
   const route = await planner(
     { name: '当前位置', coordinates: origin.coordinates },
@@ -109,11 +114,12 @@ export async function calculateReroute(
     via,
   );
   signal.throwIfAborted();
-  const live = latestFix();
   const checkedAt = Date.now();
+  const latest = latestFix();
+  const live = policy === 'manual' ? checkPlanningPosition(origin, latest, checkedAt) : latest;
   if (
     !live ||
-    !reliableGpsFix(live, checkedAt) ||
+    (policy === 'automatic' && !reliableGpsFix(live, checkedAt)) ||
     live.timestamp < origin.timestamp ||
     project(pathOf(route.coordinates), live.coordinates).offset > deviationLimit(live)
   )

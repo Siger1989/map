@@ -9,7 +9,7 @@ import type { MapHandle } from '../map/TerrainMap';
 import { validFavorite, type RouteFavorite } from '../navigation/favorites';
 import { RouteDisconnectedError, RouteEndpointRequiredError, trackNavigation } from '../guidance/savedRoute';
 import type { RouteGap } from '../tracks/routeInfo';
-import { freshFix } from '../guidance/session';
+import { planningFix } from '../position/planningFix';
 import type { PositionFix } from '../position/types';
 import { resolveTrackConnections } from '../guidance/trackConnections';
 import { planRoute } from '../navigation/provider';
@@ -102,7 +102,7 @@ export function useGuidanceWorkflow({
     guidanceOwnsLocation.current =
       guidanceOwnsLocation.current || !position.watching;
     guidanceFocused.current = false;
-    const cameraTarget = initialFix && freshFix(initialFix)
+    const cameraTarget = planningFix(initialFix ?? null) && initialFix
       ? initialFix.coordinates
       : route?.coordinates[0];
     if (cameraTarget) map.current?.focusCenter(cameraTarget);

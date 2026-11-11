@@ -4,6 +4,7 @@ import {
   type PlannedRoute,
 } from '../navigation/types.ts';
 import type { PositionFix } from '../position/types';
+import { estimatedPlanningPosition, planningFix, planningFixIssue } from '../position/planningFix.ts';
 import { pathOf, project, type Path, type Projection } from './geometry.ts';
 import { assessNavigationPosition, type NavigationPositionAssessment } from './positionAssessment.ts';
 
@@ -43,7 +44,7 @@ export const freshFix = (fix: PositionFix | null, now = Date.now()): boolean =>
   Number.isFinite(fix.accuracy) &&
   fix.accuracy >= 0 &&
   fix.accuracy <= 50;
-/** Automatic rerouting requires a fresh device location, never a network/IP estimate. */
+/** Live guidance requires a fresh, precise device fix and excludes network/IP estimates. */
 export const reliableGpsFix = (fix: PositionFix | null, now = Date.now()): fix is PositionFix =>
   !!fix && freshFix(fix, now) && fix.source !== 'network' && fix.provider !== 'ip';
 export const deviationLimit = (fix: PositionFix) =>
@@ -117,14 +118,12 @@ export function advance(
   error = '',
 ): GuidanceSession {
   if (s.arrived) return s;
-  let quality = error;
-  if (!quality && !freshFix(fix, now))
-    quality = !fix
-      ? '等待当前位置…'
-      : fix.accuracy > 50
-        ? `定位精度约±${Math.round(fix.accuracy)}米，等待更准确定位`
-        : '定位已过期，等待更新';
-  if (quality)
+  if (error || !reliableGpsFix(fix, now)) {
+    const quality = error || (planningFix(fix, now)
+      ? fix.source === 'network' || fix.accuracy > 50
+        ? estimatedPlanningPosition(fix)
+        : '定位已过期，等待更新'
+      : planningFixIssue(fix, now));
     return {
       ...s,
       quality,
@@ -135,7 +134,7 @@ export function advance(
       arriveSince: null,
       gap: s.gap || !!s.last,
     };
-  if (!fix) return s;
+  }
   if (s.last && fix.timestamp <= s.last.timestamp) {
     // A transient bridge/provider error can clear while the still-fresh cached
     // fix has the same timestamp. Clear only that external error state; an old
@@ -145,7 +144,7 @@ export function advance(
       fix.timestamp === s.last.timestamp &&
       fix.coordinates[0] === s.last.coordinates[0] &&
       fix.coordinates[1] === s.last.coordinates[1] &&
-      freshFix(fix, now)
+      reliableGpsFix(fix, now)
     )
       return { ...s, quality: '', qualityFromLocationError: false };
     return s;
@@ -229,7 +228,7 @@ export function advance(
     travelled,
     progress: arrived ? s.path.length : progress,
     offset: hit.offset,
-    positionAssessment: assessNavigationPosition(s.path, hit.distance, hit.offset, fix, gap ? null : s.last, s.offset),
+    positionAssessment: assessNavigationPosition(s.path, hit.distance, hit.offset, fix, gap || !s.anchor ? null : s.last, s.offset),
     nextCheckpoint,
     offSince,
     offRoute,

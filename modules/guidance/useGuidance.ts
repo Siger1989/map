@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import type { PlannedRoute } from '../navigation/types';
+import { metresBetween, type PlannedRoute } from '../navigation/types';
 import type { PositionFix } from '../position/types';
+import { checkPlanningPosition, estimatedPlanningPosition, planningFix, planningFixIssue } from '../position/planningFix';
 import {
   advance,
   createSession,
   deviationLimit,
-  freshFix,
+  reliableGpsFix,
   rejoinTarget,
   type GuidanceSession,
 } from './session';
@@ -37,9 +38,11 @@ export function useGuidance(
     detourSince = useRef<number | null>(null);
   const departureRequest = useRef<AbortController | null>(null);
   const rerouteRequest = useRef<AbortController | null>(null);
+  const manualRequest = useRef<AbortController | null>(null);
   const originalProgress = useRef<Pick<GuidanceSession, 'path' | 'checkpoints' | 'progress' | 'nextCheckpoint' | 'originalRoute'> | null>(null);
   const returningToOriginal = useRef<PlannedRoute | null>(null);
   const [replanning, setReplanning] = useState(false);
+  const keepManualError = useRef(false);
   const clearRerouteWake = () => {
     if (rerouteWake.current !== null) window.clearTimeout(rerouteWake.current);
     rerouteWake.current = null;
@@ -65,6 +68,8 @@ export function useGuidance(
     rerouteFailures.current = 0;
     rerouteRequest.current?.abort();
     rerouteRequest.current = null;
+    manualRequest.current = null;
+    keepManualError.current = false;
     setReplanning(false);
     generation.current++;
     request.current?.abort();
@@ -101,8 +106,7 @@ export function useGuidance(
     if (
       !session?.departurePending ||
       rerouteRequest.current ||
-      !freshFix(fix) ||
-      !fix ||
+      !planningFix(fix) ||
       locationError ||
       document.hidden ||
       departureRequest.current ||
@@ -112,7 +116,8 @@ export function useGuidance(
     const original = session.originalRoute;
     const departureTarget = original;
     // Starting navigation always visits the chosen start, even near a later branch.
-    if (atStart(departureTarget, fix)) {
+    const exactFix = reliableGpsFix(fix) ? fix : null;
+    if (exactFix && atStart(departureTarget, exactFix)) {
       setSession((s) =>
         s?.originalRoute === original
           ? {
@@ -125,6 +130,17 @@ export function useGuidance(
       setError('');
       return;
     }
+    // A route planned from this same estimate already starts here. Keep the start
+    // pending for GPS instead of requesting a zero-length connection or skipping it.
+    if (!exactFix && metresBetween(fix.coordinates, departureTarget.coordinates[0]) < 1) return;
+    const checkDeparturePosition = (path: ReturnType<typeof pathOf>) => {
+      if (document.hidden || current.current.locationError)
+        throw new Error(current.current.locationError || '返回应用后请重新计算到起点的路线。');
+      const live = checkPlanningPosition(fix, current.current.fix);
+      if (project(path, live.coordinates).offset > deviationLimit(live))
+        throw new Error('位置已变化，请重新计算到起点的路线。');
+      return live;
+    };
     const abort = new AbortController();
     departureRequest.current = abort;
     nextRequest.current = Date.now() + 30000;
@@ -145,17 +161,10 @@ export function useGuidance(
           current.current.session?.originalRoute !== original
         )
           return;
-        const latestFix = current.current.fix;
-        if (
-          !latestFix ||
-          !freshFix(latestFix) ||
-          project(pathOf(approach.coordinates), latestFix.coordinates).offset >
-            deviationLimit(latestFix)
-        )
-          throw new Error('位置已变化或过期，请重新计算到起点的路线。');
+        const live = checkDeparturePosition(pathOf(approach.coordinates));
         const result = connectDeparture(departureTarget, approach, fix);
         setSession({
-          ...createSession(result.route),
+          ...advance(createSession(result.route), live),
           originalRoute: original,
           departureLength: result.length,
           departureRoute: approach,
@@ -165,13 +174,10 @@ export function useGuidance(
         if (abort.signal.aborted || current.current.session?.originalRoute !== original) return;
         if (isNoPassableRoute(e)) {
           try {
-            const latestFix = current.current.fix;
-            if (!latestFix || !freshFix(latestFix) || current.current.locationError ||
-              project(pathOf([fix.coordinates, departureTarget.coordinates[0]]), latestFix.coordinates).offset > deviationLimit(latestFix))
-              throw new Error('位置已变化或过期，请重新计算到起点的路线。');
+            const live = checkDeparturePosition(pathOf([fix.coordinates, departureTarget.coordinates[0]]));
             const result = referenceDeparture(departureTarget, fix.coordinates);
             setSession({
-              ...createSession(result.route),
+              ...advance(createSession(result.route), live),
               originalRoute: original,
               departureLength: result.length,
               departureRoute: result.approach,
@@ -223,18 +229,24 @@ export function useGuidance(
       pending: !!request.current || !!rerouteRequest.current,
       nextRequestAt: nextRequest.current,
     });
+    if (manualRequest.current && session?.originalRoute === route && !session?.arrived) return;
+    // A manual return path can be displayed while GPS is missing or only tentatively
+    // off the route. The estimate itself must not mark a deviation as confirmed.
+    if (session?.originalRoute === route && !session?.arrived && rejoin &&
+        returningToOriginal.current === route && (session?.quality || session?.offSince != null)) return;
     if (!session || session.originalRoute !== route || !session.offRoute || session.arrived) {
       generation.current++;
       request.current?.abort();
       request.current = null;
       rerouteRequest.current?.abort();
       rerouteRequest.current = null;
+      manualRequest.current = null;
       setReplanning(false);
       if (!session?.departurePending) setLoading(false);
       if ((!session?.offRoute || session?.arrived) && !session?.departurePending) {
         if (!session?.offRoute || session?.arrived) returningToOriginal.current = null;
         setRejoin(null);
-        setError('');
+        if (!keepManualError.current) setError('');
         detourSince.current = null;
       }
       return;
@@ -282,7 +294,9 @@ export function useGuidance(
         .then((value) => {
           const live = current.current.session;
           if (token === generation.current && !abort.signal.aborted && live?.offRoute && !live.quality && !live.arrived && live.route === session.route) {
-            if (!live.last || project(value.path, live.last.coordinates).offset > deviationLimit(live.last)) {
+            const currentFix = current.current.fix;
+            if (current.current.locationError || document.hidden || !reliableGpsFix(currentFix) ||
+              currentFix.timestamp < session.last!.timestamp || project(value.path, currentFix.coordinates).offset > deviationLimit(currentFix)) {
               setError('位置已变化，等待重新计算接回路线。');
               nextRequest.current = Math.max(nextRequest.current, Date.now() + 5000);
               return;
@@ -372,6 +386,8 @@ export function useGuidance(
     request.current?.abort(); request.current = null;
     departureRequest.current?.abort(); departureRequest.current = null;
     rerouteRequest.current?.abort(); rerouteRequest.current = null;
+    manualRequest.current = null;
+    keepManualError.current = false;
     clearRerouteWake();
     nextRequest.current = 0;
     detourSince.current = null;
@@ -409,7 +425,7 @@ export function useGuidance(
           : next.text,
     };
   }
-  if (session?.offRoute && rejoin && session.last) {
+  if (rejoin && session?.last && (session.offRoute || returningToOriginal.current === session.originalRoute)) {
     const hit = project(rejoin.path, session.last.coordinates);
     remaining =
       Math.max(0, rejoin.path.length - hit.distance) +
@@ -424,22 +440,32 @@ export function useGuidance(
   }
   return {
     replanning,
+    planningPositionReady: !locationError && planningFix(fix),
     replan: async () => {
       const s = current.current.session, origin = current.current.fix;
-      if (!s || s.arrived || rerouteRequest.current) return;
-      if (!origin || !freshFix(origin) || current.current.locationError) { setError('请等待有效定位后重新规划'); return; }
+      if (!s || s.arrived || manualRequest.current || rerouteRequest.current) return;
+      keepManualError.current = false;
+      if (!planningFix(origin) || current.current.locationError) {
+        keepManualError.current = true;
+        setError(current.current.locationError || planningFixIssue(origin));
+        return;
+      }
       clearRerouteWake();
       generation.current++;
       request.current?.abort(); request.current = null;
       departureRequest.current?.abort(); departureRequest.current = null;
       const abort = new AbortController();
-      rerouteRequest.current = abort;
+      rerouteRequest.current = manualRequest.current = abort;
       nextRequest.current = Date.now() + 30000;
       setReplanning(true); setLoading(true); setError('');
       try {
-        const { route: result, fix: latestFix } = await calculateReroute(s, origin, abort.signal, () => current.current.fix, planRoute);
+        const { route: result, fix: latestFix } = await calculateReroute(s, origin, abort.signal, () => {
+          if (document.hidden || current.current.locationError)
+            throw new Error(current.current.locationError || '返回应用后请重新规划。');
+          return current.current.fix;
+        }, planRoute, Date.now(), 'manual');
         const live = current.current;
-        if (!live.session || live.session.originalRoute !== s.originalRoute || live.session.route !== s.route) return;
+        if (abort.signal.aborted || !live.session || live.session.arrived || live.session.originalRoute !== s.originalRoute || live.session.route !== s.route) return;
         rerouteFailures.current = 0;
         if (live.session.route === live.session.originalRoute) originalProgress.current = {
           originalRoute: live.session.originalRoute,
@@ -448,13 +474,13 @@ export function useGuidance(
           progress: live.session.progress,
           nextCheckpoint: live.session.nextCheckpoint,
         };
-        setSession({ ...advance(createSession(result), latestFix), replanned: true, originalRoute: s.originalRoute, startedAt: s.startedAt, travelled: live.session.travelled, last: latestFix, anchor: latestFix });
+        setSession({ ...advance(createSession(result), latestFix), replanned: true, originalRoute: s.originalRoute, startedAt: s.startedAt, travelled: live.session.travelled });
         setRejoin(null);
       } catch (e) {
-        if (!abort.signal.aborted) { nextRequest.current = Date.now() + nextFailureDelay(); setError(e instanceof Error ? e.message : '重新规划失败，原导航已保留'); }
+        if (!abort.signal.aborted) { keepManualError.current = true; nextRequest.current = Date.now() + nextFailureDelay(); setError(e instanceof Error ? e.message : '重新规划失败，原导航已保留'); }
       } finally {
         if (rerouteRequest.current === abort) {
-          rerouteRequest.current = null;
+          rerouteRequest.current = manualRequest.current = null;
           setReplanning(false);
           setLoading(false);
           const live = current.current.session;
@@ -465,15 +491,17 @@ export function useGuidance(
     },
     returnToOriginal: async () => {
       const s = current.current.session, origin = current.current.fix;
-      if (!s || s.arrived || request.current || rerouteRequest.current) return;
-      if (!origin || !freshFix(origin) || current.current.locationError) {
-        setError('请等待有效定位后返回原路线');
+      if (!s || s.arrived || s.departurePending || request.current || rerouteRequest.current) return;
+      keepManualError.current = false;
+      if (!planningFix(origin) || current.current.locationError) {
+        keepManualError.current = true;
+        setError(current.current.locationError || planningFixIssue(origin));
         return;
       }
       clearRerouteWake();
       generation.current++;
       const abort = new AbortController(), token = generation.current;
-      request.current = abort;
+      request.current = manualRequest.current = abort;
       nextRequest.current = Date.now() + 30000;
       setLoading(true); setError('');
       try {
@@ -485,11 +513,15 @@ export function useGuidance(
         if (!saved) throw new Error('当前路线已重规划，原路线进度无法可靠映射，暂不能安全返回。');
         const target = projectOriginalRouteTarget(s, origin.coordinates, saved);
         const result = await calculateRejoin(s.originalRoute, origin, target, abort.signal);
-        const live = current.current.session, latestFix = current.current.fix;
-        if (token !== generation.current || abort.signal.aborted || !live || live.originalRoute !== s.originalRoute) return;
-        if (!latestFix || !freshFix(latestFix) || project(result.path, latestFix.coordinates).offset > deviationLimit(latestFix))
+        const live = current.current.session;
+        if (token !== generation.current || abort.signal.aborted || !live || live.arrived || live.originalRoute !== s.originalRoute || live.route !== s.route) return;
+        if (document.hidden || current.current.locationError)
+          throw new Error(current.current.locationError || '返回应用后请重新计算返回路径。');
+        const latestFix = checkPlanningPosition(origin, current.current.fix);
+        if (project(result.path, latestFix.coordinates).offset > deviationLimit(latestFix))
           throw new Error('位置已变化，请等待稳定定位后重新计算返回路径。');
         returningToOriginal.current = s.originalRoute;
+        const accurate = reliableGpsFix(latestFix);
         setSession({
           ...live,
           route: s.originalRoute,
@@ -499,35 +531,34 @@ export function useGuidance(
           nextCheckpoint: saved.nextCheckpoint,
           replanned: false,
           networkSwitched: false,
-          last: latestFix,
-          anchor: latestFix,
-          quality: '',
+          last: accurate ? latestFix : live.last,
+          anchor: accurate ? latestFix : null,
+          positionAssessment: undefined,
+          quality: accurate ? '' : estimatedPlanningPosition(latestFix),
           qualityFromLocationError: false,
-          offRoute: true,
-          offSince: latestFix.timestamp,
+          offRoute: accurate || live.offRoute,
+          offSince: accurate ? latestFix.timestamp : null,
           arriveSince: null,
           arrived: false,
         });
         setRejoin(result);
       } catch (e) {
-        if (token === generation.current && !abort.signal.aborted)
+        if (token === generation.current && !abort.signal.aborted) {
+          keepManualError.current = true;
           setError(e instanceof Error ? e.message : '返回原路线计算失败，当前导航已保留。');
+        }
       } finally {
         if (token === generation.current && request.current === abort) {
-          request.current = null;
+          request.current = manualRequest.current = null;
           setLoading(false);
         }
       }
     },
-    departureMessage:
-      locationError ||
-      (!fix
-        ? '等待当前位置…'
-        : !freshFix(fix)
-          ? fix.accuracy > 50
-            ? `定位精度约±${Math.round(fix.accuracy)}米，等待准确位置`
-            : '定位已过期，等待更新'
-          : '将尝试已下载的离线路网；无覆盖时显示实际错误'),
+    departureMessage: locationError || (!planningFix(fix)
+      ? planningFixIssue(fix)
+      : reliableGpsFix(fix)
+        ? '将尝试已下载的离线路网；无覆盖时显示实际错误'
+        : estimatedPlanningPosition(fix)),
     active,
     session: active ? session : null,
     rejoin: active ? rejoin : null,
@@ -552,7 +583,9 @@ export function useGuidance(
     replaceRoute,
     stop,
     retry: () => {
-      if (request.current || departureRequest.current) return;
+      if (request.current || departureRequest.current || rerouteRequest.current) return;
+      keepManualError.current = false;
+      setError('');
       nextRequest.current = 0;
       setRejoin(null);
       detourSince.current = null;

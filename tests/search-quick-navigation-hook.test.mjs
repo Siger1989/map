@@ -49,6 +49,7 @@ async function mount(t, { fix = null, active = false, panelOpen = true } = {}) {
     setProps = (change) => updateProps((previousProps) => ({ ...previousProps, ...change }));
     forceRender = () => refresh((value) => value + 1);
     const navigation = {
+      route: state.route ?? null,
       start: state.start,
       end: state.end,
       mode: state.mode,
@@ -59,8 +60,8 @@ async function mount(t, { fix = null, active = false, panelOpen = true } = {}) {
         if (slot === 'end') state.end = destination;
         forceRender();
       },
-      planTo: (destination, fallbackStart, onApplied) => {
-        calls.plan.push({ destination, fallbackStart, mode: state.mode, via: [...state.via], onApplied });
+      planTo: (destination, fallbackStart, onApplied, validateResult) => {
+        calls.plan.push({ destination, fallbackStart, mode: state.mode, via: [...state.via], onApplied, validateResult });
         return Promise.resolve(null);
       },
     };
@@ -79,6 +80,7 @@ async function mount(t, { fix = null, active = false, panelOpen = true } = {}) {
   await React.act(async () => root.render(React.createElement(Probe)));
   current.setProps = async (change) => React.act(async () => setProps(change));
   current.setStart = async (start) => React.act(async () => { state.start = start; forceRender(); });
+  current.setRoute = async (route) => React.act(async () => { state.route = route; forceRender(); });
   current.calls = calls;
   current.state = state;
   t.after(async () => {
@@ -108,12 +110,11 @@ test('fresh GPS starts the search route immediately and planTo preserves current
   assert.equal(current.quick.waitingForPosition, false);
 });
 
-test('network, IP, stale, and inaccurate fixes wait for a later fresh GPS fix', async (t) => {
+test('IP, stale, and overly inaccurate fixes wait for a later device fix', async (t) => {
   const invalidFixes = [
-    gpsFix({ source: 'network' }),
-    gpsFix({ provider: 'ip' }),
-    gpsFix({ timestamp: Date.now() - 30_000 }),
-    gpsFix({ accuracy: 51 }),
+    gpsFix({ source: 'network', provider: 'ip' }),
+    gpsFix({ timestamp: Date.now() - 31_000 }),
+    gpsFix({ accuracy: 1_001 }),
   ];
   const current = await mount(t, { fix: invalidFixes[0] });
   const destination = place('搜索目的地', 104.2);
@@ -185,4 +186,35 @@ test('active navigation declines quick navigation without changing route inputs'
   assert.equal(current.calls.plan.length, 0);
   assert.equal(current.calls.locate, 0);
   assert.equal(current.state.end, null);
+});
+
+
+test('a current indoor estimate plans immediately, but its asynchronous result rejects an IP or distant replacement fix', async (t) => {
+  const origin = gpsFix({ source: 'network', accuracy: 220 });
+  const current = await mount(t, { fix: origin });
+  await React.act(async () => current.quick.begin(place('室内搜索目的地', 104.2)));
+  assert.equal(current.calls.locate, 0);
+  const attempt = current.calls.plan[0];
+  assert.deepEqual(attempt.fallbackStart.coordinates, origin.coordinates);
+  assert.match(current.quick.positionMessage, /网络估算.*220米/);
+  assert.doesNotThrow(attempt.validateResult);
+  await current.setProps({ fix: gpsFix({ source: 'network', provider: 'ip', accuracy: 200 }) });
+  assert.throws(attempt.validateResult, /仅有 IP/);
+  await current.setProps({ fix: gpsFix({ coordinates: [104.01, 30] }) });
+  assert.throws(attempt.validateResult, /位置已变化/);
+});
+
+
+test('successful estimated origin remains labeled until a different route replaces it', async (t) => {
+  const current = await mount(t, { fix: gpsFix({ source: 'network', accuracy: 220 }) });
+  await React.act(async () => current.quick.begin(place('室内目的地', 104.2)));
+  const route = { createdAt: 1 };
+  await current.setRoute(route);
+  await React.act(async () => current.calls.plan[0].onApplied(route));
+  assert.equal(current.quick.waitingForPosition, false);
+  assert.match(current.quick.appliedPositionMessage, /网络估算.*220米/);
+  await current.setProps({ fix: gpsFix({ accuracy: 8 }) });
+  assert.match(current.quick.appliedPositionMessage, /220米/, 'later GPS does not rewrite the actual origin accuracy used by this plan');
+  await current.setRoute({ createdAt: 2 });
+  assert.equal(current.quick.appliedPositionMessage, '', 'an unrelated route never inherits the estimate notice');
 });

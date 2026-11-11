@@ -62,6 +62,7 @@ export function useNavigation() {
     keepPrevious = false,
     rollbackStops?: RouteStop[],
     onApplied?: (route: PlannedRoute) => void,
+    validateResult?: () => void,
   ) => {
     request.current?.abort();
     const abort = new AbortController();
@@ -81,6 +82,7 @@ export function useNavigation() {
         values.slice(1, -1),
       );
       if (abort.signal.aborted || request.current !== abort) return null;
+      validateResult?.();
       const named = { ...result, name: defaultRouteName(values[0], values.at(-1)!) };
       if (keepPrevious && routeRef.current?.style) named.style = routeRef.current.style;
       routeRef.current = named;
@@ -125,15 +127,19 @@ export function useNavigation() {
       destination: RoutePlace,
       fallbackStart?: RoutePlace,
       onApplied?: (route: PlannedRoute) => void,
+      validateResult?: () => void,
     ) => {
       request.current?.abort();
       request.current = null;
       setLoading(false);
       setError('');
-      routeRef.current = null;
-      setRoute(null);
+      if (!validateResult) {
+        routeRef.current = null;
+        setRoute(null);
+      }
       setVisible(true);
       setPicking(null);
+      const previousStops = current.current;
 
       const nextStops = current.current.map((stop, index) => {
         if (index === 0 && !stop.place && !stop.query.trim() && fallbackStart) {
@@ -160,9 +166,10 @@ export function useNavigation() {
       return calculatePlaces(
         nextStops.map((stop) => stop.place!) as RoutePlace[],
         mode,
-        false,
-        undefined,
+        !!validateResult,
+        validateResult ? previousStops : undefined,
         onApplied,
+        validateResult,
       );
     },
     setPicking,

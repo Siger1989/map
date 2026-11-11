@@ -129,8 +129,9 @@ export function GuidanceCard({
         : kind === 'arrival' ? Flag
           : kind === 'straight' ? ArrowUp : Navigation;
   const compactCard = compact && !expanded && !displayPanel;
+  const canPlanFromPosition = g.planningPositionReady ?? !s.quality;
   const showReturnShortcut = compactCard && s.offRoute && !s.arrived &&
-    !s.departurePending && !s.quality && (!!g.rejoin || g.returnToOriginalSupported);
+    !s.departurePending && canPlanFromPosition && (!!g.rejoin || g.returnToOriginalSupported);
   const showFinishShortcut = compactCard && s.arrived;
   const finishButton = <button type="button" onClick={onStop}>结束导航</button>;
   const accessButton = !s.arrived && (s.offRoute || s.departurePending || s.replanned || !!g.rejoin) && (
@@ -138,10 +139,10 @@ export function GuidanceCard({
       type="button"
       title={s.departurePending ? '当前位置 → 原路线起点；不会改写原路线' : g.rejoin ? '查看当前位置接回原路线的路径' : '从当前位置接回原路线并保留原路线进度'}
       onClick={s.departurePending ? g.retry : g.rejoin ? onShow : g.returnToOriginal}
-      disabled={g.loading || g.replanning || (!s.departurePending && (!!s.quality || (!g.rejoin && !g.returnToOriginalSupported)))}
+      disabled={g.loading || g.replanning || (!s.departurePending && !g.rejoin && (!canPlanFromPosition || !g.returnToOriginalSupported))}
     >
       {s.departurePending ? (
-        <><RefreshCw size={14} />{g.loading ? '规划到路线起点中…' : '规划到路线起点'}</>
+        <><RefreshCw size={14} />{g.loading ? '正在规划去起点…' : '先去路线起点'}</>
       ) : g.rejoin ? '查看接回路径' : g.returnToOriginalSupported ? '接回原路线' : '原路线进度无法映射'}
     </button>
   );
@@ -265,12 +266,12 @@ export function GuidanceCard({
         )}
         {g.error && <p className="guidance-error" role="alert">{g.error}</p>}
           <div className="guidance-actions">
-            {!s.arrived && <button type="button" onClick={() => void g.replan()} disabled={g.replanning} title="从当前位置重新规划到原路线终点，不改写原路线">{g.replanning ? '规划到终点中…' : '重新规划到终点'}</button>}
+            {!s.arrived && <button type="button" onClick={() => void g.replan()} disabled={g.replanning} title="从当前位置重新规划，保留未到途经点和原终点，不改写原路线">{g.replanning ? '正在重新规划…' : '从当前位置重算'}</button>}
             {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(true); onDisplay(); }}>路线显示</button>}
             {!showReturnShortcut && accessButton}
             {!showFinishShortcut && finishButton}
           </div>
-        {s.departurePending && <p className="guidance-departure-note">当前位置 → 原路线起点 · 不改写原路线</p>}
+        {s.departurePending && <p className="guidance-departure-note">先去起点：接上所选路线再沿线走；当前位置重算：保留途经点，重新找路到终点。</p>}
         {s.gap && (
           <p className="guidance-note">定位中断或精度不足期间未累加距离。</p>
         )}

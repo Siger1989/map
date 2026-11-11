@@ -5,11 +5,12 @@ import { formatDistance, formatDuration, TRAVEL_MODES, type PlannedRoute } from 
 import { RouteRemovalControl } from './RouteRemovalControl';
 import './routeResultSummary.css';
 
-export function RouteResultSummary({ route, start, end, mode, loading, planningError, onModeChange, onSwap, onShow, onEdit, onSave, onShare, onCache, onStartNavigation, navigating, guidanceError, saveMessage, onEditPoints, onCancel, previewMode, onPreview, onPreviewTopDown, onExitPreview, quickRouteControls }: {
+export function RouteResultSummary({ route, start, end, mode, loading, planningError, planningPositionStatus = '', onModeChange, onSwap, onShow, onEdit, onSave, onShare, onCache, onStartNavigation, navigating, guidanceError, saveMessage, onEditPoints, onCancel, previewMode, onPreview, onPreviewTopDown, onExitPreview, quickRouteControls }: {
   route: PlannedRoute; onShow: () => void; onEdit: () => void;
   start: { name: string } | null; end: { name: string } | null;
   mode: PlannedRoute['mode']; loading: boolean;
   planningError: string;
+  planningPositionStatus?: string;
   onModeChange: (mode: PlannedRoute['mode']) => void; onSwap: () => void;
   onSave: () => void; onShare: () => void; onStartNavigation: () => void;
   navigating: boolean; guidanceError: string; saveMessage: string;
@@ -24,7 +25,7 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
   const [moreOpen, setMoreOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsMounted, setDetailsMounted] = useState(false);
-  return <section className={`route-panel route-summary${previewMode ? ' route-summary-preview' : ''}`} aria-label="路线摘要" aria-busy={loading}>
+  return <section className={`route-panel route-summary${previewMode ? ' route-summary-preview' : ''}`} data-summary-page={moreOpen ? detailsOpen ? 'details' : 'more' : 'main'} aria-label="路线摘要" aria-busy={loading}>
     {previewMode ? <>
       <nav className="route-preview-actions" aria-label="路线前视预览">
         <span role="status">路线预览（{previewMode === 'forward' ? '第一人称' : '俯视'}）· 非定位导航</span>
@@ -37,20 +38,31 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
       </nav>
       {guidanceError && !navigating && <p className="route-error" role="alert">{guidanceError}</p>}
     </> : <>
-    {!moreOpen && <div className="route-summary-metrics">
-      <span>{TRAVEL_MODES.find(item => item.id === mode)?.label}</span>
+    {!moreOpen && <>
+    <nav className="route-summary-modes" aria-label="当前导航方式">
+      {TRAVEL_MODES.map(item => <button key={item.id} type="button" aria-label={item.label} aria-pressed={mode === item.id}
+        disabled={loading || navigating} onClick={() => { if (mode !== item.id) onModeChange(item.id); }}>
+        {item.id === 'motorcycle' ? <>摩托车<small>离线</small></> : item.label}
+      </button>)}
+    </nav>
+    <div className="route-summary-metrics">
       <strong>{formatDistance(route.distance)}</strong><span>{formatDuration(route.duration)}</span>
-    </div>}
+    </div>
+    {planningPositionStatus && <p className="route-summary-position-note" role="status">{planningPositionStatus}</p>}
+    </>}
     <nav className={`route-summary-actions route-summary-actions-primary${moreOpen ? ' route-summary-back-row' : ''}`} aria-label={moreOpen ? '返回路线摘要' : '路线主要操作'}>
       {!moreOpen && <>
       <button className="is-primary" onClick={onStartNavigation} disabled={navigating || loading}>{navigating ? '导航中' : loading ? '规划中…' : '开始导航'}</button>
       <button type="button" onClick={() => { setMoreOpen(false); onShow(); }}>看全程</button>
       <button type="button" onClick={onEdit}>编辑</button>
       </>}
-      <button type="button" aria-expanded={moreOpen} aria-controls="route-summary-more" onClick={() => setMoreOpen(!moreOpen)}>{moreOpen ? '‹ 返回路线摘要' : '更多'}</button>
+      <button type="button" aria-expanded={moreOpen} aria-controls="route-summary-more" onClick={() => {
+        if (moreOpen && detailsOpen) setDetailsOpen(false);
+        else setMoreOpen(!moreOpen);
+      }}>{moreOpen ? detailsOpen ? '‹ 返回更多操作' : '‹ 返回路线摘要' : '更多'}</button>
     </nav>
     <div className="route-summary-more" id="route-summary-more" hidden={!moreOpen}>
-      <nav className="route-summary-actions route-summary-actions-secondary" aria-label="更多路线操作">
+      <nav className="route-summary-actions route-summary-actions-secondary" aria-label="更多路线操作" hidden={detailsOpen}>
         <button type="button" onClick={onSave}>收藏</button>
         <button type="button" onClick={onShare}>分享</button>
         <button type="button" className="route-summary-details-toggle" aria-expanded={detailsOpen} aria-controls="route-summary-detail" onClick={() => {
@@ -61,13 +73,8 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
         {onEditPoints && <button type="button" onClick={onEditPoints}>编辑线点</button>}
         {onCache && <button type="button" onClick={onCache}>缓存地图</button>}
         {onCancel && <RouteRemovalControl onRemove={onCancel} label="清除当前规划" buttonClassName="route-danger" />}
+        {quickRouteControls && <div className="route-summary-quick-controls">{quickRouteControls}</div>}
       </nav>
-      {quickRouteControls && <div className="route-summary-quick-controls">{quickRouteControls}</div>}
-      {moreOpen && <label className="route-mode-select">导航方式
-        <select aria-label="当前导航方式" value={mode} onChange={event => onModeChange(event.target.value as PlannedRoute['mode'])}>
-          {TRAVEL_MODES.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
-        </select>
-      </label>}
       {detailsMounted && <div className="route-summary-detail" id="route-summary-detail" hidden={!detailsOpen}>
         <div className="route-summary-endpoints">
           <button type="button" className="route-endpoint-row route-endpoint-row-start" aria-label={`编辑起点：${start?.name ?? '起点'}`} onClick={onEdit}>

@@ -236,6 +236,7 @@ test('navigation card and route summary expose first-person camera and route pre
   assert.equal(host.querySelector('.guidance-remaining-line'), null);
 
   const previewEvents = [];
+  const modeEvents = [];
   const summaryProps = (previewMode = null) => ({
     route,
     start: { name: '路线起点' },
@@ -243,7 +244,7 @@ test('navigation card and route summary expose first-person camera and route pre
     mode: 'pedestrian',
     loading: false,
     planningError: '',
-    onModeChange() {},
+    onModeChange(mode) { modeEvents.push(mode); },
     onSwap() {},
     onShow() {},
     onEdit() {},
@@ -260,14 +261,28 @@ test('navigation card and route summary expose first-person camera and route pre
   });
 
   await React.act(async () => root.render(React.createElement(RouteResultSummary, summaryProps(null))));
+  await React.act(async () => root.render(React.createElement(RouteResultSummary, { ...summaryProps(null), planningPositionStatus: '网络估算位置，精度约±220米' })));
+  assert.match(host.querySelector('.route-summary-position-note')?.textContent, /220米/, 'the completed summary retains estimated origin precision');
+  await React.act(async () => root.render(React.createElement(RouteResultSummary, summaryProps(null))));
   assert.equal(host.querySelector('.route-summary-endpoints'), null, 'endpoints stay inside collapsed details');
-  assert.equal(host.querySelector('.route-mode-select'), null, 'route mode stays inside collapsed details');
+  assert.equal(host.querySelectorAll('.route-summary-modes button').length, 4, 'all travel modes are directly available on the first page');
+  assert.equal(host.querySelector('.route-summary-modes button[aria-pressed="true"]').textContent, '步行');
+  await React.act(async () => host.querySelector('.route-summary-modes button[aria-label="驾车"]').click());
+  assert.deepEqual(modeEvents, ['auto'], 'first-level mode action calls the existing planning callback');
+  await React.act(async () => host.querySelector('.route-summary-modes button[aria-label="步行"]').click());
+  assert.deepEqual(modeEvents, ['auto'], 'clicking the current mode does not replan');
+  await React.act(async () => root.render(React.createElement(RouteResultSummary, { ...summaryProps(null), loading: true })));
+  assert.ok([...host.querySelectorAll('.route-summary-modes button')].every(button => button.disabled), 'mode switching is locked during replanning');
+  await React.act(async () => root.render(React.createElement(RouteResultSummary, summaryProps(null))));
   assert.deepEqual([...host.querySelectorAll('.route-summary-actions-primary button')].map(button => button.textContent), ['开始导航', '看全程', '编辑', '更多']);
   await React.act(async () => host.querySelector('[aria-controls="route-summary-more"]').click());
   await React.act(async () => host.querySelector('[aria-controls="route-summary-detail"]').click());
   assert.ok(host.querySelector('.route-summary-detail'), 'route details can be opened before preview');
   assert.ok(host.querySelector('.route-summary-endpoints'), 'details reveal editable route endpoints');
-  assert.ok(host.querySelector('.route-mode-select'), 'details reveal route mode');
+  assert.equal(host.querySelector('.route-summary-modes'), null, 'secondary pages do not duplicate travel modes');
+  assert.equal(host.querySelector('.route-summary-actions-secondary').hidden, true, 'details replace the operation grid instead of appending below it');
+  await React.act(async () => host.querySelector('[aria-controls="route-summary-more"]').click());
+  assert.equal(host.querySelector('.route-summary-actions-secondary').hidden, false, 'back restores the complete operation grid');
   await React.act(async () => [...host.querySelectorAll('.route-summary-actions-secondary button')].find((button) => button.textContent === '第一人称预览').click());
   assert.deepEqual(previewEvents, ['preview'], 'starting preview calls onPreview');
 
@@ -296,6 +311,8 @@ test('navigation card and route summary expose first-person camera and route pre
   assert.ok(host.querySelector('.route-summary-endpoints'), 'exiting preview restores route endpoints');
   assert.equal(host.querySelector('.route-summary-metrics'), null, 'exiting preview returns to the management subpage');
   assert.deepEqual([...host.querySelectorAll('.route-summary-actions-primary button')].map(b => b.textContent), ['‹ 返回路线摘要']);
-  assert.ok(host.querySelector('.route-mode-select'), 'exiting preview restores route management controls');
+  assert.equal(host.querySelector('.route-summary-actions-secondary').hidden, false, 'exiting preview restores the management grid');
+  await React.act(async () => host.querySelector('[aria-controls="route-summary-more"]').click());
+  assert.equal(host.querySelectorAll('.route-summary-modes button').length, 4, 'returning to the first page restores direct travel modes');
   assert.ok(host.querySelector('.route-summary-detail'), 'exiting preview restores mounted route details');
 });

@@ -176,3 +176,29 @@ test('a newer planTo aborts the old provider request and only applies the newest
   assert.equal(current.navigation.end, secondDestination);
   assert.equal(current.navigation.route.coordinates.at(-1), secondDestination.coordinates);
 });
+
+
+test('a rejected live-position check rolls back the estimated origin and leaves the previous form intact', async (t) => {
+  let resolve;
+  const current = await mount(t, () => new Promise(done => { resolve = done; }));
+  const previousEnd = place('原终点', 104.02);
+  const destination = place('搜索目标', 104.03);
+  const fallback = place('估算起点', 104);
+  await React.act(async () => current.navigation.place('end', previousEnd));
+  let pending;
+  let applied = false;
+  await React.act(async () => {
+    pending = current.navigation.planTo(destination, fallback, () => { applied = true; }, () => {
+      throw new Error('定位已过期，请等待设备位置更新');
+    });
+  });
+  await React.act(async () => {
+    resolve(routeFor(fallback, destination, 'auto'));
+    assert.equal(await pending, null);
+  });
+  assert.equal(applied, false);
+  assert.equal(current.navigation.start, null);
+  assert.equal(current.navigation.end, previousEnd);
+  assert.equal(current.navigation.route, null);
+  assert.match(current.navigation.error, /定位已过期/);
+});

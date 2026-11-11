@@ -2,7 +2,7 @@ import type { PositionFix } from '../position/types';
 import {
   advance,
   createSession,
-  freshFix,
+  reliableGpsFix,
   type GuidanceSession,
 } from './session.ts';
 import { project } from './geometry.ts';
@@ -18,7 +18,7 @@ export function advanceNetwork(
   const next = advance(session, fix, now, error);
   if (
     !fix ||
-    !freshFix(fix, now) ||
+    !reliableGpsFix(fix, now) ||
     next.quality ||
     next.arrived ||
     session.replanned ||

@@ -86,7 +86,10 @@ import { RouteDisconnectedError, RouteEndpointRequiredError, trackNavigation } f
 import { useGuidanceWorkflow } from '@/modules/workbench/useGuidanceWorkflow';
 import { RouteShare } from '@/modules/routeShare/RouteShare';
 import { RouteQrReader } from '@/modules/routeShare/RouteQrReader';
-import type { DirectionMode } from '@/modules/position/types';
+import type { DirectionMode, PositionFix } from '@/modules/position/types';
+import type { RoutePlace } from '@/modules/navigation/types';
+import { estimatedPlanningPosition, planningFix, planningFixIssue } from '@/modules/position/planningFix';
+import { reliableGpsFix } from '@/modules/guidance/session';
 import {
   sharePlanned,
   shareTrack,
@@ -1441,9 +1444,11 @@ export default function Home() {
       setPanel(null);
     },
   });
+  const [routePositionStatus, setRoutePositionStatus] = useState<{ message: string; place: RoutePlace | null } | null>(null);
   const quickSearchNavigation = useSearchQuickNavigation({
     navigation,
     fix: position.fix,
+    locationError: position.locationError,
     active: guidance.active,
     panelOpen: panel === 'route',
     locate: () => position.locate(),
@@ -3950,15 +3955,28 @@ export default function Home() {
               }
               locating={position.locating}
               waitingForPosition={quickSearchNavigation.waitingForPosition}
-              onCurrentPosition={() =>
-                position.locate((fix) => {
-                  navigation.place('start', {
-                    name: '当前位置',
-                    coordinates: fix.coordinates,
-                  });
+              planningPositionStatus={quickSearchNavigation.appliedPositionMessage || (quickSearchNavigation.waitingForPosition
+                ? quickSearchNavigation.positionMessage
+                : routePositionStatus && navigation.start === routePositionStatus.place
+                  ? routePositionStatus.message
+                  : '')}
+              onCurrentPosition={() => {
+                const selectOrigin = (fix: PositionFix) => {
+                  if (!planningFix(fix)) {
+                    setRoutePositionStatus({ message: planningFixIssue(fix), place: navigation.start });
+                    return;
+                  }
+                  const place = { name: '当前位置', coordinates: fix.coordinates };
+                  setRoutePositionStatus(reliableGpsFix(fix) ? null : { message: estimatedPlanningPosition(fix), place });
+                  navigation.place('start', place);
                   map.current?.focusPoint(fix.coordinates);
-                })
-              }
+                };
+                if (planningFix(position.fix) && !position.locationError) selectOrigin(position.fix);
+                else {
+                  setRoutePositionStatus({ message: position.locationError || planningFixIssue(position.fix), place: navigation.start });
+                  position.locate(selectOrigin);
+                }
+              }}
               onPick={(slot) => {
                 annotations.setPicking(null);
                 navigation.setPicking(slot);

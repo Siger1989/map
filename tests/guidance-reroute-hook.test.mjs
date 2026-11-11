@@ -228,3 +228,114 @@ test('a failed planner request automatically retries after its bounded backoff u
   await app.setFix(fixAt(app.now(), [103.0015, 30.0015]));
   assert.equal(calls.length, 4, 'retries cap at 45 seconds after repeated failures');
 });
+
+
+test('an indoor device fix can connect the start and manually replan without advancing navigation until GPS returns', async (t) => {
+  const calls = [];
+  const replies = [];
+  const app = await mount(t, (start, end, mode, signal, via = []) => {
+    calls.push({ start, end, mode, signal, via });
+    return new Promise(resolve => replies.push(() => {
+      const stops = [start, ...via, end];
+      const coordinates = stops.map(place => place.coordinates);
+      resolve({ ...route(), mode, stops, coordinates, snapped: coordinates });
+    }));
+  });
+  const network = (coordinates, accuracy = 240) => ({ ...fixAt(app.now(), coordinates), source: 'network', accuracy, speed: 15 });
+  const origin = [102.998, 30];
+  await app.setFix(network(origin));
+  await app.start();
+  const original = app.state.session.originalRoute;
+  const snapshot = structuredClone(original);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].start.coordinates, origin);
+  assert.deepEqual(calls[0].end.coordinates, original.stops[0].coordinates);
+  await React.act(async () => replies[0]());
+  assert.equal(app.state.session.departurePending, false);
+  assert.equal(app.state.session.last, null);
+  assert.equal(app.state.session.progress, 0);
+  assert.match(app.state.session.quality, /网络估算.*240米/);
+
+  let replan;
+  await React.act(async () => { replan = app.state.replan(); });
+  assert.equal(calls.length, 2);
+  assert.equal(app.state.replanning, true);
+  calls[1].via.forEach((place, i) => coordinatesNear(place.coordinates, original.stops[i + 1].coordinates));
+  await app.setTime(app.now() + 1_000);
+  await app.setFix(network(origin, 25));
+  assert.equal(calls[1].signal.aborted, false, 'automatic navigation must not cancel a manual request during poor location quality');
+  await React.act(async () => { replies[1](); await replan; });
+  assert.equal(app.state.session.replanned, true);
+  assert.equal(app.state.session.last, null);
+  assert.equal(app.state.session.anchor, null);
+  assert.equal(app.state.session.travelled, 0);
+  assert.equal(app.state.session.positionAssessment, undefined);
+
+  await app.setTime(app.now() + 1_000);
+  await app.setFix(network(original.stops.at(-1).coordinates, 25));
+  assert.equal(app.state.session.arrived, false);
+  assert.equal(app.state.session.offRoute, false);
+  assert.equal(app.state.session.travelled, 0);
+  assert.equal(calls.length, 2, 'coarse fixes never trigger automatic reroute');
+
+  await app.setTime(app.now() + 1_000);
+  await app.setFix(fixAt(app.now(), [102.999, 30]));
+  assert.equal(app.state.session.quality, '');
+  assert.ok(app.state.session.progress > 50);
+  assert.equal(app.state.session.travelled, 0, 'the GPS recovery fix must not bridge distance across coarse readings');
+  assert.deepEqual(original, snapshot);
+});
+
+test('a manual return to the original route accepts a device estimate but an IP replacement cannot overwrite the current route', async (t) => {
+  const calls = [];
+  const replies = [];
+  const app = await mount(t, (start, end, mode, signal, via = []) => {
+    calls.push({ start, end, signal });
+    return new Promise(resolve => replies.push(() => {
+      const stops = [start, ...via, end];
+      const coordinates = stops.map(place => place.coordinates);
+      resolve({ ...route(), mode, stops, coordinates, snapped: coordinates });
+    }));
+  });
+  await app.start();
+  const original = app.state.session.originalRoute;
+  const network = { ...fixAt(app.now() + 1_000, [103, 30.001]), source: 'network', accuracy: 200 };
+  await app.setTime(network.timestamp);
+  await app.setFix(network);
+  let pending;
+  await React.act(async () => { pending = app.state.returnToOriginal(); });
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].start.coordinates, network.coordinates);
+  await app.setTime(app.now() + 1_000);
+  await app.setFix({ ...network, timestamp: app.now(), provider: 'ip' });
+  assert.equal(calls[0].signal.aborted, false);
+  await React.act(async () => { replies[0](); await pending; });
+  assert.match(app.state.error, /仅有 IP/);
+  assert.equal(app.state.session.route, original);
+  assert.equal(app.state.rejoin, null);
+
+  await app.setTime(app.now() + 1_000);
+  await app.setFix({ ...network, timestamp: app.now() });
+  await React.act(async () => { pending = app.state.returnToOriginal(); });
+  await React.act(async () => { replies[1](); await pending; });
+  assert.equal(app.state.session.route, original);
+  assert.deepEqual(app.state.rejoin.origin.coordinates, network.coordinates);
+  assert.match(app.state.session.quality, /网络估算.*200米/);
+  assert.equal(app.state.session.anchor, null);
+  assert.equal(app.state.session.offSince, null);
+  assert.equal(app.state.session.offRoute, false, 'the manually planned path does not confirm a deviation');
+});
+
+
+test('an estimated origin already at the selected start waits for GPS without requesting a zero-length connection', async (t) => {
+  const app = await mount(t, () => { assert.fail('zero-length connection should not call the planner'); });
+  await app.setFix({ ...fixAt(app.now()), source: 'network', accuracy: 300 });
+  await app.start();
+  assert.equal(app.state.session.departurePending, true);
+  assert.match(app.state.departureMessage, /网络估算.*300米/);
+  assert.equal(app.state.error, '');
+  await app.setTime(app.now() + 1_000);
+  await app.setFix(fixAt(app.now()));
+  assert.equal(app.state.session.departurePending, false);
+  assert.equal(app.state.session.progress, 0);
+});

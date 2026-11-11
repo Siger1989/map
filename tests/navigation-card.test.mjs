@@ -225,7 +225,7 @@ test('navigation display settings replace card data and return to expanded navig
   const followAction = host.querySelector('.guidance-follow-status');
   assert.ok(followAction, 'the fixed header remains the single current-location/follow action');
   assert.equal(host.querySelectorAll('.guidance-actions button').length > 0, true);
-  assert.equal([...host.querySelectorAll('.guidance-actions button')].some(button => /恢复跟随|当前位置/.test(button.textContent)), false, 'expanded details do not duplicate the follow action');
+  assert.equal([...host.querySelectorAll('.guidance-actions button')].some(button => /^(恢复跟随|当前位置)$/.test(button.textContent)), false, 'expanded details do not duplicate the follow action');
   await act(async () => followAction.click());
   assert.equal(followCalls, 1, 'the navigation heading invokes the real follow callback');
   const departure = makeGuidance();
@@ -233,11 +233,11 @@ test('navigation display settings replace card data and return to expanded navig
   let retryCalls = 0;
   departure.retry = () => { retryCalls++; };
   await render({ guidance: departure });
-  const originPlan = [...host.querySelectorAll('.guidance-actions button')].find(button => button.textContent.includes('规划到路线起点'));
+  const originPlan = [...host.querySelectorAll('.guidance-actions button')].find(button => button.textContent.includes('先去路线起点'));
   assert.ok(originPlan, 'pending departure exposes a route-to-origin action');
   assert.equal(originPlan.title, '当前位置 → 原路线起点；不会改写原路线');
-  assert.equal(host.querySelector('.guidance-departure-note')?.textContent, '当前位置 → 原路线起点 · 不改写原路线');
-  assert.equal([...host.querySelectorAll('.guidance-actions button')].find(button => button.textContent.includes('重新规划到终点'))?.disabled, false,
+  assert.match(host.querySelector('.guidance-departure-note')?.textContent, /先去起点.*保留途经点/);
+  assert.equal([...host.querySelectorAll('.guidance-actions button')].find(button => button.textContent.includes('从当前位置重算'))?.disabled, false,
     'planning to the destination remains available while access to the original start is pending');
   await act(async () => originPlan.click());
   assert.equal(retryCalls, 1, 'planning to the original start uses the existing retry function');
@@ -245,8 +245,8 @@ test('navigation display settings replace card data and return to expanded navig
   let replanCalls = 0;
   destinationPlan.replan = () => { replanCalls++; };
   await render({ guidance: destinationPlan });
-  const toDestination = [...host.querySelectorAll('.guidance-actions button')].find(button => button.textContent.includes('重新规划到终点'));
-  assert.equal(toDestination.title, '从当前位置重新规划到原路线终点，不改写原路线');
+  const toDestination = [...host.querySelectorAll('.guidance-actions button')].find(button => button.textContent.includes('从当前位置重算'));
+  assert.equal(toDestination.title, '从当前位置重新规划，保留未到途经点和原终点，不改写原路线');
   await act(async () => toDestination.click());
   assert.equal(replanCalls, 1, 'destination replanning keeps the existing replan function');
   await render();

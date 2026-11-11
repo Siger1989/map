@@ -7,6 +7,21 @@
   gap: 3px;
 }
 .observatory #map-control-panel .route-summary .route-summary-actions-secondary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.observatory #map-control-panel .route-summary .route-summary-actions-secondary[hidden] { display:none; }
+.observatory #map-control-panel .route-summary .route-summary-modes {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px;
+}
+.observatory #map-control-panel .route-summary .route-summary-modes button {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  min-width:0; min-height:36px; padding:2px 4px; line-height:15px;
+  font-size:12px; border:0; border-radius:var(--ui-radius-control,4px);
+  color:var(--ui-ink); background:var(--ui-raised);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-summary .route-summary-modes button[aria-pressed='true'] {
+  color:var(--ui-accent); background:var(--ui-selected); font-weight:700;
+}
+.route-summary-modes small { font-size:10px; line-height:11px; }
+.route-summary-position-note { margin:0; font-size:12px; line-height:16px; color:var(--ui-muted); overflow-wrap:anywhere; }
 .observatory #map-control-panel .route-summary .route-summary-actions-secondary .route-removal-trigger {
   border-color: var(--ui-danger, #c2410c) !important;
   color: var(--ui-danger, #c2410c) !important;
@@ -20,6 +35,7 @@
   gap:4px;
   min-width:0;
   margin-left:auto;
+  grid-column:span 2;
 }
 .observatory #map-control-panel .route-summary .route-summary-quick-controls > * { flex:0 1 auto; min-width:0; }
 .observatory #map-control-panel .route-summary .route-summary-quick-controls button:first-of-type { margin-left:0 !important; }
@@ -31,10 +47,11 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-/* Keep only the management list scrollable; the return action stays in reach. */
+/* Fit the finite action grid naturally. Detailed route data replaces the grid,
+   and can use the available height instead of forcing every page into 200px. */
 html[data-ui-theme] .observatory.home-map #map-control-panel:has(.route-summary-back-row) {
-  height: min(200px, calc(100dvh - var(--home-footer) - var(--home-top) - var(--home-header-height) - 16px)) !important;
-  max-height: 200px !important;
+  height:auto !important;
+  max-height:calc(100dvh - var(--home-footer) - var(--home-top) - var(--home-header-height) - 16px) !important;
   box-sizing: border-box;
 }
 html[data-ui-theme] .observatory.home-map #map-control-panel:has(.route-summary-back-row) .dock-content {

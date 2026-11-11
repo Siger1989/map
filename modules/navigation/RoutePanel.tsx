@@ -54,6 +54,7 @@ export function RoutePanel({
   onPreviewTopDown,
   onExitPreview,
   waitingForPosition = false,
+  planningPositionStatus = '',
   quickRouteControls,
 }: {
   navigation: NavigationState;
@@ -79,6 +80,7 @@ export function RoutePanel({
   onPreviewTopDown?: () => void;
   onExitPreview?: () => void;
   waitingForPosition?: boolean;
+  planningPositionStatus?: string;
   quickRouteControls?: ReactNode;
 }) {
   const [editing, setEditing] = useState(() => !n.route);
@@ -235,6 +237,7 @@ export function RoutePanel({
   if (n.route && !editing && n.picking === null) return <RouteResultSummary
     start={n.start} end={n.end} mode={n.mode} loading={n.loading}
     planningError={n.error}
+    planningPositionStatus={planningPositionStatus}
     onModeChange={(mode) => { onExitPreview?.(); n.setMode(mode, onRouteApplied); }} onSwap={() => { onExitPreview?.(); n.swap(onRouteApplied); }}
     route={n.route} onShow={() => onShow(n.route!)} onEdit={() => { onExitPreview?.(); setEditing(true); }}
     onSave={onSave} onShare={onShare} onCache={onCache} onStartNavigation={onStartNavigation}
@@ -259,7 +262,7 @@ export function RoutePanel({
           {n.error}
         </p>
       )}
-      {waitingForPosition && <p className="route-next-step" role="status">正在获取当前位置，定位后自动规划；也可手动选择起点。</p>}
+      {(planningPositionStatus || waitingForPosition) && <p className="route-next-step" role="status">{planningPositionStatus || '正在获取当前位置，定位后自动规划；也可手动选择起点。'}</p>}
       <div className="route-modes" aria-label="出行方式">
         {TRAVEL_MODES.map((m) => (
           <button
