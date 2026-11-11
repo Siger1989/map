@@ -8,6 +8,8 @@ Android `com.shantu.oldengine`，versionCode 208，最低 Android 8。继承原�
 - 粗定位不推进精确进度、里程、偏航/到达判断；可靠GPS恢复后继续。自动偏航求路仍严格使用可靠GPS。原始路线及未到途经点保留。
 - 操作名称改为“先去路线起点”和“从当前位置重算”，后者保留未到途经点和终点。
 
-47项定向测试、最终非增量TypeScript检查通过，详情见[实现与界面记录](navigation-mode-indoor-20261111.md)。本轮重新生成网页资源及APK，完整性核验结果待补。浏览器不能验证Android系统网络定位获取能力；OPPO室内、GPS交接、触控及覆盖安装未验，不能保证所有室内场景均能获取定位。未生成HarmonyOS原生HAP。
+47项定向测试、最终非增量TypeScript检查通过，详情见[实现与界面记录](navigation-mode-indoor-20261111.md)。本轮网页重新构建11.39秒、Android构建4分24秒。原签名、包名/版本、1925份网页资源逐文件一致、39种子与原生/网页天地图一致、8份原生库与200相同、CRC和ZIP/ELF64的16KiB对齐均PASS。浏览器不能验证Android系统网络定位获取能力；OPPO室内、GPS交接、触控及覆盖安装未验，不能保证所有室内场景均能获取定位。未生成HarmonyOS原生HAP。
 
 安装前保存草稿并结束记录，再覆盖安装“山兔·优化”；不要卸载或清除数据。未读取/重置手机自定义“增强”图源，不能宣称已核验其手机存档。未修改原生地图和定位订阅、照片和收藏格式。
+
+本机交付：[201私人APK](D:/天气系统/APK/Shantu-0.2.201-oldengine-private.apk)，165395988字节，SHA256 `b347e9b6fdec4f176f7712b34d990f58d3cf097a12a1a0b2e4f6793c37587c15`。200哈希未变。应用源码 `f9478f11663562004c42d671e5a04ff893aeabd1` 已推送 `codex/old-engine-tilt-dual-20261105` 并核对远端一致，未自动合main。[私人201 Release](https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.201-private) 已发布。上传前后PRIVATE，附件大小与服务端SHA256一致；完整APK重新下载回读SHA256与本机匹配。
