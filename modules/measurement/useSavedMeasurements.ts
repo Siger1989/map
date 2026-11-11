@@ -73,6 +73,13 @@ export function useSavedMeasurements() {
       }
       return false;
     },
+    restoreItem: (item: SavedMeasurement) => {
+      const existing = current.current.find((p) => p.id === item.id);
+      if (existing) return JSON.stringify(existing) === JSON.stringify(item);
+      const restored = commit([...current.current, { ...item, points: item.points.map((p) => ({ ...p, coordinates: [...p.coordinates] })) }]);
+      if (restored) setRemoved(null);
+      return restored;
+    },
     restore: () => {
       if (
         removed &&

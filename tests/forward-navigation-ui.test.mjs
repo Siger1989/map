@@ -160,7 +160,7 @@ test('navigation card and route summary expose first-person camera and route pre
   assert.equal(host.querySelector('[data-position-assessment="parallel"]')?.textContent, '位置在平行道路，尚未确认偏航');
   assert.equal(host.querySelector('[role="note"]'), null, 'the reference explanation is available in expanded details');
   assert.deepEqual([...host.querySelectorAll('.guidance-header-actions button')].map((button) => button.getAttribute('aria-label')),
-    ['切回俯视导航', '展开导航详情']);
+    ['当前前视，点击切换俯视', '展开导航详情']);
   session.positionAssessment = { kind: 'uncertain', message: '正在确认位置' };
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
   assert.equal(host.querySelector('[data-position-assessment="uncertain"]')?.textContent, '正在确认位置', 'the session assessment is used when the prop is absent');
@@ -191,8 +191,8 @@ test('navigation card and route summary expose first-person camera and route pre
   assert.equal(host.querySelector('.guidance-inline-status'), null, 'first-person primary state is not duplicated in the auxiliary status row');
 
   let cameraButton = host.querySelector('.guidance-first-person');
-  assert.equal(cameraButton.textContent, '');
-  assert.equal(cameraButton.getAttribute('aria-label'), '切回俯视导航');
+  assert.equal(cameraButton.textContent, '前视');
+  assert.equal(cameraButton.getAttribute('aria-label'), '当前前视，点击切换俯视');
   await React.act(async () => cameraButton.click());
   assert.equal(firstPersonCalls.length, 2, 'the shared toggle requests returning to top view');
   cameraMode = 'top';
@@ -201,8 +201,8 @@ test('navigation card and route summary expose first-person camera and route pre
   assert.equal(host.querySelector('.guidance-compact-primary'), null, 'top view has no direction panel');
   assert.equal(host.querySelector('.guidance-trip-summary'), null, 'no bottom metrics overlay in either mode');
   cameraButton = host.querySelector('.guidance-first-person');
-  assert.equal(cameraButton.textContent, '');
-  assert.equal(cameraButton.getAttribute('aria-label'), '开启第一人称导航');
+  assert.equal(cameraButton.textContent, '俯视');
+  assert.equal(cameraButton.getAttribute('aria-label'), '当前俯视，点击切换前视');
   await React.act(async () => cameraButton.click());
   assert.equal(firstPersonCalls.length, 3, 'the same first-layer toggle requests forward view');
   cameraMode = 'forward';
@@ -214,7 +214,6 @@ test('navigation card and route summary expose first-person camera and route pre
   assert.match(css, /\.guidance-card\s*\{[\s\S]*?overflow:hidden;/);
   assert.match(css, /\.guidance-card\s*\{[^}]*width:min\(300px/s);
   assert.match(css, /--normal-nav-rail-top:\s*calc\(var\(--home-top\) \+ var\(--home-header-height\) \+ 4px/);
-  assert.match(css, /\.guidance-card header \.guidance-first-person\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*background:transparent/s, 'first-person remains a transparent icon control with a 44px target');
   assert.doesNotMatch(css, /background:\s*#204da8/i, 'first-person mode does not recolour the whole card blue');
   assert.match(css, /\.guidance-compact-context[\s\S]*?\.navigation-telemetry--compact/, 'compact telemetry is styled within the shared card context');
   assert.doesNotMatch(css, /\.global-focus-lock\s*\{/);

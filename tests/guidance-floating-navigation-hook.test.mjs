@@ -69,6 +69,15 @@ test('restore is used without permission prompts, session follows route then pos
   await act(async () => root.render(React.createElement(Probe, { session })));
   assert.equal(calls.updates.at(-1).kind, 'route');
   assert.deepEqual(calls.updates.at(-1).coordinates, coordinates);
+  const countBeforeSegments = calls.updates.length;
+  session.route.segments = [{ kind: 'access', coordinates }];
+  await act(async () => root.render(React.createElement(Probe, { session })));
+  assert.equal(calls.updates.length, countBeforeSegments + 1, 'same coordinates with new access boundaries must update native route');
+  assert.deepEqual(calls.updates.at(-1).segments, session.route.segments);
+  delete session.route.segments;
+  await act(async () => root.render(React.createElement(Probe, { session })));
+  assert.equal(calls.updates.at(-1).segments, undefined, 'removing segments restores legacy solid route');
+
 
   await act(async () => root.render(React.createElement(Probe, { session: null })));
   assert.equal(calls.updates.at(-1).kind, 'position', 'ending navigation changes the live payload to location-only mode');

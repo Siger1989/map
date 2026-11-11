@@ -4,6 +4,7 @@ import { build } from 'esbuild';
 import { parseHTML } from 'linkedom';
 import { pathToFileURL } from 'node:url';
 import { navigationStartPlace } from '../modules/guidance/routeStart.ts';
+import { connectRoadAccess } from '../modules/navigation/roadAccess.ts';
 
 const output = '.openai/guidance-reroute-hook/hook-test.mjs';
 await build({
@@ -326,6 +327,25 @@ test('a manual return to the original route accepts a device estimate but an IP 
   assert.equal(app.state.session.offRoute, false, 'the manually planned path does not confirm a deviation');
 });
 
+
+test('indoor departure accepts explicit road-access segments while preserving original waypoints and waiting for precise progress', async (t) => {
+  const app = await mount(t, async (start, end, mode) => {
+    const roadPoints = [[102.997, 30.002], [103, 30.002]];
+    return connectRoadAccess({ ...route(), mode, coordinates: roadPoints, snapped: roadPoints,
+      legs: [{ coordinates: roadPoints, distance: 300, duration: 60, steps: [] }],
+      distance: 300, duration: 60, stops: [start, end] }, [start, end]);
+  });
+  const indoor = { ...fixAt(app.now(), [102.996, 30.003]), source: 'network', accuracy: 200 };
+  await app.setFix(indoor);
+  await app.start();
+  assert.equal(app.state.error, '');
+  assert.equal(app.state.session.departurePending, false);
+  assert.ok(app.state.session.departureLength > 300);
+  assert.deepEqual(app.state.session.route.segments.slice(0, 3).map(s => s.kind), ['access', 'road', 'access']);
+  assert.deepEqual(app.state.session.originalRoute, route());
+  assert.equal(app.state.session.travelled, 0);
+  assert.match(app.state.session.quality, /网络估算/);
+});
 
 test('an estimated origin already at the selected start waits for GPS without requesting a zero-length connection', async (t) => {
   const app = await mount(t, () => { assert.fail('zero-length connection should not call the planner'); });

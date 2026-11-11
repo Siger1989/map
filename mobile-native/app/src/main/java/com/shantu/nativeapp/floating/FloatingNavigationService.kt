@@ -382,10 +382,31 @@ class FloatingNavigationService : Service(), LocationListener {
                 val longitude = pair.getDouble(0); val latitude = pair.getDouble(1)
                 FloatingNavigationGeometry.validateCoordinate(longitude, latitude)
             }
+            val segments = if (payload.has("segments")) {
+                require(kind == "route") { "仅导航路线支持分段" }
+                val parts = payload.optJSONArray("segments") ?: throw IllegalArgumentException("导航路线分段无效")
+                require(parts.length() in 1..100_000) { "导航路线分段无效" }
+                var pointCount = 0
+                for (i in 0 until parts.length()) {
+                    val part = parts.optJSONObject(i) ?: throw IllegalArgumentException("导航路线分段无效")
+                    require(part.optString("kind") in listOf("road", "access")) { "导航路线分段类型无效" }
+                    val points = part.optJSONArray("coordinates") ?: throw IllegalArgumentException("导航路线分段坐标无效")
+                    require(points.length() in 2..100_000) { "导航路线分段点数无效" }
+                    pointCount += points.length()
+                    require(pointCount <= 200_000) { "导航路线分段点数过多" }
+                    for (j in 0 until points.length()) {
+                        val pair = points.optJSONArray(j) ?: throw IllegalArgumentException("导航路线分段坐标无效")
+                        require(pair.length() == 2 && pair.opt(0) is Number && pair.opt(1) is Number) { "导航路线分段坐标无效" }
+                        FloatingNavigationGeometry.validateCoordinate(pair.getDouble(0), pair.getDouble(1))
+                    }
+                }
+                parts
+            } else null
             val width = optionalDimension(payload, "widthDp", 100.0..320.0)
             val height = optionalDimension(payload, "heightDp", 100.0..400.0)
             val out = JSONObject().put("version", 1).put("kind", kind).put("mode", mode).put("label", label)
                 .put("coordinates", coordinates)
+            if (segments != null) out.put("segments", segments)
             for (key in listOf(PREF_WINDOW_ENABLED, PREF_LOCKSCREEN_ENABLED, PREF_ENERGY_SAVING, PREF_LOCKSCREEN_KEEP_ON)) if (payload.has(key)) {
                 require(payload.opt(key) is Boolean) { "$key 必须是布尔值" }
                 out.put(key, payload.getBoolean(key))
@@ -417,13 +438,23 @@ class FloatingNavigationService : Service(), LocationListener {
                 val pair = coordinates.getJSONArray(i)
                 points += FloatingCoordinate(pair.getDouble(0), pair.getDouble(1))
             }
+            val segments = safe.optJSONArray("segments")?.let { parts ->
+                (0 until parts.length()).map { i ->
+                    val part = parts.getJSONObject(i)
+                    val coords = part.getJSONArray("coordinates")
+                    FloatingRouteSegment(part.getString("kind") == "access", (0 until coords.length()).map { j ->
+                        val pair = coords.getJSONArray(j)
+                        FloatingCoordinate(pair.getDouble(0), pair.getDouble(1))
+                    })
+                }
+            }.orEmpty()
             return ParsedSession(safe.getString("kind"), safe.getString("mode"), safe.getString("label"), points,
                 if (safe.has("zoom")) safe.getInt("zoom") else null,
                 optionalDimension(safe, "widthDp", 100.0..320.0)?.toFloat(), optionalDimension(safe, "heightDp", 100.0..400.0)?.toFloat(),
-                FloatingNavigationGeometry.parseRouteColor(safe.getString("kind"), safe.has("color"), safe.opt("color") as? String))
+                FloatingNavigationGeometry.parseRouteColor(safe.getString("kind"), safe.has("color"), safe.opt("color") as? String), segments)
         }
 
-        private data class ParsedSession(val kind: String, val mode: String, val label: String, val points: List<FloatingCoordinate>, val zoom: Int?, val widthDp: Float?, val heightDp: Float?, val routeColor: Int)
+        private data class ParsedSession(val kind: String, val mode: String, val label: String, val points: List<FloatingCoordinate>, val zoom: Int?, val widthDp: Float?, val heightDp: Float?, val routeColor: Int, val segments: List<FloatingRouteSegment>)
     }
 
     private val alive = AtomicBoolean(false)
@@ -441,6 +472,7 @@ class FloatingNavigationService : Service(), LocationListener {
     private var locationManager: LocationManager? = null
     private var routeFile: File? = null
     private var route = emptyList<FloatingCoordinate>()
+    private var routeSegments = emptyList<FloatingRouteSegment>()
     private var kind = "route"
     private var routeColor = FloatingNavigationGeometry.DEFAULT_ROUTE_COLOR
     private var currentRecordingSnapshot = RecordingSnapshot("idle", emptyList())
@@ -697,7 +729,7 @@ class FloatingNavigationService : Service(), LocationListener {
         lockscreenView = null
         view.onMode = null; view.onReturn = null; view.onClose = null; view.onZoom = null; view.onRecordAction = null
         view.onDrag = null; view.onResize = null; view.onContentSizeChanged = null
-        view.tiles = emptyList(); view.route = emptyList(); view.recordedSegments = emptyList(); view.center = null
+        view.tiles = emptyList(); view.route = emptyList(); view.routeSegments = emptyList(); view.recordedSegments = emptyList(); view.center = null
         view.heading = null; view.mapBearing = null; view.hasRealLocation = false
         reconcileCompassSource()
         publishLockscreenStatus()
@@ -837,6 +869,7 @@ class FloatingNavigationService : Service(), LocationListener {
         persistMode()
         routeColor = parsed.routeColor
         if (route != parsed.points) route = parsed.points
+        if (routeSegments != parsed.segments) routeSegments = parsed.segments
         parsed.zoom?.let { zoom = it }
         parsed.widthDp?.let { windowWidthDp = it }
         parsed.heightDp?.let { windowHeightDp = it }
@@ -1006,7 +1039,7 @@ class FloatingNavigationService : Service(), LocationListener {
         val fix = lastFix
         val state = NativePositionState(fix, System.currentTimeMillis(), heading, if (heading != null) NativeHeadingSource.MOTION else null, headingAt.takeIf { heading != null }, if (heading != null) 20.0 else null, NativeDirectionMode.MOTION)
         val presentation = NativePositionPolicy.present(state)
-        view.route = route; view.kind = kind; view.routeColor = routeColor; view.zoom = zoom; view.label = routeLabel; view.mode = mode
+        view.route = route; view.routeSegments = routeSegments; view.kind = kind; view.routeColor = routeColor; view.zoom = zoom; view.label = routeLabel; view.mode = mode
         view.recordingPhase = currentRecordingSnapshot.phase
         view.recordedSegments = currentRecordingSnapshot.segments
         val reliable = presentation.visible && fix != null && fix.accuracyMeters <= 50.0

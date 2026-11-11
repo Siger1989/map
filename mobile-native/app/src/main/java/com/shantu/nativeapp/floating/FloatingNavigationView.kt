@@ -1,6 +1,7 @@
 package com.shantu.nativeapp.floating
 
 import android.content.Context
+import android.graphics.DashPathEffect
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
@@ -9,6 +10,8 @@ import android.view.MotionEvent
 import android.view.View
 import com.shantu.nativeapp.geology.NativeMvtFeature
 import kotlin.math.*
+
+internal data class FloatingRouteSegment(val access: Boolean, val coordinates: List<FloatingCoordinate>)
 
 internal data class FloatingTileGeometry(val z: Int, val x: Int, val y: Int, val features: List<NativeMvtFeature>)
 internal data class FloatingTileRenderCounters(
@@ -27,6 +30,7 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         if (field != value) { field = value; routePath = null; recordedPath = null; invalidate() }
     }
     var route: List<FloatingCoordinate> = emptyList(); set(value) { if (field !== value) { field = value; routePath = null; invalidate() } }
+    var routeSegments: List<FloatingRouteSegment> = emptyList(); set(value) { if (field !== value) { field = value; routePath = null; invalidate() } }
     var kind: String = "route"
     var routeColor: Int = FloatingNavigationGeometry.DEFAULT_ROUTE_COLOR; set(value) { if (field != value) { field = value; invalidate() } }
     var recordedSegments: List<List<FloatingCoordinate>> = emptyList(); set(value) { if (field !== value) { field = value; recordedPath = null; invalidate() } }
@@ -71,7 +75,8 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     private val arrowPath = Path().apply { moveTo(0f, -1f); lineTo(.58f, .72f); lineTo(0f, .43f); lineTo(-.58f, .72f); close() }
     private val round = density * 8f
     private var downX = 0f; private var downY = 0f; private var initialRawX = 0f; private var initialRawY = 0f; private var dragging = false; private var resizing = false
-    private var routePath: Path? = null
+    private var routePath: List<Pair<Boolean, Path>>? = null
+    private val accessDash by lazy { DashPathEffect(floatArrayOf(px(8f), px(8f)), 0f) }
     private var routePathCenter: FloatingCoordinate? = null
     private var recordedPath: Path? = null
     private var recordedPathCenter: FloatingCoordinate? = null
@@ -483,17 +488,32 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         if (route.size < 2) return
         // Both MVT geometry and route use identical z14 world pixels. The motion camera rotates once outside.
         // Preserve bends with subpixel Douglas-Peucker simplification; the source route is never truncated.
-        val path = cachedRoutePath(c, cx, cy)
-        // Low-alpha solid strokes give a restrained neon halo without blur filters or per-frame allocations.
-        val rgb = routeColor and 0x00ffffff
-        line.color = (0x28 shl 24) or rgb; line.strokeWidth = px(10f); canvas.drawPath(path, line)
-        line.color = (0x54 shl 24) or rgb; line.strokeWidth = px(6.5f); canvas.drawPath(path, line)
-        line.color = (0xff shl 24) or rgb; line.strokeWidth = px(3.1f); canvas.drawPath(path, line)
+        for ((access, path) in cachedRoutePaths(c, cx, cy)) {
+            if (access) {
+                // No solid halo beneath an unverified connector: gaps must remain visible.
+                line.pathEffect = accessDash
+                line.color = 0xffffcb65.toInt(); line.strokeWidth = px(4f); canvas.drawPath(path, line)
+                line.pathEffect = null
+            } else {
+                line.pathEffect = null
+                val rgb = routeColor and 0x00ffffff
+                line.color = (0x28 shl 24) or rgb; line.strokeWidth = px(10f); canvas.drawPath(path, line)
+                line.color = (0x54 shl 24) or rgb; line.strokeWidth = px(6.5f); canvas.drawPath(path, line)
+                line.color = (0xff shl 24) or rgb; line.strokeWidth = px(3.1f); canvas.drawPath(path, line)
+            }
+        }
     }
 
-    private fun cachedRoutePath(c: FloatingCoordinate, cx: Float, cy: Float): Path {
+    private fun cachedRoutePaths(c: FloatingCoordinate, cx: Float, cy: Float): List<Pair<Boolean, Path>> {
         routePath?.let { return it }
-        val points = route.map { FloatingNavigationGeometry.projectTileAligned(c, it, 14, cx, cy, px(256f * FloatingNavigationGeometry.overzoomScale(zoom).toFloat())) }
+        val segments = routeSegments.ifEmpty { listOf(FloatingRouteSegment(false, route)) }
+        val paths = segments.map { it.access to createRoutePath(it.coordinates, c, cx, cy) }
+        routePathCenter = c; routePath = paths
+        return paths
+    }
+
+    private fun createRoutePath(coordinates: List<FloatingCoordinate>, c: FloatingCoordinate, cx: Float, cy: Float): Path {
+        val points = coordinates.map { FloatingNavigationGeometry.projectTileAligned(c, it, 14, cx, cy, px(256f * FloatingNavigationGeometry.overzoomScale(zoom).toFloat())) }
         val keep = BooleanArray(points.size)
         if (points.isNotEmpty()) { keep[0] = true; keep[points.lastIndex] = true }
         val ranges = java.util.ArrayDeque<IntRange>()
@@ -518,7 +538,6 @@ internal class FloatingNavigationView(context: Context) : View(context) {
             val point = points[i]
             if (!started) { path.moveTo(point.x, point.y); started = true } else path.lineTo(point.x, point.y)
         }
-        routePathCenter = c; routePath = path
         return path
     }
 

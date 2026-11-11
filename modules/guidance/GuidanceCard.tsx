@@ -1,4 +1,4 @@
-import { Navigation, RefreshCw, LocateFixed, ChevronDown, ChevronUp, ArrowLeft, ArrowUp, CornerUpLeft, CornerUpRight, Undo2, Flag, PersonStanding } from 'lucide-react';
+import { Navigation, RefreshCw, LocateFixed, ChevronDown, ChevronUp, ArrowLeft, ArrowUp, CornerUpLeft, CornerUpRight, Undo2, Flag, PersonStanding, Map as MapIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { formatDistance, TRAVEL_MODES } from '../navigation/types';
 import type { GuidanceState } from './useGuidance';
@@ -185,17 +185,17 @@ export function GuidanceCard({
             {!displayPanel && !s.arrived && !showReturnShortcut && onFirstPerson && <button
               className="guidance-first-person"
               type="button"
-              aria-label={cameraMode === 'forward' ? `切回俯视导航${cameraWaiting ? ' · 等待定位' : ''}` : '开启第一人称导航'}
-              title={cameraMode === 'forward' ? `切回俯视导航${cameraWaiting ? ' · 等待定位' : ''}` : '开启第一人称导航'}
+              aria-label={cameraMode === 'forward' ? '当前前视，点击切换俯视' : '当前俯视，点击切换前视'}
+              title={`${cameraMode === 'forward' ? '当前前视，点击切换俯视' : '当前俯视，点击切换前视'}${cameraWaiting ? '；定位就绪后跟随' : ''}`}
               aria-pressed={cameraMode === 'forward'}
               data-waiting={cameraWaiting}
               onClick={onFirstPerson}
-            ><PersonStanding size={16} /></button>}
+            >{cameraMode === 'forward' ? <PersonStanding size={16} /> : <MapIcon size={16} />}<span>{cameraMode === 'forward' ? '前视' : '俯视'}</span></button>}
             {displayPanel ? <button aria-label="返回导航详情" title="返回导航详情" onClick={onCloseDisplay}><ArrowLeft size={18} /></button> : compact && <button className="guidance-expand" aria-label={expanded ? '收起导航详情' : '展开导航详情'} title={expanded ? '收起导航详情' : '展开导航详情'} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>}
           </div>
         </div>
         {compact && !expanded && !displayPanel && forwardNavigation && <div className="guidance-compact-primary" data-maneuver={kind}>
-          <span className="guidance-maneuver-icon" aria-hidden="true"><ManeuverIcon size={38} strokeWidth={2.4} /></span>
+          {showCompactInstruction && kind !== 'unknown' && <span className="guidance-maneuver-icon" aria-hidden="true"><ManeuverIcon size={28} strokeWidth={2.4} /></span>}
           <div className="guidance-maneuver-copy">
             {showCompactInstruction ? <>
               <span className="guidance-maneuver-distance">{maneuverDistance}<small> {maneuverUnit}</small></span>

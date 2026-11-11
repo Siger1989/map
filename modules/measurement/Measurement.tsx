@@ -121,6 +121,7 @@ export function Measurement({
                 role="button"
                 tabIndex={0}
                 aria-label={`拖动测量点 ${pointLabel(i)}`}
+                aria-pressed={state.selected === points[i].id}
                 onPointerDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -131,7 +132,7 @@ export function Measurement({
                   }
                   if (e.button !== 0) return;
                   onBegin();
-                  if (!state.adding) state.select(points[i].id);
+                  state.select(points[i].id);
                   e.currentTarget.setPointerCapture(e.pointerId);
                   drag.current = {
                     id: points[i].id,
@@ -174,8 +175,6 @@ export function Measurement({
                       d.coordinate,
                       groundElevation(d.coordinate),
                     );
-                  else if (state.adding)
-                    state.add(points[i].coordinates, groundElevation(points[i].coordinates));
                 }}
                 onPointerCancel={() => {
                   drag.current = null;
@@ -188,8 +187,7 @@ export function Measurement({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    if (state.adding) state.add(points[i].coordinates, groundElevation(points[i].coordinates));
-                    else state.pick(i);
+                    state.select(points[i].id);
                   }
                   const delta: Record<string, [number, number]> = {
                     ArrowLeft: [-8, 0],
@@ -232,7 +230,7 @@ export function Measurement({
                     state.slot === i ||
                     (state.slot === null && state.selected === points[i]?.id)
                   }
-                  onClick={() => state.pick(i)}
+                  onClick={() => points[i] ? state.select(points[i].id) : state.pick(i)}
                 >
                   {pointLabel(i)}
                 </button>
@@ -290,8 +288,7 @@ export function Measurement({
                   <button
                     aria-label="重新测量"
                     onClick={() => {
-                      state.clear();
-                      setShowSaved(false);
+                      if (state.startNew()) setShowSaved(false);
                     }}
                   >
                     <RotateCcw size={14} />
@@ -309,7 +306,7 @@ export function Measurement({
                       </button>
                       <button
                         aria-label={`移除${item.name}`}
-                        onClick={() => state.saved.remove(item.id)}
+                        onClick={() => state.removeSaved(item.id)}
                       >
                         <X size={14} />
                       </button>
@@ -366,6 +363,15 @@ export function Measurement({
             >
               <Plus size={14} />
               添加
+            </button>
+            <button
+              disabled={!points.length && !state.record}
+              aria-label="清空当前测量"
+              title="清空当前测量线及点，可撤销；其他已保存测量保留"
+              onClick={state.clear}
+            >
+              <RotateCcw size={14} />
+              清空
             </button>
             <button
               disabled={

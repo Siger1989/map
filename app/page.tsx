@@ -390,7 +390,7 @@ export default function Home() {
     const session = guidance.session;
     const rejoin = guidance.rejoin;
     if (!session || !rejoin) return session;
-    return { ...session, route: { ...session.route, coordinates: rejoin.route.coordinates,
+    return { ...session, route: { ...session.route, coordinates: rejoin.route.coordinates, segments: rejoin.route.segments,
       stops: [{ name: '返回原路线', coordinates: rejoin.target.point }] } };
   }, [guidance.session, guidance.rejoin]);
   const floatingNavigation = useFloatingNavigation(floatingSession);
@@ -3171,7 +3171,7 @@ export default function Home() {
         {!guidance.active && (position.directionError || (position.direction === 'motion' && motionHeading.status) || (position.showStatus && displayedFix?.provider === 'ip') ||
           (!guidance.active &&
             (position.locationError || position.locating))) &&
-          !panel && !selectedAnnotation && !tracks.drawing && !branchEditing && (
+          !panel && !measurement.active && !selectedAnnotation && !tracks.drawing && !branchEditing && (
             <div className="position-status glass" role="status" data-error={!!position.locationError || !!position.directionError}>
               <span>
                 {position.locationError ||

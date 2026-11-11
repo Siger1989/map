@@ -324,20 +324,20 @@ test('road snapping may not invent a connection over a large gap or stop short o
   // and ends exactly at those requested coordinates.
   assert.throws(
     () => validateRejoinEndpoints({ ...r, snapped: [[0.001, 0], [0.009, 0]] }, fix(0), target),
-    /无法接到/,
+    /接入段不完整/,
   );
   assert.throws(
     () => validateRejoinEndpoints({ ...r, snapped: [[0, 0], [0.01, 0.00025]] }, fix(0), target),
-    /无法接到/,
+    /接入段不完整/,
   );
   assert.throws(
     () => validateRejoinEndpoints(r, fix(0, 0.001), target),
-    /无法接到/,
+    /接入段不完整/,
   );
   assert.throws(
     () =>
       validateRejoinEndpoints(r, fix(0), { ...target, point: [0.01, 0.00025] }),
-    /无法接到/,
+    /接入段不完整/,
   );
   const join = {
     ...r,

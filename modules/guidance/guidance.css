@@ -51,9 +51,8 @@
 .guidance-follow-status svg { flex:0 0 16px; }
 .guidance-follow-label { min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .guidance-mode-tag { flex:0 0 auto; padding-left:5px; border-left:1px solid var(--ui-line,var(--border)); color:var(--ui-muted,var(--muted)); font-size:10px; font-weight:400; }
-.guidance-card header .guidance-first-person { flex:0 0 44px; width:44px; min-width:44px; height:44px; min-height:44px; padding:0; color:var(--ui-ink,var(--text)); background:transparent; }
-.guidance-card header .guidance-first-person[aria-pressed='true'] { color:var(--ui-accent,var(--accent)); }
-.guidance-card header .guidance-first-person[data-waiting='true'] { color:var(--ui-muted,var(--muted)); }
+.observatory.home-map .guidance-card .guidance-heading-row .guidance-first-person { flex-direction:column; gap:1px; padding:2px; font-size:10px; line-height:12px; }
+.observatory.home-map .guidance-card .guidance-heading-row .guidance-first-person[aria-pressed='true'] { color:var(--ui-accent,var(--accent)); }
 .guidance-card header .guidance-expand { flex:0 0 44px; }
 .observatory.home-map .guidance-card .guidance-quick-action button {
   width:auto;

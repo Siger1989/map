@@ -24,7 +24,7 @@ export function useMeasurement() {
   const [error, setError] = useState(''),
     [reading, setReading] = useState<string[]>([]);
   const [undoStack, setUndoStack] = useState<
-    { points: MeasurePoint[]; recordId: string | null }[]
+    { points: MeasurePoint[]; recordId: string | null; removedRecord?: SavedMeasurement }[]
   >([]);
   const currentRecord = useRef<string | null>(null);
   const current = useRef(points),
@@ -144,8 +144,9 @@ export function useMeasurement() {
     next[actual] = p;
     if (!commit(next)) return false;
     setSelected(id);
-    // First placement advances to B; replacing a chosen point keeps it armed.
-    setSlot(!replacing && next.length < 2 ? 1 : actual);
+    // Only the first placement advances automatically. A completed placement
+    // must not leave an existing point armed for accidental replacement.
+    setSlot(!replacing && next.length < 2 ? 1 : null);
     if (p.altitude === null) fillHeight(p);
     return true;
   };
@@ -154,6 +155,19 @@ export function useMeasurement() {
       ? item.id === currentRecord.current
       : item.points.some((p) => points.some((point) => point.id === p.id)),
   );
+  const clear = () => {
+    const previous = { points: current.current, recordId: currentRecord.current, removedRecord: record };
+    if (!commit([], false, null)) return false;
+    if (record && !saved.remove(record.id)) {
+      commit(previous.points, false, previous.recordId);
+      return false;
+    }
+    setUndoStack((s) => [...s.slice(-29), previous]);
+    abortReads();
+    setSelected(null);
+    setSlot(0);
+    return true;
+  };
   return {
     saved,
     record,
@@ -180,6 +194,7 @@ export function useMeasurement() {
       setSelected(next[Math.min(index, next.length - 1)]?.id ?? null);
       setSlot(next.length < 2 ? next.length : null);
     },
+    removeSaved: (id: string) => record?.id === id ? clear() : saved.remove(id),
     load: (item: SavedMeasurement) => {
       if (!commit(copyPoints(item.points), false, item.id)) return false;
       abortReads();
@@ -233,16 +248,22 @@ export function useMeasurement() {
     },
     retryHeights: () =>
       current.current.filter((p) => p.altitude === null).forEach(fillHeight),
-    clear: () => {
-      if (commit([], true, null)) {
-        abortReads();
-        setSelected(null);
-        setSlot(0);
-      }
+    clear,
+    startNew: () => {
+      if (!commit([], true, null)) return false;
+      abortReads();
+      setSelected(null);
+      setSlot(0);
+      return true;
     },
     undo: () => {
       const prior = undoStack.at(-1);
+      const previous = { points: current.current, recordId: currentRecord.current };
       if (prior && commit(prior.points, false, prior.recordId)) {
+        if (prior.removedRecord && !saved.restoreItem(prior.removedRecord)) {
+          commit(previous.points, false, previous.recordId);
+          return;
+        }
         abortReads();
         setUndoStack((s) => s.slice(0, -1));
         setSelected(prior.points.at(-1)?.id ?? null);

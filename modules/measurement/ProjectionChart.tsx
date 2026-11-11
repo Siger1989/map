@@ -44,6 +44,6 @@ export function ProjectionChart({ points, metrics, segment, total, saved, hint, 
       </div>
       {missing && <button className="measurement-chart-retry" disabled={reading} onClick={onRetry}>{reading?'读取海拔中…':'部分海拔缺失，重试'}</button>}
     </> : <div className="measurement-chart-empty">添加两个点后，显示整段水平线与投影</div>}
-    <p className="measurement-chart-note">{total!==null?`总水平 ${lengthLabel(total)} · `:''}{hint ?? (saved?'已保存到地图和收藏夹':'选上方测点后点地图换位')}{points.length>3?' · 左右滑动查看全段':''}</p>
+    <p className="measurement-chart-note">{total!==null?`总水平 ${lengthLabel(total)} · `:''}{hint ?? (saved?'已保存到地图和收藏夹':'拖动点位调整；更多中可重选此点')}{points.length>3?' · 左右滑动查看全段':''}</p>
   </figure>;
 }

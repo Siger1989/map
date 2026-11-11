@@ -1,4 +1,4 @@
-import type { Coordinate } from '../navigation/types';
+import type { Coordinate, PlannedRoute } from '../navigation/types';
 import type { GuidanceSession } from './session';
 
 export type FloatingNavigationMode = 'north' | 'motion' | 'compass';
@@ -28,6 +28,7 @@ export type FloatingNavigationPayload = {
   mode: FloatingNavigationMode;
   label: string;
   coordinates: Coordinate[];
+  segments?: PlannedRoute['segments'];
   kind?: FloatingNavigationKind;
   color?: string;
   windowEnabled?: boolean;
@@ -74,7 +75,7 @@ export function buildFloatingNavigationPayload(
   validateFloatingNavigationInput(mode, label, coordinates);
   const color = session.route.style?.color;
   if (color !== undefined && !/^#[0-9a-f]{6}$/i.test(color)) throw new Error('路线颜色必须为六位十六进制');
-  return { version: 1, kind, mode, label, coordinates, ...(color ? { color: color.toUpperCase() } : {}), ...displayOptions };
+  return { version: 1, kind, mode, label, coordinates, ...(session.route.segments?.some(segment => segment.kind === 'access') ? { segments: session.route.segments } : {}), ...(color ? { color: color.toUpperCase() } : {}), ...displayOptions };
 }
 
 export function serializeFloatingNavigationOptions(options: FloatingNavigationOptions) {
@@ -114,13 +115,24 @@ export function validateFloatingNavigationInput(
 
 export function serializeFloatingNavigationPayload(payload: FloatingNavigationPayload) {
   validateFloatingNavigationInput(payload.mode, payload.label, payload.coordinates, payload.kind);
+  if (payload.segments !== undefined) {
+    if (payload.kind === 'position' || !Array.isArray(payload.segments) || !payload.segments.length || payload.segments.length > FLOATING_NAVIGATION_MAX_POINTS)
+      throw new Error('导航路线分段无效');
+    let pointCount = 0;
+    for (const segment of payload.segments) {
+      if (!segment || !['road', 'access'].includes(segment.kind) || !Array.isArray(segment.coordinates)) throw new Error('导航路线分段无效');
+      validateFloatingNavigationInput(payload.mode, payload.label, segment.coordinates);
+      pointCount += segment.coordinates.length;
+      if (pointCount > FLOATING_NAVIGATION_MAX_POINTS * 2) throw new Error('导航路线分段点数过多');
+    }
+  }
   if (payload.color !== undefined && (payload.kind === 'position' || !/^#[0-9a-f]{6}$/i.test(payload.color)))
     throw new Error('仅导航路线支持六位十六进制颜色');
   if (payload.windowEnabled !== undefined && typeof payload.windowEnabled !== 'boolean') throw new Error('windowEnabled必须为布尔值');
   if (payload.lockscreenEnabled !== undefined && typeof payload.lockscreenEnabled !== 'boolean') throw new Error('lockscreenEnabled必须为布尔值');
   if (payload.energySaving !== undefined && typeof payload.energySaving !== 'boolean') throw new Error('energySaving必须为布尔值');
   if (payload.lockscreenKeepOn !== undefined && typeof payload.lockscreenKeepOn !== 'boolean') throw new Error('lockscreenKeepOn必须为布尔值');
-  const allowed = new Set(['version', 'mode', 'label', 'coordinates', 'kind', 'color', 'windowEnabled', 'lockscreenEnabled', 'energySaving', 'lockscreenKeepOn']);
+  const allowed = new Set(['version', 'mode', 'label', 'coordinates', 'segments', 'kind', 'color', 'windowEnabled', 'lockscreenEnabled', 'energySaving', 'lockscreenKeepOn']);
   if (Object.keys(payload).some((key) => !allowed.has(key))) throw new Error('悬浮地图数据字段无效');
   const serialized = JSON.stringify(payload);
   validateFloatingNavigationPayloadBytes(serialized);

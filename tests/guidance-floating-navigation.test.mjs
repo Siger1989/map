@@ -97,3 +97,25 @@ test('floating map controls no longer expose the retired outdoor-contour mode', 
   assert.match(controls, /运动朝上/);
   assert.match(controls, /手机罗盘/);
 });
+
+
+test('floating payload retains access boundaries and accepts legacy routes without segments', () => {
+  const segments = [{ kind: 'access', coordinates }, { kind: 'road', coordinates: [coordinates[1], [103.3, 30.4]] }];
+  const route = { ...session.route, coordinates: [...coordinates, [103.3, 30.4]], segments };
+  const payload = buildFloatingNavigationPayload({ route }, 'north');
+  assert.deepEqual(JSON.parse(serializeFloatingNavigationPayload(payload)).segments, segments);
+  assert.equal(JSON.parse(serializeFloatingNavigationPayload(buildFloatingNavigationPayload(session, 'north'))).segments, undefined);
+  assert.throws(() => serializeFloatingNavigationPayload({ ...payload, kind: 'position', coordinates: [] }), /分段/);
+  for (const bad of [[], [{ kind: 'unknown', coordinates }], [{ kind: 'access', coordinates: [[300, 30], coordinates[1]] }], [{ kind: 'road', coordinates: [coordinates[0]] }]]) {
+    assert.throws(() => serializeFloatingNavigationPayload({ ...payload, segments: bad }));
+  }
+});
+
+
+test('ordinary long road routes do not duplicate geometry in the floating bridge payload', () => {
+  const points = Array.from({ length: 100_000 }, (_, i) => [103 + i / 1_000_000, 30]);
+  const route = { ...session.route, coordinates: points, segments: [{ kind: 'road', coordinates: points }] };
+  const payload = buildFloatingNavigationPayload({ route }, 'north');
+  assert.equal(payload.segments, undefined);
+  assert.equal(JSON.parse(serializeFloatingNavigationPayload(payload)).coordinates.length, 100_000);
+});

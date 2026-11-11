@@ -31,9 +31,9 @@ test('projection labels every segment rise, including descent and zero, without 
   assert.match(missing.querySelector('figure').textContent,/部分海拔缺失/);
 });
 
-test('toolbar point picks replace that point repeatedly, existing marker snaps it, undo preserves identities',async(t)=>{
+test('measurement selection is separate from replacement; clear removes only the current saved line and undo restores it',async(t)=>{
   const {window}=parseHTML('<html><body><div id="root"></div></body></html>');
-  Object.assign(globalThis,{window,document:window.document,IS_REACT_ACT_ENVIRONMENT:true});
+  Object.assign(globalThis,{window,document:window.document,Event:window.Event,IS_REACT_ACT_ENVIRONMENT:true});
   window.HTMLElement.prototype.scrollIntoView=()=>{};
   const disk=new Map([['shantu.measurement.path.v1',JSON.stringify({version:1,points:[point(0),point(1),point(2)]})]]);
   globalThis.localStorage={getItem:k=>disk.get(k)??null,setItem:(k,v)=>disk.set(k,v)};
@@ -46,19 +46,46 @@ test('toolbar point picks replace that point repeatedly, existing marker snaps i
   const root=createRoot(document.getElementById('root'));t.after(async()=>{await act(async()=>root.unmount());});
   await act(async()=>root.render(React.createElement(Probe)));
   await act(async()=>document.querySelector('[aria-label="选择测量点 A"]').click());
-  assert.equal(state.slot,0);
-  await act(async()=>state.add([104,31],210));await act(async()=>state.add([104.1,31.1],220));
-  assert.equal(state.slot,0);assert.deepEqual(state.points[0].coordinates,[104.1,31.1]);assert.deepEqual(state.points[1],point(1));assert.equal(state.points.length,3);
+  assert.equal(state.slot,null);assert.equal(state.selected,'p0');
+  await act(async()=>state.add([104,31],210));
+  assert.deepEqual(state.points[0],point(0),'selecting a point must not arm an accidental replacement');
+  await act(async()=>state.pick(0));
+  await act(async()=>state.add([104.1,31.1],220));
+  assert.equal(state.slot,null);assert.deepEqual(state.points[0].coordinates,[104.1,31.1]);
   const b=document.querySelector('[aria-label="拖动测量点 B"]');
   b.setPointerCapture=()=>{};
   for(const type of ['pointerdown','pointerup']){
     const event=new window.Event(type,{bubbles:true,cancelable:true});Object.assign(event,{pointerId:1,button:0,clientX:100,clientY:300});
     await act(async()=>b.dispatchEvent(event));
   }
-  assert.deepEqual(state.points[0].coordinates,point(1).coordinates);assert.equal(state.points[0].id,'p0');
-  await act(async()=>state.undo());assert.deepEqual(state.points[0].coordinates,[104.1,31.1]);
-  await act(async()=>document.querySelector('[aria-label="选择测量点 C"]').click());
-  await act(async()=>state.add([105,32],300));assert.equal(state.points[2].id,'p2');assert.equal(state.slot,2);
-  assert.equal(document.querySelectorAll('[data-profile-point]').length,3);assert.equal(document.querySelectorAll('[data-segment]').length,2);
-  assert.match(document.querySelector('figcaption').textContent,/A → C/);
+  assert.equal(state.selected,'p1');assert.deepEqual(state.points[0].coordinates,[104.1,31.1]);
+  assert.equal(document.querySelector('[aria-label="拖动测量点 B"]').getAttribute('aria-pressed'),'true');
+  await act(async()=>state.removeSelected());assert.deepEqual(state.points.map(p=>p.id),['p0','p2']);
+  await act(async()=>state.undo());assert.equal(state.points.length,3);
+  const snapshot=structuredClone(state.points);
+  await act(async()=>state.saved.save([point(10),point(11)],'unrelated'));
+  await act(async()=>state.saveToMap());
+  const record=structuredClone(state.record);
+  assert.ok(record);assert.equal(state.saved.items.length,2);
+  await act(async()=>document.querySelector('[aria-label="清空当前测量"]').click());
+  assert.deepEqual(state.points,[]);assert.equal(state.record,undefined);assert.equal(state.selected,null);
+  assert.deepEqual(state.saved.items.map(item=>item.id),['unrelated'],'clearing a saved measurement must remove its map record without touching other records');
+  assert.equal(document.querySelectorAll('[aria-label^="拖动测量点"]').length,0);
+  assert.equal(document.querySelectorAll('[data-profile-point]').length,0);
+  assert.deepEqual(JSON.parse(disk.get('shantu.measurement.path.v1')).points,[]);
+  assert.deepEqual(JSON.parse(disk.get('shantu.measurement.saved.v1')).items.map(item=>item.id),['unrelated']);
+  await act(async()=>document.querySelector('[aria-label="撤销测量操作"]').click());
+  assert.deepEqual(state.points,snapshot);assert.deepEqual(state.record,record);assert.equal(state.saved.items.length,2);
+  assert.equal(document.querySelectorAll('[data-profile-point]').length,3);
+  await act(async()=>state.startNew());
+  assert.deepEqual(state.points,[]);assert.equal(state.saved.items.length,2,'starting another measurement preserves saved lines');
+  await act(async()=>state.undo());assert.deepEqual(state.record,record);
+  await act(async()=>state.removeSaved(record.id));
+  assert.deepEqual(state.points,[]);assert.equal(state.saved.items.length,1,'removing the currently edited saved line also clears its active draft');
+  await act(async()=>state.undo());assert.deepEqual(state.record,record);
+  const originalSet=localStorage.setItem;
+  localStorage.setItem=(key,value)=>{if(key==='shantu.measurement.saved.v1')throw new Error('quota');originalSet(key,value);};
+  await act(async()=>state.clear());
+  assert.deepEqual(state.points,snapshot);assert.deepEqual(state.record,record);assert.equal(state.saved.items.length,2,'failed saved-store removal retains the line and draft');
+  localStorage.setItem=originalSet;
 });

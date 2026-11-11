@@ -156,13 +156,27 @@ test('navigation display settings replace card data and return to expanded navig
   waiting.session.quality = '等待当前位置…';
   waiting.session.departurePending = true;
   waiting.departureMessage = '定位精度约±50000米，等待准确位置';
+  let cameraCalls = 0;
   for (const cameraMode of ['top', 'forward']) {
-    await render({ guidance: waiting, cameraWaiting: true, cameraMode, motionNotice: '等待新定位，运动方向保持不变' });
+    await render({ guidance: waiting, cameraWaiting: true, cameraMode, onFirstPerson: () => { cameraCalls++; }, motionNotice: '等待新定位，运动方向保持不变' });
     const visibleState = host.querySelector(cameraMode === 'top' ? '.guidance-compact-context [role="status"]' : '.guidance-compact-primary [role="status"]');
     assert.equal(visibleState?.textContent, waiting.departureMessage, 'collapsed navigation retains the specific departure failure in both views');
     assert.equal(host.querySelector('[data-testid="compact-telemetry"]'), null, 'waiting replaces empty speed placeholders');
     assert.equal(host.querySelector('.guidance-expand')?.getAttribute('aria-expanded'), 'false', 'the reason is visible without opening details');
+    assert.equal(host.querySelector('.guidance-maneuver-icon'), null, 'waiting must not invent a direction arrow');
+    const camera = host.querySelector('.guidance-first-person');
+    assert.equal(camera.textContent, cameraMode === 'forward' ? '前视' : '俯视');
+    assert.match(camera.title, /定位就绪后跟随/);
+    await act(async () => camera.click());
   }
+  assert.equal(cameraCalls, 2, 'both labeled views still use the real camera callback');
+  const turning = makeGuidance();
+  turning.instruction = { text: '前方右转', distance: 80 };
+  await render({ guidance: turning, cameraMode: 'forward' });
+  assert.ok(host.querySelector('.guidance-maneuver-icon .lucide-corner-up-right'), 'a known turn retains its maneuver arrow');
+  turning.instruction = { text: '前往道路接入点', distance: 80 };
+  await render({ guidance: turning, cameraMode: 'forward' });
+  assert.equal(host.querySelector('.guidance-maneuver-icon'), null, 'unknown instructions do not get a default heading arrow');
   waiting.session.departurePending = false;
   await render({ guidance: waiting, cameraWaiting: true, motionNotice: '等待新定位，运动方向保持不变' });
   assert.equal(host.querySelector('.guidance-compact-context [role="status"]')?.textContent, '等待当前位置…', 'camera waiting must not suppress the generic location reason either');

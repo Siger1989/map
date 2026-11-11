@@ -38,6 +38,11 @@
 .measurement-overlay .measurement-hit {
   fill: transparent;
 }
+.measurement-overlay g[aria-pressed='true'] circle:not(.measurement-hit) {
+  fill: var(--ui-accent, #d0f76b);
+  stroke: var(--ui-ink, #f2f5ed);
+  stroke-width: 3;
+}
 .measurement-overlay .measurement-horizontal,
 .saved-measurements .measurement-horizontal {
   stroke: #b6e9ff;
@@ -209,7 +214,7 @@
 }
 .measurement-actions {
   display: grid;
-  grid-template-columns: repeat(4, minmax(44px, 1fr));
+  grid-template-columns: repeat(5, minmax(44px, 1fr));
   gap: 0;
   padding: 0 2px;
   border-top: 1px solid #b4c9c744;

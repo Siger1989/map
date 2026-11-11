@@ -83,7 +83,7 @@ test('batch removal is one undo, lone survivors reload, all-point removal saves 
   assert.equal(storeRouteEdit(empty, storage, 'unused', 3).removed, true); assert.deepEqual(parseSavedTracks(disk), []);
 });
 test('measurement gizmo exposes XYZ translations without scaling or rotation; box selection picks only vertices', async () => {
-  const built = await build({ stdin: { contents: `export {gizmoHandles} from './modules/objectTransform/gizmoHandles.ts'; export {objectProjector} from './modules/objectTransform/projection.ts'; export {nodesInBox} from './modules/tracks/TrackNodeBoxSelect.tsx'; export {markerPhotoArchiveEntries} from './modules/photos/markerArchive.ts';`, resolveDir: process.cwd(), loader: 'ts' }, bundle: true, write: false, format: 'esm', platform: 'node', loader: { '.css': 'empty' } });
+  const built = await build({ stdin: { contents: `export {gizmoHandles} from './modules/objectTransform/gizmoHandles.ts'; export {objectProjector} from './modules/objectTransform/projection.ts'; export {nodesInBox} from './modules/tracks/trackNodeBoxSelection.ts'; export {markerPhotoArchiveEntries} from './modules/photos/markerArchive.ts';`, resolveDir: process.cwd(), loader: 'ts' }, bundle: true, write: false, format: 'esm', platform: 'node', loader: { '.css': 'empty' } });
   const mod = await import(`data:text/javascript;base64,${Buffer.from(built.outputFiles[0].text).toString('base64')}`);
   const { Vector3 } = await import('three');
   const p = { center: { x: 100, y: 100 }, radius: 30, axes: [new Vector3(1,0,0), new Vector3(0,1,0), new Vector3(0,0,1)], project: v => ({ x: 100+v.x+v.z, y: 100+v.y+v.z }) };

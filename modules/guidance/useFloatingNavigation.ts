@@ -35,6 +35,7 @@ export function useFloatingNavigation(
   currentSession.current = session;
   const lastSent = useRef<{
     coordinates: GuidanceSession['route']['coordinates'] | null;
+    segments: GuidanceSession['route']['segments'];
     label: string;
     color: string;
     mode: FloatingNavigationMode;
@@ -86,6 +87,7 @@ export function useFloatingNavigation(
       requestedRoute.current = kind === 'route';
       lastSent.current = {
         coordinates: liveSession ? liveSession.route.coordinates : null,
+        segments: liveSession?.route.segments,
         label: payload.label,
         color: payload.color ?? '',
         mode: nextMode,
@@ -204,11 +206,12 @@ export function useFloatingNavigation(
     const label = session ? session.route.stops?.at(-1)?.name?.trim() || '导航路线' : '定位小地图';
     const color = session ? session.route.style?.color?.toUpperCase() ?? '' : '';
     const coordinates = session ? session.route.coordinates : null;
+    const segments = session?.route.segments;
     const previous = lastSent.current;
-    if (previous?.coordinates === coordinates && previous.label === label && previous.color === color &&
+    if (previous?.coordinates === coordinates && previous.segments === segments && previous.label === label && previous.color === color &&
         previous.mode === status.mode && previous.kind === kind) return;
     send('update', status.mode);
-  }, [foregroundEpoch, options.manageSession, send, session, session?.route.coordinates, session?.route.stops, session?.route.style?.color, status]);
+  }, [foregroundEpoch, options.manageSession, send, session, session?.route.coordinates, session?.route.segments, session?.route.stops, session?.route.style?.color, status]);
 
   // A permission sheet can outlive navigation. Cancel only an unstarted route request; a running
   // native service remains active and is switched to position mode by the live-session effect.
