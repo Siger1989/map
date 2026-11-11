@@ -108,9 +108,7 @@ export function MeasurementShare({
     >
       <header>
         <strong>测量剖面图</strong>
-        <button autoFocus onClick={onClose} aria-label="关闭测量分享">
-          <X size={18} />
-        </button>
+        <button className="ui-panel-close" autoFocus onClick={onClose} aria-label="关闭测量分享"><X size={18} /></button>
       </header>
       <div className="measurement-share-image">
         {url && (

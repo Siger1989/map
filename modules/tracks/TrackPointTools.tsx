@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import type { TrackLinePoint } from './linePoint';
 import { formatDistance } from '../navigation/types';
 export function TrackPointTools({
@@ -21,9 +22,7 @@ export function TrackPointTools({
     <div className="track-point-tools glass" aria-label="轨迹线段选点">
       <div>
         <strong>沿线 {formatDistance(point.distance)}</strong>
-        <button onClick={onClose} aria-label="取消沿线选点">
-          ×
-        </button>
+        <button className="ui-panel-close" onClick={onClose} aria-label="取消沿线选点"><X size={18} /></button>
       </div>
       <small>临时选点 · 不改变轨迹</small>
       <div>

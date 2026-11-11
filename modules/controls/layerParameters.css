@@ -1,0 +1,71 @@
+/* Keep each display setting beside the layer it changes, on both maps. */
+.observatory
+  .map-layer-control
+  .layer-window
+  .layer-panel
+  .layer-parameters-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  flex: 0 0 40px;
+  width: 40px;
+  min-width: 40px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: var(--ui-radius-control, 4px);
+  background: transparent;
+  color: var(--ui-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.observatory
+  .map-layer-control
+  .layer-window
+  .layer-panel
+  .layer-parameters-toggle[aria-expanded='true'] {
+  color: var(--ui-accent);
+  background: var(--ui-field);
+}
+.observatory
+  .map-layer-control
+  .layer-window
+  .layer-panel
+  .layer-parameters-toggle[aria-expanded='true']
+  svg {
+  transform: rotate(90deg);
+}
+.observatory
+  .map-layer-control
+  .layer-window
+  .layer-panel
+  .layer-parameters[hidden] {
+  display: none;
+}
+.observatory
+  .map-layer-control
+  .layer-window
+  .layer-panel
+  .layer-parameters:not([hidden]) {
+  padding: 0 6px 4px;
+  border-bottom: 1px solid var(--ui-line);
+}
+.observatory
+  .map-layer-control
+  .layer-window
+  .layer-panel
+  .layer-parameters
+  .panel-sliders {
+  margin: 0;
+  border-top: 0;
+}
+.observatory
+  .map-layer-control
+  .layer-window
+  .layer-panel
+  .layer-settings-actions {
+  grid-template-columns: minmax(0, 1fr);
+}

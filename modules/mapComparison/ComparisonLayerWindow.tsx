@@ -85,13 +85,11 @@ export function ComparisonLayerWindow({
           </div>
           <button
             ref={closeButton}
-            className="icon-button"
+            className="icon-button ui-panel-close"
             type="button"
             aria-label="关闭对比图层"
             onClick={onClose}
-          >
-            <X size={18} />
-          </button>
+          ><X size={18} /></button>
         </div>
         <div className="dock-content" key={pane}>
           <LayerPanel

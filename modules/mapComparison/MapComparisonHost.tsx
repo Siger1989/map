@@ -317,7 +317,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
           <FullscreenButton compact />
           <button ref={layerToggle} className="map-comparison-heading-icon" aria-label="对比图层" title="图层" aria-expanded={layerPane !== null} aria-controls={layerPane !== null ? 'comparison-layer-window' : undefined} onClick={() => { setLayerPane(layerPane === null ? 0 : null); setProperties(null); }}><Layers size={18}/></button>
           <button className="map-comparison-heading-icon" aria-label="画线属性" title="画线属性" aria-expanded={properties === 'line'} onClick={() => { setLayerPane(null); setProperties(properties === 'line' ? null : 'line'); }}><SlidersHorizontal size={18}/></button>
-          <button className="map-comparison-heading-icon" ref={close} onClick={() => finish(onClose)} aria-label="退出双图源对比" title="退出对比"><X size={20}/></button>
+          <button className="map-comparison-heading-icon ui-panel-close" ref={close} onClick={() => finish(onClose)} aria-label="退出双图源对比" title="退出对比"><X size={18} /></button>
         </header>
         <div className="map-comparison-panes">
           {([0, 1] as const).map(index => <section key={index} className="map-comparison-pane" aria-label={`${side(index)}方地图`}>
@@ -338,7 +338,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
           </section>)}
         </div>
         {plannedRoute && !operations?.editingTrack && mode === 'browse' && layerPane === null && properties === null && <section className="map-comparison-planned-route" aria-label="已选规划路线">
-          <header><strong>路线规划</strong><RouteNameInput name={plannedRoute.name} onSave={plannedRoute.onRename}/><button type="button" className="comparison-route-hide" aria-label={plannedRoute.visible ? '隐藏规划路线' : '显示规划路线'} onClick={plannedRoute.onToggleVisible}>{plannedRoute.visible ? '隐藏' : '显示'}</button><button type="button" aria-label="关闭规划路线操作" onClick={plannedRoute.onClose}><X size={18}/></button></header>
+          <header><strong>路线规划</strong><RouteNameInput name={plannedRoute.name} onSave={plannedRoute.onRename}/><button type="button" className="comparison-route-hide" aria-label={plannedRoute.visible ? '隐藏规划路线' : '显示规划路线'} onClick={plannedRoute.onToggleVisible}>{plannedRoute.visible ? '隐藏' : '显示'}</button><button className="ui-panel-close" type="button" aria-label="关闭规划路线操作" onClick={plannedRoute.onClose}><X size={18} /></button></header>
           <p><strong>{formatDistance(plannedRoute.distance)}</strong><span>{formatDuration(plannedRoute.duration)}</span></p>
           <nav aria-label="双图规划路线操作">
             <button type="button" onClick={plannedRoute.onRecenter}>回中</button>

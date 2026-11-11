@@ -464,7 +464,7 @@ export function RoutePanel({
                         <button type="button" className="place-search-expand-toggle" aria-label={listExpanded ? '\u6536\u8d77\u5217\u8868' : '\u5c55\u5f00\u5217\u8868'} aria-expanded={listExpanded} onClick={() => setListExpanded((value) => !value)}>
                           {listExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}<span>{listExpanded ? '\u6536\u8d77' : '\u5c55\u5f00'}</span>
                         </button>
-                        <button type="button" aria-label={'\u5173\u95ed\u641c\u7d22'} onClick={() => { setActive(null); setListExpanded(false); setFiltersOpen(false); }}><X size={14} /></button>
+                        <button className="ui-panel-close" type="button" aria-label={'\u5173\u95ed\u641c\u7d22'} onClick={() => { setActive(null); setListExpanded(false); setFiltersOpen(false); }}><X size={18} /></button>
                       </div>
                     </div>
                     {filtersOpen && <SearchOptions

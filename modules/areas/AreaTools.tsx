@@ -89,9 +89,7 @@ export function AreaTools({
         <button className="area-delete" aria-label={removing ? '取消删除区域' : '删除区域'} title="删除区域" onClick={() => setRemoving(value => !value)}>
           <Trash2 size={14}/>
         </button>
-        <button className="area-close" aria-label="关闭区域编辑" title="关闭区域编辑" onClick={onHide}>
-          <X size={16}/>
-        </button>
+        <button className="area-close ui-panel-close" aria-label="关闭区域编辑" title="关闭区域编辑" onClick={onHide}><X size={18} /></button>
       </header>
       {removing && <div className="area-delete-confirm" role="alertdialog" aria-label="确认删除区域">
         <span>确认删除“{item.name || '区域'}”？</span>

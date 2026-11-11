@@ -22,9 +22,7 @@ export function SectionList({
           <Plus size={16} />
           新建
         </button>
-        <button onClick={onClose} aria-label="关闭剖面列表">
-          <X size={18} />
-        </button>
+        <button className="ui-panel-close" onClick={onClose} aria-label="关闭剖面列表"><X size={18} /></button>
       </header>
       <div className="section-list-body">
         {!state.items.length && (

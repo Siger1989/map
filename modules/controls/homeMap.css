@@ -190,7 +190,7 @@
 .observatory.home-map .route-weather-rail { top: calc(var(--home-top) + var(--home-header-height) + 48px) !important; }
 .observatory.home-map .rail-detail-compact { padding: 3px 5px !important; gap: 2px; border-radius: 4px; }
 .observatory.home-map .rail-detail-compact header { min-height: 28px !important; }
-.observatory.home-map .rail-detail-compact .rail-close {
+.observatory.home-map .rail-detail-compact .rail-close:not(.ui-panel-close) {
   width: 28px !important; height: 28px !important; min-height: 28px !important;
   flex: 0 0 28px; border: 1px solid #9bb7bc; border-radius: 4px; background: white;
 }

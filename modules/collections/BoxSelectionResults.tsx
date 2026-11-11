@@ -56,7 +56,7 @@ export function BoxSelectionResults({ entries, initialMessage, initialAction, on
   return <section className="catalog-panel box-results" aria-label="框选结果">
     <header className="box-results-heading">
       <strong>{confirming ? `删除 ${chosen.length} 项？` : `框选结果 · ${chosen.length} 项`}</strong>
-      <button aria-label="关闭框选结果，返回地图" onClick={onClose}><X size={16} /></button>
+      <button className="ui-panel-close" aria-label="关闭框选结果，返回地图" onClick={onClose}><X size={18} /></button>
     </header>
     {confirming ? <>
       <p className="box-results-note">删除勾选的整个对象。未选内容及照片原件保留；删除后可在此撤销。</p>

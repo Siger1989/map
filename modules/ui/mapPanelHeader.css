@@ -2,6 +2,41 @@
 .map-panel-header h2 { min-width:0; }
 .map-panel-header__save { flex:0 0 auto; }
 .map-panel-header__spacer { flex:1 1 auto; min-width:0; }
+/* Explicit panel-close contract, shared by dock headers and portalled dialogs.
+   Geometry is intentionally protected from the older ID-qualified compact
+   button rules. Do not apply this class to delete/remove or inline dismiss. */
+html[data-ui-theme] { --ui-panel-close-size:36px; --ui-panel-close-icon:18px; }
+html[data-ui-theme] button.ui-panel-close {
+  box-sizing:border-box !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:var(--ui-panel-close-size) !important;
+  min-width:var(--ui-panel-close-size) !important;
+  max-width:var(--ui-panel-close-size) !important;
+  height:var(--ui-panel-close-size) !important;
+  min-height:var(--ui-panel-close-size) !important;
+  max-height:var(--ui-panel-close-size) !important;
+  flex:0 0 var(--ui-panel-close-size) !important;
+  padding:0 !important;
+  margin:0 !important;
+  border:0 !important;
+  border-radius:var(--ui-radius-control,4px) !important;
+  color:var(--ui-close) !important;
+  background:var(--ui-panel-close-background,var(--ui-raised)) !important;
+  box-shadow:none !important;
+  line-height:1 !important;
+}
+html[data-ui-theme] button.ui-panel-close > svg {
+  width:var(--ui-panel-close-icon) !important;
+  height:var(--ui-panel-close-icon) !important;
+  flex:0 0 var(--ui-panel-close-icon);
+  stroke-width:2;
+  pointer-events:none;
+}
+/* Legacy pseudo hit areas must not overlap the title or adjacent save control. */
+html[data-ui-theme] button.ui-panel-close::before,
+html[data-ui-theme] button.ui-panel-close::after { content:none !important; }
 .observatory.home-map .control-popover:has(> .map-panel-header) > .dock-content {
   box-sizing: border-box;
   padding: 4px 4px 0;

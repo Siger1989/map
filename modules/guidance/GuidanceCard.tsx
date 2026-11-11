@@ -86,10 +86,15 @@ export function GuidanceCard({
   const instructionKind = maneuverKind(g.instruction?.text ?? '');
   const instructionCoversRemainingRoute = instructionKind === 'straight' && !!g.instruction &&
     g.remaining > 0 && g.instruction.distance >= g.remaining * 0.8;
-  const showCompactInstruction = !g.error && !s.quality && !s.offRoute && !s.arrived && !s.departurePending &&
+  const showCompactInstruction = !g.error && !cameraWaiting && !s.quality && !s.offRoute && !s.arrived && !s.departurePending &&
     !!g.instruction && instructionKind !== 'arrival' && !instructionCoversRemainingRoute;
   const [maneuverDistance, maneuverUnit] = (g.instruction ? formatDistance(g.instruction.distance) : '').split(' ');
-  const compactState = s.quality || (s.offRoute || s.arrived || s.departurePending ? status : '');
+  // The departure message explains the live location failure; the session may still
+  // contain its initial generic "waiting" quality until the first accepted fix.
+  const compactState = s.arrived ? '已到达终点'
+    : s.departurePending ? status
+      : s.quality || (s.offRoute || s.offSince !== null ? status : '') ||
+        (cameraWaiting ? '等待准确定位…' : '');
   const compactPriorityStatus = compactState;
   const positionIsReliable = !s.offRoute && !s.arrived && !s.quality && !s.departurePending && freshFix(s.last);
   const nearbyRouteOffset = positionIsReliable &&
@@ -106,9 +111,8 @@ export function GuidanceCard({
   const compactContextStatus = compactPriorityStatus
     ? forwardNavigation ? '' : compactPriorityStatus
     : motionNotice || positionStatus || viewNotice || '';
-  const visibleCompactContextStatus = cameraWaiting && compactContextStatus === '等待当前位置…'
-    ? motionNotice && !/等待|正在获取/.test(motionNotice) ? motionNotice : ''
-    : compactContextStatus;
+  const visibleCompactContextStatus = compactContextStatus;
+  const showCompactTelemetry = !!compactTelemetry && !cameraWaiting && !s.quality && !s.arrived;
   const kind = s.arrived ? 'arrival' : showCompactInstruction ? instructionKind : 'unknown';
   const nextCheckpoint = s.checkpoints[s.nextCheckpoint];
   const nextStop = s.route.stops?.[s.nextCheckpoint + 1];
@@ -155,7 +159,7 @@ export function GuidanceCard({
       data-status={
         s.arrived
           ? 'arrived'
-          : s.quality
+          : s.quality || cameraWaiting
             ? 'waiting'
             : s.offRoute
               ? 'off-route'
@@ -195,7 +199,7 @@ export function GuidanceCard({
             {showCompactInstruction ? <>
               <span className="guidance-maneuver-distance">{maneuverDistance}<small> {maneuverUnit}</small></span>
               <span className="guidance-maneuver-text" title={g.instruction!.text}>{g.instruction!.text}</span>
-            </> : g.error ? <button className="guidance-error-open" type="button" onClick={() => setExpanded(true)}>接入路线失败 · 查看详情</button> : s.arrived || s.departurePending || s.offRoute || s.quality
+            </> : g.error ? <button className="guidance-error-open" type="button" onClick={() => setExpanded(true)}>接入路线失败 · 查看详情</button> : compactState
               ? <span className="guidance-compact-state" role="status" title={compactState || status}>{compactState || status}</span>
               : <>
                 <span className="guidance-maneuver-distance guidance-target-distance">{nextCheckpointDistance}</span>
@@ -204,10 +208,10 @@ export function GuidanceCard({
             {showCompactInstruction && <span className="guidance-remaining-line">全程剩余 {formatDistance(g.remaining)}</span>}
           </div>
         </div>}
-        {compact && !expanded && !displayPanel && (compactTelemetry || visibleCompactContextStatus || (g.error && !forwardNavigation)) && <div className="guidance-compact-context">
-          {compactTelemetry && <div className="guidance-compact-telemetry">{compactTelemetry}</div>}
+        {compact && !expanded && !displayPanel && (showCompactTelemetry || visibleCompactContextStatus || (g.error && !forwardNavigation)) && <div className="guidance-compact-context">
+          {showCompactTelemetry && <div className="guidance-compact-telemetry">{compactTelemetry}</div>}
           {g.error && !forwardNavigation ? <button className="guidance-error-open" type="button" onClick={() => setExpanded(true)}>接入路线失败 · 查看详情</button>
-            : visibleCompactContextStatus && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{visibleCompactContextStatus}</span>}
+            : visibleCompactContextStatus && <span className="guidance-inline-status" role="status" data-priority={!!compactPriorityStatus} data-position-assessment={effectivePositionAssessment?.kind}>{visibleCompactContextStatus}</span>}
         </div>}
         {motionNotice && !displayPanel && expanded && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{motionNotice}</span>}
         {positionStatus && !motionNotice && !displayPanel && expanded && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{positionStatus}</span>}

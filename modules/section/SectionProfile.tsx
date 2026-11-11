@@ -1,4 +1,5 @@
 'use client';
+import { X } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import {
   pointOnContour,
@@ -242,9 +243,7 @@ export function SectionProfile({
         <button disabled={!curve || busy} onClick={download}>
           {busy ? '生成中…' : '保存图片'}
         </button>
-        <button aria-label="关闭剖面详情" onClick={onClose}>
-          ×
-        </button>
+        <button className="ui-panel-close" aria-label="关闭剖面详情" onClick={onClose}><X size={18} /></button>
       </header>
       <div className="section-profile-body">
         {imagePages.length > 1 && <ProfileImagePages files={imagePages} />}

@@ -64,14 +64,12 @@ export function QuickAdd({
       <section className="quick-add-card glass" aria-label="在这里添加标记">
         <header>
           <strong>在这里添加</strong>
-          <button
+          <button className="ui-panel-close"
             ref={closeButton}
             type="button"
             aria-label="取消添加标记"
             onClick={onClose}
-          >
-            <X size={18} />
-          </button>
+          ><X size={18} /></button>
         </header>
         <div className="quick-add-content">
           <p>

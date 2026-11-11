@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type { Annotation } from '../annotations/data';
 import { MARKER_ICONS, markerSolidPath, type MarkerIconId } from '../annotations/icons';
@@ -18,7 +19,7 @@ export function ComparisonLineProperties({
     <section className="map-comparison-property comparison-line-properties" aria-label="对比路线样式">
       <header className="comparison-property-heading">
         <strong>路线样式</strong>
-        <button type="button" aria-label="关闭路线样式" onClick={onClose}>×</button>
+        <button className="ui-panel-close" type="button" aria-label="关闭路线样式" onClick={onClose}><X size={18} /></button>
       </header>
       <div className="comparison-line-basics">
       <label className="comparison-property-row">
@@ -92,7 +93,7 @@ function ComparisonMarkerDraft({ annotation, onSave, onClose, error }: MarkerEdi
         <header className="comparison-property-heading">
           <button type="button" aria-label="返回标记编辑" onClick={() => setChoosingIcon(false)}>‹</button>
           <strong>选择符号</strong>
-          <button type="button" aria-label="关闭标记编辑" onClick={onClose}>×</button>
+          <button className="ui-panel-close" type="button" aria-label="关闭标记编辑" onClick={onClose}><X size={18} /></button>
         </header>
         <div className="comparison-symbol-grid" aria-label="标记符号选择">
           {(Object.keys(MARKER_ICONS) as MarkerIconId[]).map(id => <button
@@ -126,7 +127,7 @@ function ComparisonMarkerDraft({ annotation, onSave, onClose, error }: MarkerEdi
               onChange={event => { setDraft(current => ({ ...current, color: event.target.value })); setSaveError(''); }}
             />
           </label>
-          <button type="button" aria-label="关闭标记编辑" onClick={onClose}>×</button>
+          <button className="ui-panel-close" type="button" aria-label="关闭标记编辑" onClick={onClose}><X size={18} /></button>
         </header>
         <div className="comparison-marker-details">
           <button type="button" className="comparison-marker-symbol" aria-label="标记符号" title={`选择符号：${MARKER_ICONS[draft.icon ?? 'pin'].name}`} onClick={() => setChoosingIcon(true)}>

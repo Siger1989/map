@@ -150,7 +150,7 @@ export function PlaceSearch({
                   {listExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}<span>{listExpanded ? '\u6536\u8d77' : '\u5c55\u5f00'}</span>
                 </button>
               </>}
-              <button type="button" aria-label={'\u5173\u95ed\u5730\u70b9\u641c\u7d22'} onClick={closeSearch}><X size={16} /></button>
+              <button className="ui-panel-close" type="button" aria-label={'\u5173\u95ed\u5730\u70b9\u641c\u7d22'} onClick={closeSearch}><X size={18} /></button>
             </div>
           </div>
           {selectedPlace ? <SelectedPlaceCard place={selectedPlace}

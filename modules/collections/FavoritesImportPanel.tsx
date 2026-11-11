@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useState } from 'react';
 import { TransferPanel } from '../dataTransfer/TransferPanel';
 import type { Transfer } from '../dataTransfer/types';
@@ -22,7 +23,7 @@ export function FavoritesImportPanel({ onClose, onImported, taskMigration }: {
       <header className="workbench-heading">
         <button onClick={onClose}>‹ 返回</button>
         <div><strong>导入收藏</strong></div>
-        <button aria-label="关闭导入" onClick={onClose}>×</button>
+        <button className="ui-panel-close" aria-label="关闭导入" onClick={onClose}><X size={18} /></button>
       </header>
       <nav className="favorites-import-tabs" aria-label="导入类型">
         <button aria-pressed={mode === 'files'} onClick={() => setMode('files')}>路线、轨迹与备份</button>

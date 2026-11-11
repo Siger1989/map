@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { SmartInput } from '../input/SmartText';
 import {
   useEffect,
@@ -312,9 +313,7 @@ export function CollectionsPanel(props: Props) {
             {boxResults ? '返回框选结果' : '文件夹分类'}
           </button>
         )}
-        <button aria-label="关闭收藏" onClick={props.onClose}>
-          {output ? '×' : '关闭 ×'}
-        </button>
+        <button className="ui-panel-close" aria-label="关闭收藏" onClick={props.onClose}><X size={18} /></button>
       </header>
       {deleting ? (
         <div className="collection-editor collection-scroll">

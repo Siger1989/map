@@ -39,7 +39,7 @@ export function RallyNavigation({ route, guidance: g, fix, onNormal, onStart, on
   const currentKind = turnKind(first.text);
   const Icon = icons[currentKind];
   return <div className="rally-workspace" aria-label="拉力路书模式">
-    <header className="rally-header"><strong>山兔</strong><h2>拉力路书</h2><button aria-label="路书说明" aria-expanded={help} onClick={() => setHelp(!help)}><Info size={19} /></button><button aria-label="退出拉力模式" onClick={onNormal}><X size={19} /></button></header>
+    <header className="rally-header"><strong>山兔</strong><h2>拉力路书</h2><button aria-label="路书说明" aria-expanded={help} onClick={() => setHelp(!help)}><Info size={19} /></button><button className="ui-panel-close" aria-label="退出拉力模式" onClick={onNormal}><X size={18} /></button></header>
     <nav className="rally-mode" aria-label="导航显示模式"><button onClick={onNormal}>普通导航</button><button aria-pressed="true">拉力路书</button></nav>
     {help && <aside className="rally-help">地图转向提示，非赛事标准路书或实地勘路笔记。绿：直行；橙：转向；紫：掉头；蓝：接入；灰：方向未知。实时速度由连续定位估算；平均速度含停留，定位中断时不显示。剩余时间按路线预估，海拔来自地形模型。<button onClick={() => setHelp(false)}>关闭说明</button></aside>}
     <div ref={top} className="rally-top">

@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { annotationSpreadsheet } from '../annotations/spreadsheet';
 import {
@@ -76,7 +77,7 @@ export function MarkerExcelImport({ onBack, onClose, embedded = false }: {
       {!embedded && <header className="workbench-heading">
         <button onClick={onBack}>‹ 返回</button>
         <div><strong>导入标记 Excel</strong></div>
-        <button aria-label="关闭收藏" onClick={onClose}>关闭 ×</button>
+        <button className="ui-panel-close" aria-label="关闭收藏" onClick={onClose}><X size={18} /></button>
       </header>}
       <div className="marker-excel-content">
         <p>每行一个点：经度（WGS84）、纬度（WGS84）、名称、备注；后续列写“属性：条目名”。ID 由导出自动填写，手建表可留空。</p>

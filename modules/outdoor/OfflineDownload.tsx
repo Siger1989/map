@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { OfflineProgress } from './OfflineProgress';
 import { useEffect, useMemo, useState } from 'react';
 import type { MapSource } from '../mapSources/types';
@@ -54,9 +55,7 @@ export function OfflineDownload({
         <strong title={target.name}>
           下载沿线地图
         </strong>
-        <button aria-label="关闭下载窗口" onClick={onClose}>
-          ×
-        </button>
+        <button className="ui-panel-close" aria-label="关闭下载窗口" onClick={onClose}><X size={18} /></button>
       </header>
       <small
         className="offline-download-source"

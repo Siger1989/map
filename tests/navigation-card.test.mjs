@@ -152,6 +152,25 @@ test('navigation display settings replace card data and return to expanded navig
   await render({ following: true, cameraWaiting: true });
   assert.match(host.querySelector('.guidance-follow-status')?.textContent, /当前位置步行/);
   assert.equal(host.querySelector('.guidance-follow-status')?.getAttribute('aria-label'), '当前位置');
+  const waiting = makeGuidance();
+  waiting.session.quality = '等待当前位置…';
+  waiting.session.departurePending = true;
+  waiting.departureMessage = '定位精度约±50000米，等待准确位置';
+  for (const cameraMode of ['top', 'forward']) {
+    await render({ guidance: waiting, cameraWaiting: true, cameraMode, motionNotice: '等待新定位，运动方向保持不变' });
+    const visibleState = host.querySelector(cameraMode === 'top' ? '.guidance-compact-context [role="status"]' : '.guidance-compact-primary [role="status"]');
+    assert.equal(visibleState?.textContent, waiting.departureMessage, 'collapsed navigation retains the specific departure failure in both views');
+    assert.equal(host.querySelector('[data-testid="compact-telemetry"]'), null, 'waiting replaces empty speed placeholders');
+    assert.equal(host.querySelector('.guidance-expand')?.getAttribute('aria-expanded'), 'false', 'the reason is visible without opening details');
+  }
+  waiting.session.departurePending = false;
+  await render({ guidance: waiting, cameraWaiting: true, motionNotice: '等待新定位，运动方向保持不变' });
+  assert.equal(host.querySelector('.guidance-compact-context [role="status"]')?.textContent, '等待当前位置…', 'camera waiting must not suppress the generic location reason either');
+  waiting.session.arrived = true;
+  await render({ guidance: waiting, cameraWaiting: true });
+  assert.equal(host.querySelector('.guidance-compact-context [role="status"]')?.textContent, '已到达终点', 'arrival is retained even when the last location has gone stale');
+  await render();
+  assert.ok(host.querySelector('[data-testid="compact-telemetry"]'), 'speed information returns when the waiting state clears');
   const priorityStates = [
     [g => { g.error = '路线服务错误'; }, '路线服务错误'],
     [g => { g.session.quality = '定位精度不足'; }, '定位精度不足'],

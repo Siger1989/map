@@ -136,7 +136,7 @@
   max-height: var(--collection-split) !important; border-radius: 0;
 }
 .observatory.home-map[data-panel='favorites']:has(.collection-workbench) .home-camera-control .camera-gizmo { display: block; }
-.observatory.home-map .collection-workbench .workbench-heading { padding: 0 4px; gap: 3px; }
+.observatory.home-map .collection-workbench .workbench-heading { padding: 8px; gap: 4px; height:auto; min-height:54px; box-sizing:border-box; }
 .observatory.home-map .collection-workbench .workbench-heading button {
   min-width: 36px; min-height: 36px; height: 36px; padding: 0 5px;
   border: 1px solid var(--ui-line, #b9cbc1); border-radius: 3px; background: var(--ui-surface, #fff); font-size: 11px;

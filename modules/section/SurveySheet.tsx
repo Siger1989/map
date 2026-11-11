@@ -141,12 +141,10 @@ export function SurveySheet({
         <section className="survey-sheet-settings" aria-label="图纸设置">
           <header>
             <strong>图纸设置</strong>
-            <button
+            <button className="ui-panel-close"
               onClick={() => setSettingsOpen(false)}
               aria-label="关闭图纸设置"
-            >
-              <X size={16} />
-            </button>
+            ><X size={18} /></button>
           </header>
           <p>方向角 A→B：{surveyBasis(line).bearing.toFixed(2)}°</p>
           <label>

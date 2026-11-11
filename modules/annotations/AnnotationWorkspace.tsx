@@ -288,9 +288,7 @@ export function AnnotationWorkspace({
               <Trash2 size={16} />
               删除
             </button>
-            <button aria-label="关闭标记" onClick={onClose}>
-              <X size={20} />
-            </button>
+            <button className="ui-panel-close" aria-label="关闭标记" onClick={onClose}><X size={18} /></button>
           </header>
           <div className="marker-summary-place">
             <span title={place}>{place}</span>

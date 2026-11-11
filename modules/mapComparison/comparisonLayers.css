@@ -7,10 +7,11 @@
   pointer-events: auto;
 }
 html[data-ui-theme] .observatory.home-map .map-comparison-ui .map-layer-control.comparison-layer-control .comparison-layer-window > .dock-heading {
-  padding: 0 0 0 5px;
-  min-height: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  padding: 4px;
+  min-height: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  box-sizing: border-box;
 }
 .observatory.home-map .comparison-layer-window .dock-heading h2 { flex: 1; margin: 0; font-size: 14px; }
 .observatory.home-map .comparison-layer-window .comparison-layer-tabs { display: flex; gap: 2px; }

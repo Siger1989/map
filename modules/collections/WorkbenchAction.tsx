@@ -385,13 +385,11 @@ export function WorkbenchAction(p: Props) {
         >
           <header>
             <strong>{title}</strong>
-            <button
+            <button className="ui-panel-close"
               aria-label="关闭收藏操作"
               disabled={p.busy}
               onClick={p.onClose}
-            >
-              <X size={18} />
-            </button>
+            ><X size={18} /></button>
           </header>
           <div className="collection-action-content">
             {body}

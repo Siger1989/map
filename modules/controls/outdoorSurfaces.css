@@ -53,6 +53,22 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popo
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover > .dock-heading.map-panel-header .icon-button { box-sizing:border-box; width:44px; min-width:44px; height:44px; min-height:44px; margin:0; padding:0; flex:0 0 44px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover > .dock-heading.map-panel-header :is(.dock-back,.dock-hide) { box-sizing:border-box; width:auto; min-width:44px; height:44px; min-height:44px; margin:0; padding:0 8px; flex:0 0 auto; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .layer-window.control-popover > .dock-heading.map-panel-header { padding:0 4px; }
+/* Secondary pages preserve the same close slot, while the parent caption and
+   inset header surface make the navigation depth explicit. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover > .dock-heading.map-panel-header[data-ui-level='secondary'] {
+  height:44px; min-height:44px; padding:4px;
+  align-items:center;
+  --ui-panel-close-background:var(--ui-surface);
+  background:var(--ui-raised); border-radius:var(--ui-radius-control);
+  box-shadow:0 2px 3px rgb(0 0 0 / .12);
+  border-bottom:0;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover > .dock-heading.map-panel-header[data-ui-level='secondary'] h2 { align-self:center; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover > .dock-heading.map-panel-header[data-ui-level='secondary'] .dock-back { height:36px; min-height:36px; background:var(--ui-surface); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-panel-header__parent {
+  display:block; margin-bottom:1px; color:var(--ui-muted);
+  font-size:11px; font-weight:400; line-height:12px;
+}
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover :is(.route-note,.route-origin-note,.record-console-footer) { padding:4px 8px 8px; margin:0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover:not(:has(.collections-panel,.collection-workbench,.route-panel,.record-console)) { display:flex; flex-direction:column; overflow:hidden; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover:not(:has(.collections-panel,.collection-workbench,.route-panel,.record-console)) .dock-content { min-height:0; overflow:auto; overscroll-behavior:contain; }

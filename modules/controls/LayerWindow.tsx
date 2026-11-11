@@ -1,5 +1,5 @@
 import { isLayoutInteraction } from '../uiLayout/events';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Layers } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
 import { LayerPanel } from './LayerPanel';
@@ -37,12 +37,38 @@ export function LayerWindow({
   const root = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
+  const content = useRef<HTMLDivElement>(null);
+  const parentScroll = useRef(0);
+  const parentFocus = useRef<HTMLElement | null>(null);
+  const showingDetail = useRef(false);
   const change = useRef(onOpen);
   change.current = onOpen;
   const close = () => {
     onOpen(false);
     toggle.current?.focus({ preventScroll: true });
   };
+  const openGeologyDetails = () => {
+    parentScroll.current = content.current?.scrollTop ?? 0;
+    const active = content.current?.ownerDocument.activeElement;
+    parentFocus.current = active && content.current?.contains(active) ? active as HTMLElement : null;
+    onGeologyDetails?.();
+  };
+  useLayoutEffect(() => {
+    if (!open) {
+      showingDetail.current = false;
+      parentScroll.current = 0;
+      parentFocus.current = null;
+      return;
+    }
+    const nextDetail = Boolean(detail);
+    if (nextDetail !== showingDetail.current && content.current) {
+      content.current.scrollTop = nextDetail ? 0 : parentScroll.current;
+      if (nextDetail) closeButton.current?.focus({ preventScroll: true });
+      else if (parentFocus.current?.isConnected) parentFocus.current.focus({ preventScroll: true });
+      else closeButton.current?.focus({ preventScroll: true });
+    }
+    showingDetail.current = nextDetail;
+  }, [open, detail]);
   useEffect(() => {
     if (!open) return;
     closeButton.current?.focus({ preventScroll: true });
@@ -64,7 +90,8 @@ export function LayerWindow({
         if (event.key === 'Escape' && open) {
           event.preventDefault();
           event.stopPropagation();
-          close();
+          if (detail && onDetailBack) onDetailBack();
+          else close();
         }
       }}
     >
@@ -94,11 +121,10 @@ export function LayerWindow({
             closeButtonRef={(element) => { closeButton.current = element; }}
             back={detail ? { label: '返回图层设置', onClick: () => onDetailBack?.() } : undefined}
           />
-          <div className="dock-content">
-            {detail || <>{settings.geology && <button className="layer-geology-detail" onClick={onGeologyDetails}>
-              地质图例与说明
-            </button>}
-
+          <div ref={content} className="dock-content" onScroll={(event) => {
+            if (!detail) parentScroll.current = event.currentTarget.scrollTop;
+          }}>
+            <div className="layer-parent-page" hidden={Boolean(detail)} inert={Boolean(detail)} aria-hidden={detail ? true : undefined} style={{ display: detail ? 'none' : undefined, flex: '0 0 auto' }}>
             <LayerPanel
               customSource={customSource}
               onOpenSources={onOpenSources}
@@ -106,12 +132,14 @@ export function LayerWindow({
               onChange={onChange}
               satelliteDate={satelliteDate}
               satelliteStatus={satelliteStatus}
+              onGeologyDetails={onGeologyDetails ? openGeologyDetails : undefined}
             />
 
             <p className="map-status" role="status">
               {mapStatus}
             </p>
-            </>}
+            </div>
+            {detail}
           </div>
         </section>
       )}

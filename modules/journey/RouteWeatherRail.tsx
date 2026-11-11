@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import {
   formatDistance,
@@ -244,14 +245,12 @@ export function RouteWeatherRail({
                 : `${formatDistance(route.distance * fraction)} · ${(fraction * 100).toFixed(0)}%`}
             </strong>
             <button
-              className="rail-close"
+              className="rail-close ui-panel-close"
               aria-label="关闭行程预览"
               onClick={() => {
                 setLegend(false);
               }}
-            >
-              ×
-            </button>
+            ><X size={18} /></button>
           </header>
           {selected !== null && (
             <>

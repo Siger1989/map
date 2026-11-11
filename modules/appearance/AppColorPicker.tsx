@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
 import { useRouteDialogFocus } from '../tracks/useRouteDialogFocus';
 import { applyInputColor, hexToHsv, hsvToHex, normalizeHexColor } from './colorSelection';
 import '../guidance/navigationStart.css';
@@ -37,8 +38,8 @@ function ColorDialog({ input, onClose }: { input: HTMLInputElement; onClose: () 
         aria-label="选择颜色" onPointerDown={event => event.stopPropagation()}>
         <header>
           <strong>{custom ? '自定义颜色' : '选择颜色'}</strong>
-          <button type="button" aria-label={custom ? '返回常用颜色' : '关闭颜色选择'}
-            onClick={() => custom ? setCustom(false) : onClose()}>{custom ? '返回' : '×'}</button>
+          <button className={custom ? undefined : 'ui-panel-close'} type="button" aria-label={custom ? '返回常用颜色' : '关闭颜色选择'}
+            onClick={() => custom ? setCustom(false) : onClose()}>{custom ? '返回' : <X size={18} />}</button>
         </header>
         {custom ? <>
           <div className="app-color-plane" role="slider" aria-label="颜色明暗和饱和度" tabIndex={0}

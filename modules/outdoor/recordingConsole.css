@@ -4,7 +4,7 @@
   height: auto !important; max-height: min(500px,calc(100dvh - var(--home-footer) - var(--home-top) - 76px)) !important;
   padding: 4px 6px !important; overflow: hidden !important;
 }
-.observatory.home-map #map-control-panel:has(.record-console) .dock-heading { height: 36px !important; min-height: 36px !important; margin: 0 !important; padding: 0 2px !important; }
+.observatory.home-map #map-control-panel:has(.record-console) .dock-heading:not(.map-panel-header) { height: 36px !important; min-height: 36px !important; margin: 0 !important; padding: 0 2px !important; }
 .observatory.home-map #map-control-panel:has(.record-console) .dock-heading h2 { margin: 0 !important; font-size: 13px !important; }
 .observatory.home-map #map-control-panel:has(.record-console) .dock-content { max-height: none !important; min-height: 0; overflow: hidden auto !important; padding: 0 !important; scrollbar-width: none; -ms-overflow-style: none; }
 .observatory.home-map #map-control-panel:has(.record-console) .dock-content::-webkit-scrollbar { display: none; }
@@ -36,7 +36,7 @@
 .observatory .record-console-tools button { flex: 1; min-height: 36px !important; padding: 0 !important; color: var(--ui-muted, #526b78) !important; font-size: 11px !important; }
 /* Dense revision: keep labels readable and reduce row/chrome spacing. */
 .observatory.home-map #map-control-panel:has(.record-console) { padding: 4px !important; }
-.observatory.home-map #map-control-panel:has(.record-console) .dock-heading { height: 36px !important; min-height: 36px !important; }
+.observatory.home-map #map-control-panel:has(.record-console) .dock-heading:not(.map-panel-header) { height: 36px !important; min-height: 36px !important; }
 .observatory .record-console button,.observatory .record-console input:not([type='checkbox']),.observatory .record-console select { height: 36px !important; min-height: 36px !important; }
 .record-console-stats { min-height: 20px; }
 .observatory .record-console-status { margin-bottom: 2px !important; line-height: 14px !important; }
@@ -131,17 +131,17 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='o
   width:min(276px,calc(100% - var(--home-left) - var(--home-right) - 80px)) !important;
   --record-radius: var(--ui-radius-control);
   --record-primary-height: 36px;
-  padding: 4px 8px !important;
+  padding: 4px !important;
   border-radius:var(--ui-radius-card);
   background: var(--ui-surface);
   gap: 4px;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel:has(.record-console) > .dock-heading {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel:has(.record-console) > .dock-heading:not(.map-panel-header) {
   height: 28px !important;
   min-height: 28px !important;
   padding: 0 !important;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel:has(.record-console) > .dock-heading .icon-button {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel:has(.record-console) > .dock-heading .icon-button:not(.ui-panel-close) {
   position: relative;
   box-sizing: border-box;
   width: 28px;

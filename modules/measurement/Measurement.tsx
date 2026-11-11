@@ -253,9 +253,7 @@ export function Measurement({
             >
               <MoreHorizontal size={16} />
             </button>
-            <button aria-label="关闭测量" onClick={state.close}>
-              <X size={16} />
-            </button>
+            <button className="ui-panel-close" aria-label="关闭测量" onClick={state.close}><X size={18} /></button>
           </header>
           <div className="measurement-scroll">
             {showSaved ? (

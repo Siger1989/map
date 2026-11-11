@@ -68,9 +68,7 @@ export function CmaRadarPanel({ open, onClose }: { open: boolean; onClose: () =>
             <strong>雷达实况图</strong>
             <small>{radar.directory?.source ?? '国家气象数据网'}</small>
           </div>
-          <button className="cma-radar-icon-button" type="button" onClick={onClose} aria-label="关闭雷达实况图">
-            <X size={16} />
-          </button>
+          <button className="cma-radar-icon-button ui-panel-close" type="button" onClick={onClose} aria-label="关闭雷达实况图"><X size={18} /></button>
         </header>
 
         <p className="cma-radar-product">
@@ -148,7 +146,7 @@ export function CmaRadarPanel({ open, onClose }: { open: boolean; onClose: () =>
               <button type="button" aria-label="缩小原图" disabled={zoom <= 1} onClick={() => setZoom(value => Math.max(1, value - 0.25))}><Minus size={17} /></button>
               <span>{Math.round(zoom * 100)}%</span>
               <button type="button" aria-label="放大原图" disabled={zoom >= 3} onClick={() => setZoom(value => Math.min(3, value + 0.25))}><Plus size={17} /></button>
-              <button ref={closeLightboxRef} type="button" aria-label="关闭放大原图" onClick={() => setExpanded(false)}><X size={18} /></button>
+              <button className="ui-panel-close" ref={closeLightboxRef} type="button" aria-label="关闭放大原图" onClick={() => setExpanded(false)}><X size={18} /></button>
             </div>
           </header>
           <div className="cma-radar-lightbox-image" style={{ '--radar-zoom': zoom } as CSSProperties}>

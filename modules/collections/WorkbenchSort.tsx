@@ -133,9 +133,7 @@ export function WorkbenchSort({
         >
           <header>
             <strong>排序方式</strong>
-            <button aria-label="关闭排序选项" onClick={close}>
-              <X size={17} />
-            </button>
+            <button className="ui-panel-close" aria-label="关闭排序选项" onClick={close}><X size={18} /></button>
           </header>
           <div role="radiogroup" aria-label="收藏排序">
             {WORKBENCH_SORTS.map((sort) => (

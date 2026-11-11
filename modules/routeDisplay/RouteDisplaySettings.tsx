@@ -47,9 +47,7 @@ export function RouteDisplaySettings({
         >
           {!embedded && <header>
             <strong>路线显示</strong>
-            <button aria-label="关闭路线显示设置" onClick={onClose}>
-              <X size={15} />
-            </button>
+            <button className="ui-panel-close" aria-label="关闭路线显示设置" onClick={onClose}><X size={18} /></button>
           </header>}
           <div className="route-display-scroll">
             {navigating || drawing ? <p className="route-display-scope">{drawing ? '当前绘制路线' : '当前导航路线'}</p> : <label>

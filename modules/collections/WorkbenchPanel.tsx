@@ -592,16 +592,13 @@ export function WorkbenchPanel(props: Props) {
               <Trash2 size={18} />
             </button>
             <button
-              className="workbench-close"
+              className="workbench-close ui-panel-close"
               aria-label="关闭收藏"
               onClick={() => {
                 setAction(null);
                 props.onClose();
               }}
-            >
-              <X size={15} />
-              关闭
-            </button>
+            ><X size={18} /></button>
           </header>
           <div className="workbench-search">
             <SmartInput

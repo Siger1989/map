@@ -2,7 +2,7 @@
 .observatory.home-map #map-control-panel:has(.route-panel) {
   --route-button-height: var(--ui-compact-control-height,28px);
   --route-primary-height: 44px;
-  --route-padding: 8px 8px 3px;
+  --route-padding: 4px 4px 3px;
   height: auto !important;
   max-height: calc(100dvh - var(--home-footer) - var(--home-top) - var(--home-header-height) - 16px) !important;
   padding: var(--route-padding, 8px 8px 3px) !important;
@@ -10,14 +10,14 @@
   display: flex;
   flex-direction: column;
 }
-.observatory.home-map #map-control-panel:has(.route-panel) .dock-heading {
+.observatory.home-map #map-control-panel:has(.route-panel) .dock-heading:not(.map-panel-header) {
   flex-shrink: 0;
   height: 32px !important;
   min-height: 32px !important;
   margin: 0 !important;
   padding: 0 !important;
 }
-.observatory.home-map #map-control-panel:has(.route-panel) .dock-heading .icon-button {
+.observatory.home-map #map-control-panel:has(.route-panel) .dock-heading .icon-button:not(.ui-panel-close) {
   height: var(--route-button-height) !important;
   min-height: var(--route-button-height) !important;
   margin-right: 0;
@@ -27,7 +27,7 @@
   min-height: 0;
   overflow: auto !important;
   overscroll-behavior: contain;
-  padding: 0 !important;
+  padding: 0 4px !important;
 }
 @media (max-height: 520px) {
   html:not([data-shantu-keyboard='open']) .observatory.home-map #map-control-panel:has(.route-panel:not(.route-summary)) .dock-content {
@@ -204,7 +204,7 @@ html[data-shantu-keyboard='open'] .observatory.home-map #map-control-panel:has(.
   background: var(--route-selected, #dcf0dd) !important;
   border-color: var(--route-line, #76a580) !important;
 }
-.observatory #map-control-panel:has(.route-summary) .dock-heading button {
+.observatory #map-control-panel:has(.route-summary) .dock-heading button:not(.ui-panel-close) {
   border: 1px solid var(--route-line, #9bb7bc) !important;
   border-radius: var(--route-radius, 4px) !important;
   background: var(--route-field, #fff) !important;

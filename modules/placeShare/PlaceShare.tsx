@@ -30,7 +30,7 @@ export function PlaceShare({ place, onClose, onExport }: {
   };
   return <div className="place-share-backdrop">
     <section ref={root} className="place-share-panel" role="dialog" aria-modal="true" aria-label="分享地点" onKeyDown={event => event.stopPropagation()}>
-      <header><strong>分享地点</strong><button aria-label="关闭地点分享" onClick={onClose}><X size={18}/></button></header>
+      <header><strong>分享地点</strong><button className="ui-panel-close" aria-label="关闭地点分享" onClick={onClose}><X size={18} /></button></header>
       <div className="place-share-body">
         <strong className="place-share-name" title={data.name}>{data.name}</strong>
         <p>经度、纬度：{data.coordinates}</p>

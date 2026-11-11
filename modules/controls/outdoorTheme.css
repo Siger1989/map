@@ -109,7 +109,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
   --route-radius: var(--ui-radius-control);
   --route-button-height: 36px;
   --route-primary-height: 44px;
-  --route-padding: 8px 10px;
+  --route-padding: 4px 4px 3px;
   --text: var(--ui-ink);
   --muted: var(--ui-muted);
   --border: var(--ui-line);
@@ -133,7 +133,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='r
   --route-mode-margin: 0px;
   --route-action-margin: 0px;
   --route-note-margin: 0px;
-  --route-padding: 8px 8px 3px;
+  --route-padding: 4px 4px 3px;
   --route-radius: 8px;
   background: var(--ui-surface);
   border-radius:var(--ui-radius-card);

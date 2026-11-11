@@ -92,7 +92,7 @@ export function SurveySectionPanel({
           <strong>
             {deletePoint ? '删除沿线点' : info ? '图纸信息' : '点位资料'}
           </strong>
-          <button
+          <button className="ui-panel-close"
             aria-label="关闭资料窗口"
             onClick={() => {
               setInfo(null);
@@ -101,9 +101,7 @@ export function SurveySectionPanel({
                 setDeletePoint(null);
               }
             }}
-          >
-            <X size={16} />
-          </button>
+          ><X size={18} /></button>
         </header>
       )}
       <div className="survey-panel-body">
@@ -303,9 +301,7 @@ export function SurveySectionPanel({
               图纸
             </button>
           )}
-          <button onClick={state.close} aria-label="退出剖面">
-            <X size={18} />
-          </button>
+          <button className="ui-panel-close" onClick={state.close} aria-label="退出剖面"><X size={18} /></button>
         </header>
         {deleteWhole ? (
           <section
@@ -314,12 +310,10 @@ export function SurveySectionPanel({
           >
             <header>
               <strong>删除整条剖面？</strong>
-              <button
+              <button className="ui-panel-close"
                 aria-label="取消删除剖面"
                 onClick={() => setDeleteWhole(false)}
-              >
-                <X size={16} />
-              </button>
+              ><X size={18} /></button>
             </header>
             <div className="survey-panel-body">
               <p>
@@ -351,12 +345,10 @@ export function SurveySectionPanel({
                         ? `${selected?.label ?? ''} 点 · 添加标记`
                         : '沿线添加标记'}
                     </strong>
-                    <button
+                    <button className="ui-panel-close"
                       aria-label="取消剖面添加标记"
                       onClick={state.cancelMarker}
-                    >
-                      <X size={16} />
-                    </button>
+                    ><X size={18} /></button>
                   </header>
                   <div>
                     <AnnotationTypeOptions onAdd={state.createMarker} />

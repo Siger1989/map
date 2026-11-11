@@ -3476,7 +3476,7 @@ export default function Home() {
                   },
                 }
               : panel === 'cache'
-                ? { label: routeCacheTarget.returnPanel === null ? '返回地图路线' : routeCacheTarget.returnPanel === 'route' ? '返回路线' : '返回收藏', onClick: () => setPanel(routeCacheTarget.returnPanel === undefined ? 'favorites' : routeCacheTarget.returnPanel) }
+                ? routeCacheTarget.returnPanel === null ? undefined : { label: routeCacheTarget.returnPanel === 'route' ? '返回路线' : '返回收藏', onClick: () => setPanel(routeCacheTarget.returnPanel === undefined ? 'favorites' : routeCacheTarget.returnPanel) }
               : panel === 'industry' || panel === 'photo-markers'
                 ? { label: '返回工具', onClick: () => setPanel('tools'), disabled: panel === 'photo-markers' && gpsPhotoBusy }
                 : routeChild

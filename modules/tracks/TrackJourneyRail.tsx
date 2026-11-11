@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { X, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Annotation } from '../annotations/data';
 import { formatDistance } from '../navigation/types';
 import { trackDistance, type ManualTrack } from './drawing';
@@ -318,12 +318,10 @@ export function TrackJourneyRail({
         <div className="track-marker-list glass" aria-label="行程标记列表">
           <header>
             <strong>行程标记 · {active.label}</strong>
-            <button
+            <button className="ui-panel-close"
               onClick={() => setList(false)}
               aria-label="关闭行程标记列表"
-            >
-              ×
-            </button>
+            ><X size={18} /></button>
           </header>
           {entries.length ? (
             entries.map(({ marker, distance, offset }) => (
