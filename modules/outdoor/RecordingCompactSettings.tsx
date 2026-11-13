@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { useRecording } from './useRecording';
 import { SAMPLING_PRESETS, type SamplingPolicy } from './samplingPolicy';
+import { TrackColorPicker } from '../tracks/TrackColorPicker';
 
 function NumberField({ label, value, min, max, step = 1, disabled = false, onCommit }: { label: string; value: number; min: number; max: number; step?: number; disabled?: boolean; onCommit: (value: number) => unknown }) {
   const [draft, setDraft] = useState(String(value));
@@ -19,7 +20,7 @@ export function RecordingCompactSettings({ recorder }: { recorder: ReturnType<ty
       <label>着色<select aria-label="轨迹着色" value={style.colorMode ?? 'solid'} onChange={e => appearance.update({ ...style, colorMode: e.target.value as typeof style.colorMode })}><option value="solid">单色</option><option value="elevation">海拔</option><option value="speed">速度</option><option value="slope">坡度</option></select></label>
       <NumberField label="线宽px" value={style.width} min={.5} max={5} step={.5} onCommit={width => appearance.update({ ...style, width })} />
       <NumberField label="不透明%" value={Math.round((style.opacity ?? 1) * 100)} min={10} max={100} onCommit={opacity => appearance.update({ ...style, opacity: opacity / 100 })} />
-      <label>颜色<input aria-label="轨迹颜色" type="color" value={style.color} onChange={e => appearance.update({ ...style, color: e.target.value })} /></label>
+      <div className="record-color-field"><span>颜色</span><TrackColorPicker label="轨迹颜色" value={style.color} onChange={color => appearance.update({ ...style, color })} /></div>
     </div>
     <div className="record-console-grid">
       <label>采样<select aria-label="记录模式" disabled={!sampling.supported || sampling.pending} value={policy.mode} onChange={e => { const mode = e.target.value as SamplingPolicy['mode']; sampling.update({ ...policy, ...(mode === 'custom' ? {} : SAMPLING_PRESETS[mode]), mode }); }}><option value="power">省电</option><option value="standard">标准</option><option value="accuracy">高频</option><option value="custom">自定义</option></select></label>

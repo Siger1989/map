@@ -6,7 +6,7 @@
   min-height: 40px;
   flex-shrink: 0;
 }
-.observatory[data-panel='about'] .control-popover {
+.observatory .control-popover[data-panel-kind='about'] {
   --map-panel-max-height: min(
     680px,
     calc(100dvh - 122px - var(--safe-top) - var(--safe-bottom))

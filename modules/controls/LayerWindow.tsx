@@ -4,6 +4,7 @@ import { Layers } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
 import { LayerPanel } from './LayerPanel';
 import { MapPanelHeader } from '../ui/MapPanelHeader';
+import { SpringPresence } from '../ui/SpringPresence';
 import './layerWindow.css';
 
 /** A map-level entry and non-modal window, independent of the bottom tool dock. */
@@ -106,10 +107,12 @@ export function LayerWindow({
         <Layers size={19} />
         <span>图层</span>
       </button>
-      {open && (
+      <SpringPresence open={open}>
         <section
           id="map-layer-window"
           className="layer-window control-popover glass"
+          data-spring-presence
+          data-spring-side="top"
           role="region"
           aria-labelledby="layer-window-title"
         >
@@ -142,7 +145,7 @@ export function LayerWindow({
             {detail}
           </div>
         </section>
-      )}
+      </SpringPresence>
     </section>
   );
 }

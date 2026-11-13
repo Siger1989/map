@@ -548,7 +548,8 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-d
   border-color: #c5897d;
 }
 [data-route-edit='true'] .track-draw-hint {
-  top: calc(72px + env(safe-area-inset-top));
+  top: calc(var(--home-top, 0px) + var(--home-header-height, 50px) + 8px);
+  left: var(--home-floating-left, 16px);
 }
 
 /* Compact node editor: six actions stay together, matching collection density. */

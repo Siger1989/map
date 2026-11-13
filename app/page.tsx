@@ -201,6 +201,7 @@ import {
   type Annotation,
 } from '@/modules/annotations/data';
 import { TrackPanel, TrackTools } from '@/modules/tracks/TrackPanel';
+import { SpringPresence } from '@/modules/ui/SpringPresence';
 import {
   TrackDrawing,
   type TrackDrawingHandle,
@@ -1774,7 +1775,6 @@ export default function Home() {
     previousRoutePanel.current = panel;
   }, [panel]);
   const canAddCenterMarker = !savedNavigationError.includes('已定位约') && (focusLock.locked || (panel === null &&
-    !tracks.drawing &&
     !areas.drawing &&
     !(areas.selected && areaEditing) &&
     !annotations.picking &&
@@ -2862,10 +2862,7 @@ export default function Home() {
             {areas.error && <p role="status">{areas.error}</p>}
           </div>
         )}
-        {tracks.editing &&
-          tracks.drawing &&
-          !areas.drawing &&
-          panel === null && (
+        <SpringPresence open={Boolean(tracks.editing && tracks.drawing && !areas.drawing && panel === null)}>
             <TrackTools
               tracks={tracks}
               display={routeDisplay}
@@ -2874,7 +2871,7 @@ export default function Home() {
                 if (tracks.complete()) setRouteWindow('card');
               }}
             />
-          )}
+        </SpringPresence>
         {tracks.drawing &&
           !areas.drawing &&
           panel === null &&
@@ -3255,7 +3252,7 @@ export default function Home() {
         )}
         <MapActions
           boxSelecting={boxSelecting}
-          favoriteControl={panel === null && !comparison && !focusLock.locked && !editor.session && !featureMove && !areas.drawing && !(areas.selected && areaEditing) && !tracks.drawing && !measurement.active && !sectionEditing ? <FavoriteSourceSwitcher
+          favoriteControl={!comparison && !focusLock.locked && !editor.session && !featureMove && !areas.drawing && !(areas.selected && areaEditing) && !measurement.active && !sectionEditing ? <FavoriteSourceSwitcher
             choices={sourceChoices} currentId={favoriteSourceId} onOpenChange={setFavoriteSourceOpen}
             onSelect={id => {
               const choice = sourceChoices.find(item => item.id === id);
@@ -3503,6 +3500,12 @@ export default function Home() {
           }
           onActive={(next) => {
             if (gpsPhotoBusy && next !== panel) return;
+            if (next === 'track' && panel === null && tracks.drawing) {
+              tracks.pause();
+              tracks.select(null);
+              setTrackLinePoint(null);
+              return;
+            }
             // Persist active route edits and line drafts before another feature
             // takes over. A failed write leaves the current operation open.
             if (next !== null && !prepareFeatureSwitch(next !== 'track', next !== 'track')) return;

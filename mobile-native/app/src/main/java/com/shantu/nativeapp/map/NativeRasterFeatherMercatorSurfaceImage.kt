@@ -26,7 +26,6 @@ internal class NativeRasterFeatherMercatorSurfaceImage(
     levels: LevelSet,
     private val featherOpaque: Boolean = true,
     private val backing: NativeRasterFeatherBackingStore? = null,
-    private val cssPixelScale: () -> Float = { 1f },
 ) : MercatorTiledSurfaceImage(factory, levels) {
     private class Leaf {
         var tile: ImageTile? = null
@@ -124,7 +123,6 @@ internal class NativeRasterFeatherMercatorSurfaceImage(
             val drawable = NativeRasterFeatherDrawable.obtain(pool)
             drawable.diagnostics = backing?.diagnostics
             drawable.preparedSequence = backing?.diagnostics?.sequence() ?: 0L
-            drawable.cssPixelScale = cssPixelScale().takeIf { it.isFinite() }?.coerceIn(0.5f, 8f) ?: 1f
             val childTexture = checkNotNull(own)
             val parentTile = checkNotNull(parent)
             val parentTexture = checkNotNull(ancestor)
@@ -182,7 +180,7 @@ internal class NativeRasterFeatherMercatorSurfaceImage(
     override fun clone() = NativeRasterFeatherMercatorSurfaceImage(tileFactory, with(levelSet) {
         LevelSet(MercatorSector.fromSector(sector), MercatorSector.fromSector(tileOrigin), firstLevelDelta,
             numLevels, tileWidth, tileHeight, levelOffset, firstLevel.levelNumber)
-    }, featherOpaque, null, cssPixelScale).also {
+    }, featherOpaque, null).also {
         // A clone can belong to a print window/context; do not share frame backing state across windows.
         it.imageOptions = imageOptions; it.detailControl = detailControl
         it.useAncestorTileTexture = useAncestorTileTexture; it.retrieveTopLevelTiles = retrieveTopLevelTiles
@@ -191,12 +189,11 @@ internal class NativeRasterFeatherMercatorSurfaceImage(
     companion object {
         fun build(factory: MercatorTileFactory, transparent: Boolean = false, maxZoom: Int = 21,
                   minZoom: Int = 1, tileSize: Int = 256, backing: NativeRasterFeatherBackingStore? = null,
-                  allowFeather: Boolean = !transparent,
-                  cssPixelScale: () -> Float = { 1f }): NativeRasterFeatherMercatorSurfaceImage {
+                  allowFeather: Boolean = !transparent): NativeRasterFeatherMercatorSurfaceImage {
             val sector = MercatorSector(); val origin = MercatorSector()
             val delta = Location(origin.deltaLatitude, origin.deltaLongitude)
             return NativeRasterFeatherMercatorSurfaceImage(factory,
-                LevelSet(sector, origin, delta, maxZoom + 1, tileSize, tileSize, minZoom), allowFeather, backing, cssPixelScale).apply {
+                LevelSet(sector, origin, delta, maxZoom + 1, tileSize, tileSize, minZoom), allowFeather, backing).apply {
                 if (!transparent) imageOptions = ImageOptions(ImageConfig.RGB_565)
             }
         }

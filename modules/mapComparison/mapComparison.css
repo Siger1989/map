@@ -32,7 +32,8 @@
 }
 .map-comparison-heading {
   display: flex; align-items: center; gap: 4px; padding: 0 8px 0 10px; min-width: 0;
-  height: 36px; flex: 0 0 36px; background: var(--ui-surface); pointer-events: auto;
+  height: 36px; flex: 0 0 36px; background: var(--ui-material-topbar,var(--ui-glass-surface)); color:var(--ui-glass-ink,var(--ui-ink)); pointer-events: auto;
+  backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter);
 }
 .map-comparison-heading strong { font-size: 14px; }
 .map-comparison-heading > strong { flex-shrink: 0; }
@@ -45,11 +46,11 @@
 .map-comparison-ui .map-comparison-heading .map-comparison-heading-icon[aria-label='退出双图源对比'] { width: 36px; min-width: 36px; height: 36px; min-height: 36px; }
 .map-comparison-drawing { position: absolute; inset: 32px 0 0; pointer-events: none; overflow: hidden; isolation: isolate; }
 .map-comparison-drawing .track-drawing { inset: 0; }
-.map-comparison-drawing-mode { position: absolute; bottom: calc(44px + var(--home-bottom) + 2px); left: 112px; right: 92px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; pointer-events: auto; background: var(--ui-surface); border-radius: var(--ui-radius-control); }
+.map-comparison-drawing-mode { position: absolute; bottom: calc(44px + var(--home-bottom) + 2px); left: 112px; right: 92px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; pointer-events: auto; background: var(--ui-material-rail,var(--ui-glass-surface)); color:var(--ui-glass-ink,var(--ui-ink)); border-radius: var(--ui-radius-control); box-shadow:var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); }
 .map-comparison-drawing-mode button { min-width: 0; padding: 0 2px; font-size: 11px; }
 .map-comparison-drawing-mode button[aria-pressed='true'] {
   background: var(--ui-selected);
-  color: var(--ui-accent);
+  color: var(--ui-selected-ink,var(--ui-active-ink));
   border-color: transparent;
   box-shadow: 0 0 6px 1px color-mix(in srgb,var(--ui-accent) 22%,transparent);
 }
@@ -58,7 +59,8 @@
 .map-comparison-pane { position: relative; min-width: 0; min-height: 0; }
 .map-comparison-toolbar {
   display: flex; height: 32px; gap: 4px; align-items: center;
-  padding: 0 8px; background: var(--ui-surface); box-sizing: border-box; pointer-events: auto;
+  padding: 0 8px; background: var(--ui-material-rail,var(--ui-glass-surface)); color:var(--ui-glass-ink,var(--ui-ink)); box-sizing: border-box; pointer-events: auto;
+  backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter);
 }
 .map-comparison-toolbar > span { font-size: 12px; padding: 0 4px; color: var(--ui-muted); }
 .map-comparison-ui select {
@@ -81,17 +83,17 @@
   position: absolute; z-index: 32; top: calc(100% + 2px); left: 0; width: min(250px, calc(100vw - 16px));
   max-height: min(48dvh, calc(100dvh - 120px));
   overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 3px;
-  border: 1px solid var(--ui-line); border-radius: 8px; background: var(--ui-surface); color: var(--ui-ink);
-  box-shadow: var(--ui-shadow); pointer-events: auto;
+  border: 1px solid var(--ui-glass-border,var(--ui-line)); border-radius: var(--ui-radius-card); background: var(--ui-material-panel,var(--ui-glass-surface)); color: var(--ui-glass-ink,var(--ui-ink));
+  box-shadow: var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); pointer-events: auto;
 }
 .comparison-source-popup[data-placement='above'] { top: auto; bottom: calc(100% + 2px); }
 .comparison-source-group { overflow: hidden; border-radius: 4px; }
 .comparison-source-group + .comparison-source-group { margin-top: 2px; }
-.comparison-source-group-0 { background: color-mix(in srgb, var(--ui-accent) 9%, var(--ui-surface)); }
-.comparison-source-group-1 { background: color-mix(in srgb, var(--ui-ink) 4%, var(--ui-surface)); }
-.comparison-source-group-2 { background: color-mix(in srgb, #65a9d5 9%, var(--ui-surface)); }
-.comparison-source-group-3 { background: color-mix(in srgb, #74b982 9%, var(--ui-surface)); }
-.comparison-source-group-4 { background: color-mix(in srgb, #d5a565 9%, var(--ui-surface)); }
+.comparison-source-group-0 { background: color-mix(in srgb, var(--ui-accent) 9%, transparent); }
+.comparison-source-group-1 { background: color-mix(in srgb, var(--ui-glass-ink,var(--ui-ink)) 4%, transparent); }
+.comparison-source-group-2 { background: color-mix(in srgb, #65a9d5 9%, transparent); }
+.comparison-source-group-3 { background: color-mix(in srgb, #74b982 9%, transparent); }
+.comparison-source-group-4 { background: color-mix(in srgb, #d5a565 9%, transparent); }
 .map-comparison-ui .comparison-source-popup .comparison-source-group-heading {
   display: flex; justify-content: space-between; align-items: center; width: 100%; height: 36px; min-height: 36px;
   padding: 0 6px; background: transparent; color: var(--ui-muted); font-size: 11px; text-align: left;
@@ -102,15 +104,16 @@
   padding: 0 6px; overflow: hidden; background: transparent; text-align: left; font-size: 12px;
 }
 .comparison-source-row > [role='option'] > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.comparison-source-row > [role='option'][aria-selected='true'] { color: var(--ui-accent); font-weight: 600; }
+.map-comparison-ui .comparison-source-row > [role='option'][aria-selected='true'] { background:var(--ui-selected); color: var(--ui-selected-ink,var(--ui-active-ink)); font-weight: 600; }
 .map-comparison-ui .comparison-source-row .comparison-source-favorite {
   display: grid; place-items: center; width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0;
   background: transparent; color: var(--ui-accent);
 }
+.map-comparison-ui .comparison-source-row .comparison-source-favorite[aria-pressed='true'] { color:var(--ui-accent); }
 .comparison-source-popup :is(button):focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
 .map-comparison-ui button {
   min-height: 36px; min-width: 36px; flex-shrink: 0; padding: 0 8px; border: 0;
-  border-radius: var(--ui-radius-control); background: var(--ui-raised); color: var(--ui-ink);
+  border-radius: var(--ui-radius-control); background: var(--ui-button); color: var(--ui-button-ink);
   font: inherit; font-size: 12px; cursor: pointer;
 }
 .map-comparison-ui .map-comparison-toolbar button { min-height: 28px; height: 28px; min-width: 28px; padding: 0 4px; }
@@ -122,14 +125,14 @@
 .map-comparison-ui :is(button, select):focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
 .map-comparison-status {
   position: absolute; top: 32px; left: 4px; right: 4px; margin: 4px 0; padding: 4px 8px;
-  font-size: 11px; line-height: 1.4; background: var(--ui-surface); border-radius: var(--ui-radius-control);
+  font-size: 11px; line-height: 1.4; color:var(--ui-glass-ink,var(--ui-ink)); background: var(--ui-material-toast,var(--ui-glass-surface)); border-radius: var(--ui-radius-control); box-shadow:var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter);
 }
 .map-comparison-track-selection {
   position: absolute; z-index: 8; left: 8px; bottom: calc(44px + var(--home-bottom) + 4px);
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px; width: min(230px, calc(100% - 16px));
   box-sizing: border-box; padding: 3px 4px 3px 8px; border: 1px solid var(--ui-line);
-  border-radius: var(--ui-radius-control); background: var(--ui-surface); color: var(--ui-ink);
-  box-shadow: var(--ui-shadow); pointer-events: auto;
+  border-radius: var(--ui-radius-card); background: var(--ui-material-panel,var(--ui-glass-surface)); color: var(--ui-glass-ink,var(--ui-ink));
+  box-shadow: var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); pointer-events: auto;
 }
 .map-comparison-track-selection strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
 .map-comparison-ui .map-comparison-track-selection button { flex: 0 0 44px; min-width: 44px; min-height: 44px; height: 44px; padding: 0 4px; color: var(--ui-accent); }
@@ -143,7 +146,7 @@
   position: absolute; z-index: 8; left: 8px; bottom: calc(44px + var(--home-bottom) + 8px);
   width: min(280px, calc(100% - 104px)); padding: 4px 8px; box-sizing: border-box;
   display: flex; flex-direction: column; gap: 4px; border-radius: 8px;
-  background: var(--ui-surface); color: var(--ui-ink); box-shadow: var(--ui-shadow); pointer-events: auto;
+  background: var(--ui-material-panel,var(--ui-glass-surface)); color: var(--ui-glass-ink,var(--ui-ink)); box-shadow: var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); pointer-events: auto;
 }
 .map-comparison-planned-route header, .map-comparison-planned-route p { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12px; }
 .map-comparison-planned-route header strong { flex: 1; }
@@ -152,20 +155,21 @@
 .map-comparison-ui .map-comparison-planned-route header button { width: 28px; padding: 0; color: var(--ui-close, #cbc37d); }
 .map-comparison-ui .map-comparison-planned-route .route-solid { background: var(--ui-accent); color: var(--ui-on-accent, #18301d); }
 .map-comparison-edit-overlay { position: absolute; z-index: 24; inset: 32px 0 0; overflow: hidden; pointer-events: none; }
-.map-comparison-actions { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(44px, 1fr); align-items: center; gap: 4px; flex: 0 0 44px; min-width: 0; padding: 0 8px; box-sizing: border-box; background: var(--ui-surface); pointer-events: auto; }
+.map-comparison-actions { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(44px, 1fr); align-items: center; gap: 4px; flex: 0 0 44px; min-width: 0; padding: 0 8px; box-sizing: border-box; background: var(--ui-material-bottom,var(--ui-glass-surface)); color:var(--ui-glass-ink,var(--ui-ink)); box-shadow:inset 0 var(--ui-glass-edge-width,1px) 0 var(--ui-glass-border); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); pointer-events: auto; }
 .map-comparison-actions button { box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 44px; width: 100%; height: 44px; padding: 0 2px; white-space: nowrap; background: transparent; border-radius: var(--ui-radius-control); }
 .map-comparison-actions button small { font-size: 11px; line-height: 12px; }
 .map-comparison-actions button svg { flex-shrink: 0; }
 .map-comparison-actions .dimension-button { font-size: 17px; font-weight: 700; }
-.map-comparison-actions button[aria-pressed='true'] { color: var(--ui-accent); }
+.map-comparison-actions button[aria-pressed='true']:not(.dimension-button) { background:var(--ui-selected); color: var(--ui-selected-ink,var(--ui-active-ink)); }
+.map-comparison-actions .dimension-button[aria-pressed='true'] { color:var(--ui-glass-ink); }
 .map-comparison-direction { position: relative; flex: 0 0 44px; width: 44px; height: 44px; }
 .map-comparison-actions .map-comparison-direction .position-direction-button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0 1px; border-radius: var(--ui-radius-control); }
 .map-comparison-actions .map-comparison-direction .position-direction-button small { max-width: 42px; font-size: 8px; line-height: 9px; }
 .map-comparison-actions .map-comparison-direction .direction-menu { z-index: 8; left: 0; right: auto; bottom: 48px; width: 176px; max-width: min(176px, calc(100vw - 16px)); padding: 4px; }
 .map-comparison-actions .map-comparison-direction .direction-menu button { width: 100%; min-width: 0; min-height: 36px; height: 36px; flex-direction: row; justify-content: flex-start; padding: 4px 8px; font-size: 12px; }
-.map-comparison-direction-status { position: absolute; z-index: 9; left: 0; bottom: 48px; width: 168px; box-sizing: border-box; padding: 4px 6px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-control); background: var(--ui-surface); color: var(--ui-ink); font-size: 10px; line-height: 1.2; white-space: normal; pointer-events: none; }
-.map-comparison-operation-error { position: absolute; bottom: 44px; left: 4px; right: 4px; padding: 4px 8px; background: var(--ui-surface); color: var(--ui-danger); font-size: 12px; margin: 0; }
-.map-comparison-marker-menu { position: absolute; z-index: 7; left: 8px; bottom: calc(44px + var(--home-bottom) + 4px); width: min(150px, calc(100vw - 16px)); box-sizing: border-box; padding: 3px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-card); background: var(--ui-surface); color: var(--ui-ink); box-shadow: var(--ui-shadow); pointer-events: auto; }
+.map-comparison-direction-status { position: absolute; z-index: 9; left: 0; bottom: 48px; width: 168px; box-sizing: border-box; padding: 4px 6px; border: 1px solid var(--ui-glass-border,var(--ui-line)); border-radius: var(--ui-radius-control); background: var(--ui-material-toast,var(--ui-glass-surface)); color: var(--ui-glass-ink,var(--ui-ink)); box-shadow:var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); font-size: 10px; line-height: 1.2; white-space: normal; pointer-events: none; }
+.map-comparison-operation-error { position: absolute; bottom: 44px; left: 4px; right: 4px; padding: 4px 8px; background: var(--ui-material-toast,var(--ui-glass-surface)); color: var(--ui-danger); box-shadow:var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); font-size: 12px; margin: 0; }
+.map-comparison-marker-menu { position: absolute; z-index: 7; left: 8px; bottom: calc(44px + var(--home-bottom) + 4px); width: min(150px, calc(100vw - 16px)); box-sizing: border-box; padding: 3px; border: 1px solid var(--ui-glass-border,var(--ui-line)); border-radius: var(--ui-radius-card); background: var(--ui-material-panel,var(--ui-glass-surface)); color: var(--ui-glass-ink,var(--ui-ink)); box-shadow: var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); pointer-events: auto; }
 .map-comparison-marker-menu > header { display: flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 2px 2px 4px; }
 .map-comparison-marker-menu > header strong { flex: 1; min-width: 0; font-size: 10px; }
 .map-comparison-ui .map-comparison-marker-menu > header button { min-width: 28px; width: 28px; min-height: 28px; height: 28px; padding: 0; }

@@ -38,7 +38,9 @@ export function PlaceSearch({
   const history = useSearchHistory();
   const { title } = useMapPlaceLabel(center, zoom);
   const historyView = !selectedPlace && !query.trim();
-  const historyHeight = Math.min(320, Math.max(76, 68 + Math.min(history.entries.length, 6) * 40));
+  // 36px title, 44px history actions, panel insets, then 44px rows + divider.
+  // Match the actual touch controls so a short history never ends mid-row.
+  const historyHeight = Math.min(320, 92 + Math.min(history.entries.length, 6) * 45);
   const recordSearch = (value: string) => { const normalized = value.trim(); if (normalized.length > 1) history.record(normalized); };
   const closeSearch = () => { setOpen(false); setListExpanded(false); setFiltersOpen(false); setSelectedPlace(null); };
 

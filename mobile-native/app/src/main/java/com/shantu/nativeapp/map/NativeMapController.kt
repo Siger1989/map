@@ -134,7 +134,6 @@ class NativeMapController internal constructor(
     private val encodedKey = URLEncoder.encode(key, "UTF-8")
     private val callbackOwner = NativeCallbackOwner(this)
     private val rasterGeneration: () -> Long? = callbackOwner.let { owner -> { owner.get()?.tileDemandGeneration } }
-    private val rasterCssPixelScale: () -> Float = callbackOwner.let { owner -> { owner.get()?.bridgeMarkerCssScale?.toFloat() ?: 1f } }
     private val rasterFeatherBacking = NativeRasterFeatherBackingStore()
     private val rasterTileUrl: (String, Int, Int, Int) -> String = encodedKey.let { token ->
         { layer, x, y, z -> tiandituTileUrl(layer, x, y, z, token) }
@@ -187,7 +186,7 @@ class NativeMapController internal constructor(
         NativeCartographyLayers(
             worldWindow, { sourceKey }, sharedNetwork = network,
             tileIdentityFor = { source, layer, z, x, y, style -> owner.get()?.tileIdentityAndRegister(source, layer, z, x, y, style) },
-            viewId = { owner.get()?.tileViewId }, generation = rasterGeneration, cssPixelScale = rasterCssPixelScale,
+            viewId = { owner.get()?.tileViewId }, generation = rasterGeneration,
         ) { status ->
             owner.get()?.let { controller ->
                 if (status.message.isNotBlank()) controller.reportStatus(status.message)
@@ -2050,7 +2049,7 @@ class NativeMapController internal constructor(
             if (coverage != null) NativePrintTrackedMercatorSurfaceImage.build(factory, coverage, transparent, maxZoom, minZoom, tileSize)
             else MercatorTiledImageLayer.buildTiledSurfaceImage(factory, transparent, tileSize = tileSize, maxZoom = maxZoom, minZoom = minZoom)
         } else NativeRasterFeatherMercatorSurfaceImage.build(factory, transparent, maxZoom = maxZoom, minZoom = minZoom,
-            tileSize = tileSize, backing = if (!transparent) rasterFeatherBacking else null, cssPixelScale = rasterCssPixelScale)
+            tileSize = tileSize, backing = if (!transparent) rasterFeatherBacking else null)
         return image.apply {
             // Keep rendering the closest available source tile when descendants exceed source coverage.
             useAncestorTileTexture = true

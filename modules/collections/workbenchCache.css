@@ -4,7 +4,7 @@
   min-height: 32px;
   border-bottom: 1px solid var(--folder-line, var(--ui-line));
 }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench .workbench-tags > button[data-collection-tab='cache'] {
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .collection-workbench .workbench-tags > button[data-collection-tab='cache'] {
   flex: 1 0 60px;
   min-width: 60px;
 }

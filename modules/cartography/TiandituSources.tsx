@@ -40,7 +40,7 @@ export function TiandituSources({
       </div>
       <small>{settings.satelliteProvider === 'tianditu' ? usesVectorPlaceLabels(settings) ? '地名：OpenStreetMap · 覆盖可能不同' : '天地图 · 高清备用 · 有每日额度' : '默认 · 约10米 · 非商业使用 · 下载待接入'}</small>
       {settings.satelliteProvider === 'tianditu' && <div className="tianditu-options">
-        <label>
+        <span className="tianditu-option-caption">地名注记</span>
           <select
             aria-label="地名注记"
             value={
@@ -61,8 +61,7 @@ export function TiandituSources({
             <option value="cta">地形注记</option>
             <option value="none">关闭注记</option>
           </select>
-        </label>
-        <label>
+        <label className="tianditu-boundaries-choice">
           <input
             type="checkbox"
             checked={settings.tiandituBoundaries ?? false}

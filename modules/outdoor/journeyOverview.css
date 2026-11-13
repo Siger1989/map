@@ -1,13 +1,13 @@
-.observatory.home-map[data-panel='outdoor'] .control-popover {
+.observatory.home-map .control-popover[data-panel-kind='outdoor'] {
   top: auto !important; bottom: calc(var(--home-footer) + 8px) !important; left: var(--home-left); right: auto;
   width: min(300px,calc(100vw - var(--home-left) - var(--home-right) - 52px));
   max-width: 300px; max-height: min(200px,calc(100dvh - 130px));
   padding: 4px 6px; border: 1px solid var(--home-green); border-radius: 5px;
   background: white; color: var(--home-ink); box-shadow: none; backdrop-filter: none;
 }
-.observatory.home-map[data-panel='outdoor'] .dock-heading { min-height: 28px; padding: 0 0 3px; border-bottom: 1px solid #d2dfe4; }
-.observatory.home-map[data-panel='outdoor'] .dock-heading h2 { font-size: 13px; }
-.observatory.home-map[data-panel='outdoor'] .dock-content { padding: 0; min-height: 0; overflow: auto; }
+.observatory.home-map :where(.control-popover)[data-panel-kind='outdoor'] .dock-heading { min-height: 28px; padding: 0 0 3px; border-bottom: 1px solid #d2dfe4; }
+.observatory.home-map :where(.control-popover)[data-panel-kind='outdoor'] .dock-heading h2 { font-size: 13px; }
+.observatory.home-map :where(.control-popover)[data-panel-kind='outdoor'] .dock-content { padding: 0; min-height: 0; overflow: auto; }
 .journey-overview { color: #10243c; font-size: 12px; }
 .recording-field-actions { display: flex; gap: 4px; padding-top: 4px; }
 .observatory .recording-field-actions button { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 36px; padding: 0 6px; background: #dcf0dd !important; color: #15572b !important; border: 1px solid #9bb7bc; }

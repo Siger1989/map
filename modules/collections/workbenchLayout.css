@@ -1,11 +1,11 @@
 /* The reviewed upper-list / lower-map layout uses the existing live 3D map. */
-.observatory[data-panel='favorites'] {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) {
   --collection-split: min(72%, calc(100% - 180px - var(--safe-bottom)));
 }
-.observatory[data-panel='favorites'] > .map-canvas {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) > .map-canvas {
   top: var(--collection-split);
 }
-.observatory[data-panel='favorites'] .control-dock .control-popover {
+.observatory .control-dock .control-popover[data-panel-kind='favorites'] {
   top: 0;
   left: 0;
   right: 0;
@@ -22,13 +22,13 @@
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-.observatory[data-panel='favorites'] .dock-heading,
-.observatory[data-panel='favorites'] .topbar,
-.observatory[data-panel='favorites'] .map-toolbar,
-.observatory[data-panel='favorites'] .camera-gizmo {
+.observatory :where(.control-popover)[data-panel-kind='favorites'] .dock-heading,
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .topbar,
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .map-toolbar,
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .camera-gizmo {
   display: none;
 }
-.observatory[data-panel='favorites'] .control-dock .dock-content {
+.observatory .control-dock :where(.control-popover)[data-panel-kind='favorites'] .dock-content {
   flex: 1;
   min-height: 0;
   height: 100%;
@@ -48,7 +48,7 @@
   height: 100%;
 }
 /* Compact edge toolbar: five controls in one row; extra controls wrap above, never scroll. */
-.observatory[data-panel='favorites'] .map-actions {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .map-actions {
   top: auto;
   bottom: calc(4px + var(--safe-bottom));
   right: 4px;
@@ -65,7 +65,7 @@
   overflow: visible;
   border: 0;
 }
-.observatory[data-panel='favorites'] .map-actions > button {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .map-actions > button {
   flex: 0 0 44px;
   width: 44px;
   min-width: 44px;
@@ -75,21 +75,21 @@
   border-radius: 6px;
   font-size: 12px;
 }
-.observatory[data-panel='favorites'] .map-actions > button svg {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .map-actions > button svg {
   width: 17px;
   height: 17px;
 }
-.observatory[data-panel='favorites'] .map-actions > button small {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .map-actions > button small {
   display: none;
 }
-.observatory[data-panel='favorites'] .maplibregl-ctrl-bottom-left {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .maplibregl-ctrl-bottom-left {
   top: 4px;
   bottom: auto !important;
   left: 4px !important;
   right: auto !important;
   max-width: calc(100% - 72px);
 }
-.observatory[data-panel='favorites'] .map-location-settings {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .map-location-settings {
   right: 0;
   top: auto;
   bottom: calc(100% + 4px);
@@ -98,13 +98,13 @@
   max-width: calc(100vw - 8px);
   font-size: 11px;
 }
-.observatory[data-panel='favorites'] .workbench-tags {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .workbench-tags {
   scrollbar-width: none;
 }
-.observatory[data-panel='favorites'] .workbench-tags::-webkit-scrollbar {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .workbench-tags::-webkit-scrollbar {
   display: none;
 }
-.observatory[data-panel='favorites'] .catalog-panel {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .catalog-panel {
   height: 100%;
   padding: 4px;
 }
@@ -120,22 +120,22 @@
 .observatory .collection-workbench .collection-action-dialog {
   max-height: calc(100dvh - 24px);
 }
-.observatory[data-panel='favorites'] > .saved-measurements {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) > .saved-measurements {
   top: var(--collection-split);
   height: calc(100% - var(--collection-split));
 }
 
 /* The folder header owns the top area; map chrome belongs to the lower map. */
-.observatory.home-map[data-panel='favorites']:has(.collection-workbench) {
+.observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench) {
   --collection-split: min(52dvh, 440px, calc(100% - 236px - var(--safe-bottom)));
 }
-.observatory.home-map[data-panel='favorites']:has(.collection-workbench) :is(.home-topbar,.weather-summary,.map-layer-control,.home-map-actions) { display: none; }
-.observatory.home-map[data-panel='favorites']:has(.collection-workbench)::before { display: none; }
-.observatory.home-map[data-panel='favorites']:has(.collection-workbench) #map-control-panel {
+.observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench) :is(.home-topbar,.weather-summary,.map-layer-control,.home-map-actions) { display: none; }
+.observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench)::before { display: none; }
+.observatory.home-map:has(.collection-workbench) #map-control-panel[data-panel-kind='favorites'] {
   z-index: 30; height: var(--collection-split) !important;
   max-height: var(--collection-split) !important; border-radius: 0;
 }
-.observatory.home-map[data-panel='favorites']:has(.collection-workbench) .home-camera-control .camera-gizmo { display: block; }
+.observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench) .home-camera-control .camera-gizmo { display: block; }
 .observatory.home-map .collection-workbench .workbench-heading { padding: 8px; gap: 4px; height:auto; min-height:54px; box-sizing:border-box; }
 .observatory.home-map .collection-workbench .workbench-heading button {
   min-width: 36px; min-height: 36px; height: 36px; padding: 0 5px;
@@ -198,38 +198,38 @@ html[data-ui-theme] .observatory.home-map .collection-workbench :is(.workbench-f
 
 /* Inset category surfaces: 28px visual plate inside the existing 36px hit area. */
 .observatory.home-map .collection-workbench .workbench-tags { gap: 2px; padding-inline: 4px; }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench .workbench-tags > button {
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .collection-workbench .workbench-tags > button {
   isolation: isolate; flex: 1 0 36px; min-width: 36px;
   height: 36px; min-height: 36px; padding: 0 6px;
   background: transparent; border: 0; border-radius: 6px; box-shadow: none;
   color: var(--ui-button-ink); font-size: 11px; font-weight: 500; line-height: 16px; white-space: nowrap;
 }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench .workbench-tags > button::before {
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .collection-workbench .workbench-tags > button::before {
   content: ''; position: absolute; inset: 4px 0; z-index: -1; pointer-events: none;
   background: var(--ui-raised); border-radius: inherit;
 }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench .workbench-tags > button[aria-pressed='true'] {
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .collection-workbench .workbench-tags > button[aria-pressed='true'] {
   background: transparent; color: var(--ui-accent); font-weight: 600;
 }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench .workbench-tags > button[aria-pressed='true']::before {
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .collection-workbench .workbench-tags > button[aria-pressed='true']::before {
   background: var(--ui-selected);
 }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench .workbench-tags > .collection-tab-dragging { outline-color: var(--ui-accent); }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench .workbench-tags > .collection-tab-dragging::before { background: var(--ui-selected); }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench .workbench-tags > button[aria-pressed='true']::after {
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .collection-workbench .workbench-tags > .collection-tab-dragging { outline-color: var(--ui-accent); }
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .collection-workbench .workbench-tags > .collection-tab-dragging::before { background: var(--ui-selected); }
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .collection-workbench .workbench-tags > button[aria-pressed='true']::after {
   height: 2px; width: 14px; left: calc(50% - 7px); right: auto; bottom: 5px;
 }
 @media (hover: hover) {
-  html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench .workbench-tags > button:hover:not(:disabled)::before { background: var(--ui-selected); }
+  html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .collection-workbench .workbench-tags > button:hover:not(:disabled)::before { background: var(--ui-selected); }
 }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench .workbench-tags > button:active:not(:disabled)::before { background: var(--ui-active); }
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .collection-workbench .workbench-tags > button:active:not(:disabled)::before { background: var(--ui-active); }
 
 /* In landscape, keep the complete collection workspace beside the live map. */
 @media (min-width: 600px) and (max-height: 600px) and (orientation: landscape) {
-  .observatory.home-map[data-panel='favorites']:has(.collection-workbench) {
+  .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench) {
     --collection-panel-width: min(42vw, 360px);
   }
-  .observatory.home-map[data-panel='favorites']:has(.collection-workbench) #map-control-panel {
+  .observatory.home-map:has(.collection-workbench) #map-control-panel[data-panel-kind='favorites'] {
     top: 0;
     right: auto;
     bottom: var(--home-footer, calc(56px + var(--safe-bottom, 0px)));
@@ -240,7 +240,7 @@ html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-wo
     max-width: var(--collection-panel-width) !important;
     padding-top: var(--safe-top, 0px) !important;
   }
-  .observatory.home-map[data-panel='favorites']:has(.collection-workbench) > .map-canvas {
+  .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench) > .map-canvas {
     top: 0;
     right: 0;
     bottom: var(--home-footer, calc(56px + var(--safe-bottom, 0px)));
@@ -248,24 +248,24 @@ html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-wo
     width: auto;
     height: auto;
   }
-  .observatory.home-map[data-panel='favorites']:has(.collection-workbench) .collection-workbench,
-  .observatory.home-map[data-panel='favorites']:has(.collection-workbench) .workbench-split {
+  .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench) .collection-workbench,
+  .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench) .workbench-split {
     width: 100%;
     height: 100%;
     min-width: 0;
     min-height: 0;
   }
-  .observatory.home-map[data-panel='favorites']:has(.collection-workbench) .workbench-split {
+  .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench) .workbench-split {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
   }
-  .observatory.home-map[data-panel='favorites']:has(.collection-workbench) .workbench-collections {
+  .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench) .workbench-collections {
     min-width: 0;
     min-height: 0;
     border-right: 1px solid var(--ui-line, #39413e);
     border-bottom: 0;
   }
-  .observatory.home-map[data-panel='favorites']:has(.collection-workbench) > .saved-measurements {
+  .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench) > .saved-measurements {
     top: 0;
     right: 0;
     bottom: var(--home-footer, calc(56px + var(--safe-bottom, 0px)));
@@ -273,7 +273,7 @@ html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-wo
     width: calc(100% - var(--collection-panel-width));
     height: calc(100% - var(--home-footer, calc(56px + var(--safe-bottom, 0px))));
   }
-  .observatory.home-map[data-panel='favorites']:has(.collection-workbench) .survey-map-overlay {
+  .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.collection-workbench) .survey-map-overlay {
     top: 0;
     right: 0;
     bottom: var(--home-footer, calc(56px + var(--safe-bottom, 0px)));

@@ -170,17 +170,17 @@
 .route-cache-archive-content > span { min-width:0; line-height:1.25; overflow-wrap:anywhere; }
 .route-cache-archive-content > .route-cache-archive-action { flex:0 0 auto; min-width:max-content; min-height:28px; white-space:nowrap; color:var(--ui-accent, #d0f76b); }
 .route-cache-panel[data-step='packages'] { display:flex; flex:1 1 auto; min-height:0; overflow:hidden; }
-.observatory.home-map[data-panel='cache'] .control-dock .control-popover:has(.route-cache-panel[data-step='packages']) {
+.observatory.home-map .control-dock .control-popover[data-panel-kind='cache']:has(.route-cache-panel[data-step='packages']) {
   max-height:min(360px, 50dvh, calc(100dvh - 112px - var(--safe-top, 0px) - var(--safe-bottom, 0px))) !important;
 }
-.observatory.home-map[data-panel='cache'] .control-dock .control-popover .dock-content:has(.route-cache-panel[data-step='packages']) {
+.observatory.home-map .control-dock .control-popover[data-panel-kind='cache'] .dock-content:has(.route-cache-panel[data-step='packages']) {
   display:flex;
   flex:1 1 auto;
   min-height:0;
   flex-direction:column;
   overflow:hidden;
 }
-.observatory.home-map[data-panel='cache'] .control-dock .control-popover .dock-content > .route-cache-panel[data-step='packages'] {
+.observatory.home-map .control-dock .control-popover[data-panel-kind='cache'] .dock-content > .route-cache-panel[data-step='packages'] {
   min-height:0;
   overflow:hidden;
 }
@@ -197,14 +197,14 @@
 .observatory .control-dock .control-popover .dock-content .route-cache-panel[data-step='packages'] .route-cache-package :is(button, select) { min-height: 36px !important; }
 
 /* The shared dock is right-aligned; reserve the measured right-side tool rail. */
-.observatory.home-map[data-panel='cache'] .control-dock { z-index: 14; }
-.observatory.home-map[data-panel='cache'] .control-dock .control-popover {
+.observatory.home-map .control-dock:has(> [data-panel-kind='cache']) { z-index: 14; }
+.observatory.home-map .control-dock .control-popover[data-panel-kind='cache'] {
   left: 8px !important;
   right: auto !important;
   width: min(276px, calc(100% - 80px)) !important;
 }
 @media (max-height: 560px) {
-  .observatory.home-map[data-panel='cache'] .control-dock .control-popover {
+  .observatory.home-map .control-dock .control-popover[data-panel-kind='cache'] {
     width: min(276px, calc(100% - 120px)) !important;
   }
 }

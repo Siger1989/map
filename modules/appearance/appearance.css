@@ -48,7 +48,7 @@ html[data-ui-theme] .observatory.home-map .control-popover .dock-heading h2 { fo
 html[data-ui-theme] .observatory.home-map .control-popover :is(button,summary,select) { min-height:36px; font-size:11px; padding:2px 4px; }
 html[data-ui-theme] .observatory.home-map .dock-content { padding-top:4px; }
 html[data-ui-theme] .observatory.home-map :is(.track-panel,.route-panel,.tool-grid) { gap:4px; }
-html[data-ui-theme] .observatory.home-map[data-panel='track'] .control-dock>.control-popover { top:auto; bottom:calc(var(--home-footer) + 4px); left:var(--home-left); right:auto; width:min(276px,calc(100% - var(--home-left) - 88px)); }
+html[data-ui-theme] .observatory.home-map .control-dock>.control-popover[data-panel-kind='track'] { top:auto; bottom:calc(var(--home-footer) + 4px); left:var(--home-left); right:auto; width:min(276px,calc(100% - var(--home-left) - 88px)); }
 html[data-ui-theme] .observatory.home-map .track-start-actions { gap:4px; }
 /* The same row holds the five route actions; preserve at least 36px targets at 360px. */
 html[data-ui-theme] .observatory.home-map .home-route-actions { grid-template-columns:repeat(4,minmax(0,1fr)); gap:2px; }
@@ -72,7 +72,7 @@ html[data-ui-theme] .observatory.home-map .appearance-settings>header { position
 .appearance-settings>header strong { flex:1; text-align:center; }
 .appearance-mode { display:flex; align-items:center; gap:4px; }
 .appearance-mode select { flex:1; min-width:0; }
-.appearance-presets { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+.appearance-presets { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; }
 .appearance-presets button { display:flex; align-items:center; justify-content:center; gap:4px; }
 .appearance-presets i { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 .appearance-preview { display:flex; align-items:center; justify-content:space-between; gap:4px; padding:4px; border:1px solid var(--ui-line); min-height:36px; }

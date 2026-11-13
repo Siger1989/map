@@ -1,7 +1,7 @@
 /* Single-page recording console; overrides the legacy stacked form skin only here. */
 .observatory.home-map #map-control-panel:has(.record-console) {
   width: min(300px,calc(100vw - var(--home-left) - var(--home-right) - 48px)) !important;
-  height: auto !important; max-height: min(500px,calc(100dvh - var(--home-footer) - var(--home-top) - 76px)) !important;
+  height: auto; max-height: min(500px,calc(100dvh - var(--home-footer) - var(--home-top) - 76px)) !important;
   padding: 4px 6px !important; overflow: hidden !important;
 }
 .observatory.home-map #map-control-panel:has(.record-console) .dock-heading:not(.map-panel-header) { height: 36px !important; min-height: 36px !important; margin: 0 !important; padding: 0 2px !important; }
@@ -127,7 +127,7 @@
 }
 
 /* 09-30: match the approved compact tools/planner sample within this console. */
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel:has(.record-console) {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor']:has(.record-console) {
   width:min(276px,calc(100% - var(--home-left) - var(--home-right) - 80px)) !important;
   --record-radius: var(--ui-radius-control);
   --record-primary-height: 36px;
@@ -136,12 +136,12 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='o
   background: var(--ui-surface);
   gap: 4px;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel:has(.record-console) > .dock-heading:not(.map-panel-header) {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor']:has(.record-console) > .dock-heading:not(.map-panel-header) {
   height: 28px !important;
   min-height: 28px !important;
   padding: 0 !important;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel:has(.record-console) > .dock-heading .icon-button:not(.ui-panel-close) {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor']:has(.record-console) > .dock-heading .icon-button:not(.ui-panel-close) {
   position: relative;
   box-sizing: border-box;
   width: 28px;
@@ -152,21 +152,21 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='o
   padding: 0;
   border-radius:var(--ui-radius-control);
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel:has(.record-console) > .dock-heading .icon-button::before {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor']:has(.record-console) > .dock-heading .icon-button::before {
   content: '';
   position: absolute;
   inset: -2px;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel .record-console {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor'] .record-console {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel .record-console :is(.record-function-group,.record-console-actions,.record-console-status,.record-console-footer) {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor'] .record-console :is(.record-function-group,.record-console-actions,.record-console-status,.record-console-footer) {
   margin: 0 !important;
   padding: 0 !important;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel .record-console button {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor'] .record-console button {
   position: relative;
   box-sizing: border-box;
   height: 28px !important;
@@ -177,26 +177,26 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='o
   line-height: 16px !important;
   gap: 4px;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel .record-console button::before {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor'] .record-console button::before {
   content: '';
   position: absolute;
   inset: -2px 0;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel .record-console button.is-primary {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor'] .record-console button.is-primary {
   min-height: 36px !important;
   height: 36px !important;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel .record-console .record-console-actions {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor'] .record-console .record-console-actions {
   align-items: center;
   gap: 4px;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel .record-console .record-group-along .record-console-actions > button {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor'] .record-console .record-group-along .record-console-actions > button {
   flex-direction: row;
   white-space: normal;
   height: auto !important;
   padding: 4px 6px !important;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel .record-console .record-group-settings > summary {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor'] .record-console .record-group-settings > summary {
   box-sizing: border-box;
   min-height: 32px;
   padding: 2px 6px;
@@ -205,7 +205,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='o
   font-size: 11px;
   line-height: 16px;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='outdoor'] #map-control-panel .record-console .record-console-footer {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor'] .record-console .record-console-footer {
   min-height: 32px;
   border-top: 0;
 }

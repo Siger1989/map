@@ -176,14 +176,14 @@ export function CameraGizmo({
         onLostPointerCapture={cancelPointer}
       >
         <ellipse
+          className="camera-gizmo-base"
           cx="55"
           cy="81"
           rx="46"
           ry="23"
-          fill="var(--ui-surface, #18201f)"
-          fillOpacity="0.6"
-          stroke="color-mix(in srgb, var(--ui-ink, #f2f5ed) 24%, var(--ui-surface, #18201f))"
-          strokeWidth="7"
+          fill="none"
+          stroke="var(--ui-glass-border, #ffffff40)"
+          strokeWidth="2"
         />
         <g
           className="camera-ring"
@@ -226,7 +226,8 @@ export function CameraGizmo({
             rx="46"
             ry="23"
             fill="none"
-            stroke="color-mix(in srgb, var(--ui-accent, #d0f76b) 68%, var(--ui-surface, #18201f))"
+            stroke="var(--ui-accent, #d0f76b)"
+            strokeOpacity="0.75"
             strokeWidth="1.5"
           />
           <circle

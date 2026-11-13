@@ -82,12 +82,22 @@
 .floating-navigation-controls__primary-option { flex-basis: 100%; }
 
 /* The display settings include first-use authorization; keep that action reachable. */
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel.control-popover--floating-map {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'].control-popover--floating-map {
   --map-panel-max-width: 300px;
-  --map-panel-max-height: min(200px, calc(100dvh - var(--home-top) - var(--home-footer) - 24px));
+  --map-panel-max-height: min(320px, calc(100dvh - var(--home-top) - var(--home-footer) - 24px));
   left:var(--home-floating-left,16px);
   width: min(300px, calc(100% - var(--home-floating-left,16px) - 80px));
-  max-height: min(200px, calc(100dvh - var(--home-top) - var(--home-footer) - 24px));
+  max-height: min(320px, calc(100dvh - var(--home-top) - var(--home-footer) - 24px));
+}
+
+/* The default settings page is deliberately short enough to show without an
+   inner scrollbar on normal phone heights. Keep real scrolling for short views
+   and for expanded explanatory copy. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'].control-popover--floating-map > .dock-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 @media (max-width: 360px) {

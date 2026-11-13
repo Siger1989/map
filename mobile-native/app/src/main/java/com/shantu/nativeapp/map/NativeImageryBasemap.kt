@@ -55,7 +55,6 @@ class NativeImageryBasemap internal constructor(
     private val tileIdentityFor: (String, Int, Int, Int, String) -> TileRequestIdentity? = { _, _, _, _, _ -> null },
     private val viewId: () -> String? = { null },
     private val demandGeneration: () -> Long? = { null },
-    private val cssPixelScale: () -> Float = { 1f },
 ) : AutoCloseable {
     /** Insert below the normal map base; contains only the original low-resolution z0-z5 local imagery. */
     val underlayLayer = RenderableLayer("EOxCloudless low-resolution global underlay")
@@ -254,7 +253,7 @@ class NativeImageryBasemap internal constructor(
             override fun getImageSource(x: Int, y: Int, z: Int): ImageSource = source(x, y, z)
         }
         return NativeRasterFeatherMercatorSurfaceImage.build(factory, true, minZoom = 0, maxZoom = maxZoom,
-            tileSize = 256, allowFeather = true, backing = selectedFeatherBacking, cssPixelScale = cssPixelScale)
+            tileSize = 256, allowFeather = true, backing = selectedFeatherBacking)
     }
 
     private fun publish(status: NativeImageryStatus) { currentStatus = status; onStatus(status) }

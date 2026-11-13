@@ -343,7 +343,7 @@
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
-.observatory[data-panel='annotations'] .control-popover {
+.observatory .control-popover[data-panel-kind='annotations'] {
   left: var(--edge-left);
   right: auto;
   width: min(360px, calc(100% - var(--edge-left) - var(--edge-right) - 46px));
@@ -354,7 +354,7 @@
   );
   padding: 0 8px 8px;
 }
-.observatory[data-panel='annotations'] .dock-content {
+.observatory :where(.control-popover)[data-panel-kind='annotations'] .dock-content {
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -463,11 +463,11 @@
 
 /* User-requested compact marker controls: preserve every action while reducing
    the full editing surface below the shared standard sizes. */
-.observatory[data-panel='annotations'] .control-popover {
+.observatory .control-popover[data-panel-kind='annotations'] {
   width: min(300px, calc(100% - var(--edge-left) - var(--edge-right) - 46px));
   padding: 0 6px 6px;
 }
-.observatory[data-panel='annotations'] .dock-content { padding-top: 4px; }
+.observatory :where(.control-popover)[data-panel-kind='annotations'] .dock-content { padding-top: 4px; }
 .annotation-panel { gap: 4px; font-size: 12px; }
 .annotation-panel button,
 .annotation-panel input,
@@ -504,12 +504,12 @@
 .annotation-attribute-row { grid-template-columns: minmax(0,1fr) minmax(0,1.3fr) 30px; gap: 2px; }
 .annotation-attribute-row input, .annotation-attribute-row textarea { min-height: 30px; padding: 3px; font-size: 12px; }
 .annotation-input-done { min-height: 28px; }
-.observatory.home-map[data-panel='annotations'] .control-popover { width: min(280px, calc(100% - var(--edge-left) - var(--edge-right) - 46px)); padding: 0 5px 5px; }
-.observatory.home-map[data-panel='annotations'] .control-popover .dock-heading { min-height: 30px; height: 30px; padding: 2px 5px; }
-.observatory.home-map[data-panel='annotations'] .control-popover .dock-heading .icon-button { width: 28px; min-width: 28px; height: 28px; min-height: 28px; flex-basis: 28px; }
-.observatory.home-map[data-panel='annotations'] .control-popover .annotation-panel button { min-height: 30px; font-size: 12px; border-radius: 4px; }
-.observatory.home-map[data-panel='annotations'] .control-popover .annotation-panel :is(input,select,textarea) { min-height: 30px; font-size: 13px; }
-.observatory.home-map[data-panel='annotations'] .control-popover .annotation-panel .annotation-field :is(input,select,textarea) { min-height: 30px; }
+.observatory.home-map .control-popover[data-panel-kind='annotations'] { width: min(280px, calc(100% - var(--edge-left) - var(--edge-right) - 46px)); padding: 0 5px 5px; }
+.observatory.home-map .control-popover[data-panel-kind='annotations'] .dock-heading { min-height: 30px; height: 30px; padding: 2px 5px; }
+.observatory.home-map .control-popover[data-panel-kind='annotations'] .dock-heading .icon-button { width: 28px; min-width: 28px; height: 28px; min-height: 28px; flex-basis: 28px; }
+.observatory.home-map .control-popover[data-panel-kind='annotations'] .annotation-panel button { min-height: 30px; font-size: 12px; border-radius: 4px; }
+.observatory.home-map .control-popover[data-panel-kind='annotations'] .annotation-panel :is(input,select,textarea) { min-height: 30px; font-size: 13px; }
+.observatory.home-map .control-popover[data-panel-kind='annotations'] .annotation-panel .annotation-field :is(input,select,textarea) { min-height: 30px; }
 .selection-tools.is-annotation {
   top: calc(52px + var(--safe-top));
   bottom: auto;

@@ -23,7 +23,7 @@ html[data-ui-theme] button.ui-panel-close {
   border:0 !important;
   border-radius:var(--ui-radius-control,4px) !important;
   color:var(--ui-close) !important;
-  background:var(--ui-panel-close-background,var(--ui-raised)) !important;
+  background:var(--ui-panel-close-background,var(--ui-control-subtle)) !important;
   box-shadow:none !important;
   line-height:1 !important;
 }

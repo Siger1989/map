@@ -28,7 +28,7 @@
   .layer-panel
   .layer-parameters-toggle[aria-expanded='true'] {
   color: var(--ui-accent);
-  background: var(--ui-field);
+  background: var(--ui-control-subtle);
 }
 .observatory
   .map-layer-control

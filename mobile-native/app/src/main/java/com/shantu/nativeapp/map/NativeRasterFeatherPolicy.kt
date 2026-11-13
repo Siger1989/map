@@ -7,8 +7,8 @@ internal object NativeRasterFeatherPolicy {
     const val EAST = 4
     const val NORTH = 8
     const val ALL = WEST or SOUTH or EAST or NORTH
-    const val BAND_FRACTION = 1f / 16f
-    const val SCREEN_CSS_PIXELS = 6f
+    /** Maximum feather depth measured inward from one child-tile edge; 0.5 ends at tile center. */
+    const val BAND_FRACTION = 0.5f
     const val MAX_LEAVES = 2048
 
     fun key(level: Int, row: Int, column: Int): Long =

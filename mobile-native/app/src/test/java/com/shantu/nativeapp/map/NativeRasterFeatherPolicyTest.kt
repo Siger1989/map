@@ -90,6 +90,18 @@ class NativeRasterFeatherPolicyTest {
         assertEquals(1.0, red + blue, 0.0)
     }
 
+    @Test fun `candidate feather spans one child half edge and reaches full child weight at its center`() {
+        assertEquals(0.5f, p.BAND_FRACTION)
+        assertEquals(0.0, p.fade(0.0, p.BAND_FRACTION.toDouble()), 0.0)
+        assertEquals(0.5, p.fade(0.25, p.BAND_FRACTION.toDouble()), 0.0)
+        assertEquals(1.0, p.fade(0.5, p.BAND_FRACTION.toDouble()), 0.0)
+        assertEquals(1.0, p.fade(0.75, p.BAND_FRACTION.toDouble()), 0.0)
+
+        val centerEdgeFade = p.fade(0.5, p.BAND_FRACTION.toDouble())
+        assertEquals(1.0, centerEdgeFade * centerEdgeFade, 0.0) // two opposite active edges
+        assertEquals(1.0, centerEdgeFade * centerEdgeFade * centerEdgeFade * centerEdgeFade, 0.0)
+    }
+
     private class Shader : NativeRasterFeatherProgram() { fun fragment() = programSources[1] }
 
     @Test fun `controlled shader pairs parent on unit zero with child on unit five`() {
@@ -100,6 +112,8 @@ class NativeRasterFeatherPolicyTest {
         assertTrue(fragment.contains("nativeFeatherPair && texCount > 1"))
         assertTrue(fragment.contains("texture2D(texSampler0, uv0)"))
         assertTrue(fragment.contains("texture2D(texSampler1, uv1)"))
+        assertTrue(fragment.contains("vec2 uv0 = tileCoord * texScaleTrans[0].xy + texScaleTrans[0].zw"))
+        assertTrue(fragment.contains("vec2 uv1 = tileCoord * texScaleTrans[1].xy + texScaleTrans[1].zw"))
         assertTrue(fragment.contains("nativeRasterFeather(nativeFeatherWidth, tileCoord, texRect[1])"))
         assertTrue(fragment.contains("parent = texture2D(texSampler0, uv0) * (texOpacity[0] * mask0)"))
         assertTrue(fragment.contains("child = texture2D(texSampler1, uv1) * (texOpacity[1] * mask1)"))
@@ -108,9 +122,11 @@ class NativeRasterFeatherPolicyTest {
         assertFalse(fragment.contains("gl_FragColor.a *= nativeRasterFeather"))
     }
 
-    @Test fun `controlled feather keeps six physical pixel and one sixteenth tile caps`() {
-        assertEquals(6f, NativeRasterFeatherPolicy.SCREEN_CSS_PIXELS)
-        assertTrue(Shader().fragment().contains("6.0 * nativePixelRatio"))
-        assertEquals(1f / 16f, NativeRasterFeatherPolicy.BAND_FRACTION)
+    @Test fun `half tile candidate is not reduced by a screen pixel cap`() {
+        val fragment = Shader().fragment()
+        assertEquals(0.5f, NativeRasterFeatherPolicy.BAND_FRACTION)
+        assertFalse(fragment.contains("nativePixelRatio"))
+        assertFalse(fragment.contains("screenWidth"))
+        assertFalse(fragment.contains("fwidth(p)"))
     }
 }

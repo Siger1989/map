@@ -115,8 +115,8 @@
 }
 .track-draw-hint {
   position: absolute;
-  top: calc(52px + var(--safe-top));
-  left: var(--edge-left);
+  top: calc(var(--home-top, 0px) + var(--home-header-height, 50px) + 8px);
+  left: var(--home-floating-left, 16px);
   right: 58px;
   z-index: 9;
   font-size: 11px;
@@ -274,9 +274,10 @@
   bottom: calc(106px + var(--safe-bottom)) !important;
 }
 .track-draw-hint {
-  top: calc(46px + var(--safe-top));
+  top: calc(var(--home-top, 0px) + var(--home-header-height, 50px) + 8px);
+  left: var(--home-floating-left, 16px);
   right: auto;
-  max-width: calc(100% - 66px);
+  max-width: calc(100% - var(--home-floating-left, 16px) - 58px);
   padding: 4px 7px;
   font-size: 10px;
   pointer-events: none;
@@ -330,12 +331,25 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[
   height: 32px;
   padding: 3px;
 }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-drawing-style .track-color-picker {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-control, 10px);
+  box-shadow: none;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-drawing-style .track-color-picker > input[type='color'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-drawing-style select {
-  width: 58px;
-  min-width: 58px;
+  width: 80px;
+  min-width: 80px;
   min-height: 32px;
   height: 32px;
-  padding: 2px 4px;
+  padding: 2px 20px 2px 4px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-condition-input {
   flex: 1 1 80px;
@@ -460,7 +474,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-panel 
   border-color: var(--ui-accent);
   font-weight: 700;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel .track-panel button.route-primary { min-height: 44px; height: 44px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='track'] .track-panel button.route-primary { min-height: 44px; height: 44px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-panel .track-name,
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-panel select {
   min-width: 0;
@@ -472,7 +486,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-panel 
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-panel .track-start-actions button,
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-panel .track-continue-picker select { min-height: 36px; height: 36px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-panel .track-start-actions button { min-height: 44px; height: 44px; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='track'] #map-control-panel .track-panel .track-start-actions button { min-height: 44px; height: 44px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='track'] .track-panel .track-start-actions button { min-height: 44px; height: 44px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-panel .track-open { min-height: 44px; height: auto; text-align: left; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-panel .track-name { font-size: 16px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-panel .track-continue-picker { gap: 4px; }

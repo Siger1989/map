@@ -3,11 +3,13 @@ import { X } from 'lucide-react';
 import type { ComparisonChoice } from './choices';
 import type { LayerSettings } from '../map/types';
 import { LayerPanel } from '../controls/LayerPanel';
+import { SpringPresence } from '../ui/SpringPresence';
 import { isLayoutInteraction } from '../uiLayout/events';
 import '../controls/layerWindow.css';
 import './comparisonLayers.css';
 
 export function ComparisonLayerWindow({
+  open,
   pane,
   onPane,
   choice,
@@ -19,6 +21,7 @@ export function ComparisonLayerWindow({
   satelliteDate,
   satelliteStatus,
 }: {
+  open: boolean;
   pane: 0 | 1;
   onPane: (pane: 0 | 1) => void;
   choice: ComparisonChoice;
@@ -35,6 +38,7 @@ export function ComparisonLayerWindow({
   const dismiss = useRef(onClose);
   dismiss.current = onClose;
   useEffect(() => {
+    if (!open) return;
     closeButton.current?.focus({ preventScroll: true });
     const outside = (event: PointerEvent) => {
       if (isLayoutInteraction(event)) return;
@@ -50,11 +54,11 @@ export function ComparisonLayerWindow({
     };
     document.addEventListener('pointerdown', outside, true);
     return () => document.removeEventListener('pointerdown', outside, true);
-  }, []);
+  }, [open]);
   return (
     <section
       className="map-layer-control comparison-layer-control"
-      data-app-back="40"
+      data-app-back={open ? '40' : undefined}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           event.preventDefault();
@@ -63,11 +67,13 @@ export function ComparisonLayerWindow({
         }
       }}
     >
-      <section
+      <SpringPresence open={open}><section
         ref={root}
         id="comparison-layer-window"
         className="layer-window control-popover glass comparison-layer-window"
         aria-label="对比图层设置"
+        data-spring-presence
+        data-spring-side="top"
       >
         <div className="dock-heading">
           <h2>图层</h2>
@@ -106,7 +112,7 @@ export function ComparisonLayerWindow({
             </p>
           )}
         </div>
-      </section>
+      </section></SpringPresence>
     </section>
   );
 }

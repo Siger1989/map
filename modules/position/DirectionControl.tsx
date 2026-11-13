@@ -1,27 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
 import { Compass, Navigation2 } from 'lucide-react';
 import type { DirectionMode } from './types';
 const MODES: {id:DirectionMode;label:string}[]=[
   {id:'free',label:'自由转向'},{id:'north',label:'正北朝上'},
   {id:'device',label:'手机朝向朝上'},{id:'motion',label:'运动方向朝上'},
 ];
+const SHORT_LABELS: Record<DirectionMode,string> = {
+  free:'自由', north:'正北', device:'手机', motion:'运动',
+};
 export function DirectionControl({mode,status,onChange}:{mode:DirectionMode;status?:string;onChange:(mode:DirectionMode)=>void}){
-  const [open,setOpen]=useState(false);const root=useRef<HTMLDivElement>(null),button=useRef<HTMLButtonElement>(null);
-  useEffect(()=>{
-    if(!open)return;
-    const outside=(e:PointerEvent)=>{if(!root.current?.contains(e.target as Node)&&!button.current?.contains(e.target as Node))setOpen(false);};
-    document.addEventListener('pointerdown',outside);
-    return()=>{document.removeEventListener('pointerdown',outside);};
-  },[open]);
-  return <>
-    <button ref={button} className="position-dock-button position-direction-button glass" aria-label="地图朝向模式"
-      aria-expanded={open} aria-pressed={mode!=='free'} title={status||MODES.find(m=>m.id===mode)?.label} onClick={()=>setOpen(v=>!v)}>
+  const currentIndex=Math.max(0,MODES.findIndex(item=>item.id===mode));
+  const current=MODES[currentIndex];
+  const next=MODES[(currentIndex+1)%MODES.length];
+  const accessibleLabel=`当前${current.label}；点击切换到${next.label}`;
+  return <button className="position-dock-button position-direction-button glass" aria-label={accessibleLabel}
+      aria-pressed={mode!=='free'} title={[accessibleLabel,status].filter(Boolean).join('；')} onClick={()=>onChange(next.id)}>
       {mode==='motion'?<Navigation2 size={17} fill="currentColor"/>:<Compass size={17}/>}
-      <small>{mode==='motion'?'运动朝上':mode==='device'?'手机朝上':mode==='north'?'正北':'方向'}</small>
-    </button>
-    {open&&<div ref={root} className="direction-menu glass" data-app-back="40" role="group" aria-label="选择地图朝向" onKeyDown={e=>{if(e.key==='Escape'&&!e.defaultPrevented){e.preventDefault();e.stopPropagation();setOpen(false);button.current?.focus();}}}>
-      {MODES.map(m=><button key={m.id} aria-pressed={m.id===mode} onClick={()=>{onChange(m.id);setOpen(false);button.current?.focus();}}>{m.label}</button>)}
-      <small>{mode==='motion'&&status?status:'运动方向根据定位航向计算；停下时保持方向。'}</small>
-    </div>}
-  </>;
+      <small>{SHORT_LABELS[mode]}</small>
+    </button>;
 }

@@ -1,6 +1,6 @@
 import { SmartInput } from '../input/SmartText';
 import { useDockClearance } from './useDockClearance';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { ChevronDown, History, Play } from 'lucide-react';
 import { formatDistance, type Coordinate } from '../navigation/types';
 import { JourneyPanel } from '../journey/JourneyPanel';
@@ -461,20 +461,28 @@ export function TrackPanel({
   );
 }
 export function TrackTools({
+  ref: surfaceRef,
+  inert,
+  'aria-hidden': ariaHidden,
   tracks: t,
   display,
   onFinish,
   onLocate,
 }: {
+  ref?: Ref<HTMLDivElement>;
+  inert?: boolean;
+  'aria-hidden'?: boolean;
   tracks: ManualTracksState;
   display: ReturnType<typeof useRouteDisplay>;
   onFinish: () => void;
   onLocate: (point: Coordinate) => void;
 }) {
   const dock = useDockClearance<HTMLDivElement>('--drawing-info-clearance');
+  useImperativeHandle(surfaceRef, () => dock.current!, []);
   const [displayOpen, setDisplayOpen] = useState(false);
   return (
-    <div ref={dock} className="track-tools glass" aria-label="绘制工具" data-view={displayOpen ? 'display' : 'tools'}>
+    <div ref={dock} className="track-tools glass" aria-label="绘制工具" data-view={displayOpen ? 'display' : 'tools'}
+      data-spring-presence data-spring-side="bottom" inert={inert} aria-hidden={ariaHidden}>
       {displayOpen ? <>
         <div className="track-tools-display-header">
           <strong>路线显示</strong>

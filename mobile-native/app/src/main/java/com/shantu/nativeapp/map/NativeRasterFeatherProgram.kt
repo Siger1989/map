@@ -22,7 +22,6 @@ internal open class NativeRasterFeatherProgram(shadows: Boolean = false) : Surfa
     private val transform = Matrix3()
     private var edgeWidthId = KglUniformLocation.NONE
     private var pairEnabledId = KglUniformLocation.NONE
-    private var pixelRatioId = KglUniformLocation.NONE
 
     init {
         val shader = programSources[1]
@@ -30,15 +29,11 @@ internal open class NativeRasterFeatherProgram(shadows: Boolean = false) : Surfa
         check(shader.contains(marker)) { "Review locked WorldWind surface shader before changing feathering" }
         var fragment = shader.replace(
             marker,
-            marker + "\nuniform highp vec4 nativeFeatherWidth;\nuniform bool nativeFeatherPair;\nuniform highp float nativePixelRatio;"
+            marker + "\nuniform highp vec4 nativeFeatherWidth;\nuniform bool nativeFeatherPair;"
         )
         val helper = """
             highp float nativeRasterFeather(highp vec4 width, highp vec2 p, highp vec4 rect) {
                 if (max(max(width.x, width.y), max(width.z, width.w)) <= 0.0) return 1.0;
-                #ifdef WW_HAS_DERIVATIVES
-                highp vec2 screenWidth = fwidth(p) * (${NativeRasterFeatherPolicy.SCREEN_CSS_PIXELS} * nativePixelRatio);
-                width = min(width, vec4(screenWidth, screenWidth));
-                #endif
                 highp vec4 distance = vec4(p.x - rect.x, p.y - rect.y, rect.z - p.x, rect.w - p.y);
                 highp vec4 fade = smoothstep(vec4(0.0), max(width, vec4(0.0000001)), distance);
                 fade = mix(vec4(1.0), fade, step(vec4(0.0000001), width));
@@ -82,13 +77,10 @@ internal open class NativeRasterFeatherProgram(shadows: Boolean = false) : Surfa
         super.initProgram(dc)
         edgeWidthId = gl.getUniformLocation(program, "nativeFeatherWidth")
         pairEnabledId = gl.getUniformLocation(program, "nativeFeatherPair")
-        pixelRatioId = gl.getUniformLocation(program, "nativePixelRatio")
     }
 
-    fun setFeatherPair(enabled: Boolean, edges: Int, terrainSector: Sector, textureSector: Sector,
-                       cssPixelScale: Float = 1f) {
+    fun setFeatherPair(enabled: Boolean, edges: Int, terrainSector: Sector, textureSector: Sector) {
         gl.uniform1i(pairEnabledId, if (enabled) 1 else 0)
-        gl.uniform1f(pixelRatioId, cssPixelScale.takeIf { it.isFinite() }?.coerceIn(0.5f, 8f) ?: 1f)
         if (!enabled || edges == 0) {
             edgeWidthVector.fill(0f)
             gl.uniform4fv(edgeWidthId, 1, edgeWidthVector, 0)

@@ -7,10 +7,10 @@
 .suggestion-surface,
 .observatory .place-search-results,
 .observatory .route-search-results {
-  background: var(--ui-surface) !important;
-  color: var(--ui-ink, #193d38) !important;
+  background: var(--ui-material-panel, var(--ui-glass-surface, var(--ui-surface))) !important;
+  color: var(--ui-glass-ink, var(--ui-ink, #193d38)) !important;
   backdrop-filter: blur(14px);
-  border: 1px solid var(--ui-line, #5b9489) !important;
+  border: var(--ui-glass-edge-width, 1px) solid var(--ui-glass-border, var(--ui-line, #5b9489)) !important;
   border-radius: 9px;
   box-shadow: 0 8px 24px #102b3960;
   font-size: 12px !important;
@@ -47,7 +47,10 @@
 .observatory .place-search-options button:focus,
 .observatory .route-search-results button:focus {
   background: var(--ui-selected, #dceaffc9) !important;
+  color: var(--ui-selected-ink, var(--ui-active-ink)) !important;
 }
+.text-suggestions button:is([aria-selected='true'],:hover) :is(strong,small),
+.observatory :is(.place-search-options,.route-search-results) button:focus :is(strong,small) { color:inherit !important; }
 .observatory .place-search-options strong,
 .observatory .route-search-results strong {
   color: var(--ui-ink, #193d38) !important;

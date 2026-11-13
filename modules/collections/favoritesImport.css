@@ -25,16 +25,16 @@
 }
 
 /* Keep the existing favorites/map split and remove only the dock's extra plate. */
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .control-dock:has(.favorites-import-backdrop) .control-popover {
+html[data-ui-theme] .observatory.home-map .control-dock:has(.favorites-import-backdrop) .control-popover[data-panel-kind='favorites'] {
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
-html[data-ui-theme] .observatory.home-map[data-panel='favorites']:has(.favorites-import-backdrop) > .map-canvas { top: 0; }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench.favorites-import { height: auto; min-height: 0; }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .favorites-import .workbench-collections { height: auto; flex: 1 1 auto; min-height: 0; }
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']):has(.favorites-import-backdrop) > .map-canvas { top: 0; }
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .collection-workbench.favorites-import { height: auto; min-height: 0; }
+html[data-ui-theme] .observatory.home-map:has(:where(.control-popover)[data-panel-kind='favorites']) .favorites-import .workbench-collections { height: auto; flex: 1 1 auto; min-height: 0; }
 
 .favorites-import .workbench-collections {
   display: flex;

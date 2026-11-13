@@ -1,0 +1,101 @@
+/* Focus lock changes business state immediately; this only animates the UI leaving view. */
+@media (prefers-reduced-motion: no-preference) {
+  .observatory.home-map > :not(.map-canvas):not(.global-focus-lock):not(.focus-live-data):not(.navigation-live-strip):not(.guidance-progress-rail):not(.route-weather-rail):not(.home-position-dock):not(.home-camera-control):not(.map-center-cursor) {
+    transition-property: opacity, translate, display;
+    transition-duration: 160ms, 160ms, 160ms;
+    transition-timing-function: ease, ease, ease;
+    transition-behavior: normal, normal, allow-discrete;
+  }
+
+  .observatory.home-map[data-focus-locked='true'] > :not(.map-canvas):not(.global-focus-lock):not(.focus-live-data):not(.navigation-live-strip):not(.guidance-progress-rail):not(.route-weather-rail):not(.home-position-dock):not(.home-camera-control):not(.map-center-cursor) {
+    opacity: 0;
+    translate: var(--focus-lock-exit-x, 0px) var(--focus-lock-exit-y, 6px);
+    pointer-events: none !important;
+  }
+
+  @starting-style {
+    .observatory.home-map > :not(.map-canvas):not(.global-focus-lock):not(.focus-live-data):not(.navigation-live-strip):not(.guidance-progress-rail):not(.route-weather-rail):not(.home-position-dock):not(.home-camera-control):not(.map-center-cursor) {
+      opacity: 0;
+      translate: var(--focus-lock-exit-x, 0px) var(--focus-lock-exit-y, 6px);
+    }
+  }
+
+  .observatory.home-map > :is(.home-topbar, .map-layer-toggle, .map-layer-control, .weather-summary, .home-map-actions, .home-route-card, .home-journey-points) {
+    --focus-lock-exit-y: -6px;
+  }
+
+  .observatory.home-map > :is(.control-dock, .home-recording, .track-tools) {
+    --focus-lock-exit-y: 6px;
+  }
+
+  .observatory.home-map > :is(.route-edit-dock, .measurement-panel, .marker-workspace, .route-editor-dialog) {
+    --focus-lock-exit-x: -6px;
+    --focus-lock-exit-y: 0px;
+  }
+  .observatory.home-map > .home-map-actions {
+    --focus-lock-exit-x: 6px;
+    --focus-lock-exit-y: 0px;
+  }
+
+  /* The position dock remains mounted and anchored while locked. Animate only
+     the controls the existing lock rule hides; north/direction and marker
+     controls stay live, as does the separate follow button. */
+  .observatory.home-map .home-position-dock .position-extended-controls > :not(.position-direction-button):not(.direction-menu):not(.center-add):not(.center-error) {
+    transition-property: opacity, translate, display;
+    transition-duration: 160ms, 160ms, 160ms;
+    transition-timing-function: ease, ease, ease;
+    transition-behavior: normal, normal, allow-discrete;
+  }
+
+  .observatory.home-map[data-focus-locked='true'] .home-position-dock .position-extended-controls > :not(.position-direction-button):not(.direction-menu):not(.center-add):not(.center-error) {
+    opacity: 0;
+    translate: var(--focus-lock-exit-x, 6px) var(--focus-lock-exit-y, 0px);
+    pointer-events: none !important;
+  }
+
+  @starting-style {
+    .observatory.home-map .home-position-dock .position-extended-controls > :not(.position-direction-button):not(.direction-menu):not(.center-add):not(.center-error) {
+      opacity: 0;
+      translate: var(--focus-lock-exit-x, 6px) var(--focus-lock-exit-y, 0px);
+    }
+  }
+
+  /* The weather rail is intentionally retained during guidance; otherwise the
+     existing lock rule hides it and it follows the same short exit. */
+  .observatory.home-map > .route-weather-rail {
+    transition-property: opacity, translate, display;
+    transition-duration: 160ms, 160ms, 160ms;
+    transition-timing-function: ease, ease, ease;
+  }
+
+  .observatory.home-map:not([data-guiding='true']) > .route-weather-rail {
+    transition-behavior: normal, normal, allow-discrete;
+  }
+
+  .observatory.home-map[data-focus-locked='true']:not([data-guiding='true']) > .route-weather-rail {
+    opacity: 0;
+    translate: 0 -6px;
+    pointer-events: none !important;
+  }
+
+  @starting-style {
+    .observatory.home-map:not([data-guiding='true']) > .route-weather-rail {
+      opacity: 0;
+      translate: 0 -6px;
+    }
+  }
+
+  .observatory.home-map::before,
+  .observatory.home-map .maplibregl-control-container {
+    transition-property: opacity, display;
+    transition-duration: 160ms, 160ms;
+    transition-timing-function: ease, ease;
+    transition-behavior: normal, allow-discrete;
+  }
+
+  .observatory.home-map[data-focus-locked='true']::before,
+  .observatory.home-map[data-focus-locked='true'] .maplibregl-control-container {
+    opacity: 0;
+    pointer-events: none !important;
+  }
+}

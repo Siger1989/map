@@ -21,6 +21,8 @@ import '@/modules/controls/compactDensity.css';
 import '@/modules/controls/homeMap.css';
 import '@/modules/controls/outdoorSurfaces.css';
 import '@/modules/controls/outdoorTheme.css';
+import '@/modules/appearance/roundedSpring.css';
+import '@/modules/controls/focusLockMotion.css';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

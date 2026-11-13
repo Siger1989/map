@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { DocumentTextIcon, MapIcon as SolidMapIcon, PencilIcon, StarIcon, BriefcaseIcon } from '@heroicons/react/24/solid';
 import { MapPanelHeader } from '../ui/MapPanelHeader';
+import { SpringPresence } from '../ui/SpringPresence';
 
 export type ControlPanel =
   | 'about'
@@ -141,9 +142,11 @@ export function ControlDock({
         }
       }}
     >
-      {active && (
+      <SpringPresence open={Boolean(active)}>
         <section
           className={`control-popover glass${floatingSubview ? ' control-popover--floating-map' : ''}`}
+          data-spring-presence
+          data-panel-kind={active}
           role="region"
           aria-labelledby="dock-title"
           id="map-control-panel"
@@ -215,7 +218,7 @@ export function ControlDock({
             )}
           </div>
         </section>
-      )}
+      </SpringPresence>
       <div className="map-toolbar">
         <nav className="home-bottom-nav" aria-label="地图功能">
           {[
@@ -229,7 +232,7 @@ export function ControlDock({
               key={id}
               data-panel-toggle={id}
               aria-label={label}
-              aria-expanded={active === id}
+              aria-expanded={active === id || (id === 'track' && drawingActive)}
               data-home-selected={active === id || (id === 'track' && drawingActive)}
               aria-controls={active === id ? 'map-control-panel' : undefined}
               onClick={() => onActive(

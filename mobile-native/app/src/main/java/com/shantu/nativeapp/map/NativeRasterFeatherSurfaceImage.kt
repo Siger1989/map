@@ -18,7 +18,6 @@ internal class NativeRasterFeatherSurfaceImage(
     private val x: Int,
     private val xyzY: Int,
     private val backing: NativeRasterFeatherBackingStore?,
-    private val cssPixelScale: () -> Float = { 1f },
 ) : SurfaceImage(sector, imageSource) {
     @Volatile var featherEdges: Int = 0
 
@@ -40,7 +39,6 @@ internal class NativeRasterFeatherSurfaceImage(
         val drawable = NativeRasterFeatherDrawable.obtain(pool)
         drawable.diagnostics = backing?.diagnostics
         drawable.preparedSequence = backing?.diagnostics?.sequence() ?: 0L
-        drawable.cssPixelScale = cssPixelScale().takeIf { it.isFinite() }?.coerceIn(0.5f, 8f) ?: 1f
         drawable.set(NativeRasterFeatherProgram.get(rc), sector, rc.currentLayer.opacity, own,
             own.coordTransform, rc.globe.offset, terrainSector)
         drawable.edges = featherEdges

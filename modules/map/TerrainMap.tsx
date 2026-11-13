@@ -12,6 +12,7 @@ import { installFollowPanHandler } from './followGestures';
 import { cameraDetailZoom } from './cameraDetailZoom';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
 import { flashCollectionSelection } from '../collections/selectionHighlight';
+import { favoritesViewportPadding } from '../collections/favoritesViewportPadding';
 import { offlineMapProtocol } from '../outdoor/tileCache';
 import { mapTileRequestTransform, registerTiandituProtocol, tiandituLoadingSnapshot } from '../mapSources/tiandituProtocol';
 import { installTiandituRecovery } from '../mapSources/tiandituRecovery';
@@ -394,15 +395,32 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       const { clientWidth: w, clientHeight: h } = m.getContainer();
       if (w < 20 || h < 20) return;
       latest.current.onBrowse();
+      const mapContainer = m.getContainer();
+      const panel = mapContainer.ownerDocument.querySelector<HTMLElement>(
+        '#map-control-panel[data-panel-kind="favorites"]',
+      );
+      const panelRect = panel?.querySelector('.collection-workbench')
+        ? panel.getBoundingClientRect()
+        : null;
+      const mapRect = mapContainer.getBoundingClientRect();
+      const basePadding = padding
+        ? {
+            top: Math.min(padding.top, h * 0.3),
+            bottom: Math.min(padding.bottom, h * 0.35),
+            left: Math.min(padding.left, w * 0.2),
+            right: Math.min(padding.right, w * 0.25),
+          }
+        : { top: Math.min(56, h * 0.28, w * 0.2), right: 0, bottom: 0, left: 0 };
+      const occlusion = panelRect
+        ? favoritesViewportPadding(mapRect, panelRect, w, h, 16, basePadding)
+        : null;
+      const fitPadding = occlusion
+        ? occlusion
+        : padding
+          ? basePadding
+          : Math.min(56, h * 0.28, w * 0.2);
       m.fitBounds([min, max], {
-        padding: padding
-          ? {
-              top: Math.min(padding.top, h * 0.3),
-              bottom: Math.min(padding.bottom, h * 0.35),
-              left: Math.min(padding.left, w * 0.2),
-              right: Math.min(padding.right, w * 0.25),
-            }
-          : Math.min(56, h * 0.28, w * 0.2),
+        padding: fitPadding,
         maxZoom: 18,
         pitch: 0,
         bearing: 0,

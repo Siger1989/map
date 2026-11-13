@@ -347,7 +347,7 @@
   pointer-events: auto;
   cursor: pointer;
 }
-.observatory[data-panel='favorites'] .survey-map-overlay {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .survey-map-overlay {
   top: var(--collection-split);
   height: calc(100% - var(--collection-split));
 }

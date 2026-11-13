@@ -19,7 +19,6 @@ import earth.worldwind.util.kgl.GL_TEXTURE0
 internal class NativeRasterFeatherDrawable private constructor() : DrawableSurfaceTexture() {
     var edges = 0
     var backingTexture: Texture? = null
-    var cssPixelScale = 1f
     val backingMatrix = Matrix3()
     var diagnostics: NativeRasterFeatherDiagnostics? = null
     var preparedSequence = 0L
@@ -28,7 +27,6 @@ internal class NativeRasterFeatherDrawable private constructor() : DrawableSurfa
     override fun recycle() {
         edges = 0
         backingTexture = null
-        cssPixelScale = 1f
         diagnostics = null
         preparedSequence = 0L
         super.recycle()
@@ -87,7 +85,7 @@ internal class NativeRasterFeatherDrawable private constructor() : DrawableSurfa
                         if (childBound) {
                             program.setBatchTexture(0, tile.backingMatrix, terrainSector, tile.textureSector, tile.opacity)
                             program.setBatchTexture(1, tile.texCoordMatrix, terrainSector, tile.textureSector, tile.opacity)
-                            program.setFeatherPair(true, tile.edges, terrainSector, tile.textureSector, tile.cssPixelScale)
+                            program.setFeatherPair(true, tile.edges, terrainSector, tile.textureSector)
                             pair = true
                             count = 2
                         } else {
@@ -131,7 +129,6 @@ internal class NativeRasterFeatherDrawable private constructor() : DrawableSurfa
                 it.ownPool = pool
                 it.edges = 0
                 it.backingTexture = null
-                it.cssPixelScale = 1f
                 it.diagnostics = null
                 it.preparedSequence = 0L
             }

@@ -170,11 +170,11 @@
 .observatory .route-share summary {
   min-height: 36px;
 }
-.observatory[data-panel='favorites'] .map-actions {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .map-actions {
   max-width: 180px;
 }
 @media (max-width: 300px) {
-  .observatory[data-panel='favorites'] .map-actions {
+  .observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .map-actions {
     max-width: 132px;
   }
   .route-display-control:has(.route-display-settings) .route-display-info,
@@ -206,7 +206,7 @@
   bottom: calc(78px + var(--safe-bottom));
 }
 .observatory:has(.map-actions.is-expanded) .route-display-info,
-.observatory[data-panel='favorites'] .route-display-info,
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .route-display-info,
 .observatory:has(.route-display-settings) .route-display-info,
 .observatory:has(.route-details) .route-display-info {
   visibility: hidden;

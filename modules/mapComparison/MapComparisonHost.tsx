@@ -365,10 +365,10 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
           </ComparisonEditorPosition.Provider>
         </section>}
         {editorDialog}
-        {layerPane !== null && <ComparisonLayerWindow pane={layerPane} onPane={setLayerPane} choice={choice(layerPane)} side={side}
-          onChange={patch => changeLayers(layerPane, patch)} onClose={closeLayers} status={status[layerPane]}
-          satelliteDate={satellite[layerPane]?.date} satelliteStatus={satellite[layerPane]?.status}
-          onSource={() => { const index = layerPane; setLayerPane(null); sourceControls.current[index]?.focus({ preventScroll: true }); }} />}
+        <ComparisonLayerWindow open={layerPane !== null} pane={layerPane ?? 0} onPane={setLayerPane} choice={choice(layerPane ?? 0)} side={side}
+          onChange={patch => { if (layerPane !== null) changeLayers(layerPane, patch); }} onClose={closeLayers} status={status[layerPane ?? 0]}
+          satelliteDate={satellite[layerPane ?? 0]?.date} satelliteStatus={satellite[layerPane ?? 0]?.status}
+          onSource={() => { const index = layerPane; setLayerPane(null); if (index !== null) sourceControls.current[index]?.focus({ preventScroll: true }); }} />
         {mode === 'draw' && operations?.drawingEnabled !== false && <div className="map-comparison-drawing-mode" aria-label="画线吸附设置">
           <button type="button" title="节点吸附" aria-label="节点吸附" aria-pressed={operations?.snapping ?? false} disabled={!operations} onClick={() => operations?.onSnappingChange(!operations.snapping)}>点吸附</button>
           <button type="button" title="道路吸附" aria-label="道路吸附" aria-pressed={operations?.roadSnapping ?? false} disabled={!operations} onClick={() => operations?.onRoadSnappingChange(!operations.roadSnapping)}>道路</button>

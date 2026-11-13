@@ -197,7 +197,7 @@
   fill: var(--ui-muted, currentColor);
   font-size: 9px;
 }
-.observatory[data-panel='favorites'] .route-display-info {
+.observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .route-display-info {
   bottom: calc(52px + var(--safe-bottom));
 }
 
