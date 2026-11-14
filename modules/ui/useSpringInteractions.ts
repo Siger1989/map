@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { panelMotion } from './panelMotion';
+import { trackPanelMotion } from './panelMotionEvents';
 
 /** Cosmetic feedback only: never cancels input or changes business state. */
 export function useSpringInteractions() {
@@ -18,8 +19,11 @@ export function useSpringInteractions() {
       animations.get(element)?.cancel();
       if (media.matches || !element.isConnected || !element.animate) return;
       const animation = element.animate(frames, { duration, easing: 'ease-out', fill: hold ? 'forwards' : 'none' });
+      // Standalone popups use this observer rather than SpringPresence. Publish
+      // their final glass geometry too; button/knob feedback needs no sampling.
+      const stopMotion = element.matches(panels) ? trackPanelMotion(element, animation) : undefined;
       animations.set(element, animation);
-      animation.finished.catch(() => {}).finally(() => { if (!hold && animations.get(element) === animation) animations.delete(element); });
+      animation.finished.catch(() => {}).finally(() => { stopMotion?.(); if (!hold && animations.get(element) === animation) animations.delete(element); });
     };
     const release = (button: HTMLElement) => animate(button, [
       { scale: '.96 .93' }, { scale: '1.035 1.025', offset: .42 },

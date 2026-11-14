@@ -5,6 +5,7 @@
  */
 
 import { collectNativeGlassRegions, NATIVE_GLASS_SELECTOR, type NativeGlassRegion } from './native-glass-regions.ts';
+import { PANEL_MOTION_EVENT, type PanelMotionDetail } from '../modules/ui/panelMotionEvents.ts';
 
 export type NativeUIRegionCommand = 'uiRegions' | 'viewport';
 
@@ -282,6 +283,18 @@ function startPublisher(): void {
     motionUntil = Date.now() + 600;
     if (!motionTimer) motionTimer = setTimeout(sampleMotion, 60);
   };
+  const panelMotion = (event: Event) => {
+    const detail = (event as CustomEvent<PanelMotionDetail>).detail;
+    const target = detail?.element;
+    if (!(target instanceof HTMLElement) || !(target.matches(NATIVE_GLASS_SELECTOR) || target.querySelector(NATIVE_GLASS_SELECTOR))) return;
+    if (detail.phase === 'start') {
+      motionUntil = Date.now() + 600;
+      if (!motionTimer) motionTimer = setTimeout(sampleMotion, 60);
+    }
+    // The first DOM mutation may see opacity:0; WAAPI itself does not mutate
+    // attributes. Re-read both hit regions and glass after finish/cancel/remove.
+    forcePublish();
+  };
   const mutation = new MutationObserver(schedule);
   mutation.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'inert', 'aria-modal', 'data-native-map-id', 'data-map-id', 'data-focus-locked', 'data-comparing', 'data-panel', 'data-panel-kind', 'data-route-window', 'data-route-edit', 'data-drawing', 'data-guiding', 'data-survey', 'data-section', 'data-offline-picking', 'data-dragging', 'd', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r', 'transform', 'points'] });
   mutation.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class', 'data-ui-theme', 'data-ui-personal-material'] });
@@ -297,6 +310,7 @@ function startPublisher(): void {
   document.addEventListener('animationend', schedule, true);
   document.addEventListener('transitionrun', startMotion, true);
   document.addEventListener('animationstart', startMotion, true);
+  document.addEventListener(PANEL_MOTION_EVENT, panelMotion);
   window.addEventListener('focus', resume);
   document.addEventListener('visibilitychange', visibility);
   window.visualViewport?.addEventListener('resize', schedule, { passive: true });
@@ -320,6 +334,7 @@ function startPublisher(): void {
     document.removeEventListener('animationend', schedule, true);
     document.removeEventListener('transitionrun', startMotion, true);
     document.removeEventListener('animationstart', startMotion, true);
+    document.removeEventListener(PANEL_MOTION_EVENT, panelMotion);
     window.removeEventListener('focus', resume);
     document.removeEventListener('visibilitychange', visibility);
     window.visualViewport?.removeEventListener('resize', schedule);

@@ -269,6 +269,13 @@
 .tianditu-options > label:last-child { flex:none; white-space:nowrap; }
 
 /* Built-in source settings are a single fixed page; give them room beyond the generic 38dvh popover cap. */
+/* Source pages share the right tool rail's width and leave a visible gap. The
+   old generic popover right offset reserved the rail itself but no separation. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='sources'] {
+  left:auto;
+  right:calc(var(--home-right,8px) + var(--home-tool-rail-width,50px) + 10px);
+  max-width:calc(100% - var(--home-floating-left,16px) - var(--home-right,8px) - var(--home-tool-rail-width,50px) - 10px);
+}
 .observatory.home-map .control-popover[data-panel-kind='sources']:has(.map-sources[data-step='list']) {
   --map-panel-max-height: min(450px, calc(100dvh - 180px - var(--safe-top, 0px) - var(--safe-bottom, 0px)));
   height: auto;
@@ -369,8 +376,16 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
   height:36px !important;
   min-height:36px !important;
   max-height:36px !important;
-  padding:0 6px !important;
-  border-radius:var(--ui-radius-card) var(--ui-radius-card) 0 0;
+  flex:0 0 36px;
+  gap:4px;
+  margin:0 0 4px;
+  padding:0 4px !important;
+  /* The panel already owns the glass and its outer corners. A second rounded
+     title surface clips the full-height return control against that corner. */
+  background:transparent;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='sources'] > .dock-heading.map-panel-header[data-ui-level='secondary'] h2 {
   display:block;
@@ -416,6 +431,15 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-sources 
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-source-builtins { gap:3px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-sources .map-source-choice > button,
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-sources .tianditu-source-choice > button:first-child { min-height:32px; padding:4px 6px; border-radius:var(--ui-radius-control); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-sources .map-source-builtins .map-source-favorite-star {
+  width:32px;
+  min-width:32px;
+  max-width:32px;
+  height:32px;
+  min-height:32px;
+  padding:0;
+  flex:0 0 32px;
+}
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-sources .map-source-actions { gap:3px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-sources .map-source-actions > button { min-height:32px; padding:4px 8px; border-radius:var(--ui-radius-control); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-sources .map-source-import-entry { gap:3px; }

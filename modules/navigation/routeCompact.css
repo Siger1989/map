@@ -231,7 +231,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
   min-height: 44px !important;
   background: var(--route-selected, #dcf0dd) !important;
   border-color: var(--route-line, #76a580) !important;
-  color: var(--route-accent, #15572b) !important;
+  color: var(--ui-selected-ink, var(--ui-active-ink, #15572b)) !important;
 }
 @media (max-height: 520px) {
   .route-summary-detail .route-summary-heading { margin: 0; }

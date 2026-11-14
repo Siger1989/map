@@ -76,6 +76,7 @@ import { mapResizeScheduler } from './mapResizeScheduler';
 import { cameraViewPublisher } from './cameraUpdates';
 import { installDesktopPanReceiver } from './desktopPan';
 import { installComparisonChromeBackdrop } from '../mapComparison/comparisonChromeBackdrop';
+import { installMapScaleLayout, mapScaleMaxWidth, MAIN_MAP_SCALE_WIDTH } from './mapScaleLayout';
 import { createSnapViewportReader } from './snapViewport';
 import type { SnapViewport } from '../tracks/snapping';
 import { featurePreviewUiPublisher } from './featurePreviewUi';
@@ -1359,10 +1360,14 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
               ?.setAttribute('aria-label', '地图数据来源');
             map.on('remove', () => observer.disconnect());
           }
-          map.addControl(
-            new maplibre.ScaleControl({ maxWidth: 72, unit: 'metric' }),
-            'bottom-left',
-          );
+          const scaleWidth = mapScaleMaxWidth(container.current);
+          map.addControl(new maplibre.ScaleControl({ maxWidth: scaleWidth, unit: 'metric' }),
+            scaleWidth === MAIN_MAP_SCALE_WIDTH ? 'top-right' : 'bottom-left');
+          const scaleElement = container.current.querySelector<HTMLElement>('.maplibregl-ctrl-scale');
+          if (scaleElement) {
+            const releaseScaleLayout = installMapScaleLayout(container.current, scaleElement);
+            map.on('remove', releaseScaleLayout);
+          }
           const marker = new NearbyMarker({ color: '#9de8c4', scale: 0.6, opacity: 1, opacityWhenCovered: 0 })
             .setLngLat(selected)
             .addTo(map);

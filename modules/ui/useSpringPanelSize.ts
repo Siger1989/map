@@ -1,4 +1,5 @@
 import { useLayoutEffect, type RefObject } from 'react';
+import { trackPanelMotion } from './panelMotionEvents';
 
 /** Animate the surface height, never scale the text or delay the new controls. */
 export function useSpringPanelSize(ref: RefObject<HTMLElement | null>, enabled: boolean) {
@@ -9,6 +10,7 @@ export function useSpringPanelSize(ref: RefObject<HTMLElement | null>, enabled: 
     let height = 0;
     let width = 0;
     let animation: Animation | null = null;
+    let stopMotion: (() => void) | undefined;
     let disposed = false;
     const measure = () => parseFloat(getComputedStyle(panel).height);
     const observer = new ResizeObserver(() => {
@@ -27,7 +29,9 @@ export function useSpringPanelSize(ref: RefObject<HTMLElement | null>, enabled: 
         easing: 'cubic-bezier(.2,.8,.25,1)',
         fill: 'both',
       });
+      stopMotion = trackPanelMotion(panel, animation);
       animation.onfinish = () => {
+        stopMotion?.(); stopMotion = undefined;
         animation?.cancel();
         animation = null;
         if (!disposed) observer.observe(panel);
@@ -35,6 +39,7 @@ export function useSpringPanelSize(ref: RefObject<HTMLElement | null>, enabled: 
     });
     const reduce = () => {
       if (!media.matches) return;
+      stopMotion?.(); stopMotion = undefined;
       if (animation) { animation.onfinish = null; animation.cancel(); animation = null; }
       height = measure();
       observer.observe(panel);
@@ -45,6 +50,7 @@ export function useSpringPanelSize(ref: RefObject<HTMLElement | null>, enabled: 
       disposed = true;
       observer.disconnect();
       media.removeEventListener('change', reduce);
+      stopMotion?.(); stopMotion = undefined;
       if (animation) { animation.onfinish = null; animation.cancel(); }
     };
   }, [ref, enabled]);

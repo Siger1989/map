@@ -18,7 +18,7 @@
   color:var(--ui-ink); background:var(--ui-raised);
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-summary .route-summary-modes button[aria-pressed='true'] {
-  color:var(--ui-accent); background:var(--ui-selected); font-weight:700;
+  color:var(--ui-selected-ink,var(--ui-active-ink)); background:var(--ui-selected); font-weight:700;
 }
 .route-summary-modes small { font-size:10px; line-height:11px; }
 .route-summary-position-note { margin:0; font-size:12px; line-height:16px; color:var(--ui-muted); overflow-wrap:anywhere; }
@@ -101,7 +101,7 @@ html[data-ui-theme] .observatory.home-map #map-control-panel:has(.route-summary-
   border: 1px solid var(--route-accent, #518267);
   border-radius: var(--route-radius, 4px);
   background: var(--route-selected, #dcf0dd);
-  color: var(--route-accent, #15572b);
+  color: var(--ui-selected-ink, var(--ui-active-ink, #15572b));
   font-weight: 700;
 }
 .observatory #map-control-panel .route-summary .route-mode-select select {

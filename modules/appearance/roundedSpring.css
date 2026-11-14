@@ -1,5 +1,5 @@
 /* User-approved preview: rounded cream surfaces and bounded spring feedback. */
-html[data-ui-theme] { --ui-radius-card:18px; --ui-radius-control:10px; --ui-input-radius:var(--ui-radius-control); --ui-glass-edge-width:1px; }
+html[data-ui-theme] { --ui-radius-card:18px; --ui-radius-control:10px; --ui-input-radius:var(--ui-radius-control); --ui-glass-edge-width:1px; --ui-panel-shadow:var(--ui-glass-shadow),inset 0 0 0 var(--ui-glass-edge-width) var(--ui-glass-border); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.control-popover,.route-dialog,.route-surface,.home-route-card,.home-journey-points,.home-recording-panel,.marker-workspace,.pin-editor,.measurement-panel,.section-panel,.raster-level-panel,.track-tools,.track-draw-hint)[class]:not([data-embedded='true']) {
   box-sizing:border-box; border-radius:var(--ui-radius-card); background:var(--ui-material-panel,var(--ui-glass-surface));
   border-color:transparent;
@@ -474,4 +474,31 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools 
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .collections-panel.catalog-panel {
   background:transparent; border:0; border-radius:0; box-shadow:none;
   color:var(--ui-glass-ink); backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+
+/* Every independent window uses the reviewed upper-window frame. Including the
+   dock ID here prevents old route/favorites ID rules from dropping its inset
+   edge. Embedded subviews keep the single frame owned by their parent. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(
+  #map-control-panel.control-popover,.control-popover,.route-dialog,.route-surface,
+  .home-route-card,.home-journey-points,.home-recording-panel,.marker-workspace,
+  .pin-editor,.measurement-panel,.measurement-share,.marker-confirm,.section-panel,.section-profile.glass,
+  .raster-level-panel,.track-tools,.track-draw-tools,.selected-route-info,
+  .home-map-popup,.quick-add-card,.route-display-settings,.survey-panel,
+  .trip-photo-viewer,.place-share-panel,.offline-region-actions,.offline-download-dock,
+  .survey-workbar,.survey-dock,.object-gizmo.glass,.guidance-card,.geology-panel,
+  .area-drawing-tools,.area-editor,.direction-menu,.rail-detail-compact,.rally-elevation,
+  .route-edit-dock,.route-editor-dialog,.map-box-tools,.favorite-source-popup,
+  .text-suggestions,.floating-search,.route-search-results,.place-search-results,
+  .collection-action-dialog,.workbench-share-dialog,.workbench-sort-menu,
+  .appearance-settings,.app-color-picker,.industry-tools,.offline-map-progress-prompt,
+  .comparison-source-popup,.comparison-settings,.comparison-layer-window,
+  .comparison-layer-detail,.comparison-direction-menu
+)[class]:not([data-embedded='true']):not(.route-display-settings--drawing) {
+  border-radius:var(--ui-radius-card);
+  border-color:transparent;
+  background:var(--ui-material-panel,var(--ui-glass-surface));
+  box-shadow:var(--ui-panel-shadow);
+  -webkit-backdrop-filter:var(--ui-glass-filter);
+  backdrop-filter:var(--ui-glass-filter);
 }

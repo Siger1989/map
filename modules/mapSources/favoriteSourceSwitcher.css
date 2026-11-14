@@ -100,9 +100,9 @@
 .free-map-card { position: relative; min-width: 0; }
 .free-map-card > button:first-child { width: 100%; padding-right: 28px; }
 .free-map-card > .map-source-favorite-star { position: absolute; top: 2px; right: 2px; }
-.tianditu-source-choice { display: flex; flex: 1 1 130px; min-width: 0; align-items: center; }
-.tianditu-source-choice > button:first-child { min-width: 0; flex: 1 1 auto; }
+.tianditu-source-choice { display: flex; flex: 1 1 130px; min-width: 0; align-items: center; gap:4px; }
+.tianditu-source-choice > button:first-child { min-width: 0; flex: 1 1 0%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tianditu-source-choice > .map-source-favorite-star { flex: 0 0 28px; }
-.map-source-builtins .map-source-choice { position: relative; display: flex; flex: 1 1 120px; min-width: 0; align-items: center; }
-.map-source-builtins .map-source-choice > button:first-child { min-width: 0; flex: 1 1 auto; }
+.map-source-builtins .map-source-choice { position: relative; display: flex; flex: 1 1 120px; min-width: 0; align-items: center; gap:4px; }
+.map-source-builtins .map-source-choice > button:first-child { min-width: 0; flex: 1 1 0%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .map-source-builtins .map-source-choice > .map-source-favorite-star { flex: 0 0 28px; }

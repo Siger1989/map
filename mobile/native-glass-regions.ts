@@ -27,6 +27,7 @@ export const NATIVE_GLASS_SELECTOR = [
   '.text-suggestions', '.floating-search', '.route-search-results', '.place-search-results',
   '.collection-action-dialog', '.workbench-share-dialog', '.workbench-sort-menu',
   '.appearance-settings', '.app-color-picker', '.industry-tools', '.layout-editor-panel',
+  '.favorite-source-popup', '.measurement-share', '.marker-confirm',
   '.layout-mobile', '.offline-map-progress-prompt', '[class*="comparison-"]',
 ].join(',');
 const PSEUDO_HOST_SELECTOR = '.observatory.home-map,.home-position-dock';

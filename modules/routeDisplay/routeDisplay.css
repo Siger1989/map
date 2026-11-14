@@ -2,17 +2,18 @@
   position: fixed;
   z-index: 70;
   top: calc(56px + var(--safe-top));
-  right: calc(var(--home-right, 8px) + 54px);
+  right: calc(var(--home-right, 8px) + var(--home-tool-rail-width,50px) + 10px);
   left: auto;
   width: min(276px, calc(100vw - var(--home-left, 8px) - var(--home-right, 8px) - 62px));
   max-width: calc(100vw - var(--home-left, 8px) - var(--home-right, 8px) - 62px);
   max-height: min(320px, calc(100dvh - 112px - var(--safe-top, 0px) - var(--safe-bottom, 0px)));
   box-sizing: border-box;
-  padding: 8px;
+  padding: 10px;
   border-radius: var(--ui-radius-card,8px);
   display: flex;
   flex-direction: column;
-  font-size: 11px;
+  gap: 4px;
+  font-size: 12px;
   overflow: hidden;
 }
 .route-display-settings header {
@@ -21,17 +22,17 @@
   justify-content: space-between;
   flex: 0 0 auto;
   box-sizing: border-box;
-  min-height: var(--ui-compact-control-height,28px);
-  height: var(--ui-compact-control-height,28px);
-  gap: 2px;
-  padding: 0 2px;
+  min-height: 36px;
+  height: 36px;
+  gap: 4px;
+  padding: 0;
 }
 .observatory.home-map .route-display-settings--navigation {
   top: calc(var(--home-header-height) + var(--home-top) + 50px);
   max-height: min(320px, calc(100dvh - var(--home-header-height) - var(--home-top) - var(--home-footer) - 74px));
 }
 .route-display-settings header strong {
-  font-size: 12px;
+  font-size: 13px;
 }
 .route-display-settings button,
 .route-display-settings select {
@@ -48,27 +49,28 @@
   padding: 0 4px;
 }
 .route-display-settings header button {
-  flex: 0 0 var(--ui-compact-control-height,28px);
-  width: var(--ui-compact-control-height,28px);
-  height: var(--ui-compact-control-height,28px);
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   padding: 0;
 }
 .route-display-scroll {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
-  gap: 2px 6px;
+  gap: 4px;
   flex: 0 1 auto;
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
 }
 .route-display-scroll > label {
-  display: flex;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
   min-width: 0;
-  min-height: var(--ui-compact-control-height,28px);
+  min-height: 32px;
   gap: 4px;
   align-items: center;
   margin: 0;
@@ -82,14 +84,14 @@
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 4px;
+  gap: 2px 4px;
 }
 .route-display-options label {
-  min-height: var(--ui-compact-control-height,28px);
+  min-height: 28px;
   display: flex;
   gap: 3px;
   align-items: center;
-  font-size: 11px;
+  font-size: 12px;
 }
 .route-display-options input {
   width: 16px;
@@ -116,9 +118,10 @@
 .route-display-explanation p { margin: 2px 0; }
 .route-display-settings p {
   margin: 2px 0;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.35;
 }
+.route-display-settings .route-display-scope { margin:0; }
 .route-display-info {
   position: fixed;
   right: 60px;
@@ -228,7 +231,7 @@ html[data-ui-theme] .observatory.home-map .track-tools .route-display-settings--
   flex: 1 1 auto;
   min-height: 0;
   grid-template-columns: minmax(0, 1fr);
-  gap: 4px;
+  gap: 3px;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -266,3 +269,39 @@ html[data-ui-theme] .observatory.home-map .guidance-card .route-display-settings
 .guidance-card .route-display-settings[data-embedded='true'] .route-display-options label,
 .guidance-card .route-display-settings[data-embedded='true'] .route-display-explanation > summary,
 .guidance-card .route-display-settings[data-embedded='true'] .route-display-scroll > button { font-size:12px; }
+
+/* Standalone, drawing and navigation share the same form controls. The legacy
+   global button skin otherwise wins over this module with 4px corners/borders. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-display-settings {
+  font-size:12px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-display-settings .route-display-scroll :is(button,select),
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-display-settings .route-display-explanation > summary {
+  box-sizing:border-box;
+  min-height:32px;
+  height:32px;
+  padding:4px 8px;
+  border:0;
+  border-radius:var(--ui-radius-control);
+  box-shadow:none;
+  background:var(--ui-button);
+  color:var(--ui-button-ink);
+  font-size:12px;
+  line-height:1.25;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-display-settings .route-display-scroll select {
+  font-size:16px;
+  background:var(--ui-field);
+  color:var(--ui-input-ink,var(--ui-ink));
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-display-settings .route-display-scroll select:focus {
+  background:color-mix(in srgb,var(--ui-accent) 24%,var(--ui-field));
+  outline:none;
+  box-shadow:none;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-display-settings .route-display-explanation > summary {
+  background:var(--ui-control-subtle);
+  color:var(--ui-muted);
+}
+.route-display-scroll { scrollbar-width:none; }
+.route-display-scroll::-webkit-scrollbar { display:none; }

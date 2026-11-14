@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { useSpringPanelSize } from './useSpringPanelSize';
 import { panelMotion } from './panelMotion';
+import { trackPanelMotion } from './panelMotionEvents';
 
 type PresenceElement = ReactElement<{ ref?: Ref<HTMLElement>; inert?: boolean; 'aria-hidden'?: boolean }>;
 
@@ -52,9 +53,11 @@ export function SpringPresence({ open, children }: { open: boolean; children: Pr
       easing: open ? 'cubic-bezier(0.2, 1.35, 0.4, 1)' : 'cubic-bezier(0.4, 0, 1, 1)',
       fill: 'both',
     });
+    const stopMotion = trackPanelMotion(target, animation);
 
     const onReducedMotionChange = (event: MediaQueryListEvent) => {
       if (!event.matches) return;
+      stopMotion();
       animation.onfinish = null;
       animation.cancel();
       if (!open) setMounted(false);
@@ -64,6 +67,7 @@ export function SpringPresence({ open, children }: { open: boolean; children: Pr
 
     return () => {
       media?.removeEventListener?.('change', onReducedMotionChange);
+      stopMotion();
       animation.onfinish = null;
       animation.cancel();
     };

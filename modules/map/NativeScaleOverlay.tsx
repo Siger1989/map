@@ -4,8 +4,8 @@ import { unprojectNativeLocal } from './native/localGeometry.ts';
 import { groundDistanceMeters, makeMapScaleMark, type MapScaleMark } from './native/scale.ts';
 import { subscribeNativeProjectionEvents } from './native/projectionSyncScheduler.ts';
 import './nativeScale.css';
+import { installMapScaleLayout, mapScaleMaxWidth } from './mapScaleLayout.ts';
 
-const SCALE_WIDTH = 72;
 const SAMPLE_OFFSET_X = 0;
 const SAMPLE_LINE_Y = 5;
 
@@ -19,12 +19,13 @@ export function NativeScaleOverlay({ client, mapId }: { client: NativeMapBridgeC
       timer = null;
       const element = root.current, map = element?.parentElement;
       if (!element || !map || !client.cameraFrame(mapId)) { setMark(null); return; }
+      const scaleWidth = mapScaleMaxWidth(map);
       const elementRect = element.getBoundingClientRect(), mapRect = map.getBoundingClientRect();
       const y = elementRect.top - mapRect.top + SAMPLE_LINE_Y;
       const a = unprojectNativeLocal(client, mapId, { x: elementRect.left - mapRect.left + SAMPLE_OFFSET_X, y });
-      const b = unprojectNativeLocal(client, mapId, { x: elementRect.left - mapRect.left + SAMPLE_OFFSET_X + SCALE_WIDTH, y });
+      const b = unprojectNativeLocal(client, mapId, { x: elementRect.left - mapRect.left + SAMPLE_OFFSET_X + scaleWidth, y });
       const distance = a && b ? groundDistanceMeters(a, b) : null;
-      const next = makeMapScaleMark(distance, SCALE_WIDTH);
+      const next = makeMapScaleMark(distance, scaleWidth);
       setMark(previous => previous?.label === next?.label && Math.abs((previous?.width ?? 0) - (next?.width ?? 0)) < 0.5 ? previous : next);
     };
     const schedule = () => {
@@ -33,6 +34,7 @@ export function NativeScaleOverlay({ client, mapId }: { client: NativeMapBridgeC
     };
     const unsubscribe = subscribeNativeProjectionEvents(client, mapId, schedule);
     const map = root.current?.parentElement;
+    const releaseLayout = map && root.current ? installMapScaleLayout(map, root.current, schedule) : () => {};
     const resize = typeof ResizeObserver === 'undefined' || !map ? null : new ResizeObserver(schedule);
     if (map) resize?.observe(map);
     const home = map?.closest('.observatory.home-map');
@@ -44,6 +46,7 @@ export function NativeScaleOverlay({ client, mapId }: { client: NativeMapBridgeC
       unsubscribe.forEach(stop => stop());
       if (timer !== null) clearTimeout(timer);
       resize?.disconnect();
+      releaseLayout();
       mutations?.disconnect();
       window.removeEventListener('resize', schedule);
     };
