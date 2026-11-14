@@ -29,3 +29,9 @@ CAD源码与构建配置相对204未变，四ABI CAD库与校验过的204包逐�
 安装包 `D:\天气系统\APK\Shantu-0.2.205-oldengine-private.apk`，165433752字节，SHA256 `e9c141432d597741f09632698de88a580f7e2750e15867d04ccd6200b2548512`。原证书SHA256 `4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f`、包名/版本/min26/target35、APK签名与CRC/重复条目通过；1925个Web资源与最终205构建逐字节相等，39个私人图源与本地/204一致，网页与原生天地图一致；8个native库对照204相等并通过16KiB检查。生产CSS标准滤镜保留（压缩器已合并等价前缀别名），DEX内含原生玻璃与双图延伸实现，35个个人材质令牌与用户当前实际预览精确相等，204原哈希未变。
 
 本轮75项定向测试、TSC、私人Web最终构建9.94秒、最终Android optimized构建通过。只读交叉审查及主agent源码复核确认正式oldengine启用玻璃，未将仅probe的能力当交付。未在用户手机安装或验收。本机日志/脚本位于.openai，不上传。
+
+## 私人发布与源码同步已完成
+
+应用源码 `c580e145cf7c6912a4e361d1205cd337c9a262ac` 已推送 `codex/old-engine-tilt-dual-20261105`，远端SHA一致。[205私人Release](https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.205-private) 上传前后确认仓库PRIVATE，远端APK与校验资产大小/SHA一致，完整APK下载回读与本机SHA `e9c141432d597741f09632698de88a580f7e2750e15867d04ccd6200b2548512` 相等。没有覆盖204或公开发布私人配置。
+
+最终Android构建耗时5分33秒。初次包核验要求同时保留标准和webkit两种滤镜声明，与现有生产压缩策略不符而退出；核查四个最终CSS实际选择器后，确认都正确保留标准backdrop-filter，等价webkit别名被正常合并。核验条件修正后全项重新运行通过，没有据此改颜色或重打不同资源包。
