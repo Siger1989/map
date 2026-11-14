@@ -45,7 +45,8 @@ class NativeReactActivity : MainActivity() {
         mapSurfaceRoot = mapRoot
         root.addView(mapRoot, 0, FrameLayout.LayoutParams(-1, -1))
         overlay = NativeReactOverlay.create(content, mapRoot,
-            NativeReactTouchRouter.MapTargetLookup { id -> maps?.mapTarget(id) })
+            NativeReactTouchRouter.MapTargetLookup { id -> maps?.mapTarget(id) },
+            { id -> maps?.mapFrameSequence(id) })
         maps = NativeReactMapHost(this, mapRoot, { json ->
             runOnUiThread {
                 if (trustedForeground()) content.evaluateJavascript(
@@ -76,13 +77,14 @@ class NativeReactActivity : MainActivity() {
         }
     }
 
-    override fun onContentPageStarted(url: String?) { floatingNavigation?.onPageStarted(url); maps?.invalidateSession() }
+    override fun onContentPageStarted(url: String?) { floatingNavigation?.onPageStarted(url); overlay?.clearPage(); maps?.invalidateSession() }
     override fun onContentInsets(keyboardVisible: Boolean) { overlay?.setImeVisible(keyboardVisible) }
     override fun onResume() {
         super.onResume()
         floatingNavigation?.onHostResume()
         FloatingRecordingCoordinator.onHostResume(this)
         maps?.onHostResume()
+        overlay?.setForeground(true)
         // A permission/system sheet can reject region updates while backgrounded.
         // Re-publish current DOM geometry even when the layout did not change.
         if (trustedForeground()) content?.evaluateJavascript(
@@ -90,7 +92,7 @@ class NativeReactActivity : MainActivity() {
         if (trustedForeground()) content?.evaluateJavascript(
             "window.dispatchEvent(new Event('shantu:floating-navigation'))", null)
     }
-    override fun onPause() { FloatingRecordingCoordinator.onHostPause(this); floatingNavigation?.onHostPause(); maps?.onHostPause(); super.onPause() }
+    override fun onPause() { overlay?.setForeground(false); FloatingRecordingCoordinator.onHostPause(this); floatingNavigation?.onHostPause(); maps?.onHostPause(); super.onPause() }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         floatingNavigation?.onRequestPermissionsResult(requestCode, permissions, grantResults)

@@ -11,8 +11,13 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.dock-hea
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.control-popover,.route-dialog,.route-surface,.measurement-panel,.marker-workspace) :is(button,summary,input:not([type='checkbox']):not([type='radio']):not([type='range']),select) { border-radius:var(--ui-radius-control); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions,.home-position-dock,.map-layer-toggle,.global-focus-lock,.home-recording-toggle) { border-radius:var(--ui-radius-card); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions,.home-position-dock) button { border-radius:var(--ui-radius-control); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions>button,.position-dock-button,.home-recording-toggle)[aria-pressed='true'] { color:var(--ui-accent-ink); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.position-dock-button,.home-recording-toggle)[aria-pressed='true'] { color:var(--ui-accent-ink); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-map-actions>button.dimension-button { color:var(--ui-glass-ink); font-weight:750; }
+/* These controls have no selected backing: use light active ink, never the
+   dark foreground intended for a filled yellow primary button. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-map-actions>button[aria-pressed='true'] {
+  color:var(--ui-input-ink,var(--ui-accent)); background:transparent; box-shadow:none;
+}
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-switch[data-checked='true'] { color:var(--ui-accent-ink); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] { padding:10px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.track-tools,.track-draw-tools,.area-drawing-tools,.area-editor) :is(button,input:not([type='range']):not([type='checkbox']):not([type='radio']):not([type='color']),select) { border-radius:var(--ui-radius-control) !important; }
@@ -424,6 +429,11 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .favorite-sou
   color:var(--ui-selected-ink,var(--ui-active-ink));
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .favorite-source-list>button[aria-current='true'] :is(svg,.favorite-source-current) { color:inherit; }
+/* The 3px-inset rail buttons follow the outer curve without changing rail size
+   or clipping the source/direction popovers attached to this container. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock .position-dock-button {
+  border-radius:max(0px,calc(var(--ui-radius-card) - 3px));
+}
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock .position-dock-button:is([aria-pressed='true'],[aria-expanded='true']) {
   color:var(--ui-selected-ink,var(--ui-active-ink));
 }

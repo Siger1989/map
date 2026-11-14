@@ -10,6 +10,16 @@ export type NearbyMarkerRange = {
   exitRadiusMeters: number;
 };
 
+function metersBetween(a: [number, number], b: [number, number]): number {
+  const lat1 = a[1] * Math.PI / 180, lat2 = b[1] * Math.PI / 180;
+  const deltaLat = lat2 - lat1;
+  const deltaLngDegrees = ((b[0] - a[0] + 540) % 360) - 180;
+  const deltaLng = deltaLngDegrees * Math.PI / 180;
+  const sinLat = Math.sin(deltaLat / 2), sinLng = Math.sin(deltaLng / 2);
+  const h = Math.min(1, Math.max(0, sinLat * sinLat + Math.cos(lat1) * Math.cos(lat2) * sinLng * sinLng));
+  return EARTH_RADIUS_METERS * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
 function coordinatePair(coordinate: LngLatLike): [number, number] | null {
   try {
     if (Array.isArray(coordinate)) return [Number(coordinate[0]), Number(coordinate[1])];
@@ -44,12 +54,73 @@ export function isCoordinateWithinNearbyRange(
   if (!point || !point.every(Number.isFinite) || Math.abs(point[1]) >= MAX_MERCATOR_LATITUDE ||
     !range.center.every(Number.isFinite) || Math.abs(range.center[1]) >= MAX_MERCATOR_LATITUDE)
     return true;
-  const lat1 = range.center[1] * Math.PI / 180, lat2 = point[1] * Math.PI / 180;
-  const deltaLat = lat2 - lat1;
-  const deltaLngDegrees = ((point[0] - range.center[0] + 540) % 360) - 180;
-  const deltaLng = deltaLngDegrees * Math.PI / 180;
-  const sinLat = Math.sin(deltaLat / 2), sinLng = Math.sin(deltaLng / 2);
-  const a = Math.min(1, Math.max(0, sinLat * sinLat + Math.cos(lat1) * Math.cos(lat2) * sinLng * sinLng));
-  const distance = EARTH_RADIUS_METERS * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return distance <= (wasAttached ? range.exitRadiusMeters : range.enterRadiusMeters);
+  return metersBetween(range.center, point) <= (wasAttached ? range.exitRadiusMeters : range.enterRadiusMeters);
+}
+
+/** A bounded candidate filter for high-pitch viewports before doing terrain projection work. */
+export function isCoordinateWithinNearbyCandidateRange(
+  range: NearbyMarkerRange | null,
+  coordinate: LngLatLike,
+  multiplier: number,
+): boolean {
+  if (!range || !Number.isFinite(multiplier) || multiplier < 1) return false;
+  const distance = distanceFromNearbyCenterMeters(range, coordinate);
+  return distance !== null && distance <= range.exitRadiusMeters * multiplier;
+}
+
+export function distanceFromNearbyCenterMeters(range: NearbyMarkerRange | null, coordinate: LngLatLike): number | null {
+  if (!range) return null;
+  const point = coordinatePair(coordinate);
+  return point && point.every(Number.isFinite) ? metersBetween(range.center, point) : null;
+}
+
+export type ProjectedVisibilityCheck = {
+  visible: boolean;
+  actualPixel: { x: number; y: number } | null;
+  onCanvas: boolean;
+  roundTripMeters: number | null;
+  toleranceMeters: number | null;
+};
+
+/** Measures the projected ground point and terrain-aware reverse projection. */
+export function inspectProjectedCoordinateVisibility(
+  map: Pick<MapLibreMap, 'project' | 'unproject' | 'getCanvas' | 'getCenter' | 'getZoom'>,
+  coordinate: LngLatLike,
+): ProjectedVisibilityCheck {
+  try {
+    const canvas = map.getCanvas();
+    const point = map.project(coordinate);
+    if (![point.x, point.y].every(Number.isFinite))
+      return { visible: false, actualPixel: null, onCanvas: false, roundTripMeters: null, toleranceMeters: null };
+    const actualPixel = { x: point.x, y: point.y };
+    const onCanvas = point.x >= 0 && point.y >= 0 && point.x <= canvas.clientWidth && point.y <= canvas.clientHeight;
+    if (!onCanvas)
+      return { visible: false, actualPixel, onCanvas, roundTripMeters: null, toleranceMeters: null };
+    const projected = coordinatePair(coordinate);
+    const surface = coordinatePair(map.unproject([point.x, point.y]));
+    if (!projected || !surface || !surface.every(Number.isFinite))
+      return { visible: false, actualPixel, onCanvas, roundTripMeters: null, toleranceMeters: null };
+    const center = map.getCenter();
+    const metersPerPixel = EARTH_CIRCUMFERENCE_METERS * Math.cos(center.lat * Math.PI / 180) /
+      (512 * 2 ** map.getZoom());
+    const roundTripTolerance = Math.max(8, metersPerPixel * 2);
+    const roundTripMeters = metersBetween(projected, surface);
+    return {
+      visible: Number.isFinite(roundTripTolerance) && roundTripMeters <= roundTripTolerance,
+      actualPixel,
+      onCanvas,
+      roundTripMeters,
+      toleranceMeters: roundTripTolerance,
+    };
+  } catch {
+    return { visible: false, actualPixel: null, onCanvas: false, roundTripMeters: null, toleranceMeters: null };
+  }
+}
+
+/** True only when the projected ground point is inside the viewport and survives a terrain-aware round trip. */
+export function isProjectedCoordinateVisible(
+  map: Pick<MapLibreMap, 'project' | 'unproject' | 'getCanvas' | 'getCenter' | 'getZoom'>,
+  coordinate: LngLatLike,
+): boolean {
+  return inspectProjectedCoordinateVisibility(map, coordinate).visible;
 }

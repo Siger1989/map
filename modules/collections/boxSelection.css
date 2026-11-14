@@ -44,12 +44,17 @@
   box-sizing: border-box;
   max-height: min(200px, calc(100dvh - var(--home-footer, 56px) - 24px));
   overflow: auto;
-  padding: 8px;
-  background: var(--ui-surface, #18201f);
-  border: 1px solid var(--ui-line, #39413e);
-  border-radius: var(--ui-radius-card, 20px);
-  color: var(--ui-ink, #f2f5ed);
-  box-shadow: var(--ui-shadow, 0 8px 24px #0006);
+  padding: 10px;
+  --ui-ink: var(--ui-glass-ink, #f2f5ed);
+  --ui-muted: var(--ui-glass-muted, #adb6b0);
+  --ui-line: var(--ui-glass-line, #39413e);
+  background: var(--ui-material-panel, var(--ui-glass-surface, #18201f));
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-card, 18px);
+  color: var(--ui-ink);
+  box-shadow: var(--ui-glass-shadow, 0 8px 24px #0006), inset 0 0 0 var(--ui-glass-edge-width, 1px) var(--ui-glass-border, #39413e);
+  backdrop-filter: var(--ui-glass-filter);
+  -webkit-backdrop-filter: var(--ui-glass-filter);
   font-size: 12px;
   pointer-events: auto;
 }
@@ -61,11 +66,16 @@
   max-width: 46%;
   min-height: 36px;
   padding: 6px 8px;
-  border: 1px solid var(--ui-line, #39413e);
-  border-radius: var(--ui-radius-control, 12px);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-control, 10px);
   background: var(--ui-field, #202826);
-  color: var(--ui-ink, #f2f5ed);
+  color: var(--ui-input-ink, var(--ui-ink, #f2f5ed));
   font-size: 16px;
+}
+/* Outrank the global themed select border without changing its input semantics. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-box-tools-heading select {
+  border-color: transparent;
+  color: var(--ui-input-ink, var(--ui-ink));
 }
 .map-box-tools-actions {
   display: grid;
@@ -78,14 +88,14 @@
   min-height: 44px;
   min-width: 0;
   padding: 6px 8px;
-  border: 1px solid var(--ui-line, #39413e);
-  border-radius: var(--ui-radius-control, 12px);
-  background: var(--ui-raised, #252e2b);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-control, 10px);
+  background: var(--ui-button, var(--ui-raised, #252e2b));
   color: var(--ui-button-ink, #f2f5ed);
   font-size: 12px;
   white-space: nowrap;
 }
-.map-box-tools button[aria-pressed='true'] { background: var(--ui-selected, #293321); color: var(--ui-active-ink, #d0f76b); border-color: var(--ui-accent, #d0f76b); }
+.map-box-tools button[aria-pressed='true'] { background: var(--ui-selected, #293321); color: var(--ui-selected-ink, var(--ui-active-ink, #d0f76b)); border-color: transparent; }
 .map-box-tools button:disabled { opacity: 0.45; }
 .map-box-selected-results {
   display: flex;

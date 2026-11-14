@@ -30,6 +30,7 @@ import { NativeProjectionSyncScheduler, nativePhotoGroupKey, subscribeNativeProj
 import { NativeScaleOverlay } from '../NativeScaleOverlay';
 import { NativeInitializationRetry } from './initializationRetry.ts';
 import { serializeNativeMapPhoto } from './photoWire.ts';
+import { favoritesViewportCenterOffset, favoritesViewportPaddingForMap } from '../../collections/favoritesViewportPadding.ts';
 import type { MapSourceHealthResult } from '../../mapSources/health.ts';
 import type { LayerSettings } from '../types.ts';
 import { shouldNotifyNativeMapReady } from './readiness.ts';
@@ -1693,7 +1694,12 @@ function makeHandle(
     },
     focusPoint: (coordinates, zoom) => {
       runtime.props.onBrowse();
-      fire('applyCamera', nativeFocusCamera(runtime.camera ?? INITIAL_VIEW, coordinates, zoom));
+      const mapElement = runtime.element;
+      const padding = mapElement ? favoritesViewportPaddingForMap(mapElement) : null;
+      const offset = padding ? favoritesViewportCenterOffset(padding) : null;
+      const camera = nativeFocusCamera(runtime.camera ?? INITIAL_VIEW, coordinates, zoom);
+      if (offset) camera.offset = [offset.x, offset.y];
+      fire('applyCamera', camera);
     },
     focusCenter: (coordinates) => { fire('applyCamera', nativeFocusCamera(runtime.camera ?? INITIAL_VIEW, coordinates)); },
     focusRouteGap: (gap: RouteGap) => {
@@ -1717,8 +1723,28 @@ function makeHandle(
       fire('applyCamera', nativeFocusPositionCamera(runtime.camera ?? INITIAL_VIEW, coordinates, zoom, pitch));
       return true;
     },
-    fitRoute: (coordinates) => { runtime.props.onBrowse(); fire('fitRoute', { coordinates }); },
-    fitCollection: (coordinates, padding) => { fire('fitCollection', { coordinates, ...(padding ? { padding } : {}) }); },
+    fitRoute: (coordinates) => {
+      runtime.props.onBrowse();
+      const mapElement = runtime.element;
+      const height = mapElement?.clientHeight ?? 0;
+      const basePadding = {
+        top: Math.min(110, height * 0.2),
+        right: 65,
+        bottom: Math.min(170, height * 0.25),
+        left: 78,
+      };
+      const padding = mapElement
+        ? favoritesViewportPaddingForMap(mapElement, 16, basePadding)
+        : null;
+      fire('fitRoute', { coordinates, ...(padding ? { padding } : {}) });
+    },
+    fitCollection: (coordinates, padding) => {
+      const mapElement = runtime.element;
+      const viewportPadding = mapElement
+        ? favoritesViewportPaddingForMap(mapElement, 16, padding) ?? padding
+        : padding;
+      fire('fitCollection', { coordinates, ...(viewportPadding ? { padding: viewportPadding } : {}) });
+    },
     previewRoute: (coordinateValue) => {
       runtime.transientGeometry.previewRoute(coordinateValue);
       runtime.syncTransientGeometry?.();

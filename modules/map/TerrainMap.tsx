@@ -6,13 +6,14 @@ import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 import { SATELLITE_UNDERLAY, showSatelliteUnderlay } from '../cartography/satelliteUnderlay';
 import { readLastView, saveLastView } from './lastView';
 import { CameraSync, focusPointCamera, followPositionCamera } from './cameraSync';
+import { installProjectedFocusCorrection } from './projectedFocusCorrection.ts';
 import { navigationCameraOptions } from '../guidance/forwardCamera';
 import { applyNavigationCamera } from '../guidance/navigationCamera';
 import { installFollowPanHandler } from './followGestures';
 import { cameraDetailZoom } from './cameraDetailZoom';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
 import { flashCollectionSelection } from '../collections/selectionHighlight';
-import { favoritesViewportPadding } from '../collections/favoritesViewportPadding';
+import { favoritesViewportCenterOffset, favoritesViewportPaddingForMap } from '../collections/favoritesViewportPadding';
 import { offlineMapProtocol } from '../outdoor/tileCache';
 import { mapTileRequestTransform, registerTiandituProtocol, tiandituLoadingSnapshot } from '../mapSources/tiandituProtocol';
 import { installTiandituRecovery } from '../mapSources/tiandituRecovery';
@@ -74,6 +75,7 @@ import './selectionMarkerVisibility.css';
 import { mapResizeScheduler } from './mapResizeScheduler';
 import { cameraViewPublisher } from './cameraUpdates';
 import { installDesktopPanReceiver } from './desktopPan';
+import { installComparisonChromeBackdrop } from '../mapComparison/comparisonChromeBackdrop';
 import { createSnapViewportReader } from './snapViewport';
 import type { SnapViewport } from '../tracks/snapping';
 import { featurePreviewUiPublisher } from './featurePreviewUi';
@@ -307,7 +309,8 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const container = useRef<HTMLDivElement>(null);
     const coverageCleanup=useRef<(()=>void)|null>(null);
     const selectionCleanup=useRef<(()=>void)|null>(null);
-    useEffect(()=>()=>{coverageCleanup.current?.();selectionCleanup.current?.();},[]);
+    const focusOffsetCorrection=useRef<(()=>void)|null>(null);
+    useEffect(()=>()=>{coverageCleanup.current?.();selectionCleanup.current?.();focusOffsetCorrection.current?.();},[]);
     const mapRef = useRef<Map | null>(null);
     const cameraSync = useRef(new CameraSync());
     const sourceProtocolScheme = useRef<string | null>(null);
@@ -395,14 +398,6 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       const { clientWidth: w, clientHeight: h } = m.getContainer();
       if (w < 20 || h < 20) return;
       latest.current.onBrowse();
-      const mapContainer = m.getContainer();
-      const panel = mapContainer.ownerDocument.querySelector<HTMLElement>(
-        '#map-control-panel[data-panel-kind="favorites"]',
-      );
-      const panelRect = panel?.querySelector('.collection-workbench')
-        ? panel.getBoundingClientRect()
-        : null;
-      const mapRect = mapContainer.getBoundingClientRect();
       const basePadding = padding
         ? {
             top: Math.min(padding.top, h * 0.3),
@@ -411,9 +406,7 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             right: Math.min(padding.right, w * 0.25),
           }
         : { top: Math.min(56, h * 0.28, w * 0.2), right: 0, bottom: 0, left: 0 };
-      const occlusion = panelRect
-        ? favoritesViewportPadding(mapRect, panelRect, w, h, 16, basePadding)
-        : null;
+      const occlusion = favoritesViewportPaddingForMap(m.getContainer(), 16, basePadding);
       const fitPadding = occlusion
         ? occlusion
         : padding
@@ -922,9 +915,32 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           map.jumpTo({ center }, { routePreview: true });
         },
         focusPoint: (center, zoom) => {
+          focusOffsetCorrection.current?.();
+          focusOffsetCorrection.current = null;
           latest.current.onBrowse();
           const map = mapRef.current;
-          if (map) focusPointCamera(map, center, zoom);
+          if (!map) return;
+          const padding = favoritesViewportPaddingForMap(map.getContainer());
+          const offset = padding ? favoritesViewportCenterOffset(padding) : null;
+          const mapOffset = offset ? [offset.x, offset.y] as [number, number] : undefined;
+          focusPointCamera(map, center, zoom, mapOffset);
+          if (mapOffset) {
+            const mapForCorrection = map as unknown as Parameters<typeof installProjectedFocusCorrection>[0];
+            const readCurrentOffset = () => {
+              const currentPadding = favoritesViewportPaddingForMap(map.getContainer());
+              if (!currentPadding) return mapOffset;
+              const currentCenterOffset = favoritesViewportCenterOffset(currentPadding);
+              return [currentCenterOffset.x, currentCenterOffset.y] as [number, number];
+            };
+            focusOffsetCorrection.current = installProjectedFocusCorrection(
+              mapForCorrection,
+              center,
+              readCurrentOffset,
+              undefined,
+              6,
+              1,
+            );
+          }
         },
         focusCenter: (center) => {
           const map = mapRef.current;
@@ -988,14 +1004,17 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             max[0] = Math.max(max[0], c[0]);
             max[1] = Math.max(max[1], c[1]);
           }
-          const h = m.getContainer().clientHeight;
+          const mapContainer = m.getContainer();
+          const h = mapContainer.clientHeight;
+          const basePadding = {
+            top: Math.min(110, h * 0.2),
+            bottom: Math.min(170, h * 0.25),
+            left: 78,
+            right: 65,
+          };
+          const padding = favoritesViewportPaddingForMap(mapContainer, 16, basePadding) ?? basePadding;
           m.fitBounds([min, max], {
-            padding: {
-              top: Math.min(110, h * 0.2),
-              bottom: Math.min(170, h * 0.25),
-              left: 78,
-              right: 65,
-            },
+            padding,
             maxZoom: 14,
             pitch: latest.current.settings.terrain ? 40 : 0,
             bearing: 0,
@@ -1074,6 +1093,7 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       let releaseLastView: (() => void) | undefined;
       let releaseFollowPan: (() => void) | undefined;
       let releaseDesktopPan: (() => void) | undefined;
+      let releaseComparisonChrome: (() => void) | undefined;
       let releaseSourceProtocol: (() => void) | undefined;
       let releaseTiandituRecovery: (() => void) | undefined;
       import('maplibre-gl').then((maplibre) => {
@@ -1117,6 +1137,7 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           mapRef.current = map;
           releaseTiandituRecovery = installTiandituRecovery(map);
           releaseDesktopPan = installDesktopPanReceiver(map, container.current);
+          releaseComparisonChrome = installComparisonChromeBackdrop(map, container.current);
           const queuedCamera = cameraSync.current.pendingCamera();
           if (queuedCamera) applyCameraToMap(map, queuedCamera);
           const snapViewport = createSnapViewportReader(map);
@@ -1700,6 +1721,7 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         releaseLastView?.();
         releaseFollowPan?.();
         releaseDesktopPan?.();
+        releaseComparisonChrome?.();
         previewRef.current?.remove();
         previewRef.current = null;
         disposed = true;

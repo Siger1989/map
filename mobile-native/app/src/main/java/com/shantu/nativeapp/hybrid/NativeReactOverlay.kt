@@ -14,22 +14,29 @@ class NativeReactOverlay private constructor(
     webView: WebView,
     mapRoot: ViewGroup,
     targetLookup: NativeReactTouchRouter.MapTargetLookup,
+    frameSequence: (String) -> Long?,
 ) : AutoCloseable {
     @Volatile private var router: NativeReactTouchRouter? = NativeReactTouchRouter(webView, mapRoot, targetLookup)
+    private val glass = NativeReactGlassBackdrop(webView, targetLookup, frameSequence)
 
     init {
         // Transparency is confined to this WebView instance; browser builds are untouched.
         webView.setBackgroundColor(Color.TRANSPARENT)
+        val parent = webView.parent as? ViewGroup
+        require(parent != null && parent === mapRoot.parent) { "Native glass must share the map/WebView host" }
+        parent.addView(glass, parent.indexOfChild(webView), ViewGroup.LayoutParams(-1, -1))
     }
 
     /** Called by Root for the payload of a `uiRegions` bridge notification. */
     fun handleUiRegions(payload: JSONObject) {
         router?.handleUiRegions(payload)
+        glass.handleUiRegions(payload)
     }
 
     /** Called by Root for the payload of a `viewport` bridge notification. */
     fun updateMapViewports(payload: JSONObject) {
         router?.updateMapViewports(payload)
+        glass.updateMapViewports(payload)
     }
 
     /**
@@ -45,10 +52,14 @@ class NativeReactOverlay private constructor(
         router?.setImeVisible(visible)
     }
 
-    fun inspectRegions(): JSONObject? = router?.inspectRegions()
+    fun inspectRegions(): JSONObject? = router?.inspectRegions()?.put("glassBackdrop", glass.inspect())
+
+    fun setForeground(active: Boolean) { glass.setForeground(active) }
+    fun clearPage() { glass.clearPage() }
 
     override fun close() {
         router = null
+        glass.close()
     }
 
     companion object {
@@ -58,6 +69,14 @@ class NativeReactOverlay private constructor(
             webView: WebView,
             mapRoot: ViewGroup,
             targetLookup: NativeReactTouchRouter.MapTargetLookup,
-        ): NativeReactOverlay = NativeReactOverlay(webView, mapRoot, targetLookup)
+        ): NativeReactOverlay = NativeReactOverlay(webView, mapRoot, targetLookup) { null }
+
+        @JvmStatic
+        fun create(
+            webView: WebView,
+            mapRoot: ViewGroup,
+            targetLookup: NativeReactTouchRouter.MapTargetLookup,
+            frameSequence: (String) -> Long?,
+        ): NativeReactOverlay = NativeReactOverlay(webView, mapRoot, targetLookup, frameSequence)
     }
 }

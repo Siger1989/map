@@ -542,8 +542,8 @@ export function RouteEditToolbar({
         </div>
         <div className="route-selection-modes" role="group" aria-label="路线选择方式">
           <div className="route-box-mode-group" role="group" aria-label="框选模式">
-            <button aria-pressed={boxMode === 'add'} disabled={branch} onClick={() => onSelectionMode('add')}>框选加</button>
-            <button aria-pressed={boxMode === 'subtract'} disabled={branch} onClick={() => onSelectionMode('subtract')}>框选减</button>
+            <button data-ui-action={boxMode === 'add' ? 'primary' : undefined} aria-pressed={boxMode === 'add'} disabled={branch} onClick={() => onSelectionMode('add')}>框选加</button>
+            <button data-ui-action={boxMode === 'subtract' ? 'primary' : undefined} aria-pressed={boxMode === 'subtract'} disabled={branch} onClick={() => onSelectionMode('subtract')}>框选减</button>
           </div>
           <button data-edit-entry="selection" aria-label="框选备注" title={selectedCount ? `框选备注·${selectedCount}点` : '框选备注'} disabled={!selectedCount} onClick={() => {onSelectionMode(null);setView('selection');}}>框选备注</button>
           <button className="route-set-endpoint" disabled={selectedCount !== 1 || branch} aria-pressed={selectedCount === 1 && !!session.track.routeTerminals?.end && equalCoordinate(selectedPoints[0],session.track.routeTerminals.end)} onClick={onSetEnd}>设终点</button>

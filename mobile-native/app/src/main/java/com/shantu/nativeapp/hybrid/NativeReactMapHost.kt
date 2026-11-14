@@ -55,6 +55,7 @@ import com.shantu.nativeapp.map.tiandituTileUrl
 import earth.worldwind.globe.geoid.AbstractEGM96Geoid
 import earth.worldwind.globe.geoid.EGM96Geoid
 import earth.worldwind.geom.Angle
+import earth.worldwind.geom.Angle.Companion.degrees
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.ln
@@ -281,6 +282,8 @@ class NativeReactMapHost(
 
     /** View used by the Activity touch router for an independent map surface. */
     fun mapTarget(mapId: String): View? = if (Looper.myLooper() == Looper.getMainLooper()) maps[mapId]?.controller?.view else null
+    /** Cheap, exact draw sequence; also changes for new tiles at an unchanged camera. */
+    fun mapFrameSequence(mapId: String): Long? = if (Looper.myLooper() == Looper.getMainLooper()) maps[mapId]?.actualFrameCount?.get() else null
 
     /** URL-free probe-only render/network snapshot, read on main because maps are main-thread owned. */
     fun inspectMapDiagnostics(): JSONObject {
@@ -1296,7 +1299,18 @@ class NativeReactMapHost(
             }
             "fitRoute", "fitCollection", "previewRoute", "previewNavigation" -> {
                 val coords = readCoordinates(payload.optJSONArray("coordinates") ?: payload.optJSONObject("route")?.optJSONArray("coordinates") ?: JSONArray())
-                if (coords.isNotEmpty()) controller.restoreCamera(NativeRouteViewport.fit(coords.map { NativeCoordinate(it.second, it.first) }, controller.cameraSnapshot(), controller.view.width, controller.view.height))
+                if (coords.isNotEmpty()) {
+                    val points = coords.map { NativeCoordinate(it.second, it.first) }
+                    val padding = payload.optJSONObject("padding").takeIf { command == "fitCollection" || command == "fitRoute" }
+                    if (padding == null) controller.restoreCamera(NativeRouteViewport.fit(points, controller.cameraSnapshot(), controller.view.width, controller.view.height))
+                    else {
+                        val visible = NativeCollectionViewport.visibleRect(controller.view.width, controller.view.height, cssScale(entry),
+                            padding.optDouble("top", 0.0), padding.optDouble("right", 0.0), padding.optDouble("bottom", 0.0), padding.optDouble("left", 0.0))
+                        val target = NativeCollectionViewport.fit(points, controller.cameraSnapshot(), controller.view.width, controller.view.height, visible)
+                        controller.restoreCamera(target)
+                        lockCoordinateAtScreen(entry, target.latitude, target.longitude, visible.centerX, visible.centerY)
+                    }
+                }
             }
             "followPosition" -> restoreCamera(entry, NativeBridgeFollowCamera.target(cameraJson(entry), payload))
             "focusPoint", "focusCenter", "focusPosition", "followNavigation", "previewTrackNode", "focusRouteGap", "focusRouteIssue" -> {
@@ -1333,15 +1347,23 @@ class NativeReactMapHost(
         val heightCss = entry.viewport?.optJSONObject("cssRect")?.optDouble("height", 0.0) ?: 0.0
         val zoom = camera.optDouble("zoom", Double.NaN)
         val range = if (camera.has("rangeMeters")) camera.optDouble("rangeMeters") else zoomToRange(zoom, lat, heightCss)
-        val target = NativeCameraSnapshot(lat, lon, range, bearing, pitch, roll)
+        val requestedTarget = NativeCameraSnapshot(lat, lon, range, bearing, pitch, roll)
         val offset = camera.optJSONArray("offset")?.takeIf { it.length() >= 2 }?.let {
             val x = it.optDouble(0, Double.NaN); val y = it.optDouble(1, Double.NaN)
             if (x.isFinite() && y.isFinite()) x to y else null
         }
         val duration = camera.optLong("duration", 0L).coerceIn(0L, 10_000L)
         cancelCameraAnimation(entry)
+        val start = entry.controller.cameraSnapshot()
+        // Solve once at the final pose, then animate to that verified pose. Solving
+        // a globe offset again for every intermediate flight point can diverge and
+        // also repeats expensive projection work on every animation callback.
+        val target = if (offset != null && entry.controller.view.width > 0 && entry.controller.view.height > 0) {
+            entry.controller.restoreCamera(requestedTarget)
+            lockCoordinateAtScreen(entry, lat, lon, entry.controller.view.width / 2.0 + offset.first * cssScale(entry), entry.controller.view.height / 2.0 + offset.second * cssScale(entry))
+            entry.controller.cameraSnapshot().also { entry.controller.restoreCamera(start) }
+        } else requestedTarget
         if (duration > 0L && entry.controller.view.width > 0 && entry.controller.view.height > 0) {
-            val start = entry.controller.cameraSnapshot()
             lateinit var animator: ValueAnimator
             animator = ValueAnimator.ofFloat(0f, 1f).apply {
                 this.duration = duration
@@ -1358,7 +1380,6 @@ class NativeReactMapHost(
                         start.rollDegrees + (target.rollDegrees - start.rollDegrees) * t,
                     )
                     entry.controller.restoreCamera(pose)
-                    offset?.let { lockCoordinateAtScreen(entry, pose.latitude, pose.longitude, entry.controller.view.width / 2.0 + it.first * cssScale(entry), entry.controller.view.height / 2.0 + it.second * cssScale(entry)) }
                 }
                 addListener(object : android.animation.AnimatorListenerAdapter() {
                     override fun onAnimationEnd(animation: android.animation.Animator) {
@@ -1372,7 +1393,6 @@ class NativeReactMapHost(
             entry.cameraAnimator = animator; animator.start()
         } else {
             entry.controller.restoreCamera(target)
-            offset?.let { lockCoordinateAtScreen(entry, target.latitude, target.longitude, entry.controller.view.width / 2.0 + it.first * cssScale(entry), entry.controller.view.height / 2.0 + it.second * cssScale(entry)) }
         }
         emitCamera(entry)
     }
@@ -1387,17 +1407,42 @@ class NativeReactMapHost(
         lockCoordinateAtScreen(entry, lat, lon, x, y)
     }
 
-    /** Translate the camera using actual WorldWind ground projection so the requested WGS84 point stays under a screen point. */
+    /** Camera placement only: prefer loaded terrain, otherwise use WorldWind's real
+     * current-camera ray/ellipsoid intersection. A distant, unloaded mesh must not
+     * silently discard UI avoidance. Business picking/GPS remain terrain-only. */
     private fun lockCoordinateAtScreen(entry: MapEntry, latitude: Double, longitude: Double, targetX: Double, targetY: Double) {
         val controller = entry.controller
-        repeat(3) {
-            val ground = controller.unprojectCoordinate(targetX.toFloat(), targetY.toFloat()) ?: return
-            val pose = controller.cameraSnapshot()
-            val dLat = latitude - ground.first
-            val dLon = wrappedLongitudeDelta(ground.second, longitude)
-            if (kotlin.math.abs(dLat) < 1e-8 && kotlin.math.abs(dLon) < 1e-8) return
-            controller.restoreCamera(pose.copy(latitude = (pose.latitude + dLat).coerceIn(-89.999999, 89.999999), longitude = pose.longitude + dLon))
+        val initial = controller.cameraSnapshot()
+        val engine = controller.worldWindowForBridge().engine
+        val ground = NativeCameraOffsetPolicy.ground(
+                { controller.unprojectCoordinate(targetX.toFloat(), targetY.toFloat()) },
+                {
+                    val position = earth.worldwind.geom.Position()
+                    if (engine.screenPointToGroundPosition(targetX, targetY, position))
+                        position.latitude.inDegrees to position.longitude.inDegrees
+                    else null
+                },
+            )
+        val seed = ground?.let { NativeCameraOffsetPolicy.translated(initial, latitude, longitude, it) }
+        val altitude = if (controller.isTerrainEnabled()) (controller.getElevation(latitude, longitude) ?: 0.0) * engine.globe.verticalExaggeration else 0.0
+        val position = earth.worldwind.geom.Position(latitude.degrees, longitude.degrees, altitude)
+        val point = earth.worldwind.geom.Vec3()
+        val normal = earth.worldwind.geom.Vec3()
+        engine.globe.geographicToCartesian(position.latitude, position.longitude, position.altitude, point)
+        engine.globe.geographicToCartesianNormal(position.latitude, position.longitude, normal)
+        val eye = earth.worldwind.geom.Vec3()
+        val screen = earth.worldwind.geom.Vec2()
+        val solution = NativeCameraOffsetPolicy.solve(initial, seed, targetX, targetY) { pose ->
+            controller.restoreCamera(pose)
+            val camera = engine.camera.position
+            engine.globe.geographicToCartesian(camera.latitude, camera.longitude, camera.altitude, eye)
+            // Projection alone can map a point on the far side of the globe into
+            // the viewport. Such a candidate does not make the marker visible.
+            if ((eye.x - point.x) * normal.x + (eye.y - point.y) * normal.y + (eye.z - point.z) * normal.z <= 0.0) null
+            else if (engine.geographicToScreenPoint(position, screen)) screen.x to screen.y else null
         }
+        controller.restoreCamera(solution.pose)
+        if (appContext.packageName == "com.shantu.hybridprobe") android.util.Log.d("ShantuCameraOffset", "residualPx=${solution.errorPixels} evaluations=${solution.evaluations}")
     }
 
     private fun wrappedLongitudeDelta(from: Double, to: Double): Double = ((to - from + 540.0) % 360.0) - 180.0

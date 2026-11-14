@@ -17,6 +17,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--adb', default='adb')
     parser.add_argument('--serial', required=True)
+    parser.add_argument('--package', choices=['com.shantu.oldengine', 'com.shantu.hybridprobe'], default='com.shantu.oldengine')
     parser.add_argument('--port', type=int, default=19374)
     parser.add_argument('--helper-port', type=int, default=23458)
     args = parser.parse_args()
@@ -38,13 +39,15 @@ def main():
             return json.loads(data)
 
     def material(command):
+        if args.package != 'com.shantu.oldengine':
+            return {'ok': False, 'supported': False, 'error': '隔离验证仅检查实际画面，不连接其它包的调色助手。'}
         try:
             response = helper(command)
             if response.get('supported') is True:
                 return response
         except (OSError, ValueError, KeyError):
             pass
-        return {'ok': False, 'supported': False, 'error': '当前安装包或测试助手尚无实时调色通道；本轮未打包，草稿不会冒充App已生效。'}
+        return {'ok': False, 'supported': False, 'error': '当前安装包或测试助手尚无实时调色通道；草稿不会冒充App已生效。'}
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -66,9 +69,9 @@ def main():
             path = urlparse(self.path).path
             try:
                 if path == '/state':
-                    output = adb('shell', 'dumpsys', 'package', 'com.shantu.oldengine').decode(errors='replace')
+                    output = adb('shell', 'dumpsys', 'package', args.package).decode(errors='replace')
                     match = re.search(r'versionName=([^\s]+)', output)
-                    self.send({'ok': True, 'token': token, 'device': args.serial, 'appVersion': match.group(1) if match else '未安装', 'capture': '设备原始PNG · 低频刷新', 'material': material({'action': 'material-read'})})
+                    self.send({'ok': True, 'token': token, 'device': args.serial, 'appPackage': args.package, 'appVersion': match.group(1) if match else '未安装', 'capture': '设备原始PNG · 低频刷新', 'material': material({'action': 'material-read'})})
                 elif path == '/baseline':
                     preset = json.loads((project / 'modules/appearance/savedMaterialPreset.json').read_text(encoding='utf-8'))
                     self.send({'schema': 'shantu.material.v1', 'revision': 0, 'tokens': preset['tokens'], 'source': '203已保存配色基线，非设备读回'})
@@ -105,7 +108,7 @@ def main():
                 if path != '/input':
                     return self.send({'ok': False}, 404)
                 action = request.get('action')
-                if action not in ('tap', 'swipe', 'back'):
+                if action not in ('tap', 'swipe', 'back', 'launch'):
                     raise ValueError('invalid action')
                 def coordinate(name, limit):
                     value = request.get(name)
@@ -113,7 +116,9 @@ def main():
                         raise ValueError('invalid coordinate')
                     return str(round(value))
                 with input_lock:
-                    if action == 'back':
+                    if action == 'launch':
+                        adb('shell', 'am', 'start', '-n', args.package + '/com.guanyun.weather.NativeReactActivity')
+                    elif action == 'back':
                         adb('shell', 'input', 'keyevent', '4')
                     else:
                         x, y = coordinate('x', cache['width']), coordinate('y', cache['height'])

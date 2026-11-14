@@ -4,6 +4,8 @@
  * styling after the native bridge reports a live session.
  */
 
+import { collectNativeGlassRegions, NATIVE_GLASS_SELECTOR, type NativeGlassRegion } from './native-glass-regions.ts';
+
 export type NativeUIRegionCommand = 'uiRegions' | 'viewport';
 
 export type NativeUIRegionPacket = {
@@ -139,6 +141,7 @@ export function nativeMapIdFor(element: { dataset?: Record<string, string>; clas
 
 export function buildNativeUIRegionSnapshot(
   regions: Region[], viewports: Viewport[], width: number, height: number, dpr: number, modalActive: boolean,
+  glassRegions?: NativeGlassRegion[],
 ): Record<string, unknown> {
   return {
     clientViewportWidth: width,
@@ -147,13 +150,14 @@ export function buildNativeUIRegionSnapshot(
     modalActive,
     regions: regions.map(({ id, kind, left, top, right, bottom }) => ({ id, kind, left, top, right, bottom })),
     viewports: viewports.map(({ mapId, left, top, right, bottom }) => ({ mapId, left, top, right, bottom })),
+    ...(glassRegions ? { glassRegions } : {}),
   };
 }
 
 export function nativeUIRegionPackets(snapshot: Record<string, unknown>): NativeUIRegionPacket[] {
-  const { regions, viewports, modalActive, ...metrics } = snapshot;
+  const { regions, viewports, modalActive, glassRegions, ...metrics } = snapshot;
   return [
-    { command: 'uiRegions', payload: { ...metrics, modalActive, regions } },
+    { command: 'uiRegions', payload: { ...metrics, modalActive, regions, ...(glassRegions ? { glassRegions } : {}) } },
     { command: 'viewport', payload: { ...metrics, viewports } },
   ];
 }
@@ -188,6 +192,9 @@ function startPublisher(): void {
   let raf = 0;
   let lastUiFingerprint = '';
   let lastViewportFingerprint = '';
+  let lastUiPayload: Record<string, unknown> | null = null;
+  let motionTimer: ReturnType<typeof setTimeout> | undefined;
+  let motionUntil = 0;
   let resize: ResizeObserver | null = null;
   const observedSizes = new Set<Element>();
   const publish = () => {
@@ -216,15 +223,17 @@ function startPublisher(): void {
       const id = html.dataset.nativeUiId || html.id || `${element.tagName.toLowerCase()}-${regions.length}`;
       rectangles.forEach((rect, index) => regions.push({ ...rect, id: `${id}:${index}`, kind: regionKind(element) }));
     }
-    const currentSizes = new Set<Element>([...mapElements, ...candidates]);
+    const glass = collectNativeGlassRegions();
+    const currentSizes = new Set<Element>([...mapElements, ...candidates, ...glass.elements]);
     for (const element of observedSizes) if (!currentSizes.has(element)) { resize?.unobserve(element); observedSizes.delete(element); }
     for (const element of currentSizes) if (!observedSizes.has(element)) { resize?.observe(element); observedSizes.add(element); }
     const modalActive = document.querySelector(MODAL_SELECTOR) !== null ||
       document.querySelector('.layout-mobile,[data-layout-editing="true"],[data-recovery-active="true"]') !== null ||
       document.body.dataset.layoutEditing === 'true' || document.body.dataset.recoveryActive === 'true';
-    const snapshot = buildNativeUIRegionSnapshot(regions, viewports, width, height, window.devicePixelRatio || 1, modalActive);
+    const snapshot = buildNativeUIRegionSnapshot(regions, viewports, width, height, window.devicePixelRatio || 1, modalActive, glass.regions);
     const [uiPacket, viewportPacket] = nativeUIRegionPackets(snapshot);
     const uiPayload = uiPacket.payload;
+    lastUiPayload = uiPayload;
     const viewportPayload = viewportPacket.payload;
     const uiFingerprint = JSON.stringify(uiPayload);
     const viewportFingerprint = JSON.stringify(viewportPayload);
@@ -254,27 +263,63 @@ function startPublisher(): void {
   };
   const resume = () => forcePublish();
   const visibility = () => { if (document.visibilityState === 'visible') forcePublish(); };
+  // Only glass geometry is sampled during short CSS entrance/exit transitions;
+  // do not walk the interactive DOM again on every animation frame/map frame.
+  const sampleMotion = () => {
+    motionTimer = undefined;
+    if (!running || !transport || !nativeSession || !lastUiPayload) return;
+    const payload = { ...lastUiPayload, glassRegions: collectNativeGlassRegions().regions };
+    const fingerprint = JSON.stringify(payload);
+    if (fingerprint !== lastUiFingerprint) {
+      try { transport.send({ command: 'uiRegions', payload }); lastUiFingerprint = fingerprint; }
+      catch { lastUiFingerprint = ''; }
+    }
+    if (Date.now() < motionUntil) motionTimer = setTimeout(sampleMotion, 60);
+  };
+  const startMotion = (event: Event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || !(target.matches(`${NATIVE_GLASS_SELECTOR},.observatory.home-map,.home-position-dock`) || target.querySelector(NATIVE_GLASS_SELECTOR))) return;
+    motionUntil = Date.now() + 600;
+    if (!motionTimer) motionTimer = setTimeout(sampleMotion, 60);
+  };
   const mutation = new MutationObserver(schedule);
-  mutation.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'inert', 'aria-modal', 'data-native-map-id', 'data-map-id', 'd', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r', 'transform', 'points'] });
+  mutation.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'inert', 'aria-modal', 'data-native-map-id', 'data-map-id', 'data-focus-locked', 'data-comparing', 'data-panel', 'data-panel-kind', 'data-route-window', 'data-route-edit', 'data-drawing', 'data-guiding', 'data-survey', 'data-section', 'data-offline-picking', 'data-dragging', 'd', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r', 'transform', 'points'] });
+  mutation.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class', 'data-ui-theme', 'data-ui-personal-material'] });
   resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule);
   resize?.observe(document.documentElement);
   const scroll = () => schedule();
   window.addEventListener('resize', schedule, { passive: true });
   window.addEventListener('scroll', scroll, { passive: true, capture: true });
   window.addEventListener('shantu:native-map-resume', resume);
+  window.addEventListener('shantu-material-change', schedule);
+  // CSS-driven geometry has no attribute mutation when its final frame lands.
+  document.addEventListener('transitionend', schedule, true);
+  document.addEventListener('animationend', schedule, true);
+  document.addEventListener('transitionrun', startMotion, true);
+  document.addEventListener('animationstart', startMotion, true);
   window.addEventListener('focus', resume);
   document.addEventListener('visibilitychange', visibility);
   window.visualViewport?.addEventListener('resize', schedule, { passive: true });
   window.visualViewport?.addEventListener('scroll', schedule, { passive: true });
   schedule();
   cleanupCurrent = () => {
+    // Clear only our glass backing before discarding the live transport/session.
+    // Never leave a captured panel behind when its page/host is torn down.
+    try { transport?.send({ command: 'uiRegions', payload: { clientViewportWidth: document.documentElement.clientWidth,
+      clientViewportHeight: document.documentElement.clientHeight, modalActive: false, regions: [], glassRegions: [] } }); } catch { /* Host may already be closed. */ }
     running = false;
+    if (motionTimer) clearTimeout(motionTimer);
     if (raf) cancelAnimationFrame(raf);
     mutation.disconnect();
     resize?.disconnect();
     window.removeEventListener('resize', schedule);
     window.removeEventListener('scroll', scroll, true);
     window.removeEventListener('shantu:native-map-resume', resume);
+    window.removeEventListener('shantu-material-change', schedule);
+    document.removeEventListener('transitionend', schedule, true);
+    document.removeEventListener('animationend', schedule, true);
+    document.removeEventListener('transitionrun', startMotion, true);
+    document.removeEventListener('animationstart', startMotion, true);
     window.removeEventListener('focus', resume);
     document.removeEventListener('visibilitychange', visibility);
     window.visualViewport?.removeEventListener('resize', schedule);

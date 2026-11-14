@@ -1140,28 +1140,33 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-d
   background: var(--ui-raised);
 }
 
-/* Keep the three box-selection actions on one shared surface. */
+/* Box-selection controls use individual fields and the shared primary action. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-primary .route-selection-modes .route-box-mode-group {
-  border: 1px solid var(--ui-line);
-  border-radius: var(--ui-radius-control,4px);
-  background: color-mix(in srgb,var(--ui-selected) 55%,var(--ui-surface));
-  box-shadow: none;
+  border: 0;
+  border-radius: var(--ui-radius-control);
+  background: transparent;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-primary .route-selection-modes .route-box-mode-group button {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
+  border: 0;
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-field);
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-primary .route-selection-modes .route-box-mode-group button[aria-pressed='true'] {
-  color: var(--ui-accent);
-  border-color: transparent;
-  background: var(--ui-selected);
-  box-shadow: none;
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-edit-name-input {
+  color: var(--ui-input-ink);
+  background: var(--ui-field);
+  border: 0 !important;
+  border-radius: var(--ui-radius-control);
 }
-/* The generic theme's active ink is low contrast on the soft selected surface. */
+/* Keep selected text legible on the warm selected surface. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] button.route-snap-toggle[aria-pressed='true'] {
-  color: var(--ui-accent);
+  color: var(--ui-selected-ink,var(--ui-active-ink)) !important;
   background: var(--ui-selected);
   border-color: transparent;
   box-shadow: 0 0 6px 1px color-mix(in srgb,var(--ui-accent) 22%,transparent);
+}
+/* The shared surface stylesheet paints every route-surface header; this dock
+   uses a field directly and keeps its header transparent. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] > .route-edit-dock-heading {
+  background: transparent !important;
+  border-radius: 0;
 }

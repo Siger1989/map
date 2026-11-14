@@ -1,7 +1,8 @@
 import { Marker as MapLibreMarker } from 'maplibre-gl';
 import type { LngLatLike, Map as MapLibreMap } from 'maplibre-gl';
 import {
-  getNearbyMarkerRange, isCoordinateWithinNearbyRange,
+  getNearbyMarkerRange, isCoordinateWithinNearbyCandidateRange,
+  inspectProjectedCoordinateVisibility, isCoordinateWithinNearbyRange,
   type NearbyMarkerRange,
 } from './nearbyMarkerRange.ts';
 
@@ -28,6 +29,7 @@ class NearbyMarkerManager {
     this.activeGestures.clear();
     this.update();
   };
+  private readonly onIdle = () => this.update();
   private readonly onGestureEnd = (gesture: ActiveGesture) => {
     if (this.activeGestures.delete(gesture) && !this.activeGestures.size) this.update();
   };
@@ -39,6 +41,7 @@ class NearbyMarkerManager {
     map.on('move', this.onUpdate);
     map.on('movestart', this.onMoveStart);
     map.on('moveend', this.onMoveEnd);
+    map.on('idle', this.onIdle);
     map.on('zoomstart', this.onZoomStart);
     map.on('zoomend', this.onZoomEnd);
     map.on('rotatestart', this.onRotateStart);
@@ -74,6 +77,30 @@ class NearbyMarkerManager {
     return { range: this.range, retentionRange };
   }
 
+  includesProjectedVisiblePoint(range: NearbyMarkerRange | null, coordinate: LngLatLike, wasAttached: boolean) {
+    if (isCoordinateWithinNearbyRange(range, coordinate, wasAttached)) return true;
+    const pitch = this.map.getPitch();
+    if (pitch < 55) return false;
+    // At high pitch, a ground point can project into the canvas while lying outside
+    // the flat center/diagonal approximation. Keep the expensive terrain round-trip
+    // limited to a bounded region around the existing nearby radius.
+    const multiplier = Math.min(4, 1 / Math.max(0.25, Math.cos(pitch * Math.PI / 180)));
+    if (!isCoordinateWithinNearbyCandidateRange(range, coordinate, multiplier)) return false;
+    const projectionType = this.map.getProjection()?.type ?? 'mercator';
+    const globe = projectionType === 'globe';
+    const projected = globe
+      ? inspectProjectedCoordinateVisibility(this.map, coordinate)
+      : null;
+    const actualPixel = projected?.actualPixel ?? this.map.project(coordinate);
+    const canvas = this.map.getCanvas();
+    const onCanvas = Number.isFinite(actualPixel.x) && Number.isFinite(actualPixel.y) &&
+      actualPixel.x >= 0 && actualPixel.y >= 0 &&
+      actualPixel.x <= canvas.clientWidth && actualPixel.y <= canvas.clientHeight;
+    // Mercator terrain occlusion remains owned by MapLibre Marker itself. The
+    // terrain-aware round-trip is used only to reject globe backfaces.
+    return onCanvas && (!globe || projected?.visible === true);
+  }
+
   update() {
     if (this.disposed) return;
     const { range, retentionRange } = this.currentRanges();
@@ -87,6 +114,7 @@ class NearbyMarkerManager {
     this.map.off('move', this.onUpdate);
     this.map.off('movestart', this.onMoveStart);
     this.map.off('moveend', this.onMoveEnd);
+    this.map.off('idle', this.onIdle);
     this.map.off('zoomstart', this.onZoomStart);
     this.map.off('zoomend', this.onZoomEnd);
     this.map.off('rotatestart', this.onRotateStart);
@@ -146,7 +174,7 @@ export class NearbyMarker extends MapLibreMarker {
     const manager = this.nearbyManager;
     const ranges = manager?.currentRanges();
     if (manager && this.nativeAttached &&
-      !isCoordinateWithinNearbyRange(ranges?.retentionRange ?? ranges?.range ?? null, lnglat, true)) this.detachNative();
+      !manager.includesProjectedVisiblePoint(ranges?.retentionRange ?? ranges?.range ?? null, lnglat, true)) this.detachNative();
     super.setLngLat(lnglat);
     if (manager && ranges) this.syncNearbyState(ranges.range, ranges.retentionRange);
     return this;
@@ -163,10 +191,10 @@ export class NearbyMarker extends MapLibreMarker {
     if (!this.nearbyMap || !this.nearbyManager) return;
     const coordinate = this.getLngLat();
     if (!coordinate) return;
-    if (isCoordinateWithinNearbyRange(range, coordinate, this.nativeAttached)) {
+    if (this.nearbyManager.includesProjectedVisiblePoint(range, coordinate, this.nativeAttached)) {
       if (!this.nativeAttached) this.attachNative();
     } else if (this.nativeAttached && gestureRange &&
-      isCoordinateWithinNearbyRange(gestureRange, coordinate, true)) {
+      this.nearbyManager.includesProjectedVisiblePoint(gestureRange, coordinate, true)) {
       // Keep mounted markers through pinch/rotation jitter, using at least 30km
       // or the current viewport range; moveend applies the normal range again.
       return;

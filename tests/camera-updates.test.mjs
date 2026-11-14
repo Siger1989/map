@@ -62,6 +62,13 @@ test('explicit point zoom is constrained to the map camera range', () => {
   assert.equal(calls[0].zoom, 20);
 });
 
+test('temporary point offset explicitly clears inherited map padding without changing zoom', () => {
+  const calls = [];
+  focusPointCamera({ flyTo: (options) => calls.push(options) }, [112, 37], undefined, [0, 192]);
+  assert.deepEqual(calls[0], { center: [112, 37], offset: [0, 192], padding: 0, duration: 700 });
+  assert.equal('zoom' in calls[0], false);
+});
+
 test('panning with unchanged angles and zoom does not rerender controls', () => {
   const updates = [];
   let time = 0;

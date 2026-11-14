@@ -11,6 +11,11 @@ function fakeMap(center = [0, 0], zoom = 20) {
     listeners,
     center: [...center],
     zoom,
+    pitch: 0,
+    width: 100,
+    height: 100,
+    projectedPoint: [1, 2],
+    surfaceCoordinate: null,
     get appendCount() { return appendCount; },
     get projectCount() { return projectCount; },
     resetProjectCount() { projectCount = 0; },
@@ -22,9 +27,12 @@ function fakeMap(center = [0, 0], zoom = 20) {
     },
     getCenter() { return { lng: this.center[0], lat: this.center[1] }; },
     getZoom() { return this.zoom; },
-    getCanvas() { return { clientWidth: 100, clientHeight: 100 }; },
+    getCanvas() { return { clientWidth: this.width, clientHeight: this.height }; },
+    getPitch() { return this.pitch; },
+    getProjection() { return this.projection ?? { type: 'mercator' }; },
     getCanvasContainer() { return canvasContainer; },
-    project() { projectCount++; return { x: 1, y: 2, _add() { return this; }, round() { return this; } }; },
+    project() { projectCount++; return { x: this.projectedPoint[0], y: this.projectedPoint[1], _add() { return this; }, round() { return this; } }; },
+    unproject() { return this.surfaceCoordinate ?? [NaN, NaN]; },
   };
 }
 
@@ -91,6 +99,47 @@ test('far markers never call native addTo or project, then reuse the same elemen
   assert.equal(map.projectCount, 1);
   assert.equal(marker.getElement(), element);
   assert.equal(marker.getLngLat().lng, 1);
+});
+
+test('high-pitch markers just outside the flat radius attach when projected on canvas; globe backfaces remain detached', () => {
+  const target = [0, 0.05];
+  const map = fakeMap([0, 0], 13);
+  map.pitch = 80;
+  map.width = 360;
+  map.height = 780;
+  map.projectedPoint = [180, 565];
+  map.surfaceCoordinate = target;
+  map.getProjection = () => undefined;
+  const marker = instrument(new NearbyMarker({ element: markerElement() })).setLngLat(target).addTo(map);
+  assert.ok(marker._map, 'undefined MapLibre projection defaults to Mercator and keeps an in-viewport ground point attached');
+
+  const terrainHiddenMap = fakeMap([0, 0], 13);
+  terrainHiddenMap.pitch = 80;
+  terrainHiddenMap.width = 360;
+  terrainHiddenMap.height = 780;
+  terrainHiddenMap.projectedPoint = [180, 565];
+  terrainHiddenMap.surfaceCoordinate = [0, 0.045];
+  const terrainHidden = instrument(new NearbyMarker({ element: markerElement() })).setLngLat(target).addTo(terrainHiddenMap);
+  assert.ok(terrainHidden._map, 'Mercator terrain occlusion remains owned by MapLibre Marker after mounting');
+
+  const globeBackfaceMap = fakeMap([0, 0], 13);
+  globeBackfaceMap.pitch = 80;
+  globeBackfaceMap.width = 360;
+  globeBackfaceMap.height = 780;
+  globeBackfaceMap.projectedPoint = [180, 565];
+  globeBackfaceMap.surfaceCoordinate = [0, 0.045];
+  globeBackfaceMap.projection = { type: 'globe' };
+  const globeBackface = instrument(new NearbyMarker({ element: markerElement() })).setLngLat(target).addTo(globeBackfaceMap);
+  assert.equal(globeBackface._map, undefined, 'a globe backface still fails the terrain-aware round trip');
+
+  const offscreenMap = fakeMap([0, 0], 13);
+  offscreenMap.pitch = 80;
+  offscreenMap.width = 360;
+  offscreenMap.height = 780;
+  offscreenMap.projectedPoint = [180, 900];
+  offscreenMap.surfaceCoordinate = target;
+  const offscreen = instrument(new NearbyMarker({ element: markerElement() })).setLngLat(target).addTo(offscreenMap);
+  assert.equal(offscreen._map, undefined, 'a point outside the canvas remains detached');
 });
 
 test('detaches before applying a far setLngLat and ignores native callbacks retained in a move snapshot', () => {

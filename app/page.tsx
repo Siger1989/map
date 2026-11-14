@@ -1,7 +1,7 @@
 'use client';
 import { NavigationTelemetry } from '@/modules/guidance/NavigationTelemetry';
 import { SelectedRouteInfo } from '@/modules/routeDisplay/SelectedRouteInfo';
-import { collectionPreviewPoints } from '@/modules/collections/previewBounds';
+import { collectionLocatePlan, collectionPreviewPoints } from '@/modules/collections/previewBounds';
 import type { CatalogEntry } from '@/modules/collections/catalog';
 import { objectRecenterPlan } from '@/modules/map/objectCenter';
 import { collectionHighlightData } from '@/modules/collections/selectionHighlight';
@@ -3797,6 +3797,7 @@ export default function Home() {
                 map.current?.highlightCollection?.(collectionHighlightData(entry));
                 position.free();
                 follow.pause();
+                const locatePlan = collectionLocatePlan(entry);
                 if (entry.kind === 'route' && navigation.restore(entry.route)) {
                   tracks.select(null);
                   annotations.select(null);
@@ -3806,7 +3807,8 @@ export default function Home() {
                   return;
                 }
                 if (entry.kind === 'track') tracks.select(entry.track.id);
-                map.current?.fitCollection(collectionPreviewPoints(entry));
+                if (locatePlan.kind === 'point') map.current?.focusPoint(locatePlan.coordinate);
+                else map.current?.fitCollection(locatePlan.coordinates);
               }}
               onRecenter={recenterCatalogEntry}
               onClose={() => {

@@ -7,6 +7,17 @@
   font: 12px/1.2 system-ui, sans-serif;
 }
 .app-color-picker header { display: flex; align-items: center; justify-content: space-between; min-height: 28px; gap: 4px; flex-shrink: 0; }
+/* The chooser is portaled inside route-dialog-backdrop. Its shared route
+   header skin otherwise paints an opaque ui-surface over this glass card. */
+html[data-ui-theme] .route-dialog-backdrop.app-color-picker-backdrop > .app-color-picker > header {
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 .app-color-picker strong { font-size: 14px; margin-left: 2px; }
 .app-color-picker button {
   box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 4px;

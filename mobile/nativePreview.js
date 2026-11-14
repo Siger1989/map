@@ -44,7 +44,7 @@ async function connect(){
   sidebar.innerHTML='<h2 style="font-size:15px">安卓调色尚未接通</h2><p>此页仅用于检查安卓截图，不能用于实时调色或连续拖图。</p><p>当前安装版本需要更新开发组件才能接收共用参数。</p><a href="/phone-preview.html" style="color:inherit;text-decoration:underline">返回可操作的网页调色</a><p>网页效果与手机效果仍需分别验证。</p>';
   try{
     const state=await api('/state');token=state.token;
-    document.querySelector('#identity').textContent=`专用模拟器 ${state.device} · 已安装 ${state.appVersion} · 本轮源码修复尚未进入此APK`;
+    document.querySelector('#identity').textContent=`专用模拟器 ${state.device} · ${state.appPackage||'com.shantu.oldengine'} · 已安装 ${state.appVersion} · 画面以当前前台应用为准`;
     supported=state.material.ok&&state.material.supported;
     if(!supported){
       message.textContent='当前APK/助手未接入热调色。截图检查默认手动刷新；原配色保留。';
@@ -76,6 +76,7 @@ document.querySelector('#refresh').onclick=capture;
 document.querySelector('#retry').onclick=connect;
 async function input(command){try{const result=await api('/input',command);if(!result.ok)throw Error(result.error);capture();}catch(e){fail(e.message);}}
 document.querySelector('#back').onclick=()=>input({action:'back'});
+document.querySelector('#launch').onclick=()=>input({action:'launch'});
 function point(event){const r=screen.getBoundingClientRect();return{x:Math.max(0,Math.min(screen.naturalWidth-1,Math.round((event.clientX-r.left)*screen.naturalWidth/r.width))),y:Math.max(0,Math.min(screen.naturalHeight-1,Math.round((event.clientY-r.top)*screen.naturalHeight/r.height))) };}
 let down=null;
 screen.onpointerdown=event=>{if(!screen.naturalWidth)return;event.preventDefault();screen.setPointerCapture(event.pointerId);down={...point(event),at:Date.now()};};

@@ -3,6 +3,17 @@ import { dimensions } from '../annotations/data.ts';
 import type { Coordinate } from '../navigation/types';
 import { surveyCoordinate, surveyRange } from '../section/surveyLine.ts';
 
+export type CollectionLocatePlan =
+  | { kind: 'point'; coordinate: Coordinate }
+  | { kind: 'fit'; coordinates: Coordinate[] };
+
+/** Point-like catalog items keep the current camera scale; spatial items fit their extent. */
+export function collectionLocatePlan(entry: CatalogEntry): CollectionLocatePlan {
+  if (entry.kind === 'pin' || entry.kind === 'model')
+    return { kind: 'point', coordinate: entry.coordinates };
+  return { kind: 'fit', coordinates: collectionPreviewPoints(entry) };
+}
+
 /** Conservative footprint also contains rotated/elevated models, not only their anchor. */
 export function collectionPreviewPoints(entry: CatalogEntry): Coordinate[] {
   if (entry.kind === 'route') return entry.route.route.coordinates;

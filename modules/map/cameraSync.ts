@@ -14,6 +14,8 @@ type FocusPointMap = {
   flyTo: (options: {
     center: CameraSnapshot['center'];
     zoom?: number;
+    offset?: [number, number];
+    padding?: 0;
     duration: number;
   }) => unknown;
 };
@@ -39,10 +41,12 @@ export function focusPointCamera(
   map: FocusPointMap,
   center: CameraSnapshot['center'],
   zoom?: number,
+  offset?: [number, number],
 ) {
   map.flyTo({
     center,
     ...(zoom === undefined ? {} : { zoom: Math.max(3, Math.min(20, zoom)) }),
+    ...(offset ? { offset, padding: 0 } : {}),
     duration: 700,
   });
 }

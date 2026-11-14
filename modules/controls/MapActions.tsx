@@ -79,6 +79,7 @@ export function MapActions(props: {
           className="dimension-button"
           disabled={props.sectionActive}
           aria-label={props.terrain ? '切换二维地图' : '切换三维地形'}
+          title={props.terrain ? '当前三维地形，点击切换二维地图' : '当前二维地图，点击切换三维地形'}
           aria-pressed={props.terrain}
           onClick={props.onDimension}
         >
@@ -87,6 +88,7 @@ export function MapActions(props: {
         <button
           className="icon-button"
           aria-label="框选对象"
+          title={props.boxSelecting ? '框选已开启，点击退出框选' : '开启地图框选'}
           aria-pressed={!!props.boxSelecting}
           onClick={props.onBoxSelect}
         >
