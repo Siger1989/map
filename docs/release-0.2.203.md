@@ -19,9 +19,9 @@
 | 保存后的个人材质 | 无控制器独立页面35令牌逐项相等；重载、切换科技深蓝、重载仍退出、恢复个人预设 | PASS |
 | 定向JavaScript | 原材质/配色/收藏视口19项 + 保存迁移4项 | 23 PASS |
 | TypeScript | 最终输入及个人预设源码 | PASS |
-| 私人Web | native-hybrid模式最终构建30.49秒 | PASS |
+| 私人Web | native-hybrid模式最终构建9.41秒 | PASS |
 | Kotlin羽化策略 | 本次Gradle成功，15项测试输入未变采用UP-TO-DATE结果；此前15/15实际执行 | PASS（策略，不是GPU） |
-| Android安装包 | 构建及校验进行中 | 待完成 |
+| Android安装包 | 最终优化合成2分28秒；原签名、1925资源逐项、39种子/天地图、8库基线、CRC/16KiB、35个材质令牌 | PASS |
 | OPPO覆盖安装、输入法/触控、玻璃合成、实际羽化观感 | 未在本次执行 | 未验证 |
 | HarmonyOS原生HAP | 无已适配可签名工程 | 未交付 |
 
@@ -29,4 +29,10 @@
 
 ## 交付与同步
 
-构建完成后记录APK大小、SHA、资源/签名/天地图一致性和同步结果。私人APK只交本机和已授权PRIVATE仓库；不上传公开仓库或Release。
+应用源码 `5056c6d9d10ac58283eb763d4468e436c24acc82` 已推送到 `codex/old-engine-tilt-dual-20261105`，远端SHA已核对一致。以下记录最终安装包和一致性核验。私人APK只交本机和已授权PRIVATE仓库；不上传公开仓库或Release。
+
+本机包：[Shantu-0.2.203-oldengine-private.apk](D:/天气系统/APK/Shantu-0.2.203-oldengine-private.apk)，165406288字节。SHA-256 `6fb2dbe6825fead6682d7fdb709366083d2dc75fba363bf68ba54f0a2f85230f`。对应校验文件和原始调色备份 `Shantu-0.2.203-ui-parameters.json` 同目录保留。202原包SHA未变。
+
+首轮全新暂存构建14分7秒，随后用最终Web资源再次合成2分28秒。CAD源码/构建配置相对202源码未变，最终复用从已核验202包提取的四ABI CAD JNI；其余原生库与202一起核对为8/8逐字节一致，已改Kotlin和shader按当前源码重新编译。仅在最终合成排除重复CAD任务，未跳过已改原生模块。
+
+私有仓库上传前已核对PRIVATE，上传进行中；尚不宣称远端安装包已发布。
