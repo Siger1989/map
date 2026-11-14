@@ -60,7 +60,7 @@ test('personal material token strings exactly match the saved preview values', (
   assert.deepEqual(getSavedMaterialTokens(preset), preset.tokens);
   assert.equal(preset.tokens['--ui-glass-surface'], 'rgba(255,255,255,0.03)');
   assert.equal(preset.tokens['--ui-radius-card'], '23px');
-  assert.equal(preset.tokens['--ui-radius-control'], '20px');
+  assert.equal(preset.tokens['--ui-radius-control'], '10px');
 });
 
 test('disable removes only personal geometry tokens absent from freshly computed theme tokens', () => {

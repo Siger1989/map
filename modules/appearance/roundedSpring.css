@@ -1,5 +1,5 @@
 /* User-approved preview: rounded cream surfaces and bounded spring feedback. */
-html[data-ui-theme] { --ui-radius-card:18px; --ui-radius-control:10px; --ui-input-radius:8px; --ui-glass-edge-width:1px; }
+html[data-ui-theme] { --ui-radius-card:18px; --ui-radius-control:10px; --ui-input-radius:var(--ui-radius-control); --ui-glass-edge-width:1px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.control-popover,.route-dialog,.route-surface,.home-route-card,.home-journey-points,.home-recording-panel,.marker-workspace,.pin-editor,.measurement-panel,.section-panel,.raster-level-panel,.track-tools,.track-draw-hint)[class]:not([data-embedded='true']) {
   box-sizing:border-box; border-radius:var(--ui-radius-card); background:var(--ui-material-panel,var(--ui-glass-surface));
   border-color:transparent;
@@ -15,6 +15,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-map-actions>button.dimension-button { color:var(--ui-glass-ink); font-weight:750; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-switch[data-checked='true'] { color:var(--ui-accent-ink); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] { padding:10px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.track-tools,.track-draw-tools,.area-drawing-tools,.area-editor) :is(button,input:not([type='range']):not([type='checkbox']):not([type='radio']):not([type='color']),select) { border-radius:var(--ui-radius-control) !important; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] button[aria-pressed='true'] { color:var(--ui-accent-ink); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.layer-source-button,.layer-parameter-toggle,.layer-help-summary) { border-radius:var(--ui-radius-control); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-dock>.map-toolbar::before { border-radius:var(--ui-radius-card) var(--ui-radius-card) 0 0; background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; }
@@ -204,7 +205,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .position-sta
   height:auto;
   padding:6px 8px;
   align-items:center;
-  color:var(--ui-glass-ink);
+  color:color-mix(in srgb,var(--ui-muted) 42%,#fff);
   background:var(--ui-material-toast,var(--ui-glass-surface));
   background-image:none;
   border:0;
@@ -239,6 +240,36 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.selected
   color:var(--ui-glass-ink);
   box-shadow:var(--ui-glass-shadow);
   backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter);
+}
+/* These two chrome hosts need a card surface above the generic .glass reset.
+   Keep chart marks and gizmo axes outside the control styling below. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.section-profile.glass[role='dialog'],.object-gizmo.glass)[class]:not([data-embedded='true']) {
+  box-sizing:border-box;
+  border:0;
+  border-radius:var(--ui-radius-card);
+  background:var(--ui-material-panel,var(--ui-glass-surface));
+  color:var(--ui-glass-ink);
+  box-shadow:var(--ui-glass-shadow),inset 0 0 0 var(--ui-glass-edge-width) var(--ui-glass-border);
+  backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter);
+  --ui-ink:var(--ui-glass-ink); --ui-muted:var(--ui-glass-muted); --ui-line:var(--ui-glass-line);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.section-profile.glass[role='dialog'],.object-gizmo.glass)[class] :is(button,select,summary) {
+  border-radius:var(--ui-radius-control);
+  border-color:var(--ui-line);
+  background:var(--ui-button);
+  color:var(--ui-button-ink);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.section-profile.glass[role='dialog'],.object-gizmo.glass)[class] :is(button[aria-pressed='true'],button[aria-selected='true']) {
+  background:var(--ui-selected);
+  color:var(--ui-selected-ink,var(--ui-active-ink));
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .object-gizmo.glass .object-gizmo-actions[class] {
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:inherit;
+  box-shadow:none;
+  backdrop-filter:none; -webkit-backdrop-filter:none;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-draw-hint[class] {
   background:var(--ui-material-toast,var(--ui-glass-surface));
@@ -313,7 +344,7 @@ html[data-ui-theme] :is(.place-search-results,.place-share-panel,.measurement-sh
 }
 html[data-ui-theme] .place-search-results :is(.place-search-heading,.place-search-history) { background:transparent; }
 html[data-ui-theme] .floating-search[data-search-owner='place']:has(.place-search-history) .place-search-heading { flex:0 0 36px; min-height:36px; }
-html[data-ui-theme] .floating-search[data-search-owner='place'] .place-search-history-heading { flex:0 0 44px; min-height:44px; }
+html[data-ui-theme] .floating-search[data-search-owner='place'] .place-search-history-heading { flex:0 0 28px; min-height:28px; }
 html[data-ui-theme] .floating-search .place-search-results {
   background:transparent; border:0; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;
 }
@@ -358,6 +389,9 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .place-search
   color:var(--ui-glass-ink);
   border:1px solid var(--ui-glass-line);
   box-shadow:none;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .place-search-history button {
+  border-radius:var(--ui-radius-control)!important;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .place-search .place-search-input:focus {
   background:color-mix(in srgb,var(--ui-accent) 24%,var(--ui-field));
@@ -411,10 +445,10 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[
   border-color:transparent;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor'] .record-console button {
-  border-radius:max(4px,calc(var(--ui-radius-control) - 3px)) !important;
+  border-radius:var(--ui-radius-control) !important;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='outdoor'] .record-console .record-group-settings>summary {
-  border-radius:max(4px,calc(var(--ui-radius-control) - 3px));
+  border-radius:var(--ui-radius-control);
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-recording .home-recording-toggle:not([data-recording='true']) {
   background:var(--ui-accent);
@@ -422,4 +456,12 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-recordi
 }
 @media(prefers-reduced-motion:reduce) {
   html[data-ui-theme] .observatory.home-map :is(.map-switch__track,.switch::before) { transition:none; }
+}
+
+/* An embedded drawing settings view belongs to its parent card. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools .route-display-settings--drawing[class] { background:transparent; border:0; border-radius:0; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; }
+/* The legacy region editor is content inside the already-painted dock. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .collections-panel.catalog-panel {
+  background:transparent; border:0; border-radius:0; box-shadow:none;
+  color:var(--ui-glass-ink); backdrop-filter:none; -webkit-backdrop-filter:none;
 }

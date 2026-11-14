@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>山兔 · 安卓真实画面</title>
+<link rel="stylesheet" href="./phonePreviewMaterial.css">
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#202622;color:#f0eee7;font:13px system-ui}body{display:grid;grid-template-columns:260px minmax(0,1fr);overflow:hidden}button{font:inherit;min-height:32px;border:1px solid #687567;background:#354137;color:inherit;border-radius:5px;padding:5px 9px;cursor:pointer}button:disabled{opacity:.45;cursor:default}main{min-width:0;min-height:0;display:flex;flex-direction:column;padding:8px;gap:6px}header{display:flex;gap:6px;flex-wrap:wrap;align-items:center}#identity,#status,#material-status{margin:0;line-height:1.5}#identity{color:#d5e2b4}#status{font-size:12px}#material-status{color:#f0cc84}#stage{flex:1;min-height:0;display:flex;justify-content:center;align-items:center;overflow:hidden}#screen{display:block;max-height:100%;max-width:100%;width:auto;height:auto;object-fit:contain;touch-action:none;user-select:none;cursor:crosshair}#parameter-host{display:none}#error{color:#ffcdba}.phone-preview-material{height:100%;overflow:auto}
+@media(max-width:700px){body{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.phone-preview-material{max-height:38vh}main{padding:5px}}
+</style></head>
+<body><section id="preview-material" aria-label="App共用材质参数"></section><main>
+<header><strong>安卓截图检查 · 非实时交互</strong><button id="pause">开始低频刷新</button><button id="refresh">获取截图</button><button id="back">返回</button><button id="retry">重新连接</button><button id="export" disabled>导出生效参数</button></header>
+<p id="identity">正在连接专用模拟器…</p><p id="status">原始PNG低频刷新 · 不是App帧率 · 拖动松开后执行</p>
+<p id="material-status" role="status">正在检查App调色通道…</p><p id="error" role="alert" hidden></p>
+<div id="stage"><img id="screen" draggable="false" alt="等待安卓实际画面"></div>
+</main><iframe id="parameter-host" title="仅承载参数，不加载地图"></iframe><script type="module" src="./nativePreview.js"></script></body></html>

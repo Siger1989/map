@@ -1,0 +1,48 @@
+/* Editable text uses a slightly lighter version of the user's warm UI ink. */
+html[data-ui-theme] {
+  --ui-input-ink: color-mix(in srgb, var(--ui-ink) 40%, white);
+  --ui-input-placeholder: color-mix(in srgb, var(--ui-input-ink) 68%, transparent);
+}
+
+html[data-ui-theme] :is(
+  .observatory.home-map[data-ui-style='outdoor'],
+  .collection-workbench,
+  .collection-action-dialog,
+  .app-color-picker,
+  .floating-search,
+  .text-suggestions,
+  .route-dialog-backdrop,
+  .place-share-backdrop,
+  .layout-mobile,
+  .layout-editor-panel,
+  .photo-lightbox
+) :is(
+  input:not([type='button']):not([type='submit']):not([type='reset']):not([type='hidden']):not([type='color']):not([type='range']):not([type='checkbox']):not([type='radio']):not([type='file']),
+  textarea,
+  select,
+  [contenteditable='true']
+) {
+  color: var(--ui-input-ink) !important;
+  -webkit-text-fill-color: var(--ui-input-ink);
+}
+
+html[data-ui-theme] :is(
+  .observatory.home-map[data-ui-style='outdoor'],
+  .collection-workbench,
+  .collection-action-dialog,
+  .app-color-picker,
+  .floating-search,
+  .text-suggestions,
+  .route-dialog-backdrop,
+  .place-share-backdrop,
+  .layout-mobile,
+  .layout-editor-panel,
+  .photo-lightbox
+) :is(
+  input:not([type='button']):not([type='submit']):not([type='reset']):not([type='hidden']):not([type='color']):not([type='range']):not([type='checkbox']):not([type='radio']):not([type='file']),
+  textarea
+)::placeholder {
+  color: var(--ui-input-placeholder) !important;
+  -webkit-text-fill-color: var(--ui-input-placeholder);
+  opacity: 1;
+}

@@ -1,6 +1,6 @@
 import { RouteProviderNote } from './RouteProviderNote';
 import { RouteResultSummary } from './RouteResultSummary';
-import type { ReactNode } from 'react';
+import { Fragment, type CSSProperties, type ReactNode } from 'react';
 import './routeCompact.css';
 import { FloatingSearch } from '../input/FloatingSearch';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
@@ -95,6 +95,7 @@ export function RoutePanel({
   const [listExpanded, setListExpanded] = useState(false);
   const [target, setTarget] = useState<number | null>(null),
     [dragging, setDragging] = useState<string | null>(null),
+    [dragOffsetY, setDragOffsetY] = useState(0),
     [announcement, setAnnouncement] = useState('');
   const rows = useRef<HTMLDivElement>(null),
     drag = useRef<{
@@ -102,6 +103,7 @@ export function RoutePanel({
       pointer: number;
       to: number;
       y: number;
+      startY: number;
       frame: number;
     } | null>(null);
   const previousCount = useRef(n.stops.length);
@@ -148,6 +150,17 @@ export function RoutePanel({
   const activeIndex = n.stops.findIndex((stop) => stop.id === active);
   const nextIndex = pickingIndex ?? (activeIndex >= 0 ? activeIndex : missingIndex);
   const nextLabel = nextIndex >= 0 ? stopLabel(nextIndex, n.stops.length) : '';
+  const draggedIndex = dragging ? n.stops.findIndex((stop) => stop.id === dragging) : -1;
+  const remainingLabels = dragging
+    ? n.stops.map((stop, index) => stop.id === dragging ? null : stopLabel(index, n.stops.length)).filter((label): label is string => label !== null)
+    : [];
+  const insertionLabel = dragging && target !== null
+    ? target <= 0
+      ? `列表开头（${remainingLabels[0]}之前）`
+      : target >= remainingLabels.length
+        ? `列表末尾（${remainingLabels.at(-1)}之后）`
+        : `${remainingLabels[target - 1]}与${remainingLabels[target]}之间`
+    : '';
   useEffect(() => {
     if (pickingIndex === null) return;
     rows.current
@@ -169,23 +182,18 @@ export function RoutePanel({
     placeSearch.searchNow();
   };
   const targetAt = (y: number) => {
-    const list = Array.from(
+    const d = drag.current;
+    if (!d) return;
+    const remaining = Array.from(
       rows.current?.querySelectorAll<HTMLElement>('[data-stop-id]') ?? [],
-    );
-    let nearest = 0,
-      distance = Infinity;
-    list.forEach((el, i) => {
-      const b = el.getBoundingClientRect(),
-        d = Math.abs(y - (b.top + b.height / 2));
-      if (d < distance) {
-        nearest = i;
-        distance = d;
-      }
+    ).filter((el) => el.dataset.stopId !== d.id);
+    const insertion = remaining.findIndex((el) => {
+      const b = el.getBoundingClientRect();
+      return y < b.top + b.height / 2;
     });
-    if (drag.current) {
-      drag.current.to = nearest;
-      setTarget(nearest);
-    }
+    const to = Math.min(Math.max(insertion < 0 ? remaining.length : insertion, 0), n.stops.length - 1);
+    d.to = to;
+    setTarget(to);
   };
   const begin = (
     id: string,
@@ -197,12 +205,14 @@ export function RoutePanel({
     e.currentTarget.setPointerCapture(e.pointerId);
     setActive(null); setListExpanded(false); setFiltersOpen(false);
     setDragging(id);
+    setDragOffsetY(0);
     setTarget(index);
     drag.current = {
       id,
       pointer: e.pointerId,
       to: index,
       y: e.clientY,
+      startY: e.clientY,
       frame: 0,
     };
     const scroll = () => {
@@ -227,6 +237,7 @@ export function RoutePanel({
     cancelAnimationFrame(d.frame);
     drag.current = null;
     setDragging(null);
+    setDragOffsetY(0);
     setTarget(null);
     if (!cancel) {
       const from = n.stops.findIndex((s) => s.id === d.id);
@@ -277,7 +288,7 @@ export function RoutePanel({
 
       {n.route && <div className="route-edit-actions"><button onClick={() => { setEditing(false); onShow(n.route!); }}>返回路线概览</button></div>}
       <span className="route-sort-status" role="status">
-        {announcement}
+        {dragging ? `插入位置：${insertionLabel}` : announcement}
       </span>
       {n.picking === null && (
         <div className="route-next-step" role="status">
@@ -291,10 +302,12 @@ export function RoutePanel({
           const label = stopLabel(index, n.stops.length),
             focused = active === s.id;
           return (
+            <Fragment key={s.id}>
+            {dragging && dragging !== s.id && target === index - (draggedIndex < index ? 1 : 0) && <div className="route-stop-insertion" aria-hidden="true" />}
             <div
-              key={s.id}
               data-stop-id={s.id}
-              className={`route-stop-block ${pickingIndex === index ? 'is-picking' : ''} ${focused ? 'is-active' : ''} ${nextIndex === index ? 'is-next' : ''} ${dragging === s.id ? 'is-dragging' : ''} ${dragging && target === index ? 'is-drop-target' : ''}`}
+              className={`route-stop-block ${pickingIndex === index ? 'is-picking' : ''} ${focused ? 'is-active' : ''} ${nextIndex === index ? 'is-next' : ''} ${dragging === s.id ? 'is-dragging' : ''}`}
+              style={dragging === s.id ? { '--route-drag-y': `${dragOffsetY}px` } as CSSProperties : undefined}
             >
               <form
                 className="route-stop-row"
@@ -369,6 +382,7 @@ export function RoutePanel({
                   onPointerMove={(e) => {
                     if (drag.current?.pointer === e.pointerId) {
                       drag.current.y = e.clientY;
+                      setDragOffsetY(e.clientY - drag.current.startY);
                       targetAt(e.clientY);
                     }
                   }}
@@ -508,8 +522,10 @@ export function RoutePanel({
                 </FloatingSearch>
               )}
             </div>
+            </Fragment>
           );
         })}
+        {dragging && draggedIndex < n.stops.length - 1 && target === n.stops.length - 1 && <div className="route-stop-insertion" aria-hidden="true" />}
       </div>
       {missingIndex < 0 && <button type="button" className="route-primary" disabled={n.loading}
         onClick={async () => { const route = await n.calculate(onRouteApplied); if (route) onShow(route); }}>

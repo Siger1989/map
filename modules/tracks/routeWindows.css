@@ -121,6 +121,23 @@
   justify-content: center;
   padding: 10px;
 }
+/* These route dialogs are sometimes portaled to body, outside the map skin's
+   .observatory subtree; keep their radius and control focus tied to root tokens. */
+html[data-ui-theme] :is(.route-dialog-backdrop, .observatory.home-map[data-ui-style='outdoor']) :is(.route-dialog, .route-surface, .app-color-picker) {
+  border-radius: var(--ui-radius-card, 18px);
+}
+html[data-ui-theme] .route-dialog-backdrop :is(.route-dialog, .route-surface, .app-color-picker) > header {
+  background: var(--ui-surface);
+  border-color: var(--ui-line);
+  border-radius: var(--ui-radius-card, 18px) var(--ui-radius-card, 18px) 0 0;
+}
+html[data-ui-theme] :is(.route-dialog-backdrop, .observatory.home-map[data-ui-style='outdoor']) :is(.route-dialog, .route-surface, .app-color-picker) :is(button, input, select, textarea, summary):not([type='checkbox']):not([type='radio']):not([type='range']) {
+  border-radius: var(--ui-radius-control, 10px);
+}
+html[data-ui-theme] :is(.route-dialog-backdrop, .observatory.home-map[data-ui-style='outdoor']) :is(.route-dialog, .route-surface, .app-color-picker) :is(button, input, select, textarea, summary, a[href]):focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: -2px;
+}
 .route-details {
   width: min(410px, 100%);
   max-height: calc(

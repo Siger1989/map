@@ -1,6 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MATERIAL_GROUPS, linkedPanelDraft, editMaterialGroup, rgbToHsl } from '../mobile/phonePreviewMaterialGroups.js';
+import { MATERIAL_GROUPS, MATERIAL_RADIUS_RULES, sharedControlRadius, linkedPanelDraft, editMaterialGroup, rgbToHsl } from '../mobile/phonePreviewMaterialGroups.js';
+
+test('categories describe actual interface objects and share internal control radius across buttons and inputs',()=>{
+  assert.deepEqual(MATERIAL_GROUPS.map(group=>group.id),['window','chrome','controls','accent','text','switch','edges']);
+  assert.deepEqual(MATERIAL_GROUPS.find(group=>group.id==='window').parts[0].members,['panel','toast']);
+  assert.deepEqual(MATERIAL_GROUPS.find(group=>group.id==='chrome').parts[0].members,['topbar','bottom','rail']);
+  assert.deepEqual(MATERIAL_GROUPS.find(group=>group.id==='controls').parts.map(part=>part.members),[['button'],['field'],['subtle']]);
+  assert.deepEqual(MATERIAL_GROUPS.find(group=>group.id==='edges').parts.map(part=>part.members),[['edge'],['line']]);
+  assert.deepEqual(MATERIAL_RADIUS_RULES,{outerToken:'--ui-radius-card',innerToken:'--ui-radius-control',inputToken:'--ui-radius-control'});
+  assert.equal(sharedControlRadius({radiusControl:10,radiusInput:8}),10);
+  assert.equal(sharedControlRadius({radiusInput:8},12),12);
+});
 
 test('linking Favorites preserves every other existing draft value without mutating the backup',()=>{
   const draft={glass:{color:'#e8d3aa',rgb:[232,211,170],transparency:83},panel:{color:'#b5b7b1',transparency:57},favorites:{color:'#fefefe',transparency:25},field:{color:'#203040',transparency:43},shadowBlur:31,radiusCard:22};

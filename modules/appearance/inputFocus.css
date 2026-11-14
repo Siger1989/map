@@ -1,0 +1,104 @@
+/* Empty required fields are not errors until the user interacts or submits.
+   Explicit aria-invalid and user-invalid retain error feedback. */
+/* Shared keyboard and pointer focus for real app text fields. Keep platform
+   map canvases, colour/range/check controls and button focus rings untouched. */
+html[data-ui-theme] :is(.observatory, .collection-workbench, .collection-action-dialog, .photo-lightbox, .layout-editor-panel, .layout-mobile, .text-suggestions, .floating-search, .pin-editor, .marker-workspace, .route-dialog, .place-share-panel, .app-color-picker) :is(input, textarea, select):where(:not([type='color']):not([type='range']):not([type='checkbox']):not([type='radio']):not([type='file']):not(:user-invalid):not([aria-invalid='true'])):focus {
+  background: color-mix(in srgb, var(--ui-accent) 24%, var(--ui-field)) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+html[data-ui-theme] :is(.observatory, .collection-workbench, .collection-action-dialog, .photo-lightbox, .layout-editor-panel, .layout-mobile, .text-suggestions, .floating-search, .pin-editor, .marker-workspace, .route-dialog, .place-share-panel, .app-color-picker) :is(input, textarea, select):where(:not([type='color']):not([type='range']):not([type='checkbox']):not([type='radio']):not([type='file']):not(:user-invalid):not([aria-invalid='true'])):focus {
+  border-color: transparent !important;
+}
+
+/* Route's existing whole-row highlight is the user's reference. Keep the
+   nested field transparent so it cannot add a second rectangle inside it. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-block:is(.is-active,.is-picking,:focus-within) input:not(:user-invalid):not([aria-invalid='true']):focus {
+  background: transparent !important;
+}
+
+/* Mirror route-stop focus on the complete marker/name/attribute row. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(
+  .selection-tools.is-annotation .selection-tools-name,
+  .marker-workspace .marker-inline-field,
+  .marker-workspace .marker-attribute-row,
+  .pin-editor .pin-field,
+  .pin-editor .pin-attribute,
+  .marker-workspace .marker-model-grid label,
+  .marker-workspace .marker-number,
+  .pin-editor .marker-number
+):focus-within {
+  background:color-mix(in srgb,var(--ui-accent) 24%,var(--ui-field));
+  border-color:transparent;
+  border-radius:var(--ui-radius-control);
+  box-shadow:none;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(
+  .selection-tools.is-annotation .selection-tools-name,
+  .marker-workspace .marker-inline-field,
+  .marker-workspace .marker-attribute-row,
+  .pin-editor .pin-field,
+  .pin-editor .pin-attribute,
+  .marker-workspace .marker-model-grid label,
+  .marker-workspace .marker-number,
+  .pin-editor .marker-number
+):focus-within :is(input,textarea):focus {
+  background:transparent !important;
+  border-color:transparent !important;
+  box-shadow:none !important;
+}
+
+/* Collection search uses a wrapper around SmartInput. Let the field itself
+   carry the shared tint instead of outlining the entire search row. */
+html[data-ui-theme] .collection-workbench .workbench-search:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* These dialogs render in portals, outside the page-level observatory tree. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .pin-coordinate-row {
+  border-color:transparent;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .pin-coordinate-row:focus-within {
+  background:color-mix(in srgb,var(--ui-accent) 24%,var(--ui-field));
+  border-color:transparent;
+  box-shadow:none;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .pin-coordinate-row .pin-coordinate-value:focus-visible {
+  outline:none!important; box-shadow:none!important; border-color:transparent!important;
+}
+
+/* The split-map search form keeps its border box but removes the white edge. */
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-heading .place-search form {
+  border-color:transparent;
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-heading .place-search form:focus-within {
+  background:color-mix(in srgb,var(--ui-accent) 24%,var(--ui-field));
+  border-color:transparent;
+  box-shadow:none;
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-heading .place-search input:focus {
+  background:transparent!important;
+  border-color:transparent!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+
+/* Collection actions live in a body-level portal. Beat the collection-wide
+   focus-visible ring while keeping the shared tint on valid text fields. */
+html[data-ui-theme] :is(.collection-workbench.collection-modal-root .collection-action-dialog) :is(input,textarea,select):where(:not([type='color']):not([type='range']):not([type='checkbox']):not([type='radio']):not([type='file']):not(:user-invalid):not([aria-invalid='true'])):is(:focus,:focus-visible) {
+  background:color-mix(in srgb,var(--ui-accent) 24%,var(--ui-field))!important;
+  outline:none!important;
+  outline-offset:0!important;
+  box-shadow:none!important;
+  border-color:transparent!important;
+}
+
+html[data-ui-theme] :is(.route-dialog-backdrop .route-dialog,.place-share-backdrop .place-share-panel,.app-color-picker) :is(input,textarea,select):where(:not([type='color']):not([type='range']):not([type='checkbox']):not([type='radio']):not([type='file']):not(:user-invalid):not([aria-invalid='true'])):is(:focus,:focus-visible) {
+  background:color-mix(in srgb,var(--ui-accent) 24%,var(--ui-field))!important;
+  outline:none!important;
+  outline-offset:0!important;
+  box-shadow:none!important;
+  border-color:transparent!important;
+}

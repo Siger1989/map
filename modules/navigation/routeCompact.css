@@ -62,15 +62,19 @@ html[data-shantu-keyboard='open'] .observatory.home-map #map-control-panel:has(.
 .observatory #map-control-panel .route-panel .route-modes button {
   height: var(--route-button-height, 36px) !important;
   min-height: var(--route-button-height, 36px) !important;
-  border-radius: var(--route-radius, 3px);
+  /* Match the endpoint field's shared input radius (8px in the current theme). */
+  border-radius: var(--ui-input-radius, 8px) !important;
 }
 .observatory #map-control-panel .route-panel .route-next-step {
   min-height: 24px;
-  padding: 3px 5px;
+  padding: 3px 8px;
   background: var(--route-selected, #e6f2e9);
   color: var(--route-accent, #15572b);
   font-size: 11px;
   font-weight: 700;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-next-step {
+  padding-inline: 8px !important;
 }
 .route-stop-label {
   flex: none;
@@ -89,6 +93,10 @@ html[data-shantu-keyboard='open'] .observatory.home-map #map-control-panel:has(.
 .observatory #map-control-panel .route-panel .route-edit-actions button {
   height: var(--route-button-height, 36px) !important;
   min-height: var(--route-button-height, 36px) !important;
+  padding-inline: 6px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-edit-actions .route-current-position {
+  padding-inline: 8px !important;
 }
 .observatory #map-control-panel .route-panel .route-primary {
   height: var(--route-primary-height, 32px) !important;
@@ -111,6 +119,44 @@ html[data-shantu-keyboard='open'] .observatory.home-map #map-control-panel:has(.
 .observatory #map-control-panel .route-panel :is(.stop-remove, .stop-drag) { width: 36px; }
 .observatory #map-control-panel .route-panel .route-load { min-height: var(--route-load-height, 36px); }
 .observatory #map-control-panel .route-panel .route-search-inline-hint { margin: 1px 0 0; color: var(--route-muted,#5f7069); font-size: 10px; line-height: 1.2; }
+/* Lift the dragged route stop and show its actual insertion gap. */
+.observatory #map-control-panel .route-panel .route-stop-block {
+  translate: 0 0;
+  transition: transform 140ms ease-out, translate 140ms ease-out, box-shadow 140ms ease-out;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-block.is-dragging {
+  position: relative;
+  z-index: 1;
+  translate: 0 var(--route-drag-y, 0px);
+  transform: scale(1.025);
+  border-radius: var(--ui-input-radius, 8px);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 24%) !important;
+  opacity: 1;
+  transition: transform 140ms ease-out, box-shadow 140ms ease-out;
+}
+.observatory #map-control-panel .route-panel .route-stop-insertion {
+  height: 0;
+  flex: 0 0 0;
+  margin-block: -2px;
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+.observatory #map-control-panel .route-panel .route-stop-insertion::after {
+  content: '';
+  position: absolute;
+  height: 3px;
+  top: -1.5px;
+  left: 4px;
+  right: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .observatory #map-control-panel .route-panel .route-stop-block { transition: none; }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-block.is-dragging { transition: none; transform: none; }
+}
 /* A completed route gives the map back; details occupy a bounded secondary area. */
 .observatory.home-map #map-control-panel:has(.route-summary) {
   top: auto !important;

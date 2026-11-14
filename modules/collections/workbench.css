@@ -234,8 +234,23 @@
   overflow: auto;
   flex: 1;
   min-height: 0;
-  scrollbar-width: thin;
-  scrollbar-color: #839f8d #edf1e8;
+  /* Fade the actual coloured rows into the glass, not a gradient behind
+     opaque rows. The narrow side fade ends before the labels/icons. */
+  padding-block: 8px 12px;
+  border-radius: 12px;
+  background: transparent;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 8px, #000 calc(100% - 12px), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 8px, #000 calc(100% - 12px), transparent);
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+.workbench-tree-content {
+  /* Separate from the scroller so the right fade reaches the row edge,
+     rather than being consumed by the scrollbar gutter. */
+  border-radius: 12px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 8px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 8px), transparent);
 }
 .workbench-tree-folder {
   background: var(--folder-background, var(--ui-raised, #e4e7e2));
@@ -265,10 +280,24 @@
 .workbench-tree-item.is-active,
 .workbench-folder-heading.is-active,
 .workbench-tree-item.is-checked {
+  position: relative;
   z-index: 1;
-  box-shadow:
-    inset 3px 0 #1a967c,
-    inset 0 0 0 1px #ffffffb0;
+  border-radius: 8px;
+  box-shadow: inset 0 0 12px color-mix(in srgb, var(--ui-accent) 28%, transparent);
+}
+.workbench-folder-heading.is-checked {
+  position: relative;
+  border-radius: 8px;
+}
+.workbench-tree-item:is(.is-active,.is-checked):not([data-drop-position])::before,
+.workbench-folder-heading:is(.is-active,.is-checked):not([data-drop-position])::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(110deg, color-mix(in srgb, var(--ui-accent) 16%, transparent), color-mix(in srgb, var(--ui-accent) 6%, transparent));
+  box-shadow: inset 0 0 10px color-mix(in srgb, var(--ui-accent) 22%, transparent);
 }
 .workbench-tree-item.is-selection-flash::after,
 .workbench-folder-heading.is-selection-flash::after {

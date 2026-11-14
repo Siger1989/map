@@ -441,7 +441,7 @@ export function MapSourcesPanel({
           </div>)}
           {step === 'list' && category === 'builtin' && settings && onSettings && <RasterDatumChoice settings={settings}
             selected={sources.selected} image={sources.source?.kind === 'image'} onChange={onSettings} onError={setError} />}
-          {step === 'list' && category === 'builtin' && <div className="map-source-actions"><button disabled={!sources.ready} onClick={openAdd}>导入图源</button></div>}
+          {step === 'list' && category === 'builtin' && <div className="map-source-actions"><button data-ui-action="primary" disabled={!sources.ready} onClick={openAdd}>导入图源</button></div>}
           {(step === 'library' || (step === 'list' && category === 'library')) && <>
           {step === 'library' && !onNavigation && <button onClick={()=>setStep('list')}>返回图源选择</button>}
           <FreeMapLibrary
@@ -449,7 +449,7 @@ export function MapSourcesPanel({
             onSelect={sources.select}
             onFocus={onFocus}
           />
-          <button className="map-source-add" disabled={!sources.ready} onClick={openAdd}>导入自己的图源</button>
+          <button className="map-source-add" data-ui-action="primary" disabled={!sources.ready} onClick={openAdd}>导入自己的图源</button>
           {domestic ? <small className="map-source-hint">天地图已配置 · 含中文注记 · <a href="https://lbs.tianditu.gov.cn/server/MapService.html" target="_blank" rel="noreferrer">图层说明</a></small> : <TiandituHelp />}
           </>}
         </>
@@ -457,7 +457,7 @@ export function MapSourcesPanel({
       {step === 'add' && (
         <>
           <div className="map-source-import-entry">
-            <label className="map-file-button">
+            <label className="map-file-button" data-ui-action="primary">
               导入地图文件
               <input
                 disabled={busy}
@@ -546,7 +546,7 @@ export function MapSourcesPanel({
             </select>
           </label>
           <div className="map-source-actions">
-            <button disabled={busy || !input.trim()} onClick={readInput}>
+            <button data-ui-action="primary" disabled={busy || !input.trim()} onClick={readInput}>
               识别并预览
             </button>
 
@@ -612,7 +612,7 @@ export function MapSourcesPanel({
                 返回修改
               </button>
             )}
-            <button
+            <button data-ui-action="primary"
               disabled={busy || picked.size === 0 || picked.size > MAX_MAPS - sources.maps.length}
               onClick={() =>
                 void run(async () => {

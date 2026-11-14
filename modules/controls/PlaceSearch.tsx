@@ -33,16 +33,37 @@ export function PlaceSearch({
   const [composing, setComposing] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState<HTMLInputElement | null>(null);
+  const [searchDimensions, setSearchDimensions] = useState({ padding: 10, gap: 3, rowHeight: 32 });
   const desktopShell = isDesktopShell();
   const search = usePlaceSearch({ query, enabled: open && !selectedPlace, composing, near: center });
   const history = useSearchHistory();
   const { title } = useMapPlaceLabel(center, zoom);
   const historyView = !selectedPlace && !query.trim();
-  // 36px title, 44px history actions, panel insets, then 44px rows + divider.
-  // Match the actual touch controls so a short history never ends mid-row.
-  const historyHeight = Math.min(320, 92 + Math.min(history.entries.length, 6) * 45);
+  const visibleHistoryCount = Math.min(history.entries.length, 6);
+  const historyContentHeight = searchDimensions.padding * 2 + 2 + 36 + (visibleHistoryCount
+    ? 28 + visibleHistoryCount * (searchDimensions.rowHeight + 1) + Math.max(0, visibleHistoryCount - 1) * searchDimensions.gap
+    : 30);
+  const historyHeight = Math.min(320, historyContentHeight);
   const recordSearch = (value: string) => { const normalized = value.trim(); if (normalized.length > 1) history.record(normalized); };
   const closeSearch = () => { setOpen(false); setListExpanded(false); setFiltersOpen(false); setSelectedPlace(null); };
+
+  useEffect(() => {
+    const readDimensions = () => {
+      const styles = getComputedStyle(document.documentElement);
+      const read = (token: string, fallback: number) => {
+        const value = Number.parseFloat(styles.getPropertyValue(token));
+        return Number.isFinite(value) ? value : fallback;
+      };
+      setSearchDimensions({
+        padding: read('--ui-search-padding', 10),
+        gap: read('--ui-search-gap', 3),
+        rowHeight: read('--ui-search-row-height', 32),
+      });
+    };
+    readDimensions();
+    window.addEventListener('shantu-material-change', readDimensions);
+    return () => window.removeEventListener('shantu-material-change', readDimensions);
+  }, []);
 
   const navigateResults = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key === 'Escape') {

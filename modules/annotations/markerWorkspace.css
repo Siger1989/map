@@ -155,6 +155,37 @@
 .marker-confirm button { min-height: 30px; }
 .marker-summary-photos { max-height: 84px; }
 .marker-summary-photos .marker-photos { padding: 2px 0; }
+
+/* Shared whole-row fields keep the focused surface continuous behind its input. */
+.marker-inline-field { padding:0 6px; border:1px solid var(--ui-line); border-radius:var(--ui-radius-control); background:var(--ui-field); }
+.marker-inline-field :is(input,textarea) { border:0; border-radius:0; background:transparent; color:var(--ui-ink); }
+.marker-attribute-row { gap:0; overflow:hidden; border:1px solid var(--ui-line); border-radius:var(--ui-radius-control); background:var(--ui-field); }
+.marker-attribute-row :is(input,textarea) { border:0; border-radius:0; background:transparent; color:var(--ui-ink); }
+.marker-attribute-row button { border:0; border-radius:0; background:transparent; }
+
+/* Marker, model, and property editors share the preview's glass surface. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace[aria-label] {
+  background:var(--ui-material-panel,var(--ui-glass-surface));
+  color:var(--ui-glass-ink);
+  border:var(--ui-glass-edge-width,1px) solid var(--ui-glass-border);
+  border-radius:var(--ui-radius-card);
+  box-shadow:var(--ui-glass-shadow);
+  -webkit-backdrop-filter:var(--ui-glass-filter);
+  backdrop-filter:var(--ui-glass-filter);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace[aria-label] :is(button,summary) { border-radius:var(--ui-radius-control); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace[aria-label] :is(input,textarea,select):not([type='checkbox']):not([type='radio']) { border-radius:var(--ui-input-radius,var(--ui-radius-control)); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace[aria-label] .annotation-location { color:var(--ui-glass-ink); border:0; border-radius:var(--ui-radius-control); background:transparent; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace[aria-label] .marker-inline-field :is(input,textarea),
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace[aria-label] .marker-attribute-row :is(input,textarea) {
+  background:transparent!important; border:0!important; border-radius:0!important;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace[aria-label] .marker-number {
+  border-radius:var(--ui-radius-control); background:var(--ui-field);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace[aria-label] .marker-number input {
+  background:transparent; border-radius:0;
+}
 @media (orientation: landscape) and (max-height: 480px) {
   .marker-workspace { width: min(440px, calc(100% - 128px)); max-height: calc(100dvh - 124px - var(--safe-top) - var(--safe-bottom)); }
 }

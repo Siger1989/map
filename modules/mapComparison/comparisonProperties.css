@@ -12,11 +12,12 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border: 1px solid var(--ui-line);
+  border: 0;
   border-radius: var(--ui-radius-card);
-  background: var(--ui-surface);
-  color: var(--ui-ink);
-  box-shadow: var(--ui-shadow);
+  background: var(--ui-material-panel,var(--ui-glass-surface));
+  color: var(--ui-glass-ink,var(--ui-ink));
+  box-shadow: var(--ui-glass-shadow),inset 0 0 0 var(--ui-glass-edge-width,1px) var(--ui-glass-border);
+  backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter);
   font-size: 12px;
   line-height: 1.2;
   pointer-events: auto;
@@ -27,7 +28,7 @@
   min-width: 0;
   color: var(--ui-ink);
   border: 1px solid var(--ui-line);
-  border-radius: var(--ui-radius-control);
+  border-radius: var(--ui-input-radius,var(--ui-radius-control));
   background: var(--ui-field);
   font: inherit;
 }
@@ -152,7 +153,7 @@
 .comparison-symbol-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(36px, 1fr)); gap: 4px; }
 .map-comparison-ui .comparison-symbol-grid button { display: grid; place-items: center; height: 36px; padding: 0; }
 .comparison-symbol-grid svg { width: 22px; height: 22px; }
-.map-comparison-ui .comparison-symbol-grid button[aria-pressed='true'] { background: var(--ui-selected); color: var(--ui-accent); }
+.map-comparison-ui .comparison-symbol-grid button[aria-pressed='true'] { background: var(--ui-selected); color: var(--ui-selected-ink,var(--ui-active-ink)); }
 
 .map-comparison-ui .comparison-marker-details > textarea {
   padding-top: 8px;
@@ -173,7 +174,7 @@
 .map-comparison-ui .comparison-marker-actions {
   position: sticky;
   bottom: 0;
-  background: var(--ui-surface);
+  background: var(--ui-material-panel,var(--ui-glass-surface));
   display: flex;
   gap: 4px;
 }

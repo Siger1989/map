@@ -658,6 +658,7 @@ export function WorkbenchPanel(props: Props) {
             </div>
           )}
           <div ref={swipe.list} className="workbench-tree-list">
+            <div className="workbench-tree-content">
             {type === 'all' && (
               <div className="workbench-cache-folder">
                 <button type="button" onClick={props.onCacheFolder} aria-label={`管理地图缓存，缓存包 ${props.cacheCount} 个`}>
@@ -677,6 +678,7 @@ export function WorkbenchPanel(props: Props) {
               />
             ) : sortWorkbenchItems(view, sort, sortCenter).map((i) => row(i))}
             {!view.length && type !== 'cache' && <p className="workbench-empty">{type === 'hidden' ? '暂无隐藏项目' : type === 'route' ? '暂无匹配的行程或路线计划' : '没有匹配的收藏'}</p>}
+            </div>
           </div>
           {batch && (
             <div className="workbench-batch">

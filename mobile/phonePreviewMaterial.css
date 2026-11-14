@@ -35,6 +35,8 @@
 .phone-preview-material-sliders input,.phone-preview-material-details input { grid-column:1/-1; width:100%; margin:0; accent-color:#f4a900; }
 .phone-preview-material-details { border-top:1px solid #53605b; padding-top:7px; }
 .phone-preview-material-details summary { cursor:pointer; color:#f1c566; }
+.phone-preview-material-fixed { grid-template-columns:minmax(0,1fr) auto; }
+.phone-preview-material-fixed output { color:#d4dbd8; }
 .phone-preview-material-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; margin-top:10px; }
 .phone-preview-material-actions [data-action="copy"] { grid-column:1/-1; }
 .phone-preview-material-message { display:block; min-height:15px; margin-top:5px; color:#f1c566; font-size:10px; overflow-wrap:anywhere; }
@@ -48,3 +50,13 @@
   .phone-preview-material-editor { flex:1 1 auto; min-height:0; max-height:none; overflow:auto; padding-top:6px; }
   .phone-preview-material[aria-expanded="false"] { max-height:none; }
 }
+.phone-preview-material-details fieldset{min-width:0;margin:10px 0;padding:8px;border:1px solid #647469;border-radius:4px}
+.phone-preview-material-details legend{padding:0 4px;font-weight:600;font-size:12px;color:#e8eadf}
+.phone-preview-context { margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #647469; }
+.phone-preview-context-items { display:grid;gap:4px;max-height:210px;overflow:auto;overscroll-behavior:contain; }
+.phone-preview-context-items button,.phone-preview-material-details [data-action='restore-layout'] { min-height:30px;box-sizing:border-box;padding:5px 8px;border:1px solid #64736d;border-radius:4px;color:inherit;background:#3c4944;font:inherit;text-align:left;cursor:pointer;overflow-wrap:anywhere; }
+.phone-preview-context-items button[aria-pressed='true'] { background:#164b55;border-color:#48cde1; }
+.phone-preview-context-scope { font-size:11px;line-height:1.5;color:#f1c566;margin:7px 0 0; }
+.phone-preview-material-details[hidden] { display:none; }
+.phone-preview-manual-groups { margin:6px 0; }
+.phone-preview-manual-groups summary { cursor:pointer;color:#c5d1cc;margin-bottom:6px; }

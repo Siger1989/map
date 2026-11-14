@@ -38,6 +38,11 @@ async function loadHost() {
 
 function setupDom() {
   const { window } = parseHTML('<html><body></body></html>');
+  // Linkedom has no CSS layout engine. The shared search dimensions now read
+  // custom properties on mount; absent stylesheet values use production defaults.
+  window.getComputedStyle = element => ({
+    getPropertyValue: name => element.style?.getPropertyValue(name) || '',
+  });
   const storage = new Map();
   let failStorage = false;
   let landscape = false;
@@ -53,6 +58,7 @@ function setupDom() {
   };
   Object.assign(globalThis, {
     window, document: window.document,
+    getComputedStyle: window.getComputedStyle,
     localStorage: {
       getItem: key => storage.get(key) ?? null,
       setItem(key, value) { if (failStorage) throw new Error('storage unavailable'); storage.set(key, String(value)); },

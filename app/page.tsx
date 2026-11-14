@@ -276,6 +276,7 @@ export default function Home() {
     elevation: null,
   });
   const [mapStatus, setMapStatus] = useState('正在加载真实地形…');
+  const [lockedMarkerNotice, setLockedMarkerNotice] = useState('');
   const [panel, setPanelState] = useState<ControlPanel>(null);
   const [geologyDetailsOpen, setGeologyDetailsOpen] = useState(false);
   const panelRef = useRef<ControlPanel>(panel);
@@ -679,6 +680,15 @@ export default function Home() {
   });
   const focusLock = useMapFocusLock({ map: () => map.current, following:follow.following, guiding:guidance.active, direction:position.direction,
     fix:cameraFix?.coordinates ?? null, pause:follow.pause, resume:follow.resume, north:position.north, free:position.free, device:position.device, motion:position.motion });
+  useEffect(() => {
+    if (!lockedMarkerNotice) return;
+    if (!focusLock.locked || recorder.record.phase !== 'recording') {
+      setLockedMarkerNotice('');
+      return;
+    }
+    const timer = window.setTimeout(() => setLockedMarkerNotice(''), 3000);
+    return () => window.clearTimeout(timer);
+  }, [lockedMarkerNotice, focusLock.locked, recorder.record.phase]);
   const pendingPositionFocus = useRef(false);
   const startupCameraStatus = useRef<'pending' | 'applied' | 'cancelled'>('pending');
   const startupSavedCamera = useRef<boolean | null>(null);
@@ -1774,11 +1784,13 @@ export default function Home() {
         !navigation.route && !guidance.active) navigation.clear();
     previousRoutePanel.current = panel;
   }, [panel]);
-  const canAddCenterMarker = !savedNavigationError.includes('已定位约') && (focusLock.locked || (panel === null &&
+  // Opening a panel never changes the rail's geometry. Only an actual editing
+  // task can temporarily disable the marker action; its slot remains mounted.
+  const canAddCenterMarker = !savedNavigationError.includes('已定位约') && (focusLock.locked || (
     !areas.drawing &&
     !(areas.selected && areaEditing) &&
     !annotations.picking &&
-    !navigation.picking &&
+    navigation.picking === null &&
     !sectionEditing &&
     !selectedPhoto &&
     !featureMove &&
@@ -2112,7 +2124,7 @@ export default function Home() {
             onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>
         )}
         {focusLock.locked && guidance.session && !panel && <section className="navigation-live-strip" aria-label="实时导航数据"><NavigationTelemetry session={guidance.session} fix={position.fix} compact /></section>}
-        {focusLock.locked && !guidance.session && recorder.record.phase === 'recording' && <section className="focus-live-data" aria-label="锁定实时数据"><span>正在记录 · {cameraFix ? `${cameraFix.coordinates[1].toFixed(5)}, ${cameraFix.coordinates[0].toFixed(5)}` : '等待定位'}</span></section>}
+        {focusLock.locked && !guidance.session && recorder.record.phase === 'recording' && <section className="focus-live-data" aria-label="锁定实时数据"><span>正在记录 · {cameraFix ? `${cameraFix.coordinates[1].toFixed(5)}, ${cameraFix.coordinates[0].toFixed(5)}` : '等待定位'}</span>{lockedMarkerNotice && <span role="status" aria-live="polite"> · {lockedMarkerNotice}</span>}</section>}
         <MapComparisonHost session={comparison} primary={map} view={view} search={comparison ? placeSearch : null}
           editorOverlay={comparison ? routeEditorOverlay : null}
           plannedRoute={panel === 'route' && navigation.route && !editor.session ? {
@@ -3173,7 +3185,7 @@ export default function Home() {
               <span>
                 {position.locationError ||
                   position.directionError ||
-                  (position.locating ? '正在获取当前位置…' : displayedFix?.provider === 'ip' ? `${position.fallbackReason || '系统定位不可用'}，已用IP估计位置；可能偏离实际地点。${position.direction === 'motion' ? 'IP定位不能提供运动朝向。' : ''}` : position.direction === 'motion' ? motionHeading.status : '')}
+                  (position.locating ? '正在获取当前位置…' : displayedFix?.provider === 'ip' ? `${position.fallbackReason || '定位不可用'} · IP估计，可能偏离${position.direction === 'motion' ? '；IP定位无运动朝向' : ''}` : position.direction === 'motion' ? motionHeading.status : '')}
               </span>
               <button
                 aria-label="收起定位提示"
@@ -3261,20 +3273,31 @@ export default function Home() {
             }}
             onManage={() => { setSourcesParent('layers'); setPanel('sources'); }}
           /> : undefined}
-          markControl={canAddCenterMarker ? <CenterMarkButton map={() => map.current} target={linePoint?.coordinate} onAdd={(coordinates) => {
+          markControl={<CenterMarkButton disabled={!canAddCenterMarker} map={() => map.current} target={linePoint?.coordinate} onAdd={(coordinates) => {
             if (!prepareFeatureSwitch(true)) return;
-            if (focusLock.locked) focusLock.toggle();
-            map.current?.stop();
-            position.free();
-            follow.pause();
+            // A center mark during locked recording is a quick annotation. Keep the
+            // live camera mode intact; the annotation editor remains available after
+            // the user unlocks, without restoring a stale follow snapshot.
+            const keepRecordingFollow = focusLock.locked && recorder.record.phase === 'recording';
+            if (!keepRecordingFollow) {
+              if (focusLock.locked) focusLock.toggle();
+              map.current?.stop();
+              position.free();
+              follow.pause();
+            }
             tracks.select(null);
             areas.select(null);
             setProfileOpen(false);
             if (annotations.add('pin', coordinates)) {
-              setAnnotationTab('basic');
-              setPanelPrepared('annotations');
+              if (keepRecordingFollow) {
+                annotations.select(null);
+                setLockedMarkerNotice('标记已保存；解锁后可编辑');
+              } else {
+                setAnnotationTab('basic');
+                setPanelPrepared('annotations');
+              }
             }
-          }} /> : undefined}
+          }} />}
           elevationControl={layers.elevationColors && !layers.outdoorContours ? <ElevationLegend interval={layers.contourInterval ?? 30} /> : undefined}
           layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.round(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256)) + ((layers.rasterQuality ?? 'high') === 'high' ? 1 : 0)))} onLevel={rasterLevel => update({ rasterLevel })} quality={layers.rasterQuality ?? 'high'} onQuality={rasterQuality => update({ rasterQuality })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
           viewControl={

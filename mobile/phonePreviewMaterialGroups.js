@@ -1,15 +1,22 @@
 // These are editing groups, not a migration to a new colour palette.
 export const MATERIAL_GROUPS = [
-  {id:'window',label:'窗口底板',hint:'记录、路线、工具、图层、收藏和提示条；收藏图源快捷弹窗也在这里，收藏与普通窗口共用参数。',parts:[{id:'window',label:'底板',members:['panel','toast']}]},
-  {id:'chrome',label:'地图工具栏',hint:'顶部搜索栏、底部导航、右侧工具及锁定按钮。',parts:[{id:'chrome',label:'底板',members:['topbar','bottom','rail']}]},
-  {id:'controls',label:'按钮与输入框',hint:'次要按钮、输入框、选项底板，以及收藏图源快捷弹窗中的图源行和管理按钮。',parts:[{id:'controls',label:'底色',members:['button','field','subtle']}]},
+  {id:'window',label:'窗口与提示条',hint:'地图上的普通窗口和提示条；收藏图源快捷弹窗按窗口底板处理，收藏与普通窗口共用参数。',parts:[{id:'window',label:'外框底板',members:['panel','toast']}]},
+  {id:'chrome',label:'地图工具栏',hint:'地图顶部栏、底部导航和右侧工具/锁定栏的底板。',parts:[{id:'chrome',label:'工具栏底板',members:['topbar','bottom','rail']}]},
+  {id:'controls',label:'次级操作与输入',hint:'按实际对象分别调整次要按钮、输入/选项底板、轻按钮及返回/关闭底色；图源快捷弹窗图源行和管理按钮使用次要按钮。',parts:[{id:'button',label:'次要按钮',members:['button']},{id:'field',label:'输入/选项底板',members:['field']},{id:'subtle',label:'轻按钮/返回关闭',members:['subtle']}]},
   {id:'accent',label:'主按钮与选中状态',hint:'底栏记录/路线等的浅色选中块，选「选中底色」；橙色操作按钮选「主按钮底色」。',parts:[{id:'accent',label:'主按钮底色',members:['accent','switchOn']},{id:'selected',label:'选中底色（底栏/选项）',members:['selected']},{id:'accentText',label:'主按钮文字',members:['accentText']}]},
   {id:'text',label:'文字与图标',hint:'普通文字、辅助说明、图标、关闭符号及地图上的3D/2D入口；主按钮文字在「主按钮与选中状态」。',parts:[{id:'text',label:'文字',members:['ink','muted','close']}]},
   {id:'switch',label:'开关细节',hint:'关闭状态的底色与圆形滑块分开，避免调成同色后分不清开关状态。',parts:[{id:'switchOff',label:'关闭底色',members:['switchOff']},{id:'knob',label:'圆形滑块',members:['knob']}]},
-  {id:'edges',label:'边缘与分隔线',hint:'窗口描边及内部细分隔线。提示条保持无亮边。',parts:[{id:'edges',label:'线条',members:['edge','line']}]},
+  {id:'edges',label:'外框与内部线条',hint:'窗口外框描边和内容内部细分隔线分别调整；提示条不加装饰亮边。',parts:[{id:'edge',label:'窗口外框描边',members:['edge']},{id:'line',label:'内部细分隔线',members:['line']}]},
 ];
 
+export const MATERIAL_RADIUS_RULES = Object.freeze({ outerToken:'--ui-radius-card', innerToken:'--ui-radius-control', inputToken:'--ui-radius-control' });
+
 export const clamp=(value,min,max)=>Math.max(min,Math.min(max,Number(value)||0));
+// Older drafts may contain radiusInput, but inputs now follow the shared control radius.
+export function sharedControlRadius(draft,fallback=10){
+  const value=Number(draft?.radiusControl);
+  return Number.isFinite(value)?clamp(value,0,24):fallback;
+}
 export function parseColor(value){
   const text=String(value||'').trim(),hex=text.match(/^#([\da-f]{3,8})$/i)?.[1];
   if(hex){

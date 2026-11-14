@@ -183,7 +183,7 @@ export function usePosition() {
           if (watch.current !== null) navigator.geolocation.clearWatch(watch.current);
           watch.current = null;
         }
-        startFallback(error.code === 1 ? '浏览器未允许定位权限' : error.code === 3 ? '系统定位超时' : '系统定位暂不可用');
+        startFallback(error.code === 1 ? '未授权定位' : error.code === 3 ? '系统定位超时' : '系统定位暂不可用');
       },
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
     );

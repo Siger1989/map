@@ -18,5 +18,5 @@ html[data-ui-theme] .observatory.home-map .map-comparison-ui .map-layer-control.
 .observatory.home-map .comparison-layer-window .comparison-layer-tabs button {
   min-width: 36px; min-height: 36px; height: 36px; padding: 0 4px; font-size: 12px; background: transparent;
 }
-.observatory.home-map .comparison-layer-window .comparison-layer-tabs button[aria-pressed='true'] { color: var(--ui-accent); background: var(--ui-selected); }
+.observatory.home-map .comparison-layer-window .comparison-layer-tabs button[aria-pressed='true'] { color: var(--ui-selected-ink,var(--ui-active-ink)); background: var(--ui-selected); }
 .observatory.home-map .comparison-layer-window .dock-heading .icon-button { width: 36px; height: 36px; min-height: 36px; min-width: 36px; color: var(--ui-close); }

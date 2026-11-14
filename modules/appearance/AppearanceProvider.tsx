@@ -2,13 +2,19 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { DEFAULT_APPEARANCE, parseAppearance, THEME_KEY, themeTokens, type Appearance } from './theme';
 import './appearance.css';
+import './inputFocus.css';
+import './inputText.css';
+import './scrollbars.css';
+import './primaryActions.css';
 import { useSpringInteractions } from '../ui/useSpringInteractions';
 import { AppColorPicker } from './AppColorPicker';
 import savedMaterialPreset from './savedMaterialPreset.json';
+import { installMaterialRuntime } from './materialRuntime.js';
 import { getPersonalMaterialTokensToRemove, getSavedMaterialTokens, initializeSavedMaterial, PERSONAL_MATERIAL_STATE_KEY, saveAppearanceAndDisableMaterial, setSavedMaterialEnabled, type SavedMaterial } from './savedMaterial';
 const savedMaterial = savedMaterialPreset as SavedMaterial;
 const Context = createContext<{ settings: Appearance; dark: boolean; save: (next: Appearance) => void; message: string; personalMaterial: boolean; applyPersonalMaterial: () => void } | null>(null);
 export function AppearanceProvider({children}: {children: ReactNode}) {
+  useEffect(() => installMaterialRuntime(window), []);
   useSpringInteractions();
   const [settings,setSettings] = useState(DEFAULT_APPEARANCE);
   const [personalMaterial,setPersonalMaterial] = useState(false);

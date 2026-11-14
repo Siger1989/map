@@ -86,6 +86,12 @@ export function FloatingSearch({
       }
       const popupMaxHeight = Math.min(maxHeight, Math.max(0, viewport.height - 8));
       const geometry = floatingGeometry(anchorBounds, viewport, popupMaxHeight);
+      const widthValue = Number.parseFloat(getComputedStyle(anchor).getPropertyValue('--ui-search-width'));
+      const requestedWidth = Number.isFinite(widthValue) ? Math.max(240, Math.min(360, widthValue)) : 300;
+      if (owner === 'place' || owner === 'route') {
+        geometry.width = Math.max(0, Math.min(requestedWidth, viewport.width - 8));
+        geometry.left = Math.max(viewport.left + 4, Math.min(anchorBounds.left, viewport.left + viewport.width - geometry.width - 4));
+      }
       if ((owner === 'place' || owner === 'route') && !desktop) {
         const controlBounds = Array.from(document.querySelectorAll<HTMLElement>(
           '.observatory.home-map .home-map-actions, .observatory.home-map .home-position-dock',
@@ -100,21 +106,40 @@ export function FloatingSearch({
         const safeRight = controlBounds.length
           ? Math.min(...controlBounds.map(bounds => bounds.left)) - 8
           : viewport.left + viewport.width - 4;
-        geometry.width = Math.max(0, Math.min(300, viewport.width - 8, safeRight - viewport.left - 8));
+        geometry.width = Math.max(0, Math.min(requestedWidth, viewport.width - 8, safeRight - viewport.left - 8));
         geometry.left = Math.max(viewport.left + 4, Math.min(geometry.left, safeRight - geometry.width));
       }
-      setStyle(expandToViewport
+      const nextStyle = expandToViewport
         ? { ...geometry, top: viewport.top + 4, maxHeight: popupMaxHeight }
-        : geometry);
+        : geometry;
+      setStyle(current => {
+        if (current && Object.keys(nextStyle).every(key =>
+          Math.abs(Number((current as Record<string, unknown>)[key]) - Number((nextStyle as Record<string, unknown>)[key])) < 0.5
+        )) return current;
+        return nextStyle;
+      });
     };
     update();
     const stopObservingViewport = observeSearchViewport(update);
+    window.addEventListener('shantu-material-change', update);
+    const sizingObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    sizingObserver?.observe(anchor);
+    sizingObserver?.observe(document.documentElement);
+    const tokenObserver = typeof MutationObserver !== 'undefined' ? new MutationObserver(update) : null;
+    tokenObserver?.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style', 'data-ui-theme'] });
+    const themedHost = anchor.closest<HTMLElement>('.observatory');
+    if (themedHost && themedHost !== document.documentElement) {
+      tokenObserver?.observe(themedHost, { attributes: true, attributeFilter: ['class', 'style', 'data-ui-theme'] });
+    }
     const panelObserver = routePanelHost && typeof ResizeObserver !== 'undefined'
       ? new ResizeObserver(update)
       : null;
     if (panelObserver && routePanelHost) panelObserver.observe(routePanelHost);
     return () => {
       stopObservingViewport();
+      window.removeEventListener('shantu-material-change', update);
+      sizingObserver?.disconnect();
+      tokenObserver?.disconnect();
       panelObserver?.disconnect();
     };
   }, [anchor, desktop, expandToViewport, maxHeight, owner]);

@@ -168,6 +168,14 @@ public final class Native149Instrumentation extends Instrumentation {
                             JSONObject request = new JSONObject(line);
                             String action = request.getString("action");
                             stop = "stop".equals(action);
+                            if ("material-read".equals(action) || "material-apply".equals(action) || "material-restore".equals(action)) {
+                                NativePreviewMaterial material = new NativePreviewMaterial(
+                                    getTargetContext().getPackageName(), this::evalJs);
+                                if ("material-read".equals(action)) reply = material.read();
+                                else if ("material-restore".equals(action)) reply = material.restore();
+                                else reply = material.apply(request.getJSONObject("material"));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
                             if ("native163-drawing-regression".equals(action) || "native163-ui-regression".equals(action)) {
                                 if ("native163-ui-regression".equals(action) && request.has("expectedCssWidth")) {
                                     int width = request.getInt("expectedCssWidth");
@@ -361,7 +369,7 @@ public final class Native149Instrumentation extends Instrumentation {
         while ((ch = reader.read()) != -1) {
             if (ch == '\n') return line.toString();
             if (ch != '\r') line.append((char)ch);
-            if (line.length() > 4096) throw new java.io.IOException("preview command exceeds 4096 characters");
+            if (line.length() > 64 * 1024) throw new java.io.IOException("preview command exceeds 65536 characters");
         }
         return line.length() == 0 ? null : line.toString();
     }

@@ -31,6 +31,10 @@ export default defineConfig(({ mode }) => {
     // Packaging output must not reload an in-progress map preview.
     watch: { ignored: createPreviewWatchIgnore(projectRoot) },
     proxy: {
+      '/native-preview-api': {
+        target: 'http://127.0.0.1:19374',
+        rewrite: path => path.replace(/^\/native-preview-api/, ''),
+      },
       '/api': {
         target: process.env.SHANTU_DEV_API_URL || 'http://localhost:3108',
         changeOrigin: true,

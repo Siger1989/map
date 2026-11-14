@@ -228,19 +228,19 @@
   min-height: 44px;
 }
 .annotation-marker.is-point[data-presentation='label'] .annotation-marker-visual {
-  padding-bottom: 16px;
+  padding-bottom: 12px;
   transform: none;
 }
 .annotation-marker.is-point[data-presentation='label'] .annotation-marker-visual::after {
   border-left-width: 5px;
   border-right-width: 5px;
-  border-top-width: 16px;
+  border-top-width: 12px;
   filter: none;
 }
 .annotation-marker.is-point[data-presentation='label'] .annotation-marker-body {
   gap: 3px;
-  min-height: 24px;
-  padding: 2px 4px;
+  min-height: 22px;
+  padding: 1px 4px;
   border: 0;
   border-radius: 4px;
   background: var(--marker-color);
@@ -516,6 +516,15 @@
   width: min(300px, calc(100% - var(--edge-left) - var(--edge-right) - 46px));
   padding: 8px;
 }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .selection-tools.is-annotation[aria-label] {
+  background:var(--ui-material-panel,var(--ui-glass-surface));
+  color:var(--ui-glass-ink);
+  border:var(--ui-glass-edge-width,1px) solid var(--ui-glass-border);
+  border-radius:var(--ui-radius-card);
+  box-shadow:var(--ui-glass-shadow);
+  -webkit-backdrop-filter:var(--ui-glass-filter);
+  backdrop-filter:var(--ui-glass-filter);
+}
 .selection-tools.is-annotation strong {
   overflow: hidden;
   white-space: nowrap;
@@ -531,8 +540,8 @@
   gap: 6px;
 }
 .selection-tools.is-annotation .selection-tools-heading > [role='status'] { min-width: 0; flex: 1; }
-.selection-tools.is-annotation .selection-tools-name { display:flex; align-items:center; gap:4px; min-width:0; }
-.selection-tools.is-annotation .selection-tools-name input { box-sizing:border-box; flex:1; width:100%; min-width:0; min-height:28px; padding:0 3px; border:0; border-bottom:1px solid var(--ui-line); border-radius:0; background:transparent; color:var(--ui-ink); font-size:13px; font-weight:600; }
+.selection-tools.is-annotation .selection-tools-name { display:flex; align-items:center; gap:4px; min-width:0; min-height:32px; padding:0 6px; border:1px solid transparent; border-radius:var(--ui-radius-control); }
+.selection-tools.is-annotation .selection-tools-name input { box-sizing:border-box; flex:1; width:100%; min-width:0; min-height:28px; padding:0 3px; border:0; border-radius:0; background:transparent; color:var(--ui-glass-ink); font-size:13px; font-weight:600; }
 .selection-tools.is-annotation .selection-tools-name svg { flex:0 0 auto; color:var(--ui-muted); }
 .selection-tools.is-annotation .selection-tools-heading > [role='status'] span { margin: 3px 0 6px; }
 .selection-tools.is-annotation .selection-tools-delete {
@@ -552,11 +561,16 @@
   margin: 0 0 5px;
   padding: 4px;
   border: 2px solid var(--ui-danger);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-control);
   background: color-mix(in srgb, var(--ui-danger) 15%, var(--ui-surface));
 }
 .selection-tools.is-annotation .selection-tools-delete-confirm > span { flex: 1 1 100%; margin: 0; }
 .selection-tools.is-annotation .selection-tools-delete-confirm button { flex: 1; min-height: 28px; padding: 0 5px; font-size: 11px; }
 .selection-tools.is-annotation .selection-tools-delete-confirm .is-danger { color: var(--ui-danger, #e26b5e); }
 .selection-tools.is-annotation .selection-tools-actions { display: flex; gap: 5px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .selection-tools.is-annotation button {
+  border-radius:var(--ui-radius-control);
+  background:var(--ui-button);
+  border-color:var(--ui-line);
+}
 .observatory.home-map .control-popover .annotation-panel :is(button,input,select,summary):not([type='range']):not([type='color']):not([type='checkbox']):not([type='radio']) { min-height:28px; }

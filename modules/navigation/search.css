@@ -103,6 +103,11 @@
   border-bottom: 1px solid var(--border, var(--ui-line));
 }
 .place-search-result-list.is-route .place-search-result-row { grid-template-columns: minmax(0, 1fr); }
+.floating-search .place-search-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-search-gap, 3px);
+}
 .place-search-result-row > button[data-place-result] {
   display: flex;
   align-items: flex-start;
@@ -118,6 +123,7 @@
 }
 .place-search-result-row > button[data-place-result] > svg { flex: 0 0 15px; margin-top: 2px; color: var(--accent, var(--ui-accent)); }
 .place-search-result-row > button[data-place-result] > span { min-width: 0; }
+.place-search-result-row > button[data-place-result] strong { color:var(--ui-input-ink,var(--ui-ink)); }
 .place-search-result-row strong,
 .place-search-result-row small { display: block; overflow-wrap: anywhere; }
 .place-search-result-row strong { font-size: 12px; line-height: 1.25; font-weight: 550; }
@@ -150,29 +156,36 @@
   flex: 0 0 28px;
   align-items: center;
   justify-content: space-between;
-  padding: 0 7px;
+  padding: 0 0 0 8px;
   color: var(--muted, var(--ui-muted));
   font-size: 10px;
 }
 .place-search-history-heading button,
 .place-search-history-remove {
   box-sizing: border-box;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 36px;
+  min-height: 28px;
   border-radius: 4px;
   background: transparent;
   color: var(--accent, var(--ui-accent));
 }
 .place-search-history ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-search-gap, 3px);
   min-width: 0;
   margin: 0;
-  padding: 0 4px 4px;
+  padding: 0;
   list-style: none;
+}
+.floating-search[data-search-owner='place'] .place-search-history-heading button {
+  flex:0 0 36px; width:36px; min-width:36px; height:28px; min-height:28px;
+  margin:0; padding:0 !important; font-size:11px;
 }
 .place-search-history li {
   display: flex;
   min-width: 0;
-  min-height: 44px;
+  min-height: var(--ui-search-row-height, 32px);
   align-items: center;
   gap: 3px;
   border-bottom: 1px solid var(--border, var(--ui-line));
@@ -180,19 +193,20 @@
 .place-search-history-restore {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 44px;
+  min-height: var(--ui-search-row-height, 32px);
   overflow: hidden;
-  padding: 0 6px;
+  padding: 0 8px;
   background: transparent;
-  color: var(--text, var(--ui-ink));
+  color: var(--ui-input-ink, var(--text, var(--ui-ink)));
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .place-search-history-remove {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
+  flex: 0 0 36px;
+  min-height: var(--ui-search-row-height, 32px);
+  width: 36px;
+  height: var(--ui-search-row-height, 32px);
   color: var(--muted, var(--ui-muted));
   font-size: 18px;
 }
@@ -211,11 +225,26 @@
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+html[data-ui-theme] .floating-search[data-search-owner='place'] .place-search-results > .place-selected-place > .place-selected-place-content {
+  scrollbar-width:none!important;
+  scrollbar-color:transparent transparent!important;
+}
+html[data-ui-theme] .floating-search[data-search-owner='place'] .place-search-results > .place-selected-place > .place-selected-place-content::-webkit-scrollbar {
+  width:0!important;
+  height:0!important;
+  display:none!important;
+}
 .place-selected-place-content > strong {
   display: block;
+  color: var(--ui-input-ink, var(--ui-ink));
   overflow-wrap: anywhere;
   font-size: 14px;
   line-height: 1.3;
+}
+/* Portaled search cards need the same subtle lines as the map's glass cards. */
+html[data-ui-theme] .floating-search[data-search-owner] {
+  --ui-line: var(--ui-glass-line);
+  --border: var(--ui-glass-line);
 }
 .place-selected-place-content > p {
   margin: 7px 0;
@@ -347,6 +376,16 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+html[data-ui-theme] .floating-search[data-search-owner='place']:has(.place-search-history, .place-search-history-empty) .place-search-heading {
+  display: flex;
+  box-sizing: border-box;
+  flex: 0 0 36px;
+  height: 36px;
+  min-height: 36px;
+  grid-template-columns: none;
+  grid-template-rows: none;
+  padding: 0 0 0 8px;
+}
 .floating-search[data-search-owner='place'] .place-search-heading > .place-search-heading-title,
 .floating-search[data-search-owner='route'] .place-search-heading > .place-search-heading-title {
   flex: 1 1 auto;
@@ -401,7 +440,7 @@
 }
 .floating-search[data-search-owner='place'] .place-search-result-row,
 .floating-search[data-search-owner='route'] .place-search-result-row {
-  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-columns: minmax(0, 1fr) 36px;
   align-items: start;
 }
 .floating-search[data-search-owner='place'] .place-search-result-row > button[data-place-result],
@@ -409,7 +448,7 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  min-height: 44px !important;
+  min-height: var(--ui-search-row-height, 32px) !important;
   padding: 2px 3px !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -484,10 +523,10 @@
   align-items: center;
   justify-content: center;
   gap: 0;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px !important;
+  width: 36px;
+  min-width: 36px;
+  height: var(--ui-search-row-height,32px);
+  min-height: var(--ui-search-row-height,32px) !important;
   padding: 2px 0 !important;
   border: 0 !important;
   border-radius: 4px !important;

@@ -171,6 +171,46 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .
   border-color:var(--ui-danger);
   color:#fff;
 }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] {
+  background:var(--ui-material-panel,var(--ui-glass-surface));
+  color:var(--ui-glass-ink);
+  border:var(--ui-glass-edge-width,1px) solid var(--ui-glass-border);
+  border-radius:var(--ui-radius-card);
+  box-shadow:var(--ui-glass-shadow);
+  -webkit-backdrop-filter:var(--ui-glass-filter);
+  backdrop-filter:var(--ui-glass-filter);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] button:not(.pin-save):not(.pin-danger) {
+  background:var(--ui-button); color:var(--ui-button-ink); border-color:var(--ui-line); border-radius:var(--ui-radius-control);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] :is(.pin-field,.pin-coordinate-row) {
+  background:var(--ui-field); border-color:var(--ui-line); border-radius:var(--ui-radius-control);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] .pin-field :is(input,textarea) {
+  background:transparent; border:0; border-radius:0; color:var(--ui-ink);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] .pin-attribute {
+  gap:0; overflow:hidden; border:1px solid var(--ui-line); border-radius:var(--ui-radius-control); background:var(--ui-field);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] .pin-attribute :is(input,textarea) {
+  background:transparent; border:0; border-radius:0; color:var(--ui-ink);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] .pin-attribute button {
+  background:transparent; border:0; border-radius:0;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] .pin-field :is(input,textarea),
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] .pin-attribute :is(input,textarea) {
+  background:transparent!important; border:0!important; border-radius:0!important;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] .pin-coordinate-value {
+  background:transparent; border-radius:0;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] .marker-number {
+  border-radius:var(--ui-radius-control); background:var(--ui-field);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor[aria-label] .marker-number input {
+  background:transparent; border-radius:0;
+}
 @media (orientation: landscape) and (max-height: 480px) {
   .pin-editor { width: min(440px, calc(100% - 128px)); max-height: calc(100dvh - 124px - var(--safe-top) - var(--safe-bottom)); }
 }

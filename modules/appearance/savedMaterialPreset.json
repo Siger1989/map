@@ -166,7 +166,7 @@
         77
       ]
     },
-    "radiusControl": 20,
+    "radiusControl": 10,
     "switchOff": {
       "color": "#e3ccb0",
       "rgb": [
@@ -273,7 +273,7 @@
     "shadowBlur": 24,
     "shadowOffset": 8,
     "radiusCard": 23,
-    "radiusControl": 20,
+    "radiusControl": 10,
     "edgeWidth": 1.5
   },
   "tokens": {
@@ -308,7 +308,7 @@
     "--ui-glass-filter": "blur(10px) saturate(125%)",
     "--ui-glass-shadow": "0 8px 24px rgba(0,0,0,0.18)",
     "--ui-radius-card": "23px",
-    "--ui-radius-control": "20px",
+    "--ui-radius-control": "10px",
     "--ui-glass-edge-width": "1.5px",
     "--ui-selected-ink": "rgba(70,52,52,1)",
     "--ui-active-ink": "rgba(70,52,52,1)"

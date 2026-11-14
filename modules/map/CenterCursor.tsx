@@ -13,10 +13,12 @@ export function CenterMarkButton({
   map,
   onAdd,
   target,
+  disabled = false,
 }: {
   map: () => MapHandle | null;
   onAdd: (point: Coordinate) => void;
   target?: Coordinate;
+  disabled?: boolean;
 }) {
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
@@ -32,9 +34,10 @@ export function CenterMarkButton({
         className="position-dock-button center-add glass"
         aria-label={target ? '在所选路线点添加标记' : '在地图中心准星处添加标记'}
         aria-busy={pending}
-        disabled={pending}
+        disabled={disabled || pending}
+        title={disabled ? '完成当前编辑后可添加标记' : undefined}
         onClick={async () => {
-          if (flight.current) return;
+          if (disabled || flight.current) return;
           flight.current = true;
           setPending(true);
           setError('');

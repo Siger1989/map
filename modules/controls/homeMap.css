@@ -99,8 +99,9 @@
 .observatory.home-map .home-route-actions button.is-primary { background: var(--home-active); color: var(--home-green); }
 .observatory.home-map .home-route-delete-confirm { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding-top:4px; border-top:1px solid var(--home-line); font-size:11px; }
 .observatory.home-map .home-route-delete-confirm span { grid-column:1/-1; }
-.observatory.home-map .home-route-delete-confirm button { min-height:32px; border:1px solid #a6bdc0; border-radius:4px; background:#fff; }
+.observatory.home-map .home-route-delete-confirm button { min-height:32px; border:1px solid #a6bdc0; border-radius:var(--ui-radius-control,10px); background:var(--ui-button,#fff); color:var(--ui-button-ink,var(--home-ink)); }
 .observatory.home-map .home-route-delete-confirm .route-danger { border-color:#bd5d50; color:#a33626; }
+html[data-ui-theme] .observatory.home-map .home-route-delete-confirm .route-danger { color:var(--ui-danger,#a33626); }
 .observatory.home-map .home-route-card > p { margin: 4px 0; color: #a33; font-size: 12px; }
 .observatory.home-map .home-journey-points { position: absolute; z-index: 6; left: var(--home-left); top: calc(var(--home-header-height) - 8px + var(--home-top) + var(--route-card-clearance, 126px)); width: clamp(100px,26vw,124px); max-height: min(200px,calc(100dvh - var(--home-footer) - var(--route-card-clearance,126px) - 196px)); padding: 4px 6px; overflow: auto; }
 .observatory.home-map .home-journey-heading { width: 100%; display: flex; justify-content: space-between; align-items: center; min-height: 25px; font-size: 12px; }
@@ -310,7 +311,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 .observatory.home-map[data-focus-locked=true]:not([data-guiding=true]) > .route-weather-rail { display:none !important; }
 .observatory.home-map[data-focus-locked=true]::before { display:none !important; }
 .observatory.home-map[data-focus-locked=true] .maplibregl-control-container { display:none; }
-.observatory.home-map .focus-live-data { position:absolute; z-index:80; left:60px; right:8px; bottom:calc(var(--home-bottom) + 8px); padding:4px; background:#fffffff0; border:1px solid #9bb7bc; border-radius:4px; font-size:11px; pointer-events:none; }
+.observatory.home-map .focus-live-data { box-sizing:border-box; position:absolute; z-index:80; left:60px; right:auto; bottom:calc(var(--home-bottom) + 8px); width:max-content; max-width:calc(100vw - 76px); padding:4px; background:#fffffff0; border:1px solid #9bb7bc; border-radius:4px; font-size:11px; pointer-events:none; }
 .observatory.home-map .focus-live-data .navigation-telemetry { position:static; width:auto; margin:0; border:0; padding:0; }
 .observatory.home-map .focus-live-data { color:var(--home-ink); }
 .observatory.home-map:has(.route-display-settings) :is(.home-route-card,.home-journey-points) { visibility:hidden; }

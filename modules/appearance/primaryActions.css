@@ -1,0 +1,9 @@
+/* Primary actions are slightly warmer than selected categories and map icons.
+   Derive from the current palette, without changing the saved accent itself. */
+html[data-ui-theme] .observatory.home-map[data-ui-style] :is(button.is-primary,button.route-primary,button.collection-primary,button.recording-start,button.marker-primary,button.marker-save,button.pin-save,button.route-solid,button[data-ui-action='primary']),
+html[data-ui-theme] :is(.collection-action-dialog,.route-dialog,.place-share-panel) :is(button.is-primary,button.route-primary,button.collection-primary,button.route-solid,button[data-ui-action='primary']) {
+  --ui-action-primary: color-mix(in srgb, var(--ui-accent) 72%, #f06a46);
+  background: var(--ui-action-primary) !important;
+  border-color: transparent !important;
+  color: var(--ui-on-accent) !important;
+}

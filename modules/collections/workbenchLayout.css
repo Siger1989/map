@@ -181,7 +181,7 @@ html[data-ui-theme] .observatory.home-map .collection-workbench :is(.workbench-f
   box-sizing: border-box; height: 32px; min-height: 32px;
 }
 .observatory.home-map .collection-workbench :is(.workbench-folder-heading,.workbench-tree-item):is(.is-active,.is-checked) {
-  box-shadow: inset 3px 0 var(--folder-text, var(--ui-accent)), inset 0 -1px var(--folder-line, var(--ui-line));
+  box-shadow: inset 0 0 12px color-mix(in srgb, var(--ui-accent) 28%, transparent);
 }
 .observatory.home-map .collection-workbench .workbench-tree-folder :is(.workbench-folder-heading,.workbench-tree-item).is-active {
   background: var(--folder-hover, var(--ui-selected));

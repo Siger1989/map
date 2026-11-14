@@ -1,3 +1,10 @@
+html[data-ui-theme] {
+  --ui-search-width: 300px;
+  --ui-search-padding: 10px;
+  --ui-search-gap: 3px;
+  --ui-search-row-height: 32px;
+}
+
 .text-suggestions {
   position: fixed;
   z-index: 10000;
@@ -68,7 +75,8 @@
   z-index: 10010;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 0 4px 4px;
+  box-sizing: border-box;
+  padding: var(--ui-search-padding, 10px);
 }
 .floating-search .place-search-results,
 .floating-search .route-search-results {
@@ -146,7 +154,7 @@
 }
 .floating-search button:focus-visible { outline: 2px solid var(--ui-accent, #176a50); outline-offset: -2px; }
 
-.floating-search { box-sizing: border-box; border-radius: 8px; }
+.floating-search { border-radius: 8px; }
 .floating-search-heading, .floating-search .place-search-heading {
   position: sticky; top: 0; background: var(--ui-surface, #f3f8f5); z-index: 1;
 }

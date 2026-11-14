@@ -20,7 +20,7 @@
 .observatory.home-map[data-comparing='true'] > .map-canvas > .map-imagery-date-label,
 .observatory.home-map[data-comparing='true'] > .map-canvas .maplibregl-ctrl-attrib { display: none; }
 .observatory.home-map[data-comparing='true'] .annotation-marker.is-point[data-presentation='label'] .annotation-marker-body {
-  min-height: 20px; padding: 1px 3px; gap: 2px; font-size: 11px; line-height: 18px;
+  min-height: 22px; padding: 1px 3px; gap: 2px; font-size: 11px; line-height: 18px;
 }
 .observatory.home-map[data-comparing='true'] .annotation-marker.is-point[data-presentation='label'] .annotation-marker-body svg { width: 12px; height: 12px; }
 .observatory.home-map[data-comparing='true'] > .map-comparison-primary { top: calc(var(--compare-top) + 32px) !important; }
@@ -38,9 +38,9 @@
 .map-comparison-heading strong { font-size: 14px; }
 .map-comparison-heading > strong { flex-shrink: 0; }
 .observatory.home-map .map-comparison-heading .place-search { position: relative; inset: auto; flex: 1; width: auto; min-width: 0; max-width: none; }
-.observatory.home-map .map-comparison-heading .place-search form { width: 100%; min-width: 0; height: 32px; box-sizing: border-box; }
-.observatory.home-map .map-comparison-heading .place-search input { min-width: 0; width: 100%; height: 32px; font-size: 16px; box-sizing: border-box; }
-.observatory.home-map .map-comparison-heading .place-search button { width: 32px; height: 32px; min-height: 32px; padding: 0; }
+.observatory.home-map .map-comparison-heading .place-search form { width: 100%; min-width: 0; height: 32px; box-sizing: border-box; border:1px solid var(--ui-line); border-radius:var(--ui-input-radius,var(--ui-radius-control)); background:var(--ui-field); }
+.observatory.home-map .map-comparison-heading .place-search input { min-width: 0; width: 100%; height: 32px; padding:0 8px; border:0; border-radius:inherit; background:transparent; color:var(--ui-button-ink); font-size: 16px; box-sizing: border-box; }
+.observatory.home-map .map-comparison-heading .place-search button { width: 32px; height: 32px; min-height: 32px; padding: 0; border-radius:var(--ui-radius-control); background:transparent; color:var(--ui-button-ink); }
 .map-comparison-heading .map-comparison-live { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; flex: none; }
 .map-comparison-ui .map-comparison-heading .map-comparison-heading-icon { width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
 .map-comparison-ui .map-comparison-heading .map-comparison-heading-icon[aria-label='退出双图源对比'] { width: 36px; min-width: 36px; height: 36px; min-height: 36px; }
@@ -54,7 +54,7 @@
   border-color: transparent;
   box-shadow: 0 0 6px 1px color-mix(in srgb,var(--ui-accent) 22%,transparent);
 }
-.map-comparison-heading span { color: var(--ui-muted); font-size: 11px; flex: 1; min-width: 0; }
+.map-comparison-heading .map-comparison-live { color: var(--ui-muted); font-size: 11px; flex: 1; min-width: 0; }
 .map-comparison-panes { display: grid; grid-template-rows: 1fr 1fr; flex: 1; min-height: 0; }
 .map-comparison-pane { position: relative; min-width: 0; min-height: 0; }
 .map-comparison-toolbar {
@@ -63,9 +63,15 @@
   backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter);
 }
 .map-comparison-toolbar > span { font-size: 12px; padding: 0 4px; color: var(--ui-muted); }
+/* A filtered toolbar creates a backdrop root and clips the popup's glass
+   sampling to the toolbar itself. Let the open menu blur the actual map. */
+.map-comparison-toolbar:has(.comparison-source-popup) {
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
 .map-comparison-ui select {
   flex: 1; min-width: 0; width: 0; height: 28px; padding: 0 6px;
-  font: inherit; font-size: 16px; border: 0; border-radius: var(--ui-radius-control);
+  font: inherit; font-size: 16px; border: 0; border-radius: var(--ui-input-radius,var(--ui-radius-control));
   background: var(--ui-field); color: var(--ui-ink); text-overflow: ellipsis;
 }
 .comparison-source-picker { position: relative; flex: 1; min-width: 0; }
@@ -74,40 +80,37 @@
   height: 28px; min-height: 28px; padding: 0 6px; background: var(--ui-field); text-align: left;
 }
 .comparison-source-trigger > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.comparison-source-health { display:grid; gap:4px; padding:4px; border-bottom:1px solid var(--ui-line); }
+.comparison-source-health { display:grid; gap:3px; padding:4px; border-bottom:1px solid var(--ui-line); }
 .comparison-source-health p { margin:0; font-size:11px; line-height:1.35; color:var(--ui-muted); overflow-wrap:anywhere; }
 .comparison-source-health [data-health='ok'] { color:var(--ui-accent); }
-.map-comparison-ui .comparison-source-popup .comparison-source-health button { width:100%; min-height:36px; height:auto; white-space:normal; }
-.map-comparison-ui .comparison-source-row .comparison-source-probe { flex:0 0 40px; width:40px; min-width:40px; min-height:36px; height:36px; padding:0 2px; font-size:11px; }
+.map-comparison-ui .comparison-source-popup .comparison-source-health button { width:100%; min-height:30px; height:auto; padding:3px 6px; white-space:normal; }
+.map-comparison-ui .comparison-source-row .comparison-source-probe { flex:0 0 36px; width:36px; min-width:36px; min-height:30px; height:30px; padding:0 2px; font-size:11px; }
 .comparison-source-popup {
   position: absolute; z-index: 32; top: calc(100% + 2px); left: 0; width: min(250px, calc(100vw - 16px));
   max-height: min(48dvh, calc(100dvh - 120px));
-  overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 3px;
+  overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 8px;
   border: 1px solid var(--ui-glass-border,var(--ui-line)); border-radius: var(--ui-radius-card); background: var(--ui-material-panel,var(--ui-glass-surface)); color: var(--ui-glass-ink,var(--ui-ink));
   box-shadow: var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); pointer-events: auto;
 }
 .comparison-source-popup[data-placement='above'] { top: auto; bottom: calc(100% + 2px); }
-.comparison-source-group { overflow: hidden; border-radius: 4px; }
+.comparison-source-group { overflow: hidden; border-radius: var(--ui-radius-control); background:transparent; }
 .comparison-source-group + .comparison-source-group { margin-top: 2px; }
-.comparison-source-group-0 { background: color-mix(in srgb, var(--ui-accent) 9%, transparent); }
-.comparison-source-group-1 { background: color-mix(in srgb, var(--ui-glass-ink,var(--ui-ink)) 4%, transparent); }
-.comparison-source-group-2 { background: color-mix(in srgb, #65a9d5 9%, transparent); }
-.comparison-source-group-3 { background: color-mix(in srgb, #74b982 9%, transparent); }
-.comparison-source-group-4 { background: color-mix(in srgb, #d5a565 9%, transparent); }
 .map-comparison-ui .comparison-source-popup .comparison-source-group-heading {
-  display: flex; justify-content: space-between; align-items: center; width: 100%; height: 36px; min-height: 36px;
+  display: flex; justify-content: space-between; align-items: center; width: 100%; height: 30px; min-height: 30px;
   padding: 0 6px; background: transparent; color: var(--ui-muted); font-size: 11px; text-align: left;
 }
-.comparison-source-row { display: flex; align-items: center; min-width: 0; min-height: 36px; }
+.comparison-source-row { display: flex; align-items: center; min-width: 0; min-height: 30px; margin-block:3px; border-radius: var(--ui-radius-control); background:var(--ui-button); color:var(--ui-button-ink); overflow:hidden; }
+.comparison-source-row:has([role='option'][aria-selected='true']) { background:var(--ui-selected); color:var(--ui-selected-ink,var(--ui-active-ink)); font-weight:600; }
+.map-comparison-ui .comparison-source-row:has([role='option'][aria-selected='true']) > button { background:transparent; color:inherit; }
 .map-comparison-ui .comparison-source-row > [role='option'] {
-  display: flex; align-items: center; justify-content: space-between; flex: 1; min-width: 0; height: 36px; min-height: 36px;
-  padding: 0 6px; overflow: hidden; background: transparent; text-align: left; font-size: 12px;
+  display: flex; align-items: center; justify-content: space-between; flex: 1; min-width: 0; height: 30px; min-height: 30px;
+  padding: 0 6px; overflow: hidden; background: transparent; color:inherit; text-align: left; font-size: 12px;
 }
 .comparison-source-row > [role='option'] > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.map-comparison-ui .comparison-source-row > [role='option'][aria-selected='true'] { background:var(--ui-selected); color: var(--ui-selected-ink,var(--ui-active-ink)); font-weight: 600; }
+.map-comparison-ui .comparison-source-row > [role='option'][aria-selected='true'] { background:transparent; color:inherit; }
 .map-comparison-ui .comparison-source-row .comparison-source-favorite {
-  display: grid; place-items: center; width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0;
-  background: transparent; color: var(--ui-accent);
+  display: grid; place-items: center; width: 30px; min-width: 30px; height: 30px; min-height: 30px; padding: 0;
+  background: transparent; color: var(--ui-accent); border-radius:var(--ui-radius-control);
 }
 .map-comparison-ui .comparison-source-row .comparison-source-favorite[aria-pressed='true'] { color:var(--ui-accent); }
 .comparison-source-popup :is(button):focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
@@ -140,20 +143,21 @@
 .map-comparison-track-delete-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; width: 100%; padding-top: 4px; border-top: 1px solid var(--ui-line); }
 .map-comparison-track-delete-confirm span { flex: 1 0 100%; font-size: 11px; line-height: 1.35; }
 .map-comparison-ui .map-comparison-track-delete-confirm button { flex: 1 1 44px; min-width: 44px; }
-.map-comparison-ui .map-comparison-track-delete-confirm button.route-danger { color: var(--ui-danger, #c2410c); }
+.map-comparison-ui .map-comparison-track-delete-confirm button.route-danger { color: var(--ui-danger); }
 .map-comparison-ui .route-surface { pointer-events: auto; }
 .map-comparison-planned-route {
   position: absolute; z-index: 8; left: 8px; bottom: calc(44px + var(--home-bottom) + 8px);
   width: min(280px, calc(100% - 104px)); padding: 4px 8px; box-sizing: border-box;
-  display: flex; flex-direction: column; gap: 4px; border-radius: 8px;
+  display: flex; flex-direction: column; gap: 4px; border-radius: var(--ui-radius-card);
   background: var(--ui-material-panel,var(--ui-glass-surface)); color: var(--ui-glass-ink,var(--ui-ink)); box-shadow: var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); pointer-events: auto;
 }
 .map-comparison-planned-route header, .map-comparison-planned-route p { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12px; }
 .map-comparison-planned-route header strong { flex: 1; }
 .map-comparison-planned-route nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
 .map-comparison-ui .map-comparison-planned-route button { min-width: 0; height: 28px; min-height: 28px; padding: 0 4px; }
-.map-comparison-ui .map-comparison-planned-route header button { width: 28px; padding: 0; color: var(--ui-close, #cbc37d); }
-.map-comparison-ui .map-comparison-planned-route .route-solid { background: var(--ui-accent); color: var(--ui-on-accent, #18301d); }
+.map-comparison-ui .map-comparison-planned-route header button { width: 28px; padding: 0; color: var(--ui-close); }
+.map-comparison-ui .map-comparison-planned-route .route-solid { background: var(--ui-accent); color: var(--ui-on-accent); }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-planned-route .route-header-name { border-radius:var(--ui-input-radius,var(--ui-radius-control)); background:var(--ui-field); color:var(--ui-ink); }
 .map-comparison-edit-overlay { position: absolute; z-index: 24; inset: 32px 0 0; overflow: hidden; pointer-events: none; }
 .map-comparison-actions { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(44px, 1fr); align-items: center; gap: 4px; flex: 0 0 44px; min-width: 0; padding: 0 8px; box-sizing: border-box; background: var(--ui-material-bottom,var(--ui-glass-surface)); color:var(--ui-glass-ink,var(--ui-ink)); box-shadow:inset 0 var(--ui-glass-edge-width,1px) 0 var(--ui-glass-border); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); pointer-events: auto; }
 .map-comparison-actions button { box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 44px; width: 100%; height: 44px; padding: 0 2px; white-space: nowrap; background: transparent; border-radius: var(--ui-radius-control); }
@@ -168,7 +172,7 @@
 .map-comparison-actions .map-comparison-direction .direction-menu { z-index: 8; left: 0; right: auto; bottom: 48px; width: 176px; max-width: min(176px, calc(100vw - 16px)); padding: 4px; }
 .map-comparison-actions .map-comparison-direction .direction-menu button { width: 100%; min-width: 0; min-height: 36px; height: 36px; flex-direction: row; justify-content: flex-start; padding: 4px 8px; font-size: 12px; }
 .map-comparison-direction-status { position: absolute; z-index: 9; left: 0; bottom: 48px; width: 168px; box-sizing: border-box; padding: 4px 6px; border: 1px solid var(--ui-glass-border,var(--ui-line)); border-radius: var(--ui-radius-control); background: var(--ui-material-toast,var(--ui-glass-surface)); color: var(--ui-glass-ink,var(--ui-ink)); box-shadow:var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); font-size: 10px; line-height: 1.2; white-space: normal; pointer-events: none; }
-.map-comparison-operation-error { position: absolute; bottom: 44px; left: 4px; right: 4px; padding: 4px 8px; background: var(--ui-material-toast,var(--ui-glass-surface)); color: var(--ui-danger); box-shadow:var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); font-size: 12px; margin: 0; }
+.map-comparison-operation-error { position: absolute; bottom: 44px; left: 4px; right: 4px; padding: 4px 8px; background: var(--ui-material-toast,var(--ui-glass-surface)); color: var(--ui-danger); border-radius:var(--ui-radius-control); box-shadow:var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); font-size: 12px; margin: 0; }
 .map-comparison-marker-menu { position: absolute; z-index: 7; left: 8px; bottom: calc(44px + var(--home-bottom) + 4px); width: min(150px, calc(100vw - 16px)); box-sizing: border-box; padding: 3px; border: 1px solid var(--ui-glass-border,var(--ui-line)); border-radius: var(--ui-radius-card); background: var(--ui-material-panel,var(--ui-glass-surface)); color: var(--ui-glass-ink,var(--ui-ink)); box-shadow: var(--ui-glass-shadow); backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter); pointer-events: auto; }
 .map-comparison-marker-menu > header { display: flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 2px 2px 4px; }
 .map-comparison-marker-menu > header strong { flex: 1; min-width: 0; font-size: 10px; }
@@ -197,8 +201,13 @@ html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison
   max-width: 100%;
   max-height: var(--compare-editor-max-height);
   padding: 8px;
-  border-radius: 8px;
+  border:0;
+  border-radius: var(--ui-radius-card);
   box-sizing: border-box;
+  background:var(--ui-material-panel,var(--ui-glass-surface));
+  color:var(--ui-glass-ink,var(--ui-ink));
+  box-shadow:var(--ui-glass-shadow),inset 0 0 0 var(--ui-glass-edge-width,1px) var(--ui-glass-border);
+  backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter);
 }
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-editor-main {
   flex: 1 1 auto;
@@ -223,6 +232,7 @@ html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison
 }
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-editor :is(input, textarea, select) {
   font-size: 13px;
+  border-radius:var(--ui-input-radius,var(--ui-radius-control));
 }
 @media (orientation: landscape) {
   html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot {
@@ -266,6 +276,25 @@ html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .pin-editor-header .pin-heading-label { display: none; }
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .marker-workspace .comparison-editor-position-button { flex: 0 0 28px; width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0; }
 .map-comparison-editor-content { min-height: 0; max-height: var(--compare-editor-max-height); overflow-y: auto; overscroll-behavior: contain; }
+/* Route editing reuses a legacy dock outside this module; keep its chrome on
+   the same shared material and state tokens while it lives inside comparison. */
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-edit-window .route-edit-dock {
+  border:0; border-radius:var(--ui-radius-card); background:var(--ui-material-panel,var(--ui-glass-surface));
+  color:var(--ui-glass-ink,var(--ui-ink)); box-shadow:var(--ui-glass-shadow),inset 0 0 0 var(--ui-glass-edge-width,1px) var(--ui-glass-border);
+  backdrop-filter:var(--ui-glass-filter); -webkit-backdrop-filter:var(--ui-glass-filter);
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-edit-window .route-edit-dock :is(.route-edit-dock-heading,.route-edit-mode-row) { background:transparent; color:inherit; }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-edit-window .route-edit-dock :is(button,.route-custom-color) {
+  border:1px solid var(--ui-line); border-radius:var(--ui-radius-control); background:var(--ui-button); color:var(--ui-button-ink);
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-edit-window .route-edit-dock :is(input:not([type='color']):not([type='range']),textarea,select) {
+  border:1px solid var(--ui-line); border-radius:var(--ui-input-radius,var(--ui-radius-control)); background:var(--ui-field); color:var(--ui-ink);
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-edit-window .route-edit-dock input[type='color'] { border:1px solid var(--ui-line); border-radius:var(--ui-input-radius,var(--ui-radius-control)); background:var(--ui-field); }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-edit-window .route-edit-dock button[aria-pressed='true']:not(.route-solid) { border-color:var(--ui-accent); background:var(--ui-selected); color:var(--ui-selected-ink,var(--ui-active-ink)); }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-edit-window .route-edit-dock .route-branch-toggle { border-color:var(--ui-line); background:var(--ui-button); color:var(--ui-button-ink); }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-edit-window .route-edit-dock .route-branch-toggle[aria-pressed='true'] { border-color:var(--ui-accent); background:var(--ui-selected); color:var(--ui-selected-ink,var(--ui-active-ink)); }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-edit-window .route-edit-dock .route-solid { border-color:var(--ui-accent); background:var(--ui-accent); color:var(--ui-on-accent); }
 /* A pin owns scrolling so the fixed header cannot scroll away in a second host. */
 .map-comparison-editor-content:has(.pin-editor) { overflow: visible; flex: 0 0 auto; }
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-editor-main { flex: 0 0 auto; overflow: visible; }

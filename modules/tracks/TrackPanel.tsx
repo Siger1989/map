@@ -533,7 +533,7 @@ export function TrackTools({
           显示设置
         </button>
         <button disabled={!t.canUndo} onClick={t.undo}>撤销</button>
-        <button onClick={onFinish}>完成</button>
+        <button data-ui-action="primary" onClick={onFinish}>完成</button>
       </div>
       {t.error && (
         <p className="track-save-error" role="alert">
