@@ -1,3 +1,5 @@
+> **2026-11-14 / 206私人交付完成**：本机 `D:/天气系统/APK/Shantu-0.2.206-oldengine-private.apk`，206/code213，SHA256 `6c8bc07c520672d433296dbf82ee7fc5f26e72f17c4476d74765089ee8d7371a`。原配色/天地图/签名/205档案保留。32定向/TSC/Web/Android与包完整性PASS；源码 `b2231c643fc503494f4d855d954821f5efe985b4` 已推隔离分支且远端一致；私人Release `https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.206-private` 发布、上传前后PRIVATE、服务端哈希及完整APK下载回读通过。OPPO手机及未覆盖状态待复验，HAP未交付。见 `docs/release-0.2.206.md`。
+
 > **2026-11-14 / 206私人包已本机生成**：用户要求打包；206/code213/com.shantu.oldengine，165435028B，SHA256 `6c8bc07c520672d433296dbf82ee7fc5f26e72f17c4476d74765089ee8d7371a`。上下窗口边缘、WAAPI主/小窗底板最终同步、图源标题/星标及10px避让、路线选中文字/显示设置和右上比例尺进入最终包；原35项配色、天地图、签名和205历史包保留。32定向/TSC/Web/Android/1925资源/39种子/8库/16KiB/签名CRC通过。OPPO和完整双图状态待复验，HAP未交付；远端同步结果后续追加。见 `docs/release-0.2.206.md`。
 
 > **2026-11-14 / 205后续窗口一致性与避让**：图源窗口与右侧工具保留10px，390/360实拍通过；图源标题/星标间距、上下窗口边缘、路线结果选中文字及右上44px真实比例尺已修。WAAPI主窗及小窗动画最终玻璃发布补齐，安卓probe记录/图层等级/图源实拍与最终opacity1通过。路线显示360内容完整无多余滚动。32定向/TSC/Web/probe构建PASS。原配色/205交付包保留，无正式升版、交付APK、提交推送。OPPO、安卓路线结果和全双图状态未验；详见 `docs/panel-consistency-20261114.md`。

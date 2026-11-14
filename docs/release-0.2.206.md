@@ -33,3 +33,7 @@ APK：`D:\澶╂皵绯荤粺\APK\Shantu-0.2.206-oldengine-private.apk`，1654350
 原签名SHA256 `4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f`，包名/206/code213/min26/target35、CRC与唯一条目、16KiB ZIP/ELF检查通过；1925个Web资源与最终构建逐字节相等，39个私人种子与本地及205一致，原生/Web天地图配置相同。8个native库与205相等。35项个人材质精确保留；新包包含WAAPI最终发布事件与共享边缘/右栏避让令牌。
 
 32项定向、TSC、最终Web与optimized Android构建PASS。205原包SHA256 `e9c141432d597741f09632698de88a580f7e2750e15867d04ccd6200b2548512`未变。手机未安装，待用户实际复验。
+
+## 私人发布与同步完成
+
+应用源码 `b2231c643fc503494f4d855d954821f5efe985b4` 已推 `codex/old-engine-tilt-dual-20261105`，远端SHA一致。[206私人Release](https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.206-private)已发布；上传前后确认PRIVATE，APK与校验资产服务端大小/哈希一致，完整APK下载回读SHA256 `6c8bc07c520672d433296dbf82ee7fc5f26e72f17c4476d74765089ee8d7371a`一致。未公开私人配置或覆盖旧包。最终Android构建4分12秒。
