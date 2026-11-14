@@ -35,4 +35,4 @@
 
 首轮全新暂存构建14分7秒，随后用最终Web资源再次合成2分28秒。CAD源码/构建配置相对202源码未变，最终复用从已核验202包提取的四ABI CAD JNI；其余原生库与202一起核对为8/8逐字节一致，已改Kotlin和shader按当前源码重新编译。仅在最终合成排除重复CAD任务，未跳过已改原生模块。
 
-私有仓库上传前已核对PRIVATE，上传进行中；尚不宣称远端安装包已发布。
+[203 私人测试 Release](https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.203-private) 已发布。上传前后确认仓库为PRIVATE，服务端两项资产的大小/SHA核对一致，并完整下载APK再次核对SHA。应用源码5056c6d及本机交付记录9d30b47均已推送并核对远端。
