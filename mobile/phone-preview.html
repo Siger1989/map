@@ -3,8 +3,8 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>山兔 · 网页调色预览</title>
 <link rel="stylesheet" href="./phonePreviewKeyboard.css">
 <link rel="stylesheet" href="./phonePreviewMaterial.css">
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#202622}body{display:grid;grid-template-columns:248px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}#preview-stage{grid-column:2;grid-row:1;display:grid;place-items:center;min-width:0;min-height:0;overflow:hidden}#phone{position:relative;flex:none;overflow:hidden;box-shadow:0 0 0 1px #536459}iframe{position:absolute;left:0;top:0;border:0;transform-origin:top left;background:white}@media(max-width:700px){body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}#preview-stage{grid-column:1;grid-row:2}}</style></head>
-<body><section id="preview-material" aria-label="预览背景透明度"></section><main id="preview-stage"><div id="phone"><iframe allow="fullscreen 'none'" title="山兔手机预览 · OPPO Find X8 · 1256∶2760"></iframe></div></main>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#202622}body{display:grid;grid-template-columns:248px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}#preview-stage{grid-column:2;grid-row:1;display:grid;place-items:center;min-width:0;min-height:0;overflow:hidden}#phone{position:relative;flex:none;overflow:hidden;box-shadow:0 0 0 1px #536459;background:#10212b}iframe{position:absolute;left:0;top:0;border:0;transform-origin:top left;background:white}@media(max-width:700px){body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}#preview-stage{grid-column:1;grid-row:2}}</style></head>
+<body><section id="preview-material" aria-label="预览背景透明度"></section><main id="preview-stage"><div id="phone"><iframe allow="fullscreen 'none'" title="山兔手机预览 · OPPO Find X8 Ultra · 网页比例预览"></iframe></div></main>
 <script type="module">
 import { installPhonePreviewKeyboard } from './phonePreviewKeyboard.js';
 import { installPhonePreviewMaterial } from './phonePreviewMaterial.js';
@@ -17,7 +17,11 @@ const checks={'360x780':[360,780],'390x480':[390,480],'360x360':[360,360],
   'pura-x':[440,440*2120/1320],'pura-x-landscape':[440*2120/1320,440]};
 const requested=new URLSearchParams(location.search).get('viewport');
 const check=Object.hasOwn(checks,requested)?checks[requested]:null;
-const [width,height]=check||[390,390*2760/1256];
+// Find X8 Ultra: 1440 × 3168. Reserve the system area seen in the user's
+// 1164×2560 portrait capture (129 px above the app, no bottom system bar).
+const [width,screenHeight]=check||[390,390*3168/1440];
+const statusBarHeight=check?0:width*129/1164;
+const height=screenHeight-statusBarHeight;
 if(check){
   const fold=requested.startsWith('pura-x');
   document.title=fold?'山兔 · 华为阔屏比例预览':requested==='find-x8-landscape'?'山兔 · OPPO Find X8 横屏预览':'山兔 · 独立适配检查';
@@ -25,7 +29,7 @@ if(check){
 }
 frame.style.width=width+'px';frame.style.height=height+'px';
 let keyboard,material;
-function fit(){const stage=document.querySelector('#preview-stage').getBoundingClientRect();const availableWidth=Math.max(1,stage.width-16),availableHeight=Math.max(1,stage.height-16);const scale=Math.min(1,availableWidth/width,availableHeight/height);phone.style.width=width*scale+'px';phone.style.height=height*scale+'px';frame.style.transform='scale('+scale+')';keyboard?.setScale(scale)}
+function fit(){const stage=document.querySelector('#preview-stage').getBoundingClientRect();const availableWidth=Math.max(1,stage.width-16),availableHeight=Math.max(1,stage.height-16);const scale=Math.min(1,availableWidth/width,availableHeight/screenHeight);phone.style.width=width*scale+'px';phone.style.height=screenHeight*scale+'px';frame.style.top=statusBarHeight*scale+'px';frame.style.transform='scale('+scale+')';keyboard?.setScale(scale)}
 frame.src='/'+location.hash;
 frame.addEventListener('load',()=>{const sync=()=>history.replaceState(null,'',location.pathname+location.search+frame.contentWindow.location.hash);frame.contentWindow.addEventListener('hashchange',sync);sync()});
 keyboard=installPhonePreviewKeyboard({phone,frame,width,height});

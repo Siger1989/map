@@ -5,6 +5,7 @@ import { currentShareMapStyle, type ShareMapStyle } from '../routeShare/currentM
 import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 import { SATELLITE_UNDERLAY, showSatelliteUnderlay } from '../cartography/satelliteUnderlay';
 import { readLastView, saveLastView } from './lastView';
+import { visibleMapFocusOffset } from './visibleFocusArea';
 import { CameraSync, focusPointCamera, followPositionCamera } from './cameraSync';
 import { installProjectedFocusCorrection } from './projectedFocusCorrection.ts';
 import { navigationCameraOptions } from '../guidance/forwardCamera';
@@ -385,7 +386,7 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     ) => {
       const m = mapRef.current;
       if (!m || !coordinates.length) return;
-      m.resize();
+      m.resize({ focusLayoutResize: true });
       const first = coordinates[0][0];
       const min: Coordinate = [Infinity, Infinity],
         max: Coordinate = [-Infinity, -Infinity];
@@ -913,7 +914,9 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           latest.current.onBrowse();
           marker.setLngLat(center);
           if (!marker.getElement().isConnected) marker.addTo(map);
-          map.jumpTo({ center }, { routePreview: true });
+          const offset = visibleMapFocusOffset(map.getContainer());
+          if (offset) map.easeTo({ center, offset, duration: 0, padding: 0 }, { routePreview: true });
+          else map.jumpTo({ center }, { routePreview: true });
         },
         focusPoint: (center, zoom) => {
           focusOffsetCorrection.current?.();
@@ -923,13 +926,13 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           if (!map) return;
           const padding = favoritesViewportPaddingForMap(map.getContainer());
           const offset = padding ? favoritesViewportCenterOffset(padding) : null;
-          const mapOffset = offset ? [offset.x, offset.y] as [number, number] : undefined;
+          const mapOffset = offset ? [offset.x, offset.y] as [number, number] : visibleMapFocusOffset(map.getContainer()) ?? undefined;
           focusPointCamera(map, center, zoom, mapOffset);
           if (mapOffset) {
             const mapForCorrection = map as unknown as Parameters<typeof installProjectedFocusCorrection>[0];
             const readCurrentOffset = () => {
               const currentPadding = favoritesViewportPaddingForMap(map.getContainer());
-              if (!currentPadding) return mapOffset;
+              if (!currentPadding) return visibleMapFocusOffset(map.getContainer()) ?? [0, 0];
               const currentCenterOffset = favoritesViewportCenterOffset(currentPadding);
               return [currentCenterOffset.x, currentCenterOffset.y] as [number, number];
             };
@@ -1853,7 +1856,7 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     }, [props.drawingActive, props.pickingActive, props.sectionEditing, props.readOnly]);
     useEffect(() => {
       if (!container.current) return;
-      const resize = mapResizeScheduler(() => mapRef.current?.resize());
+      const resize = mapResizeScheduler(() => mapRef.current?.resize({ focusLayoutResize: true }));
       const observer = new ResizeObserver(([entry]) => {
         resize.request(entry.contentRect.width, entry.contentRect.height);
       });

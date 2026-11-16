@@ -361,7 +361,6 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-works
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace :is(input,textarea,select) { background:var(--ui-field); color:var(--ui-ink); border-color:var(--ui-line); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace :is(.marker-primary,.marker-save) { background:var(--ui-accent); color:var(--ui-on-accent); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace button[aria-pressed='true'] { background:var(--ui-selected); color:var(--ui-selected-ink); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .appearance-settings>header { background:transparent; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .appearance-preview { background:var(--ui-material-panel,var(--ui-glass-surface)); color:var(--ui-glass-ink); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .appearance-presets button[aria-pressed='true'] { background:var(--ui-selected); color:var(--ui-selected-ink); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .measurement-chart { background:var(--ui-field); }

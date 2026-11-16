@@ -35,6 +35,7 @@ export function installPhonePreviewMaterial({ frame, onLayoutChange = () => {}, 
   const LEGACY_KEY = `${storagePrefix}shantu.phonePreviewMaterial.transparency`;
   const DRAFT_KEY = `${storagePrefix}shantu.phonePreviewMaterial.draft.v2`;
   const BACKUP_KEY = `${storagePrefix}shantu.phonePreviewMaterial.before-grouping.v1`;
+  const PALETTE_BACKUP_KEY = `${storagePrefix}shantu.phonePreviewMaterial.before-palette.v1`;
   const BASELINE_KEY = `${storagePrefix}shantu.phonePreviewMaterial.group-baseline.v1`;
   const panel=document.querySelector('#preview-material');
   panel.className='phone-preview-material';
@@ -260,9 +261,29 @@ export function installPhonePreviewMaterial({ frame, onLayoutChange = () => {}, 
     }
     panel.querySelector('[data-value="radiusInput"]').textContent=`${sharedControlRadius(draft,detailRecommendations.radiusControl)}px · 共用`;
   }
+  function applyPaletteToDraft() {
+    const root = boundDocument.documentElement;
+    const next = structuredClone(draft);
+    for (const { id, tokens, base } of MATERIALS) {
+      if (!draft[id]?.color || id === 'favorites') continue;
+      const rgb = parseColor(rootValue(root, tokens[0]) || (base && rootValue(root, base)))?.slice(0, 3);
+      const previous = recommendations[id]?.slice(0, 3);
+      if (!rgb || !previous || rgb.every((value, i) => value === previous[i])) continue;
+      next[id] = { ...draft[id], rgb, color: hexFromRgb(rgb), hsl: rgbToHsl(rgb) };
+    }
+    if (Object.keys(next).every(key => JSON.stringify(next[key]) === JSON.stringify(draft[key]))) return;
+    try {
+      if (sessionStorage.getItem(PALETTE_BACKUP_KEY) === null) {
+        sessionStorage.setItem(PALETTE_BACKUP_KEY, JSON.stringify(draft));
+      }
+    } catch { /* Preview edits still work without storage. */ }
+    draft = next;
+    persist();
+  }
   function bindFrameDocument() {
+    boundDocument?.defaultView?.removeEventListener('shantu-palette-change', applyPaletteToDraft);
     observer?.disconnect();injectedStyle?.remove();const doc=frame.contentDocument;if(!doc?.documentElement)return;
-    boundDocument=doc;injectedStyle=doc.createElement('style');injectedStyle.dataset.phonePreviewMaterial='temporary';doc.head?.append(injectedStyle);
+    boundDocument=doc;doc.defaultView?.addEventListener('shantu-palette-change', applyPaletteToDraft);injectedStyle=doc.createElement('style');injectedStyle.dataset.phonePreviewMaterial='temporary';doc.head?.append(injectedStyle);
     updateRecommendations(doc.documentElement,doc.defaultView.getComputedStyle(doc.documentElement));ensureBaseline(doc.documentElement);
     observer=new doc.defaultView.MutationObserver((records)=>{
       if(records.some((record)=>record.target===doc.documentElement&&(record.attributeName==='style'||record.attributeName==='data-ui-theme'))){
@@ -312,5 +333,5 @@ export function installPhonePreviewMaterial({ frame, onLayoutChange = () => {}, 
   const narrow=matchMedia('(max-width: 700px)').matches;panel.setAttribute('aria-expanded',String(!narrow));toggle.setAttribute('aria-expanded',String(!narrow));toggle.textContent=narrow?'展开':'收起';renderParts();targets.setTarget(activePart().id);targets.setVisible(!remote&&!narrow);
   frame.addEventListener('load',bindFrameDocument);if(frame.contentDocument?.readyState==='complete')bindFrameDocument();
   const resizeObserver=new ResizeObserver(()=>onLayoutChange());resizeObserver.observe(panel);onLayoutChange();
-  return {getHeight:()=>panel.getBoundingClientRect().height,getTransparency:()=>draft.glass?.transparency??(recommendations.glass?Math.round((1-recommendations.glass[3])*100):0),getDraft:()=>structuredClone(draft),destroy(){if(!remote)document.removeEventListener('keydown',cancelPickFromController);targets.destroy();observer?.disconnect();resizeObserver.disconnect();frame.removeEventListener('load',bindFrameDocument);injectedStyle?.remove();}};
+  return {getHeight:()=>panel.getBoundingClientRect().height,getTransparency:()=>draft.glass?.transparency??(recommendations.glass?Math.round((1-recommendations.glass[3])*100):0),getDraft:()=>structuredClone(draft),destroy(){if(!remote)document.removeEventListener('keydown',cancelPickFromController);targets.destroy();observer?.disconnect();resizeObserver.disconnect();boundDocument?.defaultView?.removeEventListener('shantu-palette-change',applyPaletteToDraft);frame.removeEventListener('load',bindFrameDocument);injectedStyle?.remove();}};
 }

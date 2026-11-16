@@ -6,6 +6,7 @@
 
 import { collectNativeGlassRegions, NATIVE_GLASS_SELECTOR, type NativeGlassRegion } from './native-glass-regions.ts';
 import { PANEL_MOTION_EVENT, type PanelMotionDetail } from '../modules/ui/panelMotionEvents.ts';
+import { createNativeReticleOcclusion } from './native-reticle-occlusion.ts';
 
 export type NativeUIRegionCommand = 'uiRegions' | 'viewport';
 
@@ -177,6 +178,9 @@ function applyNativeMapHostStyle(): () => void {
     body[data-native-map-host="true"] .observatory, body[data-native-map-host="true"] .map-canvas {
       background: transparent !important;
     }
+    body[data-native-map-host="true"] [data-native-reticle-covered="true"] {
+      visibility: hidden !important;
+    }
   `;
   document.head.appendChild(style);
   return () => {
@@ -190,6 +194,7 @@ function startPublisher(): void {
   if (running || !transport || !nativeSession || !document.body) return;
   running = true;
   const clearStyle = applyNativeMapHostStyle();
+  const reticleOcclusion = createNativeReticleOcclusion(document);
   let raf = 0;
   let lastUiFingerprint = '';
   let lastViewportFingerprint = '';
@@ -225,6 +230,7 @@ function startPublisher(): void {
       rectangles.forEach((rect, index) => regions.push({ ...rect, id: `${id}:${index}`, kind: regionKind(element) }));
     }
     const glass = collectNativeGlassRegions();
+    reticleOcclusion.update(glass.regions);
     const currentSizes = new Set<Element>([...mapElements, ...candidates, ...glass.elements]);
     for (const element of observedSizes) if (!currentSizes.has(element)) { resize?.unobserve(element); observedSizes.delete(element); }
     for (const element of currentSizes) if (!observedSizes.has(element)) { resize?.observe(element); observedSizes.add(element); }
@@ -269,7 +275,9 @@ function startPublisher(): void {
   const sampleMotion = () => {
     motionTimer = undefined;
     if (!running || !transport || !nativeSession || !lastUiPayload) return;
-    const payload = { ...lastUiPayload, glassRegions: collectNativeGlassRegions().regions };
+    const glassRegions = collectNativeGlassRegions().regions;
+    reticleOcclusion.update(glassRegions);
+    const payload = { ...lastUiPayload, glassRegions };
     const fingerprint = JSON.stringify(payload);
     if (fingerprint !== lastUiFingerprint) {
       try { transport.send({ command: 'uiRegions', payload }); lastUiFingerprint = fingerprint; }
@@ -339,6 +347,7 @@ function startPublisher(): void {
     document.removeEventListener('visibilitychange', visibility);
     window.visualViewport?.removeEventListener('resize', schedule);
     window.visualViewport?.removeEventListener('scroll', schedule);
+    reticleOcclusion.clear();
     clearStyle();
     cleanupCurrent = null;
   };

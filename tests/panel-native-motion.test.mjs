@@ -106,3 +106,31 @@ test('independent confirmation/share windows collect the same native glass as na
     } finally { f.restore(); }
   }
 });
+
+test('native publisher suppresses covered reticles and restores them on window exit and host teardown', async()=>{
+  const f=fixture();
+  const reticle=f.document.createElement('div');
+  reticle.className='map-center-cursor';
+  reticle.getBoundingClientRect=()=>({left:170,top:430,right:222,bottom:482,width:52,height:52});
+  f.document.body.appendChild(reticle);
+  let stop=()=>{};
+  try {
+    f.setOpacity(1);
+    stop=configureNativeUIRegionTransport({getSessionId:()=> 'occlusion-test',send:()=>{}});
+    await delay(25);
+    assert.equal(reticle.getAttribute('data-native-reticle-covered'),'true');
+    const animation=new EventTarget();
+    trackPanelMotion(f.panel,animation);
+    f.setOpacity(0);
+    animation.dispatchEvent(new Event('finish'));
+    await delay(25);
+    assert.equal(reticle.hasAttribute('data-native-reticle-covered'),false);
+    f.setOpacity(1);
+    const enter=new EventTarget();
+    trackPanelMotion(f.panel,enter);
+    await delay(25);
+    assert.equal(reticle.getAttribute('data-native-reticle-covered'),'true');
+    stop(); stop=()=>{};
+    assert.equal(reticle.hasAttribute('data-native-reticle-covered'),false);
+  } finally { stop(); f.restore(); }
+});

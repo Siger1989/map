@@ -3,6 +3,7 @@ import { RouteResultSummary } from './RouteResultSummary';
 import { Fragment, type CSSProperties, type ReactNode } from 'react';
 import './routeCompact.css';
 import { FloatingSearch } from '../input/FloatingSearch';
+import { observeSearchViewport } from '../input/floatingGeometry';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import {
   ArrowDownUp,
@@ -106,6 +107,32 @@ export function RoutePanel({
       startY: number;
       frame: number;
     } | null>(null);
+  const stopPlaceFocus = useRef<(() => void) | null>(null);
+  useEffect(() => () => stopPlaceFocus.current?.(), []);
+  const focusSearchResult = (place: RoutePlace) => {
+    stopPlaceFocus.current?.();
+    let timer = 0;
+    const update = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => onPlace(place), 80);
+    };
+    const unobserve = observeSearchViewport(update);
+    const stop = () => {
+      unobserve();
+      window.clearTimeout(timer);
+      document.removeEventListener('pointerdown', stop, true);
+      document.removeEventListener('wheel', stop, true);
+      document.removeEventListener('input', stop, true);
+      stopPlaceFocus.current = null;
+    };
+    // A search can focus the next field. Follow its layout when the keyboard
+    // opens or closes until the next map gesture or form interaction.
+    document.addEventListener('pointerdown', stop, true);
+    document.addEventListener('wheel', stop, true);
+    document.addEventListener('input', stop, true);
+    stopPlaceFocus.current = stop;
+    onPlace(place);
+  };
   const previousCount = useRef(n.stops.length);
   useRouteKeyboardFocus(rows);
   const destination = n.stops.at(-1)?.place;
@@ -494,7 +521,7 @@ export function RoutePanel({
                         const nextStop = index === 0 ? n.stops.at(-1) : undefined;
                         const focusDestination = !!nextStop && nextStop.id !== s.id && !nextStop.place;
                         n.place(index, place);
-                        onPlace(place);
+                        focusSearchResult(place);
                         setActive(focusDestination ? nextStop?.id ?? null : null);
                         setListExpanded(false);
                         setFiltersOpen(false);

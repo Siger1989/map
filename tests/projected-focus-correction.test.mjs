@@ -20,7 +20,7 @@ function mapStub(start, options = {}) {
       listeners.set(type, bucket);
     },
     off(type, listener) { listeners.get(type)?.delete(listener); },
-    emit(type) { for (const listener of [...(listeners.get(type) ?? [])]) listener(); },
+    emit(type, event) { for (const listener of [...(listeners.get(type) ?? [])]) listener(event); },
     jumpTo({ center }) {
       solves.push({ center });
       point.x = center[0];
@@ -72,6 +72,8 @@ test('projected focus re-reads viewport offset after the favorites panel finishe
   map.emit('moveend');
   map.frames.flush();
   offset = [0, 175];
+  map.emit('movestart', { focusLayoutResize: true });
+  map.emit('moveend');
   map.emit('idle');
   map.frames.flush();
   map.frames.flush();

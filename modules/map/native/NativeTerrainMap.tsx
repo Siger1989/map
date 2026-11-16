@@ -30,6 +30,7 @@ import { NativeProjectionSyncScheduler, nativePhotoGroupKey, subscribeNativeProj
 import { NativeScaleOverlay } from '../NativeScaleOverlay';
 import { NativeInitializationRetry } from './initializationRetry.ts';
 import { serializeNativeMapPhoto } from './photoWire.ts';
+import { visibleMapFocusOffset } from '../visibleFocusArea.ts';
 import { favoritesViewportCenterOffset, favoritesViewportPaddingForMap } from '../../collections/favoritesViewportPadding.ts';
 import type { MapSourceHealthResult } from '../../mapSources/health.ts';
 import type { LayerSettings } from '../types.ts';
@@ -1698,7 +1699,8 @@ function makeHandle(
       const padding = mapElement ? favoritesViewportPaddingForMap(mapElement) : null;
       const offset = padding ? favoritesViewportCenterOffset(padding) : null;
       const camera = nativeFocusCamera(runtime.camera ?? INITIAL_VIEW, coordinates, zoom);
-      if (offset) camera.offset = [offset.x, offset.y];
+      const mapOffset = offset ? [offset.x, offset.y] as [number, number] : mapElement && visibleMapFocusOffset(mapElement);
+      if (mapOffset) camera.offset = mapOffset;
       fire('applyCamera', camera);
     },
     focusCenter: (coordinates) => { fire('applyCamera', nativeFocusCamera(runtime.camera ?? INITIAL_VIEW, coordinates)); },
@@ -1751,7 +1753,8 @@ function makeHandle(
       if (!coordinateValue) return;
       runtime.props.onBrowse();
       const camera = nativeFocusCamera(runtime.camera ?? INITIAL_VIEW, coordinateValue);
-      fire('applyCamera', { ...camera, duration: 0 });
+      const offset = runtime.element && visibleMapFocusOffset(runtime.element);
+      fire('applyCamera', { ...camera, ...(offset ? { offset } : {}), duration: 0 });
     },
     followPosition: (coordinates, animate = true) => {
       if (!runtime.created) return false;

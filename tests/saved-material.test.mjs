@@ -6,6 +6,8 @@ import { DEFAULT_APPEARANCE, PRESETS, THEME_KEY, parseAppearance, themeTokens } 
 import {
   getPersonalMaterialTokensToRemove,
   getSavedMaterialTokens,
+  getRecoloredMaterialTokens,
+  themeColorAlpha,
   initializeSavedMaterial,
   PERSONAL_MATERIAL_BACKUP_KEY,
   PERSONAL_MATERIAL_STATE_KEY,
@@ -70,4 +72,20 @@ test('disable removes only personal geometry tokens absent from freshly computed
   assert.ok(removable.includes('--ui-radius-control'));
   assert.ok(!removable.includes('--ui-glass-surface'));
   assert.ok(removable.every(key => !(key in computed)));
+});
+
+test('changing the palette keeps every saved opacity and material dimension', () => {
+  const tokens = getRecoloredMaterialTokens(preset, themeTokens(PRESETS[2].dark), ['background', 'button', 'accent', 'foreground']);
+  assert.notEqual(tokens['--ui-material-rail'], preset.tokens['--ui-material-rail']);
+  assert.notEqual(tokens['--ui-button'], preset.tokens['--ui-button']);
+  for (const [key, previous] of Object.entries(preset.tokens)) {
+    if (['--ui-glass-filter', '--ui-glass-shadow', '--ui-radius-card', '--ui-radius-control', '--ui-glass-edge-width'].includes(key)) {
+      assert.equal(tokens[key], previous, key);
+    } else {
+      assert.equal(themeColorAlpha(tokens[key]), themeColorAlpha(previous), key);
+    }
+  }
+  const textOnly = getRecoloredMaterialTokens(preset, themeTokens(PRESETS[2].dark), ['foreground']);
+  assert.notEqual(textOnly['--ui-ink'], preset.tokens['--ui-ink']);
+  assert.equal(textOnly['--ui-material-panel'], preset.tokens['--ui-material-panel']);
 });

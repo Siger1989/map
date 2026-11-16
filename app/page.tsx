@@ -10,6 +10,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { MapSourceHealthResult } from '@/modules/mapSources/health';
 import { drawingMapProjection } from '@/modules/mapComparison/drawingMapProjection';
 import { AboutPanel } from '@/modules/help/AboutPanel';
+import { AppearanceSettings } from '@/modules/appearance/AppearanceSettings';
 import { PRODUCT_NAME } from '@/config/product';
 import { TextSuggestions } from '@/modules/input/SmartText';
 import { requestAppBack } from '@/modules/input/appBack';
@@ -278,6 +279,8 @@ export default function Home() {
   const [mapStatus, setMapStatus] = useState('正在加载真实地形…');
   const [lockedMarkerNotice, setLockedMarkerNotice] = useState('');
   const [panel, setPanelState] = useState<ControlPanel>(null);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  useEffect(() => { if (panel !== 'about') setAppearanceOpen(false); }, [panel]);
   const [geologyDetailsOpen, setGeologyDetailsOpen] = useState(false);
   const panelRef = useRef<ControlPanel>(panel);
   panelRef.current = panel;
@@ -1874,11 +1877,11 @@ export default function Home() {
         annotations.setPicking(null);
         setQuickAdd(null);
         if (!quickSearchNavigation.begin(place)) navigation.place('end', place);
-        map.current?.focusPoint(
+        setPanel('route');
+        requestAnimationFrame(() => map.current?.focusPoint(
           place.coordinates,
           map.current?.cameraSnapshot()?.zoom ?? view.zoom,
-        );
-        setPanel('route');
+        ));
       }}
     />
   );
@@ -3483,7 +3486,7 @@ export default function Home() {
               : panel
           }
           drawingActive={panel === null && tracks.drawing}
-          title={panel === 'cache' ? (routeCacheTarget.tab === 'packages' ? `地图缓存 · ${offline.packages.filter(trip => trip.provider === 'imported').length}个包` : routeCacheTarget.batch ? '批量缓存地图' : '路线地图缓存') : panel === 'route' ? defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' }) : panel === 'industry' ? '行业工具' : panel === 'sources' ? sourcesNavigation?.title : undefined}
+          title={panel === 'cache' ? (routeCacheTarget.tab === 'packages' ? `地图缓存 · ${offline.packages.filter(trip => trip.provider === 'imported').length}个包` : routeCacheTarget.batch ? '批量缓存地图' : '路线地图缓存') : panel === 'route' ? defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' }) : panel === 'industry' ? '行业工具' : panel === 'about' && appearanceOpen ? '配色设置' : panel === 'sources' ? sourcesNavigation?.title : undefined}
           titleContent={panel === 'route' && navigation.route ? <RouteNameInput
             key={navigation.route.createdAt}
             name={navigation.route.name || defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' })}
@@ -3492,7 +3495,9 @@ export default function Home() {
           onHide={panel === 'route' && navigation.route ? () => navigation.setVisible(!navigation.visible) : undefined}
           hideLabel={navigation.visible ? '隐藏' : '显示'}
           back={
-            selectedAnnotation && panel === 'route'
+            panel === 'about' && appearanceOpen
+              ? { label: '返回关于山兔', onClick: () => setAppearanceOpen(false) }
+              : selectedAnnotation && panel === 'route'
               ? {
                   label: '返回标记',
                   onClick: () => {
@@ -4010,7 +4015,7 @@ export default function Home() {
                 navigation.setPicking(slot);
                 setPanel('route');
               }}
-              onPlace={(place) => map.current?.focusPoint(place.coordinates)}
+              onPlace={(place) => requestAnimationFrame(() => map.current?.focusPoint(place.coordinates))}
               onShow={(route) => {
                 endRoutePreview(false);
                 map.current?.fitCollection(route.coordinates, { top: 100, right: 64, bottom: 230, left: 24 });
@@ -4018,7 +4023,9 @@ export default function Home() {
               }}
             />
           )}
-          {panel === 'about' && <AboutPanel />}
+          {panel === 'about' && (appearanceOpen
+            ? <AppearanceSettings />
+            : <AboutPanel onAppearance={() => setAppearanceOpen(true)} />)}
         </ControlDock>
         {sectionSaveError && (
           <p className="section-save-error glass" role="alert">
@@ -4197,8 +4204,8 @@ export default function Home() {
           annotations.setPicking(null);
           setQuickAdd(null);
           if (!quickSearchNavigation.begin(place)) navigation.place('end', place);
-          map.current?.focusPoint(place.coordinates, map.current?.cameraSnapshot()?.zoom ?? view.zoom);
           setPanel('route');
+          requestAnimationFrame(() => map.current?.focusPoint(place.coordinates, map.current?.cameraSnapshot()?.zoom ?? view.zoom));
           return true;
         }} />
         {placeShareTarget && <PlaceShare place={placeShareTarget.place} onClose={() => setPlaceShareTarget(null)} onExport={placeShareTarget.markerId ? () => { setCollectionOutputKey(`annotation:${placeShareTarget.markerId}`); setPlaceShareTarget(null); setPanel('favorites'); } : undefined} />}

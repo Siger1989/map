@@ -17,8 +17,8 @@ type FocusTransform = {
 type CorrectableMap = {
   project: (coordinate: Coordinate) => ProjectedPoint;
   isMoving: () => boolean;
-  on: (type: 'movestart' | 'moveend' | 'idle', listener: () => void) => unknown;
-  off: (type: 'movestart' | 'moveend' | 'idle', listener: () => void) => unknown;
+  on: (type: 'movestart' | 'moveend' | 'idle', listener: (event?: { focusLayoutResize?: boolean }) => void) => unknown;
+  off: (type: 'movestart' | 'moveend' | 'idle', listener: (event?: { focusLayoutResize?: boolean }) => void) => unknown;
   getContainer: () => { clientWidth: number; clientHeight: number };
   queryTerrainElevation: (coordinate: Coordinate) => number | null;
   jumpTo: (camera: { center: Coordinate | LngLat }) => unknown;
@@ -126,8 +126,8 @@ export function installProjectedFocusCorrection(
     if (!active || frameId !== null) return;
     frameId = frames.request(correct);
   };
-  const onMoveStart = () => {
-    if (!applyingCorrection) cleanup();
+  const onMoveStart = (event?: { focusLayoutResize?: boolean }) => {
+    if (!applyingCorrection && !event?.focusLayoutResize) cleanup();
   };
   const onMoveEnd = () => {
     reachedIdle = false;

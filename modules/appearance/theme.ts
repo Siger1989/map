@@ -1,6 +1,8 @@
 export const THEME_KEY = 'shantu.appearance.v1';
-export type Palette = { accent: string; background: string; button: string; foreground: string; contrast: number };
-export type Appearance = { mode: 'light' | 'dark' | 'system'; light: Palette; dark: Palette };
+export type Palette = { accent: string; background: string; button: string; foreground: string; contrast: number; glassOpacity?: number };
+export const PALETTE_COLORS = ['accent', 'background', 'button', 'foreground'] as const;
+export type PaletteColor = typeof PALETTE_COLORS[number];
+export type Appearance = { mode: 'light' | 'dark' | 'system'; light: Palette; dark: Palette; materialColors?: PaletteColor[] };
 export const DEFAULT_APPEARANCE: Appearance = {
   mode: 'light',
   light: { accent: '#f4a900', background: '#fffaf1', button: '#fff0d8', foreground: '#49311f', contrast: 45 },
@@ -65,6 +67,7 @@ export function themeTokens(p: Palette) {
     contrastRatio(glassInk, mix(backdrop, p.background, glassAlpha)) < 4.5)) {
     glassAlpha = Math.round((glassAlpha + .02) * 100) / 100;
   }
+  if (typeof p.glassOpacity === 'number' && p.glassOpacity >= 0 && p.glassOpacity <= 1) glassAlpha = p.glassOpacity;
   return {
     '--ui-surface': p.background, '--ui-ink': ink, '--ui-accent': p.accent, '--ui-accent-ink': accentInk,
     '--ui-close': close,

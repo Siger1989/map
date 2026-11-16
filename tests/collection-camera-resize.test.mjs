@@ -7,7 +7,7 @@ test('map container resize refreshes layout without refitting the active collect
   const observer = source.match(/const observer = new ResizeObserver\(\(\[entry\]\) => \{([\s\S]*?)\}\);/);
 
   assert.ok(observer, 'TerrainMap should observe its container size');
-  assert.match(source, /mapResizeScheduler\(\(\) => mapRef\.current\?\.resize\(\)\)/);
+  assert.match(source, /mapResizeScheduler\(\(\) => mapRef\.current\?\.resize\(\{ focusLayoutResize: true \}\)\)/);
   assert.doesNotMatch(observer[1], /fitCollection|fitBounds|flyTo|easeTo|jumpTo|setZoom/);
   assert.doesNotMatch(source, /collectionTarget/);
 });
