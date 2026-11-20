@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from 'vite';
+import { RUNTIME_MODULE_ID } from 'rolldown';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/postcss';
 import mobileHasCompatibility from '../scripts/mobile-has-compat.mjs';
@@ -58,6 +59,11 @@ export default defineConfig(({ mode }) => {
     },
   },
   build: {
+    // JSX and lazy features use CommonJS helpers before the app entry executes.
+    // Keep those helpers independent of the chunks that call them.
+    rolldownOptions: {
+      output: { codeSplitting: { groups: [{ name: 'module-runtime', test: RUNTIME_MODULE_ID }] } },
+    },
     outDir: mode === 'native-hybrid' ? 'dist-hybrid' : 'dist',
     emptyOutDir: true,
     target: 'chrome99',

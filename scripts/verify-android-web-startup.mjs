@@ -4,8 +4,10 @@ import { readFile } from 'node:fs/promises';
 import { extname, relative, resolve, sep } from 'node:path';
 import { browserRuntime } from './browser-runtime.mjs';
 
-const root = resolve(process.argv[2] ?? 'mobile/dist');
-const screenshot = process.argv[3];
+const args = process.argv.slice(2);
+const nativeAdapter = args.includes('--native-adapter');
+const [directory = 'mobile/dist', screenshot] = args.filter(arg => arg !== '--native-adapter');
+const root = resolve(directory);
 const mime = {
   '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html',
   '.json': 'application/json', '.wasm': 'application/wasm',
@@ -45,12 +47,24 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.stack ?? String(error)));
   const url = `http://127.0.0.1:${server.address().port}/`;
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => {
+  const appOrigin = 'https://appassets.androidplatform.net';
+  if (nativeAdapter) {
+    // Select the Android entry path without inventing a native map creation response.
+    await page.addInitScript(() => { window.ShantuNativeMap = { postMessage() {} }; });
+    await page.route('**/*', async route => {
+      const asset = new URL(route.request().url());
+      if (asset.origin !== appOrigin || asset.pathname.startsWith('/api/')) return route.abort();
+      const response = await route.fetch({ url: url.slice(0, -1) + asset.pathname });
+      await route.fulfill({ response });
+    });
+  }
+  await page.goto(nativeAdapter ? appOrigin : url, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(checkNative => {
     const text = document.querySelector('#root')?.textContent ?? '';
     return text.includes('地图暂未启动') ||
-      (text.includes('山兔') && text.includes('路线') && text.includes('收藏'));
-  }, undefined, { timeout: 25000 });
+      (checkNative ? !!document.querySelector('.observatory.home-map [data-native-map-ready]') :
+        text.includes('山兔') && text.includes('路线') && text.includes('收藏'));
+  }, nativeAdapter, { timeout: 45000 });
   await page.waitForTimeout(1000);
   const state = await page.evaluate(() => ({
     text: document.querySelector('#root')?.textContent?.slice(0, 500) ?? '',
@@ -58,10 +72,13 @@ try {
   }));
   if (state.text.includes('地图暂未启动') || errors.length)
     throw new Error([state.diagnostic || state.text, ...errors].filter(Boolean).join('\n'));
-  if (!(state.text.includes('山兔') && state.text.includes('路线') && state.text.includes('收藏')))
+  if (nativeAdapter) {
+    if (await page.locator('[data-native-map-ready]').count() === 0 || await page.locator('.maplibregl-canvas').count())
+      throw new Error('首页未选用原生地图适配层');
+  } else if (!(state.text.includes('山兔') && state.text.includes('路线') && state.text.includes('收藏')))
     throw new Error(`主页未完成启动：${state.text}`);
   if (screenshot) await page.screenshot({ path: screenshot });
-  console.log(`Android web startup OK: ${root}`);
+  console.log(`Android web startup OK (${nativeAdapter ? 'appassets adapter' : 'browser map'}): ${root}`);
 } finally {
   await browser?.close();
   await new Promise((done) => server.close(done));
