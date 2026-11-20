@@ -1,7 +1,12 @@
 import {getLocalDayBounds} from './astronomy.ts';
 
+let minuteClock:{zone:string;format:Intl.DateTimeFormat}|undefined;
+
 export function localMinute(timeMs:number, zone:string) {
-  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(timeMs);
+  if(minuteClock?.zone!==zone){
+    minuteClock={zone,format:new Intl.DateTimeFormat('en-GB',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'})};
+  }
+  const parts=minuteClock.format.formatToParts(timeMs);
   const part=(kind:string)=>parts.find(p=>p.type===kind)!.value;
   return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}`;
 }

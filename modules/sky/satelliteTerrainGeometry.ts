@@ -139,6 +139,18 @@ export function terrainHeight(heights: Float32Array, u: number, v: number): numb
     (c * (1 - (x - x0)) + d * (x - x0)) * (y - y0);
 }
 
+/** Resample the same geographic child footprint from a real coarser DEM.
+ * No-data stays NaN. Pixel centers match terrainHeight's half-pixel convention. */
+export function resampleAncestorDem(child: Tile, parent:Tile, heights:Float32Array) {
+  const span=2**(child.z-parent.z), x0=child.x-parent.x*span, y0=child.y-parent.y*span;
+  const result=new Float32Array(demSize*demSize);
+  for(let y=0;y<demSize;y++){
+    const v=(y0+(y+.5)/demSize)/span;
+    for(let x=0;x<demSize;x++) result[y*demSize+x]=terrainHeight(heights,(x0+(x+.5)/demSize)/span,v);
+  }
+  return result;
+}
+
 /** Same two triangles and samples as the rendered mesh, so the camera stays above its surface. */
 export function surfaceHeight(tile: Tile, heights: Float32Array, u: number, v: number) {
   const steps = divisions(tile);

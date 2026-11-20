@@ -10,6 +10,7 @@ import './journeyViewer.css';
 
 type Phase='paused'|'preparing'|'playing'|'arming'|'recording'|'saving';
 const clamp=(x:number)=>Math.max(0,Math.min(1,x));
+const recordingFps=24;
 
 export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():void}) {
   const model=useMemo(()=>createJourneyPlayback(journey),[journey]);
@@ -37,13 +38,18 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   const [progress,setProgress]=useState(0);
   const [imagery,setImagery]=useState<ImageryStatus>('loading');
   const [buffer,setBuffer]=useState<JourneyTerrainBuffer | null>(null);
+  const currentBuffer=useRef<JourneyTerrainBuffer | null>(null);
   const [retryKey,setRetryKey]=useState(0);
   const lastPresented=useRef<number | null>(null);
   const onPresent=useCallback((fraction:number)=>{lastPresented.current=fraction;},[]);
   const onBuffer=useCallback((next:JourneyTerrainBuffer)=>{
-    setBuffer(prior=>prior && prior.status===next.status && prior.loaded===next.loaded &&
-      prior.total===next.total && prior.frameReady===next.frameReady ?
-      prior : {...next});
+    const prior=currentBuffer.current;
+    if(prior && prior.status===next.status && prior.loaded===next.loaded && prior.total===next.total &&
+      prior.frameReady===next.frameReady && prior.frameDegraded===next.frameDegraded && prior.detailLoaded===next.detailLoaded &&
+      prior.detailTotal===next.detailTotal && prior.minDetailZoom===next.minDetailZoom &&
+      prior.throughDistanceM===next.throughDistanceM && prior.unavailableTiles===next.unavailableTiles)return;
+    currentBuffer.current={...next};
+    setBuffer(currentBuffer.current);
   },[]);
   const [message,setMessage]=useState('');
   const [movie,setMovie]=useState<Blob|null>(null);
@@ -70,7 +76,7 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
       if(fraction >= 1 && state.phase === 'recording') setPhase('saving');
       return;
     }
-    if(!rec.requestFrame(true,Math.round(clock.index*1e6/12)))return;
+    if(!rec.requestFrame(true,Math.round(clock.index*1e6/recordingFps)))return;
     if(clock.index===clock.count){clock.index++;setPhase('saving');return;}
     clock.index++;setProgress(clock.index/clock.count);
   },[]);
@@ -117,9 +123,9 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
         target.width=Math.max(16,16*Math.round(canvas.width*scale/16));
         target.height=Math.max(16,16*Math.round(canvas.height*scale/16));
         captureSurface.current=target;
-        timing.current={index:0,count:seconds*12};
+        timing.current={index:0,count:seconds*recordingFps};
         composeRecordingFrame(canvas,0);
-        recording.current=startSkyJourneyRecording(target,{frameRate:12,maxDurationMs:seconds*12000+60000});
+        recording.current=startSkyJourneyRecording(target,{frameRate:recordingFps,maxDurationMs:seconds*12000+60000});
         composeRecordingFrame(canvas,0);
         setMessage('');setPhase('recording');
       }catch(e){abort(e instanceof Error?e.message:'此设备无法录制视频');}
@@ -134,8 +140,12 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
     if(phase==='recording' && recording.current?.timedFrames)return;
     let initial=lastProgress.current, previous=performance.now(), raf=0;
     const tick=(now:number)=>{
-      if(now-previous<32 || (phase==='recording' && lastPresented.current!==initial)){raf=requestAnimationFrame(tick);return;}
-      initial=clamp(initial+Math.min(now-previous,125)/(seconds*1000));previous=now;
+      if(lastPresented.current!==initial || !currentBuffer.current?.frameReady){
+        // Waiting for map data is outside simulated time.
+        previous=now;raf=requestAnimationFrame(tick);return;
+      }
+      const elapsed=Math.min(now-previous,phase==='playing' ? 1000/15 : 125);
+      initial=clamp(initial+elapsed/(seconds*1000));previous=now;
       lastProgress.current=initial;setProgress(initial);
       if(initial<1){raf=requestAnimationFrame(tick);return;}
       if(phase==='playing'){setPhase('paused');return;}
@@ -187,19 +197,26 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   const starting=phase==='preparing'||phase==='arming';
   const buffering=!missing && (!textured || (!prepared && (phase==='paused'||starting)));
   const count=buffer?.total ? ` ${buffer.loaded}/${buffer.total}` : '';
-  const status=missing?'当前路段地图未能加载':buffering?'正在预载沿途地图'+count:'';
-  const retry=()=>{setBuffer(null);setMessage('');setRetryKey(key=>key+1);};
+  const degraded=buffer?.frameReady && buffer.frameDegraded;
+  const missingAhead=!!buffer?.unavailableTiles && buffer.status==='degraded';
+  const fallbackText=buffer && buffer.detailLoaded<buffer.detailTotal
+    ? '此段高清影像暂缺，显示较低分辨率影像' : '此段部分地图数据使用较低精度';
+  const status=missing?'当前路段地图未能加载':buffering?'正在预载沿途地图'+count:
+    degraded?fallbackText:missingAhead?`沿途有 ${buffer.unavailableTiles} 块地图暂缺`:'';
+  const retry=()=>{currentBuffer.current=null;setBuffer(null);setMessage('');setRetryKey(key=>key+1);};
   return <section className="journey-viewer" role="dialog" aria-modal="true" aria-label="第三人称行程模拟" onKeyDown={e=>{
     if(e.key==='Escape'){e.preventDefault();e.stopPropagation();onClose();}
   }}>
     <header><div><strong>第三人称行程模拟</strong><small>{journey.name}</small></div>
       <div className="journey-header-actions"><JourneySkyLayers layers={layers} onChange={setLayers} disabled={capture}/>
         <button autoFocus type="button" onClick={onClose}>退出</button></div></header>
-    <div className="journey-window" ref={setStage} data-buffer-state={buffer?.status??'loading'} data-frame-ready={textured}>
+    <div className="journey-window" ref={setStage} data-buffer-state={buffer?.status??'loading'} data-frame-ready={textured}
+      data-detail-zoom={buffer?.minDetailZoom} data-detail-loaded={buffer?.detailLoaded} data-detail-total={buffer?.detailTotal}
+      data-frame-degraded={buffer?.frameDegraded}>
       {frame && <JourneyStage model={model} frame={frame} time={at} zone={zone} name={journey.name} progress={progress}
         {...size} layers={layers} retryKey={retryKey} onBuffer={onBuffer} onPresent={onPresent} captureFrames={phase==='arming'||phase==='recording'||phase==='saving'}
         onCanvas={setCanvas} onFrame={composeRecordingFrame} onImagery={setImagery}/>}
-      {status && <span className="journey-imagery" role="status">{status}{missing && <button type="button" onClick={retry}>重试加载</button>}</span>}
+      {status && <span className="journey-imagery" role="status">{status}{(missing||degraded||missingAhead) && <button type="button" onClick={retry}>重试加载</button>}</span>}
     </div>
     <section className="journey-controls" aria-label="行程时间轴">
       {form && <div className="journey-dates">

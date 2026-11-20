@@ -2,6 +2,7 @@ import {createRoot} from 'react-dom/client';
 import {AppearanceProvider} from '../modules/appearance/AppearanceProvider';
 import {JourneyViewer} from '../modules/sky/JourneyViewer';
 import type {SkyJourney} from '../modules/sky/journeyPlayback';
+import windingRoad from './preview-data/qingcheng-winding-road.json';
 import '../app/globals.css';
 
 // Preview-only examples. The road follows the visible satellite imagery near Qingcheng Mountain.
@@ -18,11 +19,12 @@ const road: [number, number][] = [
   [103.590227,30.898653],[103.589766,30.898579],[103.589251,30.898505],[103.588768,30.898432],
   [103.588414,30.898386],
 ];
-const isRoad = new URLSearchParams(location.search).get('route') === 'road';
-const points = isRoad ? road : mountain;
+const sample = new URLSearchParams(location.search).get('route');
+const points: [number, number][] = sample==='winding'
+  ? windingRoad.coordinates.map(([longitude,latitude])=>[longitude,latitude]) : sample==='road' ? road : mountain;
 const start = Date.UTC(2026, 10, 20, 2);
 const journey: SkyJourney = {
-  name: isRoad ? '青城山 · 公路示例' : '青城山 · 示例轨迹',
+  name: sample==='winding' ? '青城山盘山路 · © OpenStreetMap 贡献者' : sample==='road' ? '青城山 · 公路示例' : '青城山 · 示例轨迹',
   segments: [points.map((coordinates, index) => ({
     coordinates,
     timeMs: start + 3600000 * index / (points.length - 1),

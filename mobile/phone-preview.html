@@ -38,7 +38,8 @@ if(skyPreview) {
   document.body.style.display='block';
   document.querySelector('#preview-stage').style.height='100%';
 }
-const journeyPage=new URLSearchParams(location.search).get('route')==='road'?'/journey-preview.html?route=road':'/journey-preview.html';
+const route=new URLSearchParams(location.search).get('route');
+const journeyPage='/journey-preview.html'+(route==='road'||route==='winding'?'?route='+route:'');
 const skyPage=new URLSearchParams(location.search).has('night')?'/sky-preview.html?night=1':'/sky-preview.html';
 frame.src=(skyPreview?(scene==='journey'?journeyPage:scene==='marker'?'/sky-preview.html?marker=1':skyPage):'/')+location.hash;
 frame.addEventListener('load',()=>{const sync=()=>history.replaceState(null,'',location.pathname+location.search+frame.contentWindow.location.hash);frame.contentWindow.addEventListener('hashchange',sync);sync()});

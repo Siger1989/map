@@ -46,6 +46,15 @@ export interface JourneyPlaybackFrame {
   cameraCoordinates: [number, number];
   cameraElevationM: number | null;
   cameraHeightM: number;
+  cameraLagM: number;
+  cameraTurnRadiusM: number;
+}
+
+interface JourneyPlaybackSettings {
+  lookAheadM?: number;
+  cameraLagM?: number;
+  cameraHeightM?: number;
+  turnRadiusM?: number;
 }
 
 export const SKY_JOURNEY_EVENT = "shantu:sky-journey";
@@ -198,7 +207,7 @@ function segmentHeading(segment: JourneyPlaybackSegment, distanceM: number, coor
 export function getJourneyPlaybackFrame(
   model: JourneyPlaybackModel,
   requestedDistanceM: number,
-  settings: { lookAheadM?: number; cameraLagM?: number; cameraHeightM?: number; turnRadiusM?: number } = {},
+  settings: JourneyPlaybackSettings = {},
 ): JourneyPlaybackFrame | null {
   const { segments, totalDistanceM } = model;
   if (!segments.length || !Number.isFinite(requestedDistanceM)) return null;
@@ -212,24 +221,36 @@ export function getJourneyPlaybackFrame(
     if (segments[middle].endDistanceM < distanceM) lo = middle + 1;
     else hi = middle;
   }
-  const segment = segments[lo];
+  return getJourneySegmentFrame(segments[lo], lo, distanceM, settings);
+}
+
+/** A control point at a new segment's start must use that segment's terrain and direction. */
+export function getJourneySegmentFrame(
+  segment: JourneyPlaybackSegment,
+  segmentIndex: number,
+  station: number,
+  settings: JourneyPlaybackSettings,
+): JourneyPlaybackFrame {
+  const distanceM = Math.max(segment.startDistanceM, Math.min(segment.endDistanceM, station));
   const frame = sampleSegment(segment, distanceM);
   const nonNegative = (value: number | undefined, fallback: number) =>
     value !== undefined && Number.isFinite(value) ? Math.max(0, value) : fallback;
   const lookDistanceM = Math.min(segment.endDistanceM, distanceM + nonNegative(settings.lookAheadM, 30));
   const ahead = sampleSegment(segment, lookDistanceM);
   const headingDeg = segmentHeading(segment, distanceM, frame.coordinates);
+  const cameraTurnRadiusM = nonNegative(settings.turnRadiusM, 20);
   const cameraHeadingDeg = headingDeg === null ? null : journeyCameraHeading(
-    segment.turns, distanceM - segment.startDistanceM, headingDeg, nonNegative(settings.turnRadiusM, 20),
+    segment.turns, distanceM - segment.startDistanceM, headingDeg, cameraTurnRadiusM,
   );
   const cameraHeightM = nonNegative(settings.cameraHeightM, JOURNEY_CAMERA_HEIGHT_M);
+  const cameraLagM = nonNegative(settings.cameraLagM, JOURNEY_CAMERA_LAG_M);
   const cameraCoordinates = cameraHeadingDeg === null ? frame.coordinates
-    : journeyDestination(frame.coordinates, cameraHeadingDeg + 180, nonNegative(settings.cameraLagM, JOURNEY_CAMERA_LAG_M));
+    : journeyDestination(frame.coordinates, cameraHeadingDeg + 180, cameraLagM);
 
   return {
     ...frame,
     distanceM,
-    segmentIndex: lo,
+    segmentIndex,
     headingDeg,
     cameraHeadingDeg,
     lookAt: ahead.coordinates,
@@ -237,5 +258,7 @@ export function getJourneyPlaybackFrame(
     cameraCoordinates,
     cameraElevationM: frame.elevationM === null ? null : frame.elevationM + cameraHeightM,
     cameraHeightM,
+    cameraLagM,
+    cameraTurnRadiusM,
   };
 }

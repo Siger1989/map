@@ -1,6 +1,6 @@
 import { getJourneyPlaybackFrame, type JourneyPlaybackModel } from './journeyPlayback.ts';
 import { journeyDestination } from './journeyCamera.ts';
-import { mercator, planSatelliteTiles, type Tile } from './satelliteTerrainGeometry.ts';
+import { mercator, type Tile } from './satelliteTerrainGeometry.ts';
 import { routeImageryFocus } from './journeyRouteOverlay.ts';
 
 export interface JourneyTerrainBuffer {
@@ -9,6 +9,11 @@ export interface JourneyTerrainBuffer {
   total: number;
   frameReady: boolean;
   throughDistanceM: number;
+  detailLoaded: number;
+  detailTotal: number;
+  minDetailZoom: number;
+  frameDegraded: boolean;
+  unavailableTiles: number;
 }
 
 export function tileAt(longitude: number, latitude: number, z: number): Tile {
@@ -61,15 +66,89 @@ export interface JourneyWindow {
 }
 
 const maxAhead = 9000;
-const maxCorridorTiles = 82;
+// Compressed images for the route can outlive their decoded GPU meshes.
+const maxCorridorTiles = 320;
+
+/** Bounding rectangle of a short ground footprint. Unwrap around the camera at
+ * the antimeridian so the loop stays local on international itineraries. */
+function footprint(points: readonly (readonly [number,number])[], z:number, marginM = 0) {
+  const period=2**z;
+  const locations=points.map(([lng,lat])=>mercator(lng,lat,z));
+  const origin=locations[0][0];
+  let left=origin, right=origin, top=locations[0][1], bottom=top;
+  for (const [x,y] of locations) {
+    const dx=((x-origin+period*.5+period)%period)-period*.5;
+    left=Math.min(left,origin+dx); right=Math.max(right,origin+dx);
+    top=Math.min(top,y); bottom=Math.max(bottom,y);
+  }
+  const margin=marginM*period/(40_075_017*Math.cos(points[0][1]*Math.PI/180));
+  const result:Tile[]=[];
+  for(let col=Math.floor(left-margin);col<=Math.floor(right+margin);col++){
+    const x=(col+period)%period;
+    for(let y=Math.max(0,Math.floor(top-margin));y<=Math.min(period-1,Math.floor(bottom+margin));y++)
+      result.push({z,x,y,key:`${z}/${x}/${y}`});
+  }
+  return result;
+}
+
+export function journeyGroundFootprint(route: Parameters<typeof routeImageryFocus>[0], horizontalFov:number, marginM=0) {
+  const {frame}=route, eye=frame.cameraCoordinates;
+  const bearing=frame.cameraHeadingDeg ?? frame.headingDeg ?? 0;
+  const half=Math.min(72,Math.max(8,horizontalFov/2));
+  const corners=(ahead:number) => {
+    const spread=ahead/Math.cos(half*Math.PI/180);
+    return [eye,journeyDestination(eye,bearing-half,spread),journeyDestination(eye,bearing+half,spread)] as const;
+  };
+  // Preserve the foreground's physical pixel size at high latitudes.
+  const latitudeOffset=Math.max(0,Math.floor(Math.log2(.85/Math.cos(eye[1]*Math.PI/180))));
+  const detailZoom=17-latitudeOffset;
+  const detail=uniqueTiles([footprint([...corners(200),frame.coordinates],detailZoom,marginM),
+    routeImageryFocus(route).map(([x,y])=>tileAt(x,y,detailZoom))]);
+  const middle=footprint(corners(640),Math.max(9,15-latitudeOffset),marginM);
+  const horizon=footprint(corners(3200),Math.max(9,12-latitudeOffset),marginM);
+  return {detail,middle,horizon};
+}
+
+/** Promote compressed tiles to GPU memory ahead of the moving camera. */
+type ViewSettings=Parameters<typeof getJourneyPlaybackFrame>[2];
+export function journeyGpuLookahead(model:JourneyPlaybackModel, distance:number, fov:number,settings?:ViewSettings) {
+  const groups:Tile[][]=[];
+  const step=100, end=Math.min(model.totalDistanceM,distance+1500);
+  for(let d=distance;d<end+step;d+=step){
+    const frame=getJourneyPlaybackFrame(model,Math.min(d,end),settings);
+    if(frame){
+      const {detail,middle,horizon}=journeyGroundFootprint({model,frame},fov,20);
+      groups.push(detail,middle,horizon);
+    }
+    if(d>=end)break;
+  }
+  return uniqueTiles(groups);
+}
+
+/** Make the displayed quadtree reach every required cell. Drawing only the generic
+ * eye-centred tree can skip a preloaded z17 road tile when the road turns. */
+export function refineJourneyLeaves(base:Tile[],targets:readonly Tile[]) {
+  const split=new Set<string>();
+  for(const t of targets) for(let z=t.z-1;z>=9;z--)split.add(ancestor(t,z).key);
+  const leaves:Tile[]=[];
+  function visit(t:Tile){
+    if(!split.has(t.key)){leaves.push(t);return;}
+    const z=t.z+1;
+    for(const dx of [0,1])for(const dy of [0,1]){
+      const x=t.x*2+dx,y=t.y*2+dy;
+      visit({z,x,y,key:`${z}/${x}/${y}`});
+    }
+  }
+  for(const t of base)visit(t);
+  return leaves;
+}
 
 /** Sample actual route and camera positions. A finite GPU budget shortens the lookahead
  * at high latitudes or on fragmented routes rather than silently dropping their coverage. */
-export function planJourneyWindow(model: JourneyPlaybackModel, distanceM: number): JourneyWindow {
+export function planJourneyWindow(model: JourneyPlaybackModel, distanceM: number, horizontalFov=42,settings?:ViewSettings): JourneyWindow {
   const start = Math.max(0, Math.min(distanceM,model.totalDistanceM));
   const limit = Math.min(start + maxAhead, model.totalDistanceM);
   const overview = new Map<string,Tile>(), detail = new Map<string,Tile>(), startup = new Map<string,Tile>();
-  const forwardTerrain = new Map<string,Tile>();
   let end = start;
   const distances = new Set<number>([start,limit]);
   for (let d = start + 65; d < limit; d += 65) distances.add(d);
@@ -88,46 +167,34 @@ export function planJourneyWindow(model: JourneyPlaybackModel, distanceM: number
     if (distances.size > 320) break;
   }
   for (const distance of [...distances].sort((a,b) => a-b)) {
-    const frame = getJourneyPlaybackFrame(model,distance);
+    const frame = getJourneyPlaybackFrame(model,distance,settings);
     if (!frame) continue;
-    const centers = [frame.coordinates,frame.cameraCoordinates];
-    const nearby = centers.map(([lng,lat]) => tileAt(lng,lat,17));
-    const regional = nearby.flatMap(tile => [ancestor(tile,12),ancestor(tile,14),ancestor(tile,16)]);
-    const backdrop = [-30,0,30].map(turn => {
-      const point=journeyDestination(frame.cameraCoordinates,(frame.headingDeg ?? 0)+turn,1800);
-      return tileAt(...point,12);
-    });
-    regional.push(...backdrop);
+    const {detail:nearby,middle,horizon}=journeyGroundFootprint({model,frame},horizontalFov,45);
+    const regional = uniqueTiles([middle,horizon]);
     const additions = [...new Set([...nearby,...regional].map(tile => tile.key))]
       .filter(key => !detail.has(key) && !overview.has(key)).length;
     if (end > start && detail.size + overview.size + additions > maxCorridorTiles) break;
     for (const tile of regional) overview.set(tile.key,tile);
-    for (const tile of backdrop) forwardTerrain.set(tile.key,tile);
     for (const tile of nearby) detail.set(tile.key,tile);
-    if (limit-start<=1400 || distance-start<=600) for (const tile of nearby) {
-      const preview=limit-start<=1400 ? tile : ancestor(tile,16);
-      startup.set(preview.key,preview);
-    }
     end = distance;
   }
   const surroundings = new Map<string, Tile>();
-  const closeRange = end - start <= 1400;
-  const count = Math.min(18, Math.max(1, Math.ceil((end - start) / (closeRange ? 75 : 600))));
+  const count = Math.min(32, Math.max(1, Math.ceil((end - start) / 450)));
   for (let i = 0; i <= count; i++) {
-    const frame = getJourneyPlaybackFrame(model, start + (end - start) * i / count);
+    const frame = getJourneyPlaybackFrame(model, start + (end - start) * i / count,settings);
     if (!frame) continue;
-    const view = planSatelliteTiles(...frame.cameraCoordinates, 17, routeImageryFocus({model,frame}));
-    for (const tile of [...view.map(t => ancestor(t,9)),...view]) {
-      if (tile.z > 14 && !closeRange || detail.has(tile.key) || overview.has(tile.key)) continue;
-      surroundings.set(tile.key, tile);
+    const root=tileAt(...frame.cameraCoordinates,9);
+    for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
+      const x=(root.x+dx+512)%512,y=root.y+dy;
+      if(y<0||y>=512)continue;
+      const key=`9/${x}/${y}`;
+      surroundings.set(key,{z:9,x,y,key});
     }
   }
   // Prefer regional coverage when the corridor crosses several base tiles.
-  const backdrop = [...surroundings.values()].sort((a,b) => a.z-b.z).slice(0, 48);
-  // The full corridor needs regional imagery; the upcoming road also needs local
-  // detail. Scenery outside this corridor can load after the clock starts.
-  const entryTiles=uniqueTiles([[...overview.values()].filter(t=>t.z===14),[...forwardTerrain.values()],[...startup.values()]]);
-  return { start, end, overview:[...overview.values()], detail:[...detail.values()], surroundings: backdrop, startup:entryTiles };
+  const backdrop = [...surroundings.values()];
+  for(const t of [...detail.values(),...overview.values(),...backdrop])startup.set(t.key,t);
+  return { start, end, overview:[...overview.values()], detail:[...detail.values()], surroundings: backdrop, startup:[...startup.values()] };
 }
 
 export function windowCovers(plan: JourneyWindow, distance: number, total: number) {

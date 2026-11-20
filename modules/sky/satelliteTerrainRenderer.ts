@@ -1,13 +1,13 @@
 import type { SkyObserver } from './astronomy';
 import type { DeviceSkyOptics, DeviceSkyPose } from './deviceSkyCamera';
 import {
-  buildSatelliteMesh, demTileFor, earthAxis, earthPosition, eyeCell, mercator, planSatelliteTiles, sampledSurfaceHeight, terrainHeight,
+  buildSatelliteMesh, coordinate as tileCoordinate, demTileFor, earthAxis, earthPosition, eyeCell, mercator, planSatelliteTiles, resampleAncestorDem, sampledSurfaceHeight, terrainHeight,
   type Tile, type Vec3,
 } from './satelliteTerrainGeometry';
 import { loadSatelliteDem, loadSatelliteTile, satelliteImageryAvailable } from './satelliteTerrainTiles';
 import { buildJourneyRouteOverlay, routeImageryFocus, type JourneyTerrainRoute, type RouteProjection } from './journeyRouteOverlay';
-import { resolveJourneyCamera } from './journeyCamera';
-import { ancestor, closestLoadedTile, mergeTerrainPatches, planJourneyWindow, tileAt, uniqueTiles, windowCovers, type JourneyTerrainBuffer, type JourneyWindow } from './journeyTerrainBuffer.ts';
+import { createJourneyCameraRail } from './journeyCameraRail.ts';
+import { ancestor, closestLoadedTile, journeyGpuLookahead, journeyGroundFootprint, mergeTerrainPatches, planJourneyWindow, refineJourneyLeaves, uniqueTiles, windowCovers, type JourneyTerrainBuffer, type JourneyWindow } from './journeyTerrainBuffer.ts';
 export type { JourneyTerrainBuffer } from './journeyTerrainBuffer.ts';
 
 export interface SatelliteTerrainCamera {
@@ -22,7 +22,6 @@ const rad = Math.PI / 180;
 const workers = 4;
 const maxResident = 48;
 const maxJourneyResident = 144;
-const fallbackBudget = 12;
 const initialNear = 0.75;
 const horizonDistance = 190_000;
 
@@ -57,6 +56,8 @@ void main(){
 `;
 
 interface Mesh {
+  id:number;
+  coarseDem:boolean;
   tile: Tile;
   samples: Float32Array;
   steps: number;
@@ -139,7 +140,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     gl.vertexAttribPointer(attribute, 3, gl.FLOAT, false, 0, 0);
     gl.depthMask(false);
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
     const paint = (vertices: number[], color: [number,number,number,number]) => {
       if (!vertices.length) return;
       gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
@@ -177,14 +178,30 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
   let windowPlan: JourneyWindow | null = null;
   let routeModel: JourneyTerrainRoute['model'] | null = null;
   let readinessTiles: Tile[] = [];
-  let windowTiles: Tile[] = [];
   let frameReady = false;
+  let focusTiles: Tile[] = [], nearTiles:Tile[]=[];
+  let gpuRequired=new Set<string>();
+  let planFov=0;
+  let planTurn=0,planLag=0;
+  let focusFrame:JourneyTerrainRoute['frame'] | null=null;
+  let focusFov=0;
+  let focusKey='';
+  let aheadCell=-1, upcoming:Tile[]=[];
+  let detailLoaded=0, minDetailZoom=0, frameDegraded=false, frameUnavailable=false;
+  const cameraRail=createJourneyCameraRail();
+  // Keep compressed images and shared DEM grids for the entire preparation window.
+  // Only the active view's meshes consume GPU memory.
+  const staged = new Map<string,{image:Blob; heights:Float32Array; complete:boolean}>();
+  const completeDem = new WeakMap<Float32Array,boolean>();
+  let nextMeshId=0;
   let patches: { leaf: Tile; mesh: Mesh }[] = [];
+  const seamBuffer=gl.createBuffer();
+  let seamSignature='', seams:{mesh:Mesh;start:number;count:number}[]=[];
   let coveredLeaves = 0;
   const levels = Array.from({length:18}, () => new Map<number,Mesh>());
   let revision = 0;
   let coverageRevision = -1;
-  let cameraCache: {frame:JourneyTerrainRoute['frame']; optics:DeviceSkyOptics; revision:number; camera:ReturnType<typeof resolveJourneyCamera>} | null = null;
+  let cameraCache: {frame:JourneyTerrainRoute['frame']; optics:DeviceSkyOptics; revision:number; camera:ReturnType<typeof cameraRail.resolve>} | null = null;
   const resident = new Map<string, Mesh>();
   const fallbacks = new Map<string,Tile>();
   const pending = new Map<string, AbortController>();
@@ -192,9 +209,11 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
   const demCache = new Map<string, Float32Array>();
   const failedDem = new Map<string, number>();
   const incomingDem = new Map<string, { controller: AbortController; request: Promise<Float32Array | null> }>();
+  const demFallback=new Map<string,Promise<Float32Array|null>>();
+  const coarserDem=new WeakSet<Float32Array>();
+  const refreshDem=new Set<string>();
 
-  function readDem(imageTile: Tile) {
-    const dem = demTileFor(imageTile);
+  function readExactDem(dem:Tile) {
     const cached = demCache.get(dem.key);
     if (cached) {
       demCache.delete(dem.key);
@@ -222,8 +241,34 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     return request;
   }
 
+  async function readDem(imageTile:Tile) {
+    const dem=demTileFor(imageTile);
+    const heights=await readExactDem(dem);
+    if (heights || !windowPlan || !active) return heights;
+    const existing=demFallback.get(dem.key);
+    if(existing)return existing;
+    const fallback=(async()=>{
+      for(let z=dem.z-1;active && z>=Math.max(8,dem.z-3);z--){
+        const parent=ancestor(dem,z), source=await readExactDem(parent);
+        if(!source)continue;
+        const resampled=resampleAncestorDem(dem,parent,source);
+        if(!resampled.some(Number.isFinite))continue;
+        coarserDem.add(resampled);
+        return resampled;
+      }
+      return null;
+    })();
+    if(demFallback.size>=48)demFallback.delete(demFallback.keys().next().value!);
+    demFallback.set(dem.key,fallback);
+    return fallback;
+  }
+
   function abortObsoleteDem() {
-    const needed = new Set([...fallbacks.values(),...requests].map(tile => demTileFor(tile).key));
+    const needed = new Set<string>();
+    for(const t of [...fallbacks.values(),...requests]){
+      const dem=demTileFor(t);needed.add(dem.key);
+      if(windowPlan)for(let z=dem.z-1;z>=Math.max(8,dem.z-3);z--)needed.add(ancestor(dem,z).key);
+    }
     for (const [key, entry] of incomingDem) {
       if (!needed.has(key)) entry.controller.abort();
     }
@@ -262,7 +307,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
       const supported = gl.getParameter(anisotropy.MAX_TEXTURE_MAX_ANISOTROPY_EXT) as number;
       gl.texParameterf(gl.TEXTURE_2D, anisotropy.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(4, supported));
     }
-    return { tile, samples:model.samples, steps:model.steps, complete:model.indices.length===model.steps*model.steps*6,
+    return { id:++nextMeshId,coarseDem:coarserDem.has(height),tile, samples:model.samples, steps:model.steps, complete:model.indices.length===model.steps*model.steps*6,
       vertex, index, texture, origin: model.origin, count: model.indices.length };
   }
 
@@ -270,7 +315,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     const limit = windowPlan ? maxJourneyResident : maxResident;
     if (resident.size <= limit) return;
     for (const [key, mesh] of resident) {
-      if (desired.has(key) || fallbacks.has(key)) continue;
+      if (windowPlan ? gpuRequired.has(key) : desired.has(key)) continue;
       resident.delete(key);
       drop(mesh);
       if (resident.size <= limit) break;
@@ -281,7 +326,8 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     if (!active) return;
     for (const tile of (fallbacks.size ? [...fallbacks.values(),...requests] : requests)) {
       if (pending.size >= workers) break;
-      if (resident.has(tile.key) || pending.has(tile.key) || (failed.get(tile.key) ?? 0) > Date.now()) continue;
+      if ((!refreshDem.has(tile.key) && (resident.has(tile.key) || staged.has(tile.key) && !gpuRequired.has(tile.key))) || pending.has(tile.key) ||
+          (failed.get(tile.key) ?? 0) > Date.now()) continue;
       const controller = new AbortController();
       pending.set(tile.key, controller);
       void read(tile, controller);
@@ -300,20 +346,44 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     // If a request or a whole source level is unavailable, walk up the same
     // provider's pyramid. Coarse roots allow an actual image below every child.
     const parent = ancestor(tile,tile.z-1);
-    if (!desired.has(parent.key) && !resident.has(parent.key) && fallbacks.size < fallbackBudget) fallbacks.set(parent.key,parent);
+    if (gpuRequired.has(tile.key)) gpuRequired.add(parent.key);
+    // An already desired parent may have failed before its child. Walk the ladder
+    // on demand so a missing z17 can use its verified z16 or z15 ancestor.
+    if (failed.has(parent.key) && tile.z>9) requestParent(parent);
+    if (!resident.has(parent.key)) fallbacks.set(parent.key,parent);
   }
 
   async function read(tile: Tile, controller: AbortController) {
     const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]);
     // Await both outcomes so a failed DEM cannot orphan a decoded bitmap.
-    const [dem, imagery] = await Promise.allSettled([readDem(tile), loadSatelliteTile(tile, signal)]);
+    const saved = staged.get(tile.key);
+    let image=saved?.image;
+    const refreshing=refreshDem.delete(tile.key);
+    const [dem, imagery] = await Promise.allSettled([saved && !refreshing ? Promise.resolve(saved.heights) : readDem(tile),
+      saved ? createImageBitmap(saved.image) : loadSatelliteTile(tile, signal, value=>{image=value;})]);
     const bitmap = imagery.status === 'fulfilled' ? imagery.value : null;
     try {
       if (!active || controller.signal.aborted) return;
-      const mesh = dem.status === 'fulfilled' && dem.value && bitmap ? loadGpu(tile, dem.value, bitmap) : null;
-      if (mesh) {
-        resident.set(tile.key, mesh);
-        if (!mesh.complete) requestParent(tile);
+      const heights=dem.status==='fulfilled' ? dem.value : null;
+      if (heights && bitmap) {
+        let complete:boolean;
+        if (!windowPlan || gpuRequired.has(tile.key)) {
+          const mesh=loadGpu(tile,heights,bitmap);
+          if(!mesh){failedTile(tile);return;}
+          const previous=resident.get(tile.key);if(previous)drop(previous);
+          resident.set(tile.key,mesh);
+          complete=mesh.complete;
+        } else {
+          let all=completeDem.get(heights);
+          if(all===undefined){all=heights.every(Number.isFinite);completeDem.set(heights,all);}
+          if(all)complete=true;
+          else {
+            const mesh=buildSatelliteMesh(tile,heights);
+            complete=mesh.indices.length===mesh.steps*mesh.steps*6;
+          }
+        }
+        if (windowPlan && image && (desired.has(tile.key)||fallbacks.has(tile.key))) staged.set(tile.key,{image,heights,complete});
+        if (!complete) requestParent(tile);
         revision++;
         trim();
       } else {
@@ -329,55 +399,68 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     }
   }
 
-  function requestArea(observer: SkyObserver, route?: JourneyTerrainRoute) {
+  function requestArea(observer: SkyObserver, optics:DeviceSkyOptics, route?: JourneyTerrainRoute) {
     const { longitude, latitude } = observer;
     if (!satelliteImageryAvailable() || !Number.isFinite(longitude) || !Number.isFinite(latitude) ||
         Math.abs(latitude) > 85.05112878) {
       if (requests.length) {
-        tiles = []; requests = []; readinessTiles = []; windowTiles=[]; windowPlan = null; routeModel = null; fallbacks.clear();
-        desired.clear(); frameReady = false; area = ''; revision++;
+        tiles = []; requests = []; readinessTiles = []; windowPlan = null; routeModel = null; fallbacks.clear();
+        desired.clear(); staged.clear(); focusFrame=null; frameReady = false; area = ''; revision++;
         for (const controller of pending.values()) controller.abort();
         abortObsoleteDem();
       }
       return;
     }
-    const focus = route ? routeImageryFocus(route) : [];
+    const fov=Math.ceil(optics.horizontalFov/2)*2;
     const needsWindow = route && (!windowPlan || routeModel !== route.model ||
+      planFov!==fov || planTurn!==route.frame.cameraTurnRadiusM || planLag!==route.frame.cameraLagM ||
       !windowCovers(windowPlan,route.frame.distanceM,route.model.totalDistanceM));
-    const cell = eyeCell(longitude, latitude, route ? 16 : 14) + (route ? '|' + focus.map(([lng,lat]) => eyeCell(lng,lat,16)).join('|') : '');
+    if(route && (route.frame!==focusFrame || focusFov!==fov)){
+      focusFrame=route.frame;focusFov=fov;
+      const footprint=journeyGroundFootprint(route,fov);
+      nearTiles=footprint.detail;
+      focusTiles=uniqueTiles([nearTiles,footprint.middle,footprint.horizon]);
+      focusKey=focusTiles.map(t=>t.key).join('|');
+    }
+    const progressCell=route ? Math.floor(route.frame.distanceM/200) : -1;
+    const cell = eyeCell(longitude, latitude, route ? 16 : 14) + (route ? '|'+progressCell+'|'+focusKey : '');
     if (cell === area && !needsWindow) return;
     if (needsWindow && route) {
-      windowPlan = planJourneyWindow(route.model, route.frame.distanceM);
+      planFov=fov;planTurn=route.frame.cameraTurnRadiusM;planLag=route.frame.cameraLagM;
+      windowPlan = planJourneyWindow(route.model, route.frame.distanceM,fov,{turnRadiusM:planTurn,cameraLagM:planLag});
       fallbacks.clear();
       routeModel = route.model;
-      windowTiles = uniqueTiles([windowPlan.overview, windowPlan.detail, windowPlan.surroundings]);
       readinessTiles=windowPlan.startup;
     } else if (!route) {
-      windowPlan = null; routeModel = null; readinessTiles = []; windowTiles=[]; fallbacks.clear();
+      windowPlan = null; routeModel = null; readinessTiles = []; fallbacks.clear();staged.clear();focusFrame=null;
     }
     area = cell;
-    tiles = planSatelliteTiles(longitude, latitude, route ? 17 : undefined, focus);
+    tiles = planSatelliteTiles(longitude, latitude, route ? 17 : undefined, route ? routeImageryFocus(route) : []);
     if (route && windowPlan) {
-      // Roots cover all four quadrants before their children arrive. Coarse and detailed
-      // route tiles stay resident across the entire preloaded window, including turns.
-      const points: (readonly [number,number])[] = [route.frame.coordinates, route.frame.cameraCoordinates,...focus];
-      const initial = points.map(([x,y])=>tileAt(x,y,14));
-      const corridor = points.map(([x,y])=>tileAt(x,y,17));
-      requests = uniqueTiles([
-        initial, initial.map(t=>ancestor(t,12)), readinessTiles, corridor,
-        initial.map(t=>ancestor(t,9)), tiles.map(t=>ancestor(t,9)),
-        windowPlan.overview,windowPlan.detail,tiles,windowPlan.surroundings,
-      ]);
-      // The preloaded window is protected. Lower priority incidental detail is served
-      // by the same-provider covering mesh whenever it exceeds the GPU budget.
-      if (requests.length > maxJourneyResident-fallbackBudget) {
-        const protectedKeys=new Set(windowTiles.map(t=>t.key));
-        const remaining=maxJourneyResident-fallbackBudget-protectedKeys.size;
-        for (const tile of requests.filter(t=>!protectedKeys.has(t.key)).slice(0,remaining)) protectedKeys.add(tile.key);
-        requests=requests.filter(tile=>protectedKeys.has(tile.key));
+      const originals=tiles, roots=uniqueTiles([originals.map(t=>ancestor(t,9))]);
+      tiles=refineJourneyLeaves(originals,focusTiles);
+      // Do not request every sibling generated by subdivision: they inherit the
+      // enclosing view's imagery until a closer source is available.
+      const visible=uniqueTiles([focusTiles,roots,originals]);
+      if(needsWindow || aheadCell!==progressCell){
+        aheadCell=progressCell;upcoming=journeyGpuLookahead(route.model,route.frame.distanceM,fov,{turnRadiusM:planTurn,cameraLagM:planLag});
       }
+      const gpu=uniqueTiles([visible,upcoming]).slice(0,maxJourneyResident-12);
+      gpuRequired=new Set(gpu.map(t=>t.key));
+      if(needsWindow)for(const t of readinessTiles)if(failed.has(t.key)||staged.get(t.key)?.complete===false)requestParent(t);
+      for(const t of focusTiles) {
+        for(let z=t.z-1;z>=9;z--){
+          const parent=ancestor(t,z);
+          if(staged.has(parent.key)||fallbacks.has(parent.key))gpuRequired.add(parent.key);
+        }
+        if(failed.has(t.key)||staged.get(t.key)?.complete===false)requestParent(t);
+      }
+      requests=uniqueTiles([[ancestor(nearTiles[0],9)],nearTiles,focusTiles,roots,gpu,readinessTiles,visible]);
     } else requests = tiles;
     desired = new Set(requests.map(tile => tile.key));
+    if (needsWindow) {
+      for(const key of staged.keys())if(!desired.has(key)&&!fallbacks.has(key))staged.delete(key);
+    }
     for (const [key, controller] of pending) {
       if (!desired.has(key) && !fallbacks.has(key)) controller.abort();
     }
@@ -405,16 +488,64 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
       levels[leaf.z].set(leaf.x*131072+leaf.y,mesh);
     }
     coveredLeaves=patches.length;
-    if (windowPlan) patches=mergeTerrainPatches(patches);
+    if (windowPlan) {
+      patches=mergeTerrainPatches(patches);
+      rebuildSeams();
+    }
   }
 
   function drawnMesh(x: number, y: number) {
-    let tx = Math.floor(x), ty = Math.floor(y);
+    let tx = ((Math.floor(x)%131072)+131072)%131072, ty = Math.floor(y);
     for (let z = 17; z >= 9; z--) {
       const mesh = levels[z].get(tx*131072+ty);
       if (mesh) return mesh;
       tx = tx >>> 1; ty = ty >>> 1;
     }
+  }
+
+  function rebuildSeams() {
+    if(!seamBuffer)return;
+    const signature=patches.map(({leaf,mesh})=>leaf.key+'='+mesh.id).join('|');
+    if(signature===seamSignature)return;
+    seamSignature=signature;seams=[];
+    const vertices:number[]=[];
+    for(const {leaf,mesh} of patches){
+      const start=vertices.length/5, span=2**(17-leaf.z), left=leaf.x*span, top=leaf.y*span;
+      const sample=(m:Mesh,x:number,y:number)=>{
+        const scale=2**(17-m.tile.z), period=2**m.tile.z;
+        let u=x/scale-m.tile.x;if(u>period/2)u-=period;if(u< -period/2)u+=period;
+        return sampledSurfaceHeight(m.samples,m.steps,u,y/scale-m.tile.y);
+      };
+      const edge=(dx:number,dy:number)=>{
+        const pieces=Math.max(2,Math.ceil(mesh.steps*2**(mesh.tile.z-leaf.z)));
+        let previous:number[][]|null=null;
+        for(let i=0;i<=pieces;i++){
+          const f=i/pieces;
+          const x=left+(dx?(dx>0?1:0):f)*span,y=top+(dy?(dy>0?1:0):f)*span;
+          // Probe just inside the other side. At the corners, stay on this edge.
+          const inset=Math.max(.00001,span*1e-8),along=i===0?inset:i===pieces?-inset:0;
+          const adjacent=drawnMesh(x+dx*inset+(dx?0:along),y+dy*inset+(dy?0:along));
+          if(!adjacent || adjacent===mesh){previous=null;continue;}
+          const own=sample(mesh,x,y), other=sample(adjacent,x,y);
+          if(!Number.isFinite(own)||!Number.isFinite(other)){previous=null;continue;}
+          const [lng,lat]=tileCoordinate(x,y,17), uvScale=2**(17-mesh.tile.z);
+          const u=x/uvScale-mesh.tile.x,v=y/uvScale-mesh.tile.y;
+          const vertex=(h:number)=>{
+            const point=earthPosition(lng,lat,h);
+            return [point[0]-mesh.origin[0],point[1]-mesh.origin[1],point[2]-mesh.origin[2],u,v];
+          };
+          // Bridge only the two drawn edge surfaces at identical lon/lat.
+          // A small sub-metre overlap closes subpixel MSAA/rounding pinholes.
+          const pair=[vertex(Math.max(own,other)+.12),vertex(Math.min(own,other)-.55)];
+          if(previous)vertices.push(...previous[0],...previous[1],...pair[0],...pair[0],...previous[1],...pair[1]);
+          previous=pair;
+        }
+      };
+      edge(-1,0);edge(1,0);edge(0,-1);edge(0,1);
+      if(vertices.length/5>start)seams.push({mesh,start,count:vertices.length/5-start});
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER,seamBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
   }
 
   function meshHeightAt(longitude: number, latitude: number) {
@@ -443,36 +574,74 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
 
   function journeyBuffer(): JourneyTerrainBuffer {
     const total = readinessTiles.length;
-    let loaded = 0, degraded = false;
+    let loaded = 0, unavailableTiles=0, degraded = false;
     for (const tile of readinessTiles) {
-      if (resident.has(tile.key)) loaded++;
-      else if (failed.has(tile.key) || !pending.size) {
-        const cover=closestLoadedTile(tile,resident);
-        if (cover && (cover.tile.z>=12 || !pending.size)) { loaded++; degraded=true; }
+      const saved=staged.get(tile.key);
+      if (saved?.complete || resident.get(tile.key)?.complete) {loaded++;if(saved && coarserDem.has(saved.heights))degraded=true;}
+      else if (failed.has(tile.key) || staged.get(tile.key)?.complete===false) {
+        let found=false;
+        for(let z=tile.z-1;z>=minCover(tile);z--){
+          const key=ancestor(tile,z).key;
+          if(staged.get(key)?.complete || resident.get(key)?.complete){ loaded++;degraded=true;found=true;break;}
+        }
+        if(!found && exhausted(tile))unavailableTiles++;
       }
     }
-    const status = loaded===total && total>0 && frameReady ? (degraded ? 'degraded' : 'ready') : pending.size ? 'loading' : 'unavailable';
-    return {status, loaded, total, frameReady, throughDistanceM:windowPlan?.end ?? 0};
+    const prepared=loaded+unavailableTiles===total && total>0;
+    const status = frameUnavailable ? 'unavailable' : prepared && frameReady ? (unavailableTiles||degraded||frameDegraded ? 'degraded' : 'ready') : pending.size ? 'loading' : 'unavailable';
+    return {status, loaded, total, unavailableTiles, frameReady, frameDegraded, detailLoaded, detailTotal:nearTiles.length, minDetailZoom, throughDistanceM:windowPlan?.end ?? 0};
+  }
+
+  function minCover(tile:Tile){return Math.max(8,tile.z-2);}
+  function exhausted(tile:Tile){
+    for(let z=tile.z;z>=minCover(tile);z--){
+      const key=z===tile.z?tile.key:ancestor(tile,z).key;
+      if(!failed.has(key) && staged.get(key)?.complete!==false)return false;
+    }
+    return true;
   }
 
   function retryJourneyBuffer() {
     if (!active) return;
     failed.clear();
     failedDem.clear();
+    demFallback.clear();
+    for(const [key,saved] of staged)if(coarserDem.has(saved.heights))refreshDem.add(key);
     schedule();
     notify();
   }
   function draw(observer: SkyObserver, pose: DeviceSkyPose, optics: DeviceSkyOptics, width: number, height: number,
     eyeHeightMeters?: number, journey?: JourneyTerrainRoute, onCamera?: (camera: SatelliteTerrainCamera) => void): SatelliteTerrainStatus {
     if (!active || gl.isContextLost()) return 'error';
-    requestArea(observer, journey);
+    requestArea(observer, optics, journey);
     resolveCoverage();
     frameReady = false;
+    frameDegraded=false; frameUnavailable=false; detailLoaded=0;minDetailZoom=0;
     if (!tiles.length) {
       if (!journey) gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       return 'unavailable';
     }
     if (journey) {
+      let usable=coveredLeaves===tiles.length, min=17;
+      for(const tile of focusTiles) {
+        let mesh=resident.get(tile.key);
+        if(!mesh?.complete) for(let z=tile.z-1;z>=minCover(tile);z--){
+          const fallback=resident.get(ancestor(tile,z).key);
+          if(fallback?.complete){mesh=fallback;break;}
+        }
+        if (tile.z===nearTiles[0]?.z) {
+          min=Math.min(min,mesh?.complete?mesh.tile.z:0);
+          if(mesh?.complete && mesh.tile.z===tile.z)detailLoaded++;
+        }
+        if (mesh?.coarseDem)frameDegraded=true;
+        if (!mesh?.complete){usable=false;if(exhausted(tile))frameUnavailable=true;}
+        else if(mesh.tile.z<tile.z){
+          if(!failed.has(tile.key)&&staged.get(tile.key)?.complete!==false)usable=false;
+          else frameDegraded=true;
+        }
+      }
+      minDetailZoom=min;
+      if (!usable) return pending.size?'loading':'unavailable';
       // Preserve the last fully drawn frame during a seek. New work must supply an
       // actual mesh beneath the subject, the camera and the road immediately ahead.
       const nearby = [journey.frame.cameraCoordinates,...routeImageryFocus(journey)];
@@ -480,7 +649,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
         return pending.size ? 'loading' : 'unavailable';
       if (!cameraCache || cameraCache.frame !== journey.frame || cameraCache.optics !== optics || cameraCache.revision !== revision)
         cameraCache = { frame: journey.frame, optics, revision,
-          camera:resolveJourneyCamera(journey.frame, optics, { heightAt, skylineHeightAt: meshHeightAt }) };
+          camera:cameraRail.resolve(journey.model,journey.frame, optics, { heightAt, skylineHeightAt: meshHeightAt },revision) };
     }
     const camera = journey ? cameraCache?.camera : null;
     if (camera) {
@@ -520,8 +689,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     gl.uniform3fv(viewRight, right);
     gl.uniform3fv(viewUp, up);
     gl.uniform2f(tangent, tanX, tanY);
-    let drawn = 0;
-    for (const {leaf,mesh} of patches) {
+    function paintMesh(leaf:Tile,mesh:Mesh){
       let count=mesh.count, byteOffset=0;
       if (leaf === mesh.tile || leaf.key === mesh.tile.key) gl.uniform4f(uvBounds,0,0,1,1);
       else {
@@ -544,7 +712,19 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
       gl.vertexAttribPointer(imageUv, 2, gl.FLOAT, false, 20, 12);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.index);
       gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, byteOffset);
-      drawn++;
+    }
+    const drawn=patches.length;
+    for(const patch of patches)paintMesh(patch.leaf,patch.mesh);
+    if (journey && seamBuffer && seams.length) {
+      gl.bindBuffer(gl.ARRAY_BUFFER,seamBuffer);
+      gl.vertexAttribPointer(coordinate,3,gl.FLOAT,false,20,0);
+      gl.vertexAttribPointer(imageUv,2,gl.FLOAT,false,20,12);
+      gl.uniform4f(uvBounds,0,0,1,1);
+      for(const {mesh,start,count} of seams){
+        gl.uniform3f(offset,mesh.origin[0]-eye[0],mesh.origin[1]-eye[1],mesh.origin[2]-eye[2]);
+        gl.bindTexture(gl.TEXTURE_2D,mesh.texture);
+        gl.drawArrays(gl.TRIANGLES,start,count);
+      }
     }
     if (journey && camera && drawn > 0) {
       const routeReady = drawRoute(journey, { eye, right, up, forward, tanX, tanY, near: initialNear, far: horizonDistance, width, height }, camera.subjectAltitude);
@@ -561,8 +741,10 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     for (const controller of pending.values()) controller.abort();
     for (const { controller } of incomingDem.values()) controller.abort();
     demCache.clear();
+    staged.clear();
     for (const mesh of resident.values()) drop(mesh);
     resident.clear();
+    gl.deleteBuffer(seamBuffer);
     if (overlay) { gl.deleteBuffer(overlay.buffer); gl.deleteProgram(overlay.program); }
     gl.deleteProgram(program);
   }

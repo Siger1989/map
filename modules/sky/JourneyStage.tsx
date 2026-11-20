@@ -31,6 +31,7 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
   const rendered = useRef<{ frame: JourneyPlaybackFrame; pose: DeviceSkyPose; routeReady: boolean; width: number; height: number } | null>(null);
   const terrainStatus = useRef<ImageryStatus>('loading');
   const drawable = useRef(false);
+  const hasPresentedTerrain = useRef(false);
   const redraw = useRef<(() => void) | null>(null);
   useLayoutEffect(()=>{
     if(!stars)return;
@@ -72,7 +73,7 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
   }, [frame, onImagery]);
   useLayoutEffect(()=>{
     if(!base)return;
-    try{scene.current=createSkyScene(base,true);setError('');}
+    try{scene.current=createSkyScene(base,true,1.5);setError('');}
     catch{setError('当前设备无法绘制行程画面');}
     return ()=>{scene.current?.dispose();scene.current=null;};
   },[base]);
@@ -87,6 +88,7 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
     const ctx=output.getContext('2d',{alpha:true});
     if(!ctx)return;
     let raf=0, priorSatellite=-1, priorShot:typeof shot|null=null,starsReady=true;
+    let previousPose:DeviceSkyPose|null=null, previousTerrain=false, fullComposite=false;
     function draw(){
       if(document.hidden)return;
       const p=current.current;
@@ -96,15 +98,26 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
       // The map runs in its own animation frame. Never encode the previous arrow under a new time or distance.
       if(hasTerrain && !synced) return;
       const recordable = hasTerrain && synced && view.routeReady && drawable.current;
+      // The terrain renderer holds its last complete frame while seeking or buffering.
+      // Keep the corresponding sky, arrow time and HUD until the new frame can replace it.
+      if(hasPresentedTerrain.current && !recordable)return;
+      if(recordable)hasPresentedTerrain.current=true;
       // A busy video encoder needs another chance to accept this same frame.
       if(p.captureFrames && recordable && !raf)raf=requestAnimationFrame(()=>{raf=0;draw();});
       if(priorShot===p && priorSatellite===satelliteRevision.current){
         if(p.captureFrames && recordable && starsReady)onFrame(output!,p.progress);
         return;
       }
-      priorSatellite=satelliteRevision.current;
-      priorShot=p;
       const pose=synced ? view.pose : p.fallbackPose;
+      const unchanged=priorShot===p && previousTerrain===hasTerrain && previousPose?.azimuth===pose.azimuth &&
+        previousPose.altitude===pose.altitude && previousPose.roll===pose.roll;
+      priorSatellite=satelliteRevision.current;
+      priorShot=p;previousPose=pose;previousTerrain=hasTerrain;
+      // An off-screen tile finishing its download does not change the visible sky or HUD.
+      if(unchanged && !p.captureFrames && starsReady){
+        if(recordable)onPresent(p.progress);
+        return;
+      }
       scene.current!.draw(pose,p.optics,p.sky,null,false,hasTerrain,p.layers);
       const showStars=p.layers.constellations||p.layers.milkyWay;
       starsReady=!showStars || !!starLayer.current?.draw({
@@ -116,7 +129,13 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
       if(output!.width!==w||output!.height!==h){output!.width=w;output!.height=h;}
       // During playback the browser composites the two WebGL surfaces directly.
       // Reading both back into 2D is only necessary for an actual video frame.
-      ctx!.clearRect(0,0,w,h);
+      if(fullComposite || p.captureFrames)ctx!.clearRect(0,0,w,h);
+      else {
+        ctx!.clearRect(0,0,w,Math.ceil(36*h/p.height));
+        const bottom=Math.floor((p.height-66)*h/p.height);
+        ctx!.clearRect(0,bottom,w,h-bottom);
+      }
+      fullComposite=p.captureFrames;
       if(p.captureFrames){
         ctx!.drawImage(base!,0,0,w,h);
         if(showStars && stars?.width && stars.height)ctx!.drawImage(stars,0,0,w,h);
@@ -157,7 +176,7 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
     <canvas className="journey-source" ref={setBase}/>
     <canvas className="journey-stars" hidden={!layers.constellations&&!layers.milkyWay} aria-label="行程星空图层" ref={setStars}/>
     <div className="journey-satellite-source"><SatelliteTerrainCanvas observer={observer} pose={fallback.pose} optics={optics} width={width} height={height}
-      journeyRoute={route} retryKey={retryKey} onBuffer={rememberBuffer} onCameraResolved={rememberCamera} onStatus={rememberStatus} onRender={terrainDrawn} canvasRef={setTerrain}/></div>
+      journeyRoute={route} liveJourneyFrame={!captureFrames} retryKey={retryKey} onBuffer={rememberBuffer} onCameraResolved={rememberCamera} onStatus={rememberStatus} onRender={terrainDrawn} canvasRef={setTerrain}/></div>
     <canvas className="journey-composite" ref={setOutput} aria-label="第三人称行程与录像画面"/>
     {error && <div className="journey-error" role="alert">{error}</div>}
   </div>;

@@ -72,7 +72,7 @@ void main() {
   }
   gl_FragColor=color;
 }`;
-export function createSkyScene(canvas: HTMLCanvasElement, preserveDrawingBuffer = false) {
+export function createSkyScene(canvas: HTMLCanvasElement, preserveDrawingBuffer = false, maxPixelRatio = 2) {
   const gl = canvas.getContext('webgl', {
     alpha: true,
     antialias: false,
@@ -151,7 +151,7 @@ export function createSkyScene(canvas: HTMLCanvasElement, preserveDrawingBuffer 
       textured = false,
       bodies?: {sun:boolean;moon:boolean},
     ) {
-      const scale = Math.min(window.devicePixelRatio || 1, 2);
+      const scale = Math.min(window.devicePixelRatio || 1, maxPixelRatio);
       const width = Math.max(1, Math.round(canvas.clientWidth * scale)),
         height = Math.max(1, Math.round(canvas.clientHeight * scale));
       if (canvas.width !== width || canvas.height !== height) {

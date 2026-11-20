@@ -48,7 +48,7 @@ export function satelliteImageryAvailable() {
   return basemapConfiguration().domestic;
 }
 
-export async function loadSatelliteTile(tile: Tile, signal: AbortSignal) {
+export async function loadSatelliteTile(tile: Tile, signal: AbortSignal, remember?: (image:Blob)=>void) {
   const { token } = basemapConfiguration();
   const template = tiandituTiles('img', token)[0];
   const url = expand(template, tile);
@@ -67,13 +67,15 @@ export async function loadSatelliteTile(tile: Tile, signal: AbortSignal) {
   const bytes = await response.arrayBuffer();
   if (await isKnownNoImageryBytes(bytes)) return null;
   signal.throwIfAborted();
-  const bitmap = await createImageBitmap(new Blob([bytes]));
+  const image = new Blob([bytes]);
+  const bitmap = await createImageBitmap(image);
   if (signal.aborted || bitmap.width !== tileSize || bitmap.height !== tileSize) {
     bitmap.close();
     signal.throwIfAborted();
     return null;
   }
   if (fetched) store().put(key,bytes);
+  remember?.(image);
   return bitmap;
 }
 

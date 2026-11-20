@@ -7,7 +7,7 @@ const degrees = 180 / Math.PI;
 // The composed frame masks approximately 5.5% at the top, 9.2% at the bottom.
 const targetSky = .055 + (.908 - .055) * .29;
 const subjectBand = [0.58, 0.81] as const;
-const minimumEyeHeightM = 29;
+export const JOURNEY_MIN_EYE_HEIGHT_M = 29;
 const maxTerrainLiftM = 80;
 const horizonSamples = [
   22, 32, 43, 56, 70, 86, 105, 128, 154, 185, 220, 261, 310, 370, 440, 525, 625, 745,
@@ -56,6 +56,13 @@ function altitudeAngle(heightDelta: number, distance: number) {
 
 function viewAngle(screenY: number, tangent: number) {
   return Math.atan((1 - 2 * screenY) * tangent) * degrees;
+}
+
+export function keepJourneySubjectInFrame(pitch: number, eye: number, subject: number, distance: number, verticalFov: number) {
+  if (distance <= .1) return pitch;
+  const tangent = Math.tan(clamp(verticalFov, 10, 150) / degrees / 2);
+  const elevation = altitudeAngle(subject - eye, distance);
+  return clamp(pitch, elevation - viewAngle(subjectBand[0], tangent), elevation - viewAngle(subjectBand[1], tangent));
 }
 
 function heightAt(terrain: JourneyCameraTerrain | undefined, point: SkyJourneyCoordinate) {
@@ -125,8 +132,6 @@ export function resolveJourneyCamera(
   const height = frame.cameraHeightM ?? JOURNEY_CAMERA_HEIGHT_M;
   const fallback = frame.cameraElevationM ?? (subjectAltitude !== null ? subjectAltitude - 1 + height : null);
   const tangent = Math.tan(clamp(optics.verticalFov, 10, 150) / degrees / 2);
-  const subjectLow = viewAngle(subjectBand[0], tangent);
-  const subjectHigh = viewAngle(subjectBand[1], tangent);
 
   function evaluate(position: [number, number], eyeHeight: number) {
     const ground = heightAt(terrain, position);
@@ -154,10 +159,8 @@ export function resolveJourneyCamera(
     const sections = skyline.length ? skyline : [0];
     const desiredPitch = skyPitch(sections, tangent);
     let pitch = desiredPitch;
-    if (altitude !== null && subjectAltitude !== null && distance > .1) {
-      const subject = altitudeAngle(subjectAltitude - altitude, distance);
-      pitch = clamp(pitch, subject - subjectLow, subject - subjectHigh);
-    }
+    if (altitude !== null && subjectAltitude !== null)
+      pitch = keepJourneySubjectInFrame(pitch, altitude, subjectAltitude, distance, optics.verticalFov);
     pitch = clamp(pitch, -78, 45);
     return { position, altitude, subjectAltitude, groundKnown, subjectOccluded, distance, desiredPitch,
       skyFraction: visibleSky(sections, pitch, tangent), pose: { azimuth, altitude: pitch, roll: 0 } satisfies DeviceSkyPose };
@@ -168,7 +171,7 @@ export function resolveJourneyCamera(
   if (base.groundKnown && base.distance > 1 && frame.headingDeg !== null &&
       (base.subjectOccluded || base.skyFraction < targetSky - .012)) {
     const travel = (frame.cameraHeadingDeg ?? frame.headingDeg) + 180;
-    const reducedEye = Math.min(height, minimumEyeHeightM);
+    const reducedEye = Math.min(height, JOURNEY_MIN_EYE_HEIGHT_M);
     const setback = base.distance + clamp((targetSky - base.skyFraction) * 400, 13, 67);
     const score = (candidate: typeof base) =>
       Math.abs(targetSky - candidate.skyFraction) + (candidate.subjectOccluded ? 1 : 0) +

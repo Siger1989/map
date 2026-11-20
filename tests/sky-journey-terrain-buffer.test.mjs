@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createJourneyPlayback } from '../modules/sky/journeyPlayback.ts';
-import { ancestor, closestLoadedTile, mergeTerrainPatches, planJourneyWindow, tileAt, windowCovers } from '../modules/sky/journeyTerrainBuffer.ts';
-import { buildSatelliteMesh, sampledSurfaceHeight, surfaceHeight } from '../modules/sky/satelliteTerrainGeometry.ts';
+import { createJourneyPlayback, getJourneyPlaybackFrame } from '../modules/sky/journeyPlayback.ts';
+import { ancestor, closestLoadedTile, journeyGroundFootprint, mergeTerrainPatches, planJourneyWindow, refineJourneyLeaves, tileAt, windowCovers } from '../modules/sky/journeyTerrainBuffer.ts';
+import { buildSatelliteMesh, planSatelliteTiles, resampleAncestorDem, sampledSurfaceHeight, surfaceHeight, terrainHeight } from '../modules/sky/satelliteTerrainGeometry.ts';
 
 const line = lengthKm => createJourneyPlayback({segments:[[
   {coordinates:[103.57,30.9]}, {coordinates:[103.57+lengthKm/95.4,30.9]},
@@ -15,7 +15,9 @@ test('a typical 7.34 km itinerary warms its entire route, including the final hi
   const finish=route.segments[0].points.at(-1).coordinates;
   const detail=tileAt(...finish,17);
   assert.ok(window.detail.some(t=>t.key===detail.key));
-  assert.ok(window.overview.some(t=>t.key===ancestor(detail,14).key));
+  assert.ok(window.overview.some(t=>t.key===ancestor(detail,15).key));
+  assert.ok(window.startup.some(t=>t.key===detail.key));
+  assert.ok(window.detail.every(t=>window.startup.some(s=>s.key===t.key)));
   assert.ok(window.surroundings.some(t=>t.z===9));
 });
 
@@ -30,8 +32,46 @@ test('bounded overlapping windows move with long routes and recalibrate after ba
   for(const view of [first,next,end]){
     const keys=[...view.surroundings,...view.overview,...view.detail].map(t=>t.key);
     assert.equal(new Set(keys).size,keys.length);
-    assert.ok(keys.length<=130);
+    assert.ok(keys.length<=350);
   }
+});
+
+test('switchback foreground and both sides of the camera view are ready before an 8 km mountain drive',()=>{
+  const coords=[[103.57,30.900],[103.592,30.901],[103.602,30.908],[103.582,30.913],[103.606,30.918],[103.583,30.916]];
+  const model=createJourneyPlayback({segments:[coords.map((coordinates,i)=>({coordinates,elevationM:600+i*120}))]});
+  const settings={turnRadiusM:model.totalDistanceM/30*.6}, fov=38;
+  const plan=planJourneyWindow(model,0,fov,settings), planned=new Set(plan.startup.map(t=>t.key));
+  assert.ok(model.totalDistanceM>7340 && plan.end>=7340);
+  for(let distance=0;distance<plan.end;distance+=38){
+    const frame=getJourneyPlaybackFrame(model,distance,settings);
+    const targets=journeyGroundFootprint({model,frame},fov);
+    const leaves=refineJourneyLeaves(planSatelliteTiles(...frame.cameraCoordinates,17),targets.detail);
+    for(const near of targets.detail){
+      assert.ok(planned.has(near.key),'must prewarm '+near.key+' at '+distance);
+      assert.ok(leaves.some(t=>t.key===near.key),'must draw the real tile '+near.key);
+    }
+  }
+});
+
+test('near polar routes use a physically equivalent foreground resolution and bounded view',()=>{
+  const model=createJourneyPlayback({segments:[[{coordinates:[179.99,78]}, {coordinates:[-179.8,78.01]}]]});
+  const frame=getJourneyPlaybackFrame(model,100), view=journeyGroundFootprint({model,frame},65);
+  assert.equal(view.detail[0].z,15);
+  assert.ok(view.detail.length>0&&view.detail.length<30);
+  const plan=planJourneyWindow(model,0,65);
+  assert.ok(view.detail.every(t=>plan.detail.some(p=>p.key===t.key)));
+  assert.ok(plan.startup.length<350);
+});
+
+test('missing z12 DEM uses the matching parent quadrant and preserves no-data',()=>{
+  const child=tileAt(103.589,30.906,12), parent=ancestor(child,11);
+  const heights=Float32Array.from({length:65536},(_,i)=>400+(i%256)*2+(i>>8)*3);
+  const coarse=resampleAncestorDem(child,parent,heights);
+  for(const [x,y] of [[0,0],[.01,.89],[.23,.66],[.98,.43]]){
+    const u=(((child.x&1)+x)/2),v=(((child.y&1)+y)/2);
+    assert.ok(Math.abs(terrainHeight(coarse,x,y)-terrainHeight(heights,u,v))<2);
+  }
+  assert.ok(resampleAncestorDem(child,parent,new Float32Array(65536).fill(NaN)).every(Number.isNaN));
 });
 
 test('a missing child uses its closest real covering tile, including the parent of a missing base tile',()=>{
