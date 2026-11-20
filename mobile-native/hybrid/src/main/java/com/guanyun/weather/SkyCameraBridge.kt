@@ -479,7 +479,7 @@ internal class SkyCameraBridge(
             }
             return
         }
-        if (!sensorRegistered || now - lastPoseTime < 50) return
+        if (!sensorRegistered || now - lastPoseTime < 24) return
         lastPoseTime = now
         val correction = declination
         if (correction == null) {
@@ -515,7 +515,7 @@ internal class SkyCameraBridge(
         publishPose(JSONObject()
             .put("azimuth", (Math.toDegrees(bearing) + correction + 360) % 360)
             .put("altitude", Math.toDegrees(asin(up.coerceIn(-1.0, 1.0))))
-            .put("roll", Math.toDegrees(atan2(rollSin, rollCos))))
+            .put("roll", Math.toDegrees(atan2(rollSin, rollCos))), event.timestamp / 1_000_000.0)
     }
 
     private fun updatePoseStatus(value: String) {
@@ -524,7 +524,11 @@ internal class SkyCameraBridge(
         emit(JSONObject().put("poseStatus", value))
     }
 
-    private fun publishPose(pose: JSONObject?) = emit(JSONObject().put("pose", pose ?: JSONObject.NULL))
+    private fun publishPose(pose: JSONObject?, timestampMs: Double? = null) {
+        val detail = JSONObject().put("pose", pose ?: JSONObject.NULL)
+        if (timestampMs != null) detail.put("poseTimestampMs", timestampMs)
+        emit(detail)
+    }
 
     private fun publishAltitude(reading: SkyBarometer.Reading?) = emit(JSONObject()
         .put("altitudeMeters", reading?.altitudeMeters ?: JSONObject.NULL)

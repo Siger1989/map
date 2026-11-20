@@ -15,7 +15,8 @@ precision highp float;
 varying vec2 screen;
 uniform vec3 forwardAxis, rightAxis, upAxis, sun, moon;
 uniform vec2 tangent;
-uniform float live, fraction, daylight, textured;
+uniform float live, fraction, daylight, textured, hasRidge;
+uniform float sunDisc, moonDisc;
 uniform sampler2D skyline;
 const float rad=0.01745329252;
 vec4 ridge(float index) {
@@ -24,11 +25,17 @@ vec4 ridge(float index) {
 float height(vec4 v) { return (v.r*65280.0+v.g*255.0)/256.0-90.0; }
 void main() {
   vec3 ray=normalize(forwardAxis+screen.x*tangent.x*rightAxis+screen.y*tangent.y*upAxis);
-  float alt=asin(clamp(ray.z,-1.0,1.0))/rad;
-  float az=mod(atan(ray.x,ray.y)/rad+360.0,360.0);
-  vec4 l=ridge(floor(az)), r=ridge(floor(az)+1.0);
-  bool known=l.a>0.5 && r.a>0.5;
-  float rim=known?mix(height(l),height(r),fract(az)):0.0;
+  float az=0.0, alt=ray.z, rim=0.0;
+  bool known=false;
+  if(hasRidge>0.5 || (textured<0.5 && live<0.5)){
+    alt=asin(clamp(ray.z,-1.0,1.0))/rad;
+  }
+  if(hasRidge>0.5){
+    az=mod(atan(ray.x,ray.y)/rad+360.0,360.0);
+    vec4 l=ridge(floor(az)), r=ridge(floor(az)+1.0);
+    known=l.a>0.5 && r.a>0.5;
+    if(known)rim=mix(height(l),height(r),fract(az));
+  }
   float elev=clamp(ray.z,0.0,1.0);
   float dusk=(1.0-smoothstep(0.0,0.22,abs(sun.z+0.045)))*clamp(0.45+0.55*dot(ray,sun),0.0,1.0);
   vec3 horizon=mix(vec3(0.018,0.025,0.044),vec3(0.72,0.84,0.92),daylight);
@@ -37,9 +44,9 @@ void main() {
   vec4 color=live>0.5?vec4(0.0):vec4(mix(horizon,zenith,sqrt(elev)),1.0);
   float sd=length(ray-sun), md=length(ray-moon);
   float halo=exp(-sd*58.0)*0.68;
-  if (live<0.5) color.rgb=mix(color.rgb,vec3(1.0,0.89,0.65),halo);
-  if(sd<0.00465) color=vec4(1.0,0.96,0.79,1.0);
-  if(md<0.00452) {
+  if (live<0.5 && sunDisc>0.5) color.rgb=mix(color.rgb,vec3(1.0,0.89,0.65),halo);
+  if(sunDisc>0.5 && sd<0.00465) color=vec4(1.0,0.96,0.79,1.0);
+  if(moonDisc>0.5 && md<0.00452) {
     vec3 local=(ray-moon*dot(ray,moon))/0.00452;
     vec3 light=sun-moon*dot(sun,moon);
     float phase=2.0*fraction-1.0;
@@ -124,6 +131,9 @@ export function createSkyScene(canvas: HTMLCanvasElement, preserveDrawingBuffer 
       'tangent',
       'live',
       'textured',
+      'hasRidge',
+      'sunDisc',
+      'moonDisc',
     ].map((key) => [key, uniform(key)]),
   );
   let prior: TerrainHorizon | null | undefined;
@@ -139,6 +149,7 @@ export function createSkyScene(canvas: HTMLCanvasElement, preserveDrawingBuffer 
       terrain: TerrainHorizon | null,
       live: boolean,
       textured = false,
+      bodies?: {sun:boolean;moon:boolean},
     ) {
       const scale = Math.min(window.devicePixelRatio || 1, 2);
       const width = Math.max(1, Math.round(canvas.clientWidth * scale)),
@@ -207,6 +218,9 @@ export function createSkyScene(canvas: HTMLCanvasElement, preserveDrawingBuffer 
         Math.min(1, Math.max(0, (sky.sun.altitudeDeg + 12) / 18)),
       );
       gl.uniform1f(u.textured, textured ? 1 : 0);
+      gl.uniform1f(u.hasRidge, terrain ? 1 : 0);
+      gl.uniform1f(u.sunDisc,bodies?.sun===false?0:1);
+      gl.uniform1f(u.moonDisc,bodies?.moon===false?0:1);
       gl.uniform1f(u.live, live ? 1 : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },

@@ -12,6 +12,7 @@ function QingchengPreview() {
   return (
     <SkyViewer
       demo
+      previewNight={new URLSearchParams(location.search).has('night')?Date.UTC(2026,6,18,14,30):undefined}
       previewTerrain={snapshot.terrain as TerrainHorizon}
       mapPoint={[snapshot.observer.lng, snapshot.observer.lat]}
       fix={position.fix}

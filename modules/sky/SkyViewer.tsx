@@ -5,15 +5,19 @@ import {
   getObserverTimeZone,
   getSkyPosition,
 } from './astronomy';
-import { loadTerrainHorizon, terrainHorizonAtAltitude, type TerrainHorizon } from './terrainHorizon';
+import { loadTerrainHorizon, terrainHorizonAt, terrainHorizonAtAltitude, type TerrainHorizon } from './terrainHorizon';
 import { useDeviceSkyCamera, type DeviceSkyLocation, type DeviceSkyPose } from './deviceSkyCamera';
 import { createSkyScene } from './skyScene';
 import { useSolarDay } from './useSolarDay';
-import { SkyMoonGuide, SkyMoonMarker } from './MoonGuideReadout';
-import { findMoonPreview, getMoonGuide } from './moonGuideGeometry';
+import { SkyTargetControls, SkyTargetMarker } from './MoonGuideReadout';
+import { getSkyTargetGuide, type findSkyTargetPreview } from './moonGuideGeometry';
+import { constellationOptions, createConstellationFrame, getConstellationTarget } from './constellations';
+import { SkyStarLayer } from './SkyStarLayer';
+import { useDisplayedSkyPose } from './useDisplayedSkyPose';
 import {SatelliteTerrainCanvas} from './SatelliteTerrainCanvas';
 import { SkyTracks } from './SkyTracks';
 import { SkyTimeline } from './SkyTimeline';
+import { skyTimeOnDay } from './skyCalendar';
 import type { PositionFix } from '../position/types';
 import type { Coordinate } from '../navigation/types';
 import './sky.css';
@@ -66,9 +70,11 @@ export function SkyViewer({
   onClose,
   demo = false,
   previewTerrain,
+  previewNight,
 }: {
   demo?: boolean;
   previewTerrain?: TerrainHorizon;
+  previewNight?: number;
   mapPoint: Coordinate;
   markerName?: string;
   fix: PositionFix | null;
@@ -169,12 +175,25 @@ export function SkyViewer({
     : gpsMsl !== null ? 'GPS正高'
       : groundAndEye !== null ? '地形估算' : '高程待确认';
   const zone = useMemo(() => getObserverTimeZone(lat, lng), [lat, lng]);
-  const [time, setTime] = useState(Date.now);
-  const [liveTime, setLiveTime] = useState(true);
+  const [time, setTime] = useState(()=>previewNight??Date.now());
+  const [liveTime, setLiveTime] = useState(previewNight==null);
   const date = useMemo(() => calendarDate(time, zone), [time, zone]);
   const day = useMemo(() => getLocalDayBounds(date, zone), [date, zone]);
   const solarDay = useSolarDay(day, observer, terrain);
   const sky = useMemo(() => getSkyPosition(time, observer), [time, observer]);
+  const [target,setTarget]=useState(previewNight==null?'moon':'milky-way');
+  const [following,setFollowing]=useState(previewNight!=null);
+  const [showStars,setShowStars]=useState(true);
+  const [showGalaxy,setShowGalaxy]=useState(true);
+  const [searching,setSearching]=useState(false);
+  const search=useRef<Worker|null>(null);
+  const starFrame=useMemo(()=>createConstellationFrame(time,observer),[time,observer]);
+  const targetLabel=target==='sun'?'太阳':target==='moon'?'月亮':target==='milky-way'?'银河中心':
+    constellationOptions.find(c=>c.id===target)?.name??target;
+  const targetDirection=target==='sun'?sky.sun:target==='moon'?sky.moon:getConstellationTarget(starFrame,target);
+  const nightTarget=target!=='sun'&&target!=='moon';
+  const faint=nightTarget && sky.sun.altitudeDeg>(target==='milky-way'?-12:-6);
+  useEffect(()=>()=>{search.current?.terminate();search.current=null;},[]);
   useEffect(() => {
     if (!liveTime) return;
     const timer = window.setInterval(() => setTime(Date.now()), 10000);
@@ -207,7 +226,14 @@ export function SkyViewer({
     return () => changes.disconnect();
   }, [viewport]);
   const sensorPose = actual && (!manual || cameraLive) ? camera.pose : null;
-  const looking = sensorPose || pose;
+  const targetPose = useMemo(()=>{
+    if(sensorPose)return sensorPose;
+    if(following && !cameraLive && targetDirection)
+      return {azimuth:targetDirection.azimuthDeg,altitude:targetDirection.altitudeDeg,roll:0};
+    return pose;
+  },[sensorPose,following,cameraLive,targetDirection,pose]);
+  const looking=useDisplayedSkyPose(targetPose,sensorPose?'sensor':following?'snap':'drag',
+    [mode,source,lng,lat,target,following].join('/'),camera.poseTimestampMs);
   const [textureStatus,setTextureStatus]=useState('loading');
   const [size, setSize] = useState({ width: 390, height: 857 });
   useEffect(() => {
@@ -219,7 +245,7 @@ export function SkyViewer({
     update();
     return () => resize.disconnect();
   }, [viewport]);
-  const optics = cameraLive
+  const optics = useMemo(()=>cameraLive
     ? camera.optics
     : {
         horizontalFov:
@@ -230,7 +256,7 @@ export function SkyViewer({
             180) /
           Math.PI,
         verticalFov: 72,
-      };
+      },[cameraLive,camera.optics,size.width,size.height]);
   const draw =
     !cameraLive ||
     (camera.status === 'ready' && !!sensorPose && !!actual && !!optics);
@@ -266,7 +292,7 @@ export function SkyViewer({
   const drag = useRef<{ x: number; y: number; start: DeviceSkyPose } | null>(
     null,
   );
-  const firstPreviewRise = useRef(demo);
+  const firstPreviewRise = useRef(demo && previewNight==null);
   useEffect(() => {
     if (
       !firstPreviewRise.current ||
@@ -292,11 +318,13 @@ export function SkyViewer({
     exitRef.current?.focus({ preventScroll: true });
   }, []);
   const chooseTime = (t: number, aim = false) => {
+    stopSearch();
     firstPreviewRise.current = false;
     setNotice('');
     setLiveTime(false);
     setTime(t);
     if (aim && !cameraLive && !sensorPose) {
+      setTarget('sun');setFollowing(true);
       const s = getSkyPosition(t, observer).sun;
       setPose({ azimuth: s.azimuthDeg, altitude: s.altitudeDeg, roll: 0 });
     }
@@ -304,66 +332,71 @@ export function SkyViewer({
   const changeDate = (d: string) => {
     try {
       const next = getLocalDayBounds(d, zone);
-      chooseTime(Math.min(next.endMs - 1, next.startMs + time - day.startMs));
+      chooseTime(skyTimeOnDay(time,next,zone));
       setNotice('');
     } catch {
       setNotice('该地点没有这个日历日期');
     }
   };
-  const guide = getMoonGuide({
-    moon: sky.moon,
+  const guide = getSkyTargetGuide({
+    direction:targetDirection??{azimuthDeg:0,altitudeDeg:-90}, label:targetLabel,
     pose: cameraLive && !draw ? null : looking,
     optics,
     terrain,
     ...size,
   });
-  const findMoon = () => {
+  const stopSearch=()=>{
+    search.current?.terminate();search.current=null;setSearching(false);
+  };
+  const selectTarget=(id:string)=>{
+    stopSearch();setNotice('');setTarget(id);
+    if(id==='milky-way')setShowGalaxy(true);
+    else if(id!=='moon'&&id!=='sun')setShowStars(true);
+    firstPreviewRise.current=false;
+    const direction=id==='sun'?sky.sun:id==='moon'?sky.moon:getConstellationTarget(starFrame,id);
+    const darkEnough=id==='sun'||id==='moon'||sky.sun.altitudeDeg<=(id==='milky-way'?-12:-6);
+    const ridge=terrain && direction ? terrainHorizonAt(terrain,direction.azimuthDeg) : null;
+    if(!cameraLive && darkEnough && direction && direction.altitudeDeg>=(ridge??0)){
+      setManual(true);setFollowing(true);
+    }else setFollowing(false);
+  };
+  const findTarget = () => {
+    if(!targetDirection)return;
+    if(!cameraLive && following) {setPose(looking);setFollowing(false);return;}
     if (cameraLive) {
       setNotice(
         guide.message +
           ' · 方位 ' +
-          Math.round(sky.moon.azimuthDeg) +
+          Math.round(targetDirection.azimuthDeg) +
           '°，仰角 ' +
-          sky.moon.altitudeDeg.toFixed(1) +
+          targetDirection.altitudeDeg.toFixed(1) +
           '°',
       );
       return;
     }
-    const result = findMoonPreview(
-      day,
-      observer,
-      terrain?.status === 'unavailable' ? null : terrain,
-      time,
-    );
-    if (result.status !== 'found') {
-      setNotice(
-        result.status === 'unknown'
-          ? '部分方位缺少地形，无法确定月亮的可见时段'
-          : '当天未找到月亮露出山脊的时段',
-      );
-      return;
+    stopSearch(); firstPreviewRise.current=false;
+    if(!faint && guide.state!=='below' && guide.state!=='blocked' && guide.state!=='unknown'){
+      setManual(true);setFollowing(true);setNotice('');return;
     }
-    if (result.relation !== 'current') chooseTime(result.timeMs);
-    setManual(true);
-    firstPreviewRise.current = false;
-    setPose({
-      azimuth: result.moon.azimuthDeg,
-      altitude: result.moon.altitudeDeg,
-      roll: 0,
-    });
-    const clock = new Intl.DateTimeFormat('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23',
-      timeZone: zone,
-    });
-    setNotice(
-      result.relation !== 'current'
-        ? '已跳到 ' + clock.format(result.timeMs) + ' 月亮可见时段'
-        : result.flatReference
-          ? '已对准月亮 · 平地参考'
-          : '',
-    );
+    try {
+      const worker=new Worker(new URL('./skyTargetSearch.worker.ts',import.meta.url),{type:'module'});
+      search.current=worker;setSearching(true);
+      worker.onmessage=({data:result}:MessageEvent<ReturnType<typeof findSkyTargetPreview>>)=>{
+        if(search.current!==worker)return;
+        stopSearch();
+        if(result.status!=='found'){
+          setNotice(result.status==='unknown'?'地形数据不足，无法确认可见时段':'当天没有找到'+targetLabel+'的可见时段');
+          return;
+        }
+        if(result.relation!=='current')chooseTime(result.timeMs);
+        setManual(true);setFollowing(true);
+        const clock=new Intl.DateTimeFormat('zh-CN',{hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:zone});
+        setNotice(result.relation==='current'?(result.flatReference?'已对准'+targetLabel+' · 平地参考':''):
+          '已跳到 '+clock.format(result.timeMs)+' '+targetLabel+'可见时段'+(result.flatReference?' · 平地参考':''));
+      };
+      worker.onerror=()=>{if(search.current===worker){stopSearch();setNotice('可见时段计算失败，可重试');}};
+      worker.postMessage({id:target,observer,day,time,terrain:terrain?.status==='unavailable'?null:terrain});
+    }catch{stopSearch();setNotice('当前设备无法计算可见时段');}
   };
   const status = !cameraLive
     ? ''
@@ -413,6 +446,7 @@ export function SkyViewer({
         onPointerMove={(e) => {
           const p = drag.current;
           if (!p) return;
+          setFollowing(false);
           setPose({
             azimuth:
               (p.start.azimuth + ((p.x - e.clientX) * 72) / size.height + 360) %
@@ -443,6 +477,9 @@ export function SkyViewer({
           hidden={!draw}
           aria-label="第一人称日月与山脊"
         />
+        {draw && optics && (showStars||showGalaxy) && <SkyStarLayer frame={starFrame} pose={looking}
+          optics={optics} terrain={terrain} {...size} showConstellations={showStars} showMilkyWay={showGalaxy}
+          selected={target} sunAltitudeDeg={sky.sun.altitudeDeg}/>}
         {!cameraLive && optics && <SatelliteTerrainCanvas observer={observer} pose={looking} optics={optics} {...size}
           eyeHeightMeters={gpsMsl===null?1.7:undefined} onStatus={setTextureStatus}/>}
         {draw && optics && (
@@ -459,7 +496,7 @@ export function SkyViewer({
             flatReference={solarDay.data?.flatReference}
           />
         )}
-        {draw && <SkyMoonMarker guide={guide} />}
+        {draw && !faint && <SkyTargetMarker guide={guide} label={targetLabel}/>}
       </div>
       <div className="sky-head">
         <div className="sky-bar">
@@ -467,6 +504,7 @@ export function SkyViewer({
           {!markerName && <><button
             aria-pressed={cameraLive}
             onClick={() => {
+              stopSearch();setFollowing(false);
               setMode('camera');
               setSource('gps');
               if (!actual) locate();
@@ -518,7 +556,9 @@ export function SkyViewer({
             {graphicsError || notice || status}
           </div>
         )}
-        <SkyMoonGuide guide={guide} onFindMoon={findMoon} />
+        <SkyTargetControls guide={guide} id={target} label={targetLabel} following={following} searching={searching}
+          cameraLive={cameraLive} faint={faint} showStars={showStars} showGalaxy={showGalaxy} onSelect={selectTarget}
+          onFind={findTarget} onStars={()=>setShowStars(v=>!v)} onGalaxy={()=>setShowGalaxy(v=>!v)}/>
         <div className="sky-readout">
           <span>
             {cameraLive && !sensorPose
@@ -531,6 +571,7 @@ export function SkyViewer({
           {!markerName && !cameraLive && camera.source === 'native' && (
             <button
               onClick={() => {
+                setFollowing(false);
                 setManual((v) => !v);
                 if (sensorPose) setPose({ ...sensorPose });
               }}
@@ -555,6 +596,7 @@ export function SkyViewer({
           onDate={changeDate}
           onTime={chooseTime}
           onNow={() => {
+            stopSearch();
             firstPreviewRise.current = false;
             setLiveTime(true);
             setTime(Date.now());

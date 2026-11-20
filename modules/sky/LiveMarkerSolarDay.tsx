@@ -3,11 +3,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { getLocalDayBounds, getObserverTimeZone } from './astronomy';
 import { loadTerrainHorizon, type TerrainHorizon } from './terrainHorizon';
 import { useSolarDay } from './useSolarDay';
+import { skyCalendarDate,skyTimeOnDay } from './skyCalendar';
 
 const MINUTE = 60_000;
 
 export default function LiveMarkerSolarDay({ lng, lat }: { lng: number; lat: number }) {
   const [now, setNow] = useState(Date.now);
+  const [tomorrow,setTomorrow] = useState(false);
   const [terrainResult, setTerrainResult] = useState<{ lng: number; lat: number; value: TerrainHorizon | null } | null>(null);
   const currentTerrain = terrainResult?.lng === lng && terrainResult.lat === lat ? terrainResult : null;
   const terrain = currentTerrain?.value ?? null;
@@ -38,16 +40,14 @@ export default function LiveMarkerSolarDay({ lng, lat }: { lng: number; lat: num
   }, [lng, lat]);
 
   const timeZone = useMemo(() => getObserverTimeZone(lat, lng), [lat, lng]);
-  const calendar = useMemo(() => new Intl.DateTimeFormat('en-CA', {
-    timeZone, calendar: 'gregory', numberingSystem: 'latn',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-  }), [timeZone]);
-  const parts = calendar.formatToParts(now);
-  const date = ['year', 'month', 'day'].map(type => parts.find(part => part.type === type)?.value).join('-');
+  const today = useMemo(()=>skyCalendarDate(now,timeZone),[now,timeZone]);
+  const todayBounds = useMemo(()=>getLocalDayBounds(today,timeZone),[today,timeZone]);
+  const date = tomorrow ? skyCalendarDate(todayBounds.endMs,timeZone) : today;
   const clock = useMemo(() => new Intl.DateTimeFormat('zh-CN', {
     timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
   }), [timeZone]);
-  const day = useMemo(() => getLocalDayBounds(date, timeZone), [date, timeZone]);
+  const day = useMemo(() => tomorrow ? getLocalDayBounds(date,timeZone) : todayBounds, [date,timeZone,todayBounds,tomorrow]);
+  const shownTime = useMemo(()=>tomorrow ? skyTimeOnDay(now,day,timeZone) : now,[tomorrow,now,day,timeZone]);
   const observer = useMemo(() => ({ longitude: lng, latitude: lat, elevationM: terrain?.observerAltitudeMeters ?? undefined }), [lng, lat, terrain]);
   const result = useSolarDay(day, observer, terrain);
   const [lastReference, setLastReference] = useState<{
@@ -78,7 +78,8 @@ export default function LiveMarkerSolarDay({ lng, lat }: { lng: number; lat: num
   return <section className="marker-solar-day" aria-label="标记点日出日落时间轴">
     <div className="marker-solar-time">
       <time dateTime={date}>{date}</time>
-      <time dateTime={new Date(now).toISOString()} aria-label="标记当地时间">当地 {clock.format(now)}</time>
+      <button className="marker-solar-day-switch" type="button" onClick={()=>setTomorrow(value=>!value)}>{tomorrow?'今天':'次日'}</button>
+      <time dateTime={new Date(shownTime).toISOString()} aria-label={tomorrow?'标记次日预览时间':'标记当地时间'}>{tomorrow?'预览':'当地'} {clock.format(shownTime)}</time>
     </div>
     <div className="marker-solar-diagram" aria-hidden="true">
       <div className="marker-solar-symbols">
@@ -94,7 +95,7 @@ export default function LiveMarkerSolarDay({ lng, lat }: { lng: number; lat: num
       {daily?.visibleIntervals.map(interval => <i key={interval.startMs} className="marker-solar-light"
         style={{ left: percent(interval.startMs) + '%', width: percent(interval.endMs) - percent(interval.startMs) + '%' }} />)}
       {daily?.events.map(event => <i key={event.timeMs} className="marker-solar-event" style={{ left: percent(event.timeMs) + '%' }} />)}
-      <i className="marker-solar-now" style={{ left: percent(now) + '%' }} />
+      <i className="marker-solar-now" style={{ left: percent(shownTime) + '%' }} />
     </div>
     </div>
     <div className="marker-solar-times" aria-hidden="true">

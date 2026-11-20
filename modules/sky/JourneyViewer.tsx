@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getObserverTimeZone } from './astronomy';
 import { createJourneyPlayback, getJourneyPlaybackFrame, type SkyJourney } from './journeyPlayback';
-import { journeyInstant, localMinute } from './journeyClock';
+import { journeyInstant, journeyNextDay, journeyTimeAt, localMinute } from './journeyClock';
 import { JourneyStage, type ImageryStatus } from './JourneyStage';
+import type { JourneyTerrainBuffer } from './satelliteTerrainRenderer';
+import { JourneySkyLayers, useJourneySkyLayers } from './JourneySkyLayers';
 import { startSkyJourneyRecording, saveSkyJourneyRecording } from './journeyRecorder';
 import './journeyViewer.css';
 
-type Phase='paused'|'playing'|'arming'|'recording'|'saving';
+type Phase='paused'|'preparing'|'playing'|'arming'|'recording'|'saving';
 const clamp=(x:number)=>Math.max(0,Math.min(1,x));
 
 export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():void}) {
@@ -21,12 +23,28 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   });
   const start=useMemo(()=>journeyInstant(departure,zone),[departure,zone]);
   const end=useMemo(()=>journeyInstant(arrival,zone),[arrival,zone]);
+  const nextDay=useMemo(()=>journeyNextDay(departure,zone),[departure,zone]);
+  const nextDaySelected=!!nextDay && arrival.slice(0,10)===nextDay.date;
+  const midnight=useMemo(()=>{
+    if(!nextDay || start===null || end===null || nextDay.startMs<=start || nextDay.startMs>end)return null;
+    return {fraction:(nextDay.startMs-start)/(end-start),clock:localMinute(nextDay.startMs,zone).slice(11)};
+  },[start,end,nextDay,zone]);
   const valid=start!==null && end!==null && end>start && model.totalDistanceM>0;
   const [seconds,setSeconds]=useState(30);
   const [form,setForm]=useState(true);
   const [phase,setPhase]=useState<Phase>('paused');
+  const [layers,setLayers]=useJourneySkyLayers();
   const [progress,setProgress]=useState(0);
   const [imagery,setImagery]=useState<ImageryStatus>('loading');
+  const [buffer,setBuffer]=useState<JourneyTerrainBuffer | null>(null);
+  const [retryKey,setRetryKey]=useState(0);
+  const lastPresented=useRef<number | null>(null);
+  const onPresent=useCallback((fraction:number)=>{lastPresented.current=fraction;},[]);
+  const onBuffer=useCallback((next:JourneyTerrainBuffer)=>{
+    setBuffer(prior=>prior && prior.status===next.status && prior.loaded===next.loaded &&
+      prior.total===next.total && prior.frameReady===next.frameReady ?
+      prior : {...next});
+  },[]);
   const [message,setMessage]=useState('');
   const [movie,setMovie]=useState<Blob|null>(null);
   const [canvas,setCanvas]=useState<HTMLCanvasElement|null>(null);
@@ -61,7 +79,9 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   lastProgress.current=progress;
   const capture=phase==='arming' || phase==='recording' || phase==='saving';
   const distance=progress*model.totalDistanceM;
-  const frame=useMemo(()=>getJourneyPlaybackFrame(model,distance),[model,distance]);
+  const frame=useMemo(()=>getJourneyPlaybackFrame(model,distance,{
+    turnRadiusM:Math.max(20,Math.min(2400,model.totalDistanceM/seconds*0.6)),
+  }),[model,distance,seconds]);
   const [stage,setStage]=useState<HTMLDivElement|null>(null);
   const [size,setSize]=useState({width:390,height:480});
   useEffect(()=>{
@@ -74,13 +94,17 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
     recording.current?.cancel();recording.current=null;captureSurface.current=null;setMessage(msg);setPhase('paused');
   },[]);
   useEffect(()=>{
-    const background=()=>{if(document.hidden && (phase==='recording'||phase==='arming'))abort('应用进入后台，录像已取消');else if(document.hidden && phase==='playing')setPhase('paused');};
+    const background=()=>{if(document.hidden && (phase==='recording'||phase==='arming'))abort('应用进入后台，录像已取消');else if(document.hidden && (phase==='playing'||phase==='preparing'))setPhase('paused');};
     document.addEventListener('visibilitychange',background);
     return ()=>document.removeEventListener('visibilitychange',background);
   },[phase,abort]);
-  const textured=imagery==='ready'||imagery==='partial';
+  const textured=(imagery==='ready'||imagery==='partial') && !!buffer?.frameReady;
+  const prepared=textured && (buffer?.status==='ready'||buffer?.status==='degraded');
   useEffect(()=>{
-    if(phase!=='arming'||!canvas||!textured)return;
+    if(phase==='preparing' && prepared)setPhase('playing');
+  },[phase,prepared]);
+  useEffect(()=>{
+    if(phase!=='arming'||!canvas||!prepared)return;
     let request = 0;
     const startAtTrailhead = () => {
       if (presented.current?.canvas !== canvas || presented.current.fraction !== 0) {
@@ -102,20 +126,16 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
     };
     request = requestAnimationFrame(startAtTrailhead);
     return ()=>cancelAnimationFrame(request);
-  },[phase,canvas,textured,seconds,abort,composeRecordingFrame]);
+  },[phase,canvas,prepared,seconds,abort,composeRecordingFrame]);
   useEffect(()=>{
     if(phase!=='recording' && phase!=='playing')return;
-    if(phase==='recording' && !textured) {
-      recording.current?.pause();
-      const timeout=window.setTimeout(()=>abort('沿途卫星影像未能读取，录像已取消，可在影像加载后重试'),18000);
-      return ()=>clearTimeout(timeout);
-    }
+    if(!textured) {if(phase==='recording')recording.current?.pause();return;}
     if(phase==='recording')recording.current?.resume();
     if(phase==='recording' && recording.current?.timedFrames)return;
     let initial=lastProgress.current, previous=performance.now(), raf=0;
     const tick=(now:number)=>{
-      if(now-previous<40){raf=requestAnimationFrame(tick);return;}
-      initial=clamp(initial+(now-previous)/(seconds*1000));previous=now;
+      if(now-previous<32 || (phase==='recording' && lastPresented.current!==initial)){raf=requestAnimationFrame(tick);return;}
+      initial=clamp(initial+Math.min(now-previous,125)/(seconds*1000));previous=now;
       lastProgress.current=initial;setProgress(initial);
       if(initial<1){raf=requestAnimationFrame(tick);return;}
       if(phase==='playing'){setPhase('paused');return;}
@@ -134,46 +154,75 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
     },150);
     return ()=>clearTimeout(timer);
   },[phase]);
+  const missing=imagery==='unavailable'||imagery==='error'||buffer?.status==='unavailable';
   useEffect(()=>{
-    if(phase!=='arming')return;
-    const timeout=window.setTimeout(()=>abort('尚未收到可录制的天地图卫星影像，请加载后重试'),20000);
-    return ()=>clearTimeout(timeout);
-  },[phase,abort]);
+    if(missing && phase==='recording')abort('当前路段缺少地图，录制已停止。请重试加载后重新录制。');
+  },[missing,phase,abort]);
   const select=(fraction:number)=>{if(capture)return;setPhase('paused');setProgress(clamp(fraction));};
+  const changeDeparture=(value:string)=>{
+    if(value && arrival && value.slice(0,10)!==departure.slice(0,10)){
+      const newDate=nextDaySelected ? journeyNextDay(value,zone)?.date :
+        arrival.slice(0,10)===departure.slice(0,10) ? value.slice(0,10) : null;
+      if(newDate)setArrival(newDate+arrival.slice(10));
+    }
+    setDeparture(value);select(0);
+  };
+  const toggleArrivalDay=()=>{
+    if(!nextDay)return;
+    const date=nextDaySelected ? departure.slice(0,10) : nextDay.date;
+    setArrival(date+'T'+(arrival.slice(11)||departure.slice(11)));
+    select(0);
+  };
   const launch=(record:boolean)=>{
     if(!valid){setForm(true);setMessage('请填写有效的出发和到达日期时间，到达须晚于出发');return;}
     if(record||progress>=1){presented.current=null;lastProgress.current=0;setProgress(0);}
-    setForm(false);setMessage('');setPhase(record?'arming':'playing');
+    setForm(false);setMessage('');setPhase(record?'arming':'preparing');
   };
   const save=async()=>{
     if(!movie)return;
     try{await saveSkyJourneyRecording(movie);setMessage('已发起保存录像');}
     catch(e){setMessage(e instanceof Error?e.message:'保存失败，可以重试');}
   };
-  const at=(start??Date.now())+Math.max(0,(end??0)-(start??0))*progress;
-  const status=imagery==='unavailable'||imagery==='error'?'天地图卫星影像暂不可用':imagery==='loading'?'正在加载天地图卫星影像':imagery==='partial'?'部分卫星影像已加载':'';
+  const at=start===null ? Date.now() : journeyTimeAt(start,end??start,progress);
+  const starting=phase==='preparing'||phase==='arming';
+  const buffering=!missing && (!textured || (!prepared && (phase==='paused'||starting)));
+  const count=buffer?.total ? ` ${buffer.loaded}/${buffer.total}` : '';
+  const status=missing?'当前路段地图未能加载':buffering?'正在预载沿途地图'+count:'';
+  const retry=()=>{setBuffer(null);setMessage('');setRetryKey(key=>key+1);};
   return <section className="journey-viewer" role="dialog" aria-modal="true" aria-label="第三人称行程模拟" onKeyDown={e=>{
     if(e.key==='Escape'){e.preventDefault();e.stopPropagation();onClose();}
   }}>
-    <header><div><strong>第三人称行程模拟</strong><small>{journey.name}</small></div><button autoFocus type="button" onClick={onClose}>退出</button></header>
-    <div className="journey-window" ref={setStage}>
+    <header><div><strong>第三人称行程模拟</strong><small>{journey.name}</small></div>
+      <div className="journey-header-actions"><JourneySkyLayers layers={layers} onChange={setLayers} disabled={capture}/>
+        <button autoFocus type="button" onClick={onClose}>退出</button></div></header>
+    <div className="journey-window" ref={setStage} data-buffer-state={buffer?.status??'loading'} data-frame-ready={textured}>
       {frame && <JourneyStage model={model} frame={frame} time={at} zone={zone} name={journey.name} progress={progress}
-        {...size} onCanvas={setCanvas} onFrame={composeRecordingFrame} onImagery={setImagery}/>}
-      {status && <span className="journey-imagery">{status}</span>}
+        {...size} layers={layers} retryKey={retryKey} onBuffer={onBuffer} onPresent={onPresent} captureFrames={phase==='arming'||phase==='recording'||phase==='saving'}
+        onCanvas={setCanvas} onFrame={composeRecordingFrame} onImagery={setImagery}/>}
+      {status && <span className="journey-imagery" role="status">{status}{missing && <button type="button" onClick={retry}>重试加载</button>}</span>}
     </div>
     <section className="journey-controls" aria-label="行程时间轴">
       {form && <div className="journey-dates">
-        <label>出发<input type="datetime-local" aria-label="出发时间" value={departure} onChange={e=>{setDeparture(e.target.value);select(0);}}/></label>
+        <label>出发<input type="datetime-local" aria-label="出发时间" value={departure} onChange={e=>changeDeparture(e.target.value)}/></label>
         <label>到达<input type="datetime-local" aria-label="到达时间" value={arrival} onChange={e=>{setArrival(e.target.value);select(0);}}/></label>
-        <small>出发地时区 {zone}</small>
+        <div className="journey-date-options"><small>出发地时区 {zone}</small>
+          <button type="button" disabled={!nextDay || capture} aria-pressed={nextDaySelected} onClick={toggleArrivalDay}>次日到达</button>
+        </div>
       </div>}
+      <div className="journey-timeline">
       <input aria-label="行程进度" type="range" min={0} max={10000} value={Math.round(progress*10000)} disabled={capture} onChange={e=>select(Number(e.target.value)/10000)}/>
+      {midnight && <div className="journey-day-boundary">
+        <i aria-hidden="true" style={{left:`${midnight.fraction*100}%`}}/>
+        <button type="button" disabled={capture} style={{left:`clamp(36px, ${midnight.fraction*100}%, calc(100% - 36px))`}}
+          aria-label={`跳至次日 ${midnight.clock}`} onClick={()=>select(midnight.fraction)}>次日 {midnight.clock}</button>
+      </div>}
+      </div>
       <div className="journey-actions">
         <button disabled={capture} onClick={()=>{setPhase('paused');setForm(v=>!v);}}>设时间</button>
         <select aria-label="回放时长" disabled={capture} value={seconds} onChange={e=>setSeconds(Number(e.target.value))}>
           {[15,30,60,90].map(n=><option key={n} value={n}>{n} 秒回放</option>)}
         </select>
-        <button disabled={capture||!origin} onClick={()=>phase==='playing'?setPhase('paused'):launch(false)}>{phase==='playing'?'暂停':progress>=1?'重播':'播放'}</button>
+        <button disabled={capture||!origin} onClick={()=>phase==='playing'||phase==='preparing'?setPhase('paused'):launch(false)}>{phase==='preparing'?'取消等待':phase==='playing'?'暂停':progress>=1?'重播':'播放'}</button>
         <button disabled={phase==='saving'||!origin} onClick={()=>capture?abort('录像已取消'):launch(true)}>{capture?'取消录像':'录制整段'}</button>
         {movie && <button disabled={capture} onClick={()=>void save()}>保存录像</button>}
       </div>

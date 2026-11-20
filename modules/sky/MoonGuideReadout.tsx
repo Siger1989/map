@@ -1,13 +1,26 @@
 import type { MoonGuide } from './moonGuideGeometry';
+import { constellationOptions } from './constellations';
 
-export function SkyMoonGuide({ guide, onFindMoon }: { guide: MoonGuide; onFindMoon: () => void }) {
-  return <div className="sky-readout" style={{ display: 'flex', alignItems: 'center', gap: 8, maxWidth: '100%' }}>
-    <span>{guide.message}</span>
-    <button type="button" onClick={onFindMoon}>找月亮</button>
+interface Props {
+  guide:MoonGuide; id:string; label:string; following:boolean; searching:boolean; cameraLive:boolean;
+  showStars:boolean; showGalaxy:boolean; faint:boolean;
+  onSelect(id:string):void; onFind():void; onStars():void; onGalaxy():void;
+}
+
+export function SkyTargetControls(p:Props) {
+  return <div className="sky-readout sky-target-controls">
+    <label>目标 <select aria-label="观景目标" value={p.id} onChange={e=>p.onSelect(e.target.value)}>
+      <optgroup label="日月与银河"><option value="sun">太阳</option><option value="moon">月亮</option><option value="milky-way">银河中心</option></optgroup>
+      <optgroup label="星座">{constellationOptions.map(star=><option key={star.id} value={star.id}>{star.name}</option>)}</optgroup>
+    </select></label>
+    <button type="button" onClick={p.onFind} disabled={p.searching}>{p.searching?'查找中…':p.following&&!p.cameraLive?'解除跟踪':'找'+p.label}</button>
+    <button type="button" aria-pressed={p.showStars} onClick={p.onStars}>星座</button>
+    <button type="button" aria-pressed={p.showGalaxy} onClick={p.onGalaxy}>银河</button>
+    <small>{p.guide.message}{p.faint?' · 天光较亮':''}</small>
   </div>;
 }
 
-export function SkyMoonMarker({ guide }: { guide: MoonGuide }) {
+export function SkyTargetMarker({ guide,label }: { guide: MoonGuide;label:string }) {
   if (!guide.point || guide.state !== 'visible') return null;
   const { x, y } = guide.point;
   return <span aria-hidden="true" style={{
@@ -19,6 +32,6 @@ export function SkyMoonMarker({ guide }: { guide: MoonGuide }) {
       position: 'absolute', left: '50%', top: 23, transform: 'translateX(-50%)', whiteSpace: 'nowrap',
       color: '#f1f7ff', padding: '2px 5px', borderRadius: 4, fontSize: 11,
       lineHeight: 1.2, background: '#142331e8',
-    }}>月亮</span>
+    }}>{label}</span>
   </span>;
 }

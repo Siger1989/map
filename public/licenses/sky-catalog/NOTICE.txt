@@ -1,0 +1,23 @@
+山兔星空数据说明
+
+数据文件 constellations.catalog.json 的许可为 Creative Commons Attribution-ShareAlike 4.0 International（CC BY-SA 4.0）。可按许可使用、分享和改编这些数据。
+https://creativecommons.org/licenses/by-sa/4.0/
+
+恒星数据取自 David Nash / Astronexus 的 HYG Database v4.0（Hipparcos、Yale Bright Star Catalogue 和 Gliese 目录汇编）。山兔选取视星等数值不超过 5.6 的恒星和绘制星座连线所需的成员，保留 HIP 编号、J2000.0 赤经赤纬、视星等及可用的 B−V 色指数。赤经从时转换为度，坐标和星等已取整。星表本身使用相同的 CC BY-SA 4.0 许可。
+https://github.com/astronexus/HYG-Database/tree/c7f7f883fe678cc7680169a50ccd7dcc49b060ce/hyg/CURRENT
+https://github.com/astronexus/HYG-Database/blob/c7f7f883fe678cc7680169a50ccd7dcc49b060ce/hyg/README.md
+
+星座连线取自 Stellarium 团队的 Modern Sky Culture（文本和数据使用 CC BY-SA 4.0）。山兔提取了 88 组连线、拉丁名称及缩写，配上简体中文名称并生成线段插值。许可说明和原始数据如下。
+https://github.com/Stellarium/stellarium/blob/e4a447eb504b3a731a2c7cf32292b0263d062d63/skycultures/modern/description.md
+https://github.com/Stellarium/stellarium/blob/e4a447eb504b3a731a2c7cf32292b0263d062d63/skycultures/modern/index.json
+
+IAU 采用 88 个星座名称及边界，连线采用 Stellarium 的代表画法。
+https://www.iau.org/IAU/Astronomy-FAQs/Constellations.aspx
+
+银河微光图来自 NASA/Goddard Space Flight Center Scientific Visualization Studio，制图 Ernie Wright，Gaia DR2 数据 ESA/Gaia/DPAC。Deep Star Maps 2020 的银道坐标背景层呈现观测星密度和星际消光。山兔裁取银道带，采样亮度和色差，重新投影到当前视野并按暮光程度调节显示亮度。NASA SVS 说明未另行标注的可视化材料为公有领域。
+https://svs.gsfc.nasa.gov/4851/
+https://svs.gsfc.nasa.gov/help/
+
+观测地的星空方向由 Astronomy Engine 提供的 J2000 至当地地平旋转计算。银心标记为 Sagittarius A* 的方向（ICRS 266.41683°，−29.0078°）。
+https://github.com/cosinekitty/astronomy
+https://irsa.ipac.caltech.edu/onlinehelp/planck/help.pdf

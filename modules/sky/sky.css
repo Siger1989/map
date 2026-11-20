@@ -110,6 +110,14 @@
 .sky-readout {
   margin-left: auto;
 }
+.sky-target-controls { flex-wrap:wrap; gap:4px; }
+.sky-target-controls label { display:flex; gap:4px; align-items:center; }
+.sky-target-controls select {
+  max-width:100px; min-height:30px; font:inherit; font-size:16px;
+  border-radius:var(--ui-radius-control, 8px); padding:2px 4px;
+  color:var(--ui-button-ink, inherit); background:var(--ui-raised, #344552);
+}
+.sky-target-controls small { flex-basis:100%; font-size:12px; }
 .sky-time-panel {
   padding: 9px 12px;
 }

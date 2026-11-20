@@ -22,6 +22,7 @@ export interface DeviceSkyCameraState {
   source: 'native' | 'browser'
   status: 'idle' | 'starting' | 'ready' | 'denied' | 'unavailable' | 'error'
   pose: DeviceSkyPose | null
+  poseTimestampMs?: number
   optics: DeviceSkyOptics | null
   poseStatus: 'waiting' | 'ready' | 'unavailable' | 'location' | 'magnetic'
   altitudeMeters: number | null
@@ -87,22 +88,32 @@ export function useDeviceSkyCamera(
     const target = viewport
     let timer: number | undefined
     let animation = 0
+    let latestSample: number | undefined
 
     function stateUpdate(event: Event) {
       const detail = (event as CustomEvent<Partial<DeviceSkyCameraState>>).detail
       if (detail.status) {
         const resetPose = detail.status === 'starting' && detail.poseStatus !== 'ready'
-        if (resetPose) window.clearTimeout(timer)
-        setState(previous => ({ ...previous, ...detail, pose: resetPose ? null : previous.pose }))
+        if (resetPose) {
+          window.clearTimeout(timer)
+          latestSample = undefined
+        }
+        setState(previous => ({ ...previous, ...detail, pose: resetPose ? null : previous.pose,
+          poseTimestampMs: resetPose ? undefined : previous.poseTimestampMs }))
       } else if ('altitudeMeters' in detail) {
         setState(previous => ({
           ...previous, altitudeMeters: detail.altitudeMeters ?? null, altitudeSource: detail.altitudeSource ?? null,
         }))
       } else if ('pose' in detail) {
+        const timestamp = Number.isFinite(detail.poseTimestampMs) ? detail.poseTimestampMs : undefined
+        if (detail.pose && timestamp !== undefined && latestSample !== undefined && timestamp < latestSample) return
+        const poseTimestampMs = detail.pose ? timestamp : undefined
+        latestSample = poseTimestampMs
         window.clearTimeout(timer)
-        setState(previous => ({ ...previous, pose: detail.pose ?? null }))
+        setState(previous => ({ ...previous, pose: detail.pose ?? null, poseTimestampMs }))
         if (detail.pose) timer = window.setTimeout(() => {
-          setState(previous => ({ ...previous, pose: null, poseStatus: 'waiting' }))
+          latestSample = undefined
+          setState(previous => ({ ...previous, pose: null, poseTimestampMs: undefined, poseStatus: 'waiting' }))
         }, 1000)
       } else if (detail.poseStatus) {
         const poseStatus = detail.poseStatus

@@ -39,7 +39,8 @@ if(skyPreview) {
   document.querySelector('#preview-stage').style.height='100%';
 }
 const journeyPage=new URLSearchParams(location.search).get('route')==='road'?'/journey-preview.html?route=road':'/journey-preview.html';
-frame.src=(skyPreview?(scene==='journey'?journeyPage:scene==='marker'?'/sky-preview.html?marker=1':'/sky-preview.html'):'/')+location.hash;
+const skyPage=new URLSearchParams(location.search).has('night')?'/sky-preview.html?night=1':'/sky-preview.html';
+frame.src=(skyPreview?(scene==='journey'?journeyPage:scene==='marker'?'/sky-preview.html?marker=1':skyPage):'/')+location.hash;
 frame.addEventListener('load',()=>{const sync=()=>history.replaceState(null,'',location.pathname+location.search+frame.contentWindow.location.hash);frame.contentWindow.addEventListener('hashchange',sync);sync()});
 keyboard=installPhonePreviewKeyboard({phone,frame,width,height});
 if(!skyPreview)material=installPhonePreviewMaterial({frame,onLayoutChange:fit});

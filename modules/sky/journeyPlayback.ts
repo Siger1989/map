@@ -1,6 +1,7 @@
 import { metresBetween, type PlannedRoute } from "../navigation/types.ts";
 import type { ManualTrack } from "../tracks/drawing.ts";
 import { journeyBearing, journeyDestination, JOURNEY_CAMERA_HEIGHT_M, JOURNEY_CAMERA_LAG_M } from "./journeyCamera.ts";
+import { indexJourneyTurns, journeyCameraHeading, type JourneyTurn } from "./journeyHeadingProfile.ts";
 
 export type SkyJourneyCoordinate = readonly [longitude: number, latitude: number];
 
@@ -21,6 +22,7 @@ interface JourneyPlaybackPoint extends SkyJourneyPoint {
 
 export interface JourneyPlaybackSegment {
   points: readonly JourneyPlaybackPoint[];
+  turns: readonly JourneyTurn[];
   startDistanceM: number;
   endDistanceM: number;
 }
@@ -38,6 +40,7 @@ export interface JourneyPlaybackFrame {
   distanceM: number;
   segmentIndex: number;
   headingDeg: number | null;
+  cameraHeadingDeg: number | null;
   lookAt: [number, number];
   lookAtElevationM: number | null;
   cameraCoordinates: [number, number];
@@ -102,7 +105,7 @@ export function createJourneyPlayback(journey: SkyJourney): JourneyPlaybackModel
     let points: JourneyPlaybackPoint[] = [];
     let startDistanceM = totalDistanceM;
     const finishSegment = () => {
-      if (points.length) segments.push({ points, startDistanceM, endDistanceM: totalDistanceM });
+      if (points.length) segments.push({ points, turns: indexJourneyTurns(points), startDistanceM, endDistanceM: totalDistanceM });
       points = [];
       startDistanceM = totalDistanceM;
     };
@@ -195,7 +198,7 @@ function segmentHeading(segment: JourneyPlaybackSegment, distanceM: number, coor
 export function getJourneyPlaybackFrame(
   model: JourneyPlaybackModel,
   requestedDistanceM: number,
-  settings: { lookAheadM?: number; cameraLagM?: number; cameraHeightM?: number } = {},
+  settings: { lookAheadM?: number; cameraLagM?: number; cameraHeightM?: number; turnRadiusM?: number } = {},
 ): JourneyPlaybackFrame | null {
   const { segments, totalDistanceM } = model;
   if (!segments.length || !Number.isFinite(requestedDistanceM)) return null;
@@ -216,15 +219,19 @@ export function getJourneyPlaybackFrame(
   const lookDistanceM = Math.min(segment.endDistanceM, distanceM + nonNegative(settings.lookAheadM, 30));
   const ahead = sampleSegment(segment, lookDistanceM);
   const headingDeg = segmentHeading(segment, distanceM, frame.coordinates);
+  const cameraHeadingDeg = headingDeg === null ? null : journeyCameraHeading(
+    segment.turns, distanceM - segment.startDistanceM, headingDeg, nonNegative(settings.turnRadiusM, 20),
+  );
   const cameraHeightM = nonNegative(settings.cameraHeightM, JOURNEY_CAMERA_HEIGHT_M);
-  const cameraCoordinates = headingDeg === null ? frame.coordinates
-    : journeyDestination(frame.coordinates, headingDeg + 180, nonNegative(settings.cameraLagM, JOURNEY_CAMERA_LAG_M));
+  const cameraCoordinates = cameraHeadingDeg === null ? frame.coordinates
+    : journeyDestination(frame.coordinates, cameraHeadingDeg + 180, nonNegative(settings.cameraLagM, JOURNEY_CAMERA_LAG_M));
 
   return {
     ...frame,
     distanceM,
     segmentIndex: lo,
     headingDeg,
+    cameraHeadingDeg,
     lookAt: ahead.coordinates,
     lookAtElevationM: ahead.elevationM,
     cameraCoordinates,

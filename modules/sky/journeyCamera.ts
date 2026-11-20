@@ -9,11 +9,14 @@ const targetSky = .055 + (.908 - .055) * .29;
 const subjectBand = [0.58, 0.81] as const;
 const minimumEyeHeightM = 29;
 const maxTerrainLiftM = 80;
-const horizonDistances = [
+const horizonSamples = [
   22, 32, 43, 56, 70, 86, 105, 128, 154, 185, 220, 261, 310, 370, 440, 525, 625, 745,
   890, 1070, 1300, 1580, 1930, 2360, 2890, 3540, 4350, 5350, 6600, 8200, 10300, 13200,
   17300, 22400, 29000,
-];
+].map(distance=>({
+  distance, sinArc:Math.sin(distance/radiusM), cosArc:Math.cos(distance/radiusM),
+  curvature:distance*distance/(2*radiusM),
+}));
 export const JOURNEY_CAMERA_LAG_M = 90;
 export const JOURNEY_CAMERA_HEIGHT_M = 43;
 
@@ -65,15 +68,24 @@ function estimateSkyline(terrain: JourneyCameraTerrain, camera: SkyJourneyCoordi
   const sections: number[] = [];
   const tangent = Math.tan(horizontalFov / degrees / 2);
   const read = terrain.skylineHeightAt ?? terrain.heightAt;
+  const lon0 = camera[0], lat0 = camera[1] / degrees;
+  const sinLat = Math.sin(lat0), cosLat = Math.cos(lat0);
   for (const column of [-.85, -.56, -.28, 0, .28, .56, .85]) {
     const yaw = Math.atan(column * tangent);
     const azimuth = wrap(bearing + yaw * degrees);
     let peak = terrain.horizonAt?.(azimuth, camera, altitude) ?? -Infinity;
     if (!Number.isFinite(peak)) {
-      for (const distance of horizonDistances) {
-        const ground = read(...journeyDestination(camera, azimuth, distance));
-        if (usable(ground)) peak = Math.max(peak, altitudeAngle(ground - altitude, distance));
+      // All samples along this ray share its origin, bearing and arc distances.
+      const cosBearing = Math.cos(azimuth/degrees), sinBearing = Math.sin(azimuth/degrees);
+      let steepest = -Infinity;
+      for (const {distance, sinArc, cosArc, curvature} of horizonSamples) {
+        const sinDest = clamp(sinLat*cosArc + cosLat*sinArc*cosBearing,-1,1);
+        const latitude = Math.asin(sinDest)*degrees;
+        const longitude = lon0 + Math.atan2(sinBearing*sinArc*cosLat,cosArc-sinLat*sinDest)*degrees;
+        const ground = read(wrap(longitude+180)-180,latitude);
+        if (usable(ground)) steepest = Math.max(steepest, (ground-altitude-curvature)/distance);
       }
+      if (Number.isFinite(steepest)) peak=Math.atan(steepest)*degrees;
     }
     if (Number.isFinite(peak)) {
       // Convert the bearing ray to the vertical plane used by the pinhole viewport.
@@ -124,7 +136,7 @@ export function resolveJourneyCamera(
       altitude = Math.max(altitude, subjectAltitude + Math.min(eyeHeight, eyeHeight < height ? 20 : 35));
     }
     const distance = metresBetween(position, frame.coordinates);
-    const azimuth = distance > 0.1 ? journeyBearing(position, frame.coordinates) : frame.headingDeg ?? 0;
+    const azimuth = distance > 0.1 ? journeyBearing(position, frame.coordinates) : frame.cameraHeadingDeg ?? frame.headingDeg ?? 0;
     let subjectOccluded = false;
     if (terrain && ground !== null && subjectGround !== null && subjectAltitude !== null && altitude !== null && distance > 1) {
       let minimumVisible = altitude;
@@ -155,7 +167,7 @@ export function resolveJourneyCamera(
   let best = base;
   if (base.groundKnown && base.distance > 1 && frame.headingDeg !== null &&
       (base.subjectOccluded || base.skyFraction < targetSky - .012)) {
-    const travel = frame.headingDeg + 180;
+    const travel = (frame.cameraHeadingDeg ?? frame.headingDeg) + 180;
     const reducedEye = Math.min(height, minimumEyeHeightM);
     const setback = base.distance + clamp((targetSky - base.skyFraction) * 400, 13, 67);
     const score = (candidate: typeof base) =>

@@ -7,6 +7,7 @@ import {
 } from './astronomy';
 import type { TerrainHorizon } from './terrainHorizon';
 import { SkyDayGraph } from './SkyDayGraph';
+import { skyCalendarDate } from './skyCalendar';
 import type { useSolarDay } from './useSolarDay';
 
 interface Props {
@@ -65,6 +66,7 @@ export function SkyTimeline({
             if (e.target.value) onDate(e.target.value);
           }}
         />
+        <button type="button" onClick={() => onDate(skyCalendarDate(day.endMs,timeZone))}>次日</button>
         <strong>{clock.format(time)}</strong>
         <button type="button" onClick={onNow}>
           现在

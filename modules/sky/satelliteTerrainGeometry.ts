@@ -76,7 +76,9 @@ export function planSatelliteTiles(longitude: number, latitude: number, nearZoom
     leaves.splice(selected.index, 1, tile(z + 1, 2 * x, 2 * y), tile(z + 1, 2 * x + 1, 2 * y),
       tile(z + 1, 2 * x, 2 * y + 1), tile(z + 1, 2 * x + 1, 2 * y + 1));
   }
-  return leaves.sort((a, b) => Number(score(b).contained > 0) - Number(score(a).contained > 0) || score(a).center - score(b).center);
+  return leaves.map(value => ({value,...score(value)}))
+    .sort((a,b) => Number(b.contained > 0) - Number(a.contained > 0) || a.center - b.center)
+    .map(item => item.value);
 }
 
 export function earthPosition(longitude: number, latitude: number, height: number): Vec3 {
@@ -158,20 +160,23 @@ export function buildSatelliteMesh(tile: Tile, heights: Float32Array) {
   const origin = earthPosition(longitude, latitude, 0);
   const vertices: number[] = [];
   const indices: number[] = [];
-  const valid: boolean[] = [];
   const row = meshSteps + 1;
+  const samples = new Float32Array(row * row);
+  const parent = demTileFor(tile);
+  const scale = 2 ** (tile.z - parent.z);
+  const baseU = (tile.x - parent.x * scale) / scale, baseV = (tile.y - parent.y * scale) / scale;
   function vertex(x: number, y: number) {
     const u = x / meshSteps, v = y / meshSteps;
     const [longitude, latitude] = coordinate(tile.x + u, tile.y + v, tile.z);
-    const h = heightAtTile(tile, heights, u, v);
+    const h = terrainHeight(heights, baseU + u / scale, baseV + v / scale);
     const at = vertices.length / 5;
-    valid.push(Number.isFinite(h));
+    samples[at] = h;
     const [X, Y, Z] = earthPosition(longitude, latitude, Number.isFinite(h) ? h : 0);
     vertices.push(X - origin[0], Y - origin[1], Z - origin[2], u, v);
     return at;
   }
   function triangle(a: number, b: number, c: number) {
-    if (valid[a] && valid[b] && valid[c]) indices.push(a, b, c);
+    if (Number.isFinite(samples[a]) && Number.isFinite(samples[b]) && Number.isFinite(samples[c])) indices.push(a, b, c);
   }
   for (let y = 0; y <= meshSteps; y++) {
     for (let x = 0; x <= meshSteps; x++) vertex(x, y);
@@ -183,5 +188,15 @@ export function buildSatelliteMesh(tile: Tile, heights: Float32Array) {
       triangle(a + 1, a + row, a + row + 1);
     }
   }
-  return { origin, vertices: new Float32Array(vertices), indices: new Uint16Array(indices) };
+  return { origin, vertices: new Float32Array(vertices), indices: new Uint16Array(indices), samples, steps:meshSteps };
+}
+
+/** Height on the exact triangles uploaded to the GPU, sampled from their cached vertices. */
+export function sampledSurfaceHeight(samples: Float32Array, steps: number, u: number, v: number) {
+  const x = Math.max(0,Math.min(steps,u*steps)), y = Math.max(0,Math.min(steps,v*steps));
+  const ix = Math.min(steps-1,Math.floor(x)), iy = Math.min(steps-1,Math.floor(y));
+  const dx = x-ix, dy = y-iy, row = steps+1, base = iy*row+ix;
+  const east = samples[base+1], south = samples[base+row];
+  return dx+dy <= 1 ? samples[base]*(1-dx-dy) + east*dx + south*dy
+    : samples[base+row+1]*(dx+dy-1) + east*(1-dy) + south*(1-dx);
 }

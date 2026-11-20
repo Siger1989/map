@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { SkyObserver } from './astronomy';
 import type { DeviceSkyOptics, DeviceSkyPose } from './deviceSkyCamera';
-import { createSatelliteTerrain, type SatelliteTerrainCamera, type SatelliteTerrainStatus } from './satelliteTerrainRenderer';
+import { createSatelliteTerrain, type JourneyTerrainBuffer, type SatelliteTerrainCamera, type SatelliteTerrainStatus } from './satelliteTerrainRenderer';
 
 import type { JourneyTerrainRoute } from './journeyRouteOverlay';
 
@@ -13,6 +13,8 @@ interface Props {
   height: number;
   eyeHeightMeters?: number;
   journeyRoute?: JourneyTerrainRoute;
+  retryKey?: number;
+  onBuffer?: (buffer: JourneyTerrainBuffer) => void;
   onCameraResolved?: (camera: SatelliteTerrainCamera) => void;
   onRender?: () => void;
   onStatus?: (status: SatelliteTerrainStatus) => void;
@@ -41,6 +43,7 @@ export function SatelliteTerrainCanvas(props: Props) {
       if (!renderer.current) return;
       const { observer, pose, optics, width, height, eyeHeightMeters, journeyRoute, onCameraResolved } = view.current;
       publish(renderer.current.draw(observer, pose, optics, width, height, eyeHeightMeters, journeyRoute, onCameraResolved));
+      if (journeyRoute) view.current.onBuffer?.(renderer.current.journeyBuffer());
       view.current.onRender?.();
     });
   }
@@ -81,6 +84,13 @@ export function SatelliteTerrainCanvas(props: Props) {
   }, [props.canvasRef]);
 
   useEffect(() => { queue(); }, [props.observer, props.pose, props.optics, props.width, props.height, props.eyeHeightMeters, props.journeyRoute]);
+
+  useEffect(() => {
+    if (props.retryKey) {
+      renderer.current?.retryJourneyBuffer();
+      queue();
+    }
+  }, [props.retryKey]);
 
   return <canvas ref={element} aria-hidden="true" data-layer="satellite-terrain" style={{
     position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none',

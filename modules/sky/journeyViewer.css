@@ -7,12 +7,21 @@
 .journey-window {position:relative;min-height:60px;flex:1;overflow:hidden;}
 .journey-stage,.journey-source,.journey-satellite-source,.journey-composite {position:absolute;inset:0;width:100%;height:100%;}
 .journey-composite {pointer-events:none;}
+.journey-header-actions {display:flex;align-items:center;gap:6px;flex:none;}
+.journey-stars {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
 .journey-imagery,.journey-error {position:absolute;top:8px;left:10px;background:#172629e0;border-radius:8px;font-size:12px;padding:4px 8px;}
 .journey-controls {padding:8px max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));display:grid;gap:5px;max-height:50%;overflow:auto;background:#213135;}
 .journey-dates {display:grid;gap:4px;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));}
 .journey-dates label {display:flex;align-items:center;gap:8px;}
 .journey-dates input {min-width:0;flex:1;font-size:16px;}
 .journey-dates small {grid-column:1/-1;}
+.journey-date-options {grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.journey-date-options button {min-height:30px;border-radius:4px;font-size:13px;}
+.journey-date-options button[aria-pressed="true"] {border-color:#efbd68;color:#ffdb91;}
+.journey-timeline input {display:block;}
+.journey-day-boundary {position:relative;height:24px;margin-inline:8px;}
+.journey-day-boundary i {position:absolute;top:-6px;height:8px;width:1px;background:#efbd68;pointer-events:none;}
+.journey-day-boundary button {position:absolute;top:0;transform:translateX(-50%);min-height:24px;padding:0 4px;border:0;background:transparent;color:#ffdb91;font-size:12px;white-space:nowrap;}
 .journey-controls input[type="range"] {width:100%;height:26px;accent-color:#efbd68;margin:0;}
 .journey-actions {display:flex;gap:4px;flex-wrap:wrap;}
 .journey-actions button,.journey-actions select {font-size:13px;flex:1;}
@@ -20,3 +29,4 @@
 
 .observatory[data-journey-open='true'] > :not(.journey-viewer) {visibility:hidden!important;pointer-events:none!important;}
 .journey-imagery { top:43px; }
+.journey-imagery button { margin-inline-start:6px; }
