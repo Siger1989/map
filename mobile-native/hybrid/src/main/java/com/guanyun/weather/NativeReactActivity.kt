@@ -17,11 +17,12 @@ class NativeReactActivity : MainActivity() {
     private var content: WebView? = null
     private var mapSurfaceRoot: FrameLayout? = null
     private var floatingNavigation: FloatingNavigationBridge? = null
+    private var skyCamera: SkyCameraBridge? = null
 
     override fun createContentRoot(): FrameLayout = object : FrameLayout(this) {
         override fun dispatchTouchEvent(event: MotionEvent): Boolean {
             val surface = mapSurfaceRoot
-            if (surface != null) {
+            if (surface != null && skyCamera?.isActive != true) {
                 val local = MotionEvent.obtain(event)
                 local.offsetLocation(-surface.left.toFloat(), -surface.top.toFloat())
                 val consumed = try { this@NativeReactActivity.overlay?.dispatchGesture(local) == true } finally { local.recycle() }
@@ -72,15 +73,24 @@ class NativeReactActivity : MainActivity() {
                 maps?.handleMessage(json)
             }
         }, "ShantuNativeMap")
+        skyCamera = SkyCameraBridge(this, root, content).also {
+            content.addJavascriptInterface(it, SkyCameraBridge.JS_NAME)
+        }
         floatingNavigation = FloatingNavigationBridge(this, content).also {
             content.addJavascriptInterface(it, FloatingNavigationBridge.JS_NAME)
         }
     }
 
-    override fun onContentPageStarted(url: String?) { floatingNavigation?.onPageStarted(url); overlay?.clearPage(); maps?.invalidateSession() }
+    override fun onContentPageStarted(url: String?) {
+        skyCamera?.stopPage()
+        floatingNavigation?.onPageStarted(url)
+        overlay?.clearPage()
+        maps?.invalidateSession()
+    }
     override fun onContentInsets(keyboardVisible: Boolean) { overlay?.setImeVisible(keyboardVisible) }
     override fun onResume() {
         super.onResume()
+        skyCamera?.onResume()
         floatingNavigation?.onHostResume()
         FloatingRecordingCoordinator.onHostResume(this)
         maps?.onHostResume()
@@ -92,9 +102,17 @@ class NativeReactActivity : MainActivity() {
         if (trustedForeground()) content?.evaluateJavascript(
             "window.dispatchEvent(new Event('shantu:floating-navigation'))", null)
     }
-    override fun onPause() { overlay?.setForeground(false); FloatingRecordingCoordinator.onHostPause(this); floatingNavigation?.onHostPause(); maps?.onHostPause(); super.onPause() }
+    override fun onPause() {
+        skyCamera?.onPause()
+        overlay?.setForeground(false)
+        FloatingRecordingCoordinator.onHostPause(this)
+        floatingNavigation?.onHostPause()
+        maps?.onHostPause()
+        super.onPause()
+    }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        skyCamera?.onPermissionResult(requestCode, grantResults)
         floatingNavigation?.onRequestPermissionsResult(requestCode, permissions, grantResults)
         FloatingRecordingCoordinator.onRequestPermissionsResult(requestCode)
     }
@@ -103,6 +121,8 @@ class NativeReactActivity : MainActivity() {
         floatingNavigation?.onActivityResult(requestCode)
     }
     override fun onDestroy() {
+        skyCamera?.close(); skyCamera = null
+        content?.removeJavascriptInterface(SkyCameraBridge.JS_NAME)
         floatingNavigation?.close(); floatingNavigation = null
         maps?.close(); maps = null
         overlay?.close(); overlay = null

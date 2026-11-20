@@ -51,6 +51,7 @@ type Props = {
     onEdit: () => void;
     onShow: () => void;
     onDetails: () => void;
+    onPlayJourney?: () => void;
     onRecenter: () => void;
     onClose: () => void;
     onDelete?: () => boolean | void | Promise<boolean | void>;
@@ -87,6 +88,7 @@ type Props = {
     selectedTrack?: { id: string; name: string } | null;
     onRecenterSelectedTrack?: () => void;
     onEditSelectedTrack?: () => void;
+    onPlaySelectedTrack?: () => void;
     onDeleteSelectedTrack?: () => boolean;
     editingTrack?: boolean;
     onBackEditor?: () => void;
@@ -345,6 +347,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
             <button type="button" onClick={plannedRoute.onShow}>看全程</button>
             <button type="button" className="route-solid" onClick={plannedRoute.onEdit}>编辑线点</button>
             <button type="button" onClick={plannedRoute.onDetails}>更多操作</button>
+            {plannedRoute.onPlayJourney && <button type="button" onClick={plannedRoute.onPlayJourney}>轨迹模拟</button>}
             {plannedRoute.onDelete && <RouteRemovalControl onRemove={plannedRoute.onDelete} buttonClassName="route-danger" />}
           </nav>
         </section>}
@@ -352,6 +355,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
           <strong title={operations.selectedTrack.name}>{operations.selectedTrack.name}</strong>
           <button type="button" onClick={operations.onRecenterSelectedTrack}>回中</button>
           <button type="button" onClick={operations.onEditSelectedTrack}>编辑</button>
+          {operations.onPlaySelectedTrack && <button type="button" onClick={operations.onPlaySelectedTrack}>轨迹模拟</button>}
           <button type="button" aria-label="删除双图已选路线" onClick={() => setConfirmDeleteTrackId(operations.selectedTrack!.id)}><Trash2 size={16}/>删除</button>
           {confirmDeleteTrackId === operations.selectedTrack.id && <div className="map-comparison-track-delete-confirm" role="group" aria-label="确认删除双图已选路线">
             <span>删除这条路线？关联照片、标记及来源路线保留。</span>

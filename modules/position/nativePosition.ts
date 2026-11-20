@@ -37,6 +37,8 @@ export function readNativePosition(raw: string, now = Date.now()) {
       now - value.timestamp <= 30000
     )
       fix = { ...value, source: state.fix.source,
+        ...(Number.isFinite(state.fix.mslAltitudeMeters) && Number.isFinite(state.fix.mslAltitudeAccuracyMeters) &&
+          state.fix.mslAltitudeAccuracyMeters > 0 && state.fix.mslAltitudeAccuracyMeters <= 30 ? { mslAltitudeMeters: state.fix.mslAltitudeMeters } : {}),
         ...(typeof state.fix.headingAccuracy === 'number' && Number.isFinite(state.fix.headingAccuracy) && state.fix.headingAccuracy >= 0 ? { headingAccuracy: state.fix.headingAccuracy } : {}) };
   }
   return {

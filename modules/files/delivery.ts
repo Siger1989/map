@@ -1,6 +1,7 @@
 import { sendArchive, type ArchiveBridge } from './nativeArchive.ts';
 import { deliverMacFile, isMacNativeSupported } from '../platform/macNative.ts';
 const streamedText = (name: string) => /^(Shantu-workspace\.json|Shantu-(route-coordinates-\d{1,16}|coordinates-\d{4}-\d{2}-\d{2})\.(json|csv))$/.test(name);
+const streamedVideo = (name: string) => /^Shantu-sky-journey-\d{1,16}\.(mp4|webm)$/.test(name);
 /** Shared generated-file boundary; Android retains explicit read-only picker/share grants. */
 export function canShareGeneratedFile(name: string, mime: string) {
   if (isMacNativeSupported()) return true;
@@ -30,7 +31,7 @@ export async function deliverFile(
     return result === 'shared' ? '已完成系统分享' : '已保存文件';
   }
   if (window.GuanyunNative) {
-    if (file.name.endsWith('.zip') || streamedText(file.name)) {
+    if (file.name.endsWith('.zip') || streamedText(file.name) || streamedVideo(file.name)) {
       const native = window.GuanyunNative;
       if (
         !native.archiveBegin ||
@@ -39,6 +40,7 @@ export async function deliverFile(
         !native.archiveCancel
       )
         throw new Error('此 APK 尚不支持完整文件输出，请安装新版');
+      if (streamedVideo(file.name) && share) throw new Error('请先保存录像再分享');
       if (streamedText(file.name) && file.size > 100 * 1024 * 1024)
         throw new Error('工程文件超过 100 MB');
       return sendArchive(file, share, native as ArchiveBridge, signal);

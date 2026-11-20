@@ -15,6 +15,7 @@ import {
   PanelsTopLeft,
   PictureInPicture2,
   Images,
+  Sunrise,
 } from 'lucide-react';
 import { DocumentTextIcon, MapIcon as SolidMapIcon, PencilIcon, StarIcon, BriefcaseIcon } from '@heroicons/react/24/solid';
 import { MapPanelHeader } from '../ui/MapPanelHeader';
@@ -68,6 +69,7 @@ export function ControlDock({
   mapPicking = false,
   floatingNavigation,
   onPhotoMarkers,
+  onSky,
 }: {
   active: ControlPanel;
   onActive: (panel: ControlPanel) => void;
@@ -91,6 +93,7 @@ export function ControlDock({
   mapPicking?: boolean;
   floatingNavigation?: ReactNode;
   onPhotoMarkers?: () => void;
+  onSky?: () => void;
 }) {
   const [floatingOpen, setFloatingOpen] = useState(false);
   const floatingSubview = active === 'tools' && floatingOpen && !!floatingNavigation;
@@ -189,6 +192,7 @@ export function ControlDock({
                     剖面
                   </button>
                 )}
+                {onSky && <button onClick={onSky}><Sunrise size={18}/>日月观景</button>}
                 <FullscreenButton />
                 {onMeasure && (
                   <button onClick={onMeasure}>

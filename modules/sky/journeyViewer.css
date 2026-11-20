@@ -1,0 +1,22 @@
+.journey-viewer {position:fixed;z-index:10000;inset:0;display:flex;flex-direction:column;background:#19272b;color:#eef3eb;font:14px/1.35 'Segoe UI','Microsoft YaHei',sans-serif;}
+.journey-viewer header {display:flex;align-items:center;justify-content:space-between;gap:8px;padding:max(8px,env(safe-area-inset-top)) 12px 8px;background:#213135;}
+.journey-viewer header div {min-width:0;}
+.journey-viewer header strong,.journey-viewer header small {display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
+.journey-viewer header small,.journey-controls small {font-size:12px;color:#cad5ce;}
+.journey-viewer button,.journey-viewer select,.journey-viewer input[type="datetime-local"] {border:1px solid #506268;border-radius:var(--ui-radius-control,8px);background:#2b4043;color:#f6f6ef;min-height:34px;padding:4px 8px;}
+.journey-window {position:relative;min-height:60px;flex:1;overflow:hidden;}
+.journey-stage,.journey-source,.journey-satellite-source,.journey-composite {position:absolute;inset:0;width:100%;height:100%;}
+.journey-composite {pointer-events:none;}
+.journey-imagery,.journey-error {position:absolute;top:8px;left:10px;background:#172629e0;border-radius:8px;font-size:12px;padding:4px 8px;}
+.journey-controls {padding:8px max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));display:grid;gap:5px;max-height:50%;overflow:auto;background:#213135;}
+.journey-dates {display:grid;gap:4px;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));}
+.journey-dates label {display:flex;align-items:center;gap:8px;}
+.journey-dates input {min-width:0;flex:1;font-size:16px;}
+.journey-dates small {grid-column:1/-1;}
+.journey-controls input[type="range"] {width:100%;height:26px;accent-color:#efbd68;margin:0;}
+.journey-actions {display:flex;gap:4px;flex-wrap:wrap;}
+.journey-actions button,.journey-actions select {font-size:13px;flex:1;}
+
+
+.observatory[data-journey-open='true'] > :not(.journey-viewer) {visibility:hidden!important;pointer-events:none!important;}
+.journey-imagery { top:43px; }

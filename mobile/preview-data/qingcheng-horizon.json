@@ -1,0 +1,3266 @@
+{
+  "observer": {
+    "lng": 103.569,
+    "lat": 30.904
+  },
+  "origin": "WGS84",
+  "sampledAt": "2026-11-20T09:42:16.729Z",
+  "provenance": {
+    "kind": "sampled-dem",
+    "radiusMeters": 55000,
+    "azimuthStepDegrees": 1,
+    "method": "Shantu Terrarium terrain profile",
+    "sources": [
+      "Chengdu FABDEM V1-2 (Hawker / Neal, CC BY-NC-SA 4.0)",
+      "Mapzen / SRTM Terrarium"
+    ],
+    "transport": "isolated 9174 browser with original FABDEM files and Mapzen endpoint"
+  },
+  "terrain": {
+    "status": "complete",
+    "observerAltitudeMeters": 877.2703125,
+    "coverage": 1,
+    "directions": [
+      {
+        "azimuthDeg": 0,
+        "altitudeDeg": 18.707306064800296,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 1080.09765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 18.707306064800296,
+        "midAltitudeDeg": 18.707306064800296
+      },
+      {
+        "azimuthDeg": 1,
+        "altitudeDeg": 18.707306064800296,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 1080.09765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 18.707306064800296,
+        "midAltitudeDeg": 18.707306064800296
+      },
+      {
+        "azimuthDeg": 2,
+        "altitudeDeg": 19.400409128484945,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 1088.20703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 19.400409128484945,
+        "midAltitudeDeg": 19.400409128484945
+      },
+      {
+        "azimuthDeg": 3,
+        "altitudeDeg": 19.400409128484945,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 1088.20703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 19.400409128484945,
+        "midAltitudeDeg": 19.400409128484945
+      },
+      {
+        "azimuthDeg": 4,
+        "altitudeDeg": 19.400409128484945,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 1088.20703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 19.400409128484945,
+        "midAltitudeDeg": 19.400409128484945
+      },
+      {
+        "azimuthDeg": 5,
+        "altitudeDeg": 18.782826870599415,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 1057.5390625,
+        "coverage": 1,
+        "nearAltitudeDeg": 18.782826870599415,
+        "midAltitudeDeg": 18.782826870599415
+      },
+      {
+        "azimuthDeg": 6,
+        "altitudeDeg": 21.994709638006004,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 1091.3671875,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.994709638006004,
+        "midAltitudeDeg": 21.994709638006004
+      },
+      {
+        "azimuthDeg": 7,
+        "altitudeDeg": 21.994709638006004,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 1091.3671875,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.994709638006004,
+        "midAltitudeDeg": 21.994709638006004
+      },
+      {
+        "azimuthDeg": 8,
+        "altitudeDeg": 21.994709638006004,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 1091.3671875,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.994709638006004,
+        "midAltitudeDeg": 21.994709638006004
+      },
+      {
+        "azimuthDeg": 9,
+        "altitudeDeg": 21.96021196063741,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 1090.99609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.96021196063741,
+        "midAltitudeDeg": 21.96021196063741
+      },
+      {
+        "azimuthDeg": 10,
+        "altitudeDeg": 24.307490818765658,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 1089.1328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 24.307490818765658,
+        "midAltitudeDeg": 24.307490818765658
+      },
+      {
+        "azimuthDeg": 11,
+        "altitudeDeg": 24.307490818765658,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 1089.1328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 24.307490818765658,
+        "midAltitudeDeg": 24.307490818765658
+      },
+      {
+        "azimuthDeg": 12,
+        "altitudeDeg": 25.231810586040286,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 1072.87890625,
+        "coverage": 1,
+        "nearAltitudeDeg": 25.231810586040286,
+        "midAltitudeDeg": 25.231810586040286
+      },
+      {
+        "azimuthDeg": 13,
+        "altitudeDeg": 25.231810586040286,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 1072.87890625,
+        "coverage": 1,
+        "nearAltitudeDeg": 25.231810586040286,
+        "midAltitudeDeg": 25.231810586040286
+      },
+      {
+        "azimuthDeg": 14,
+        "altitudeDeg": 25.53421246043243,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 1101.34375,
+        "coverage": 1,
+        "nearAltitudeDeg": 25.53421246043243,
+        "midAltitudeDeg": 25.53421246043243
+      },
+      {
+        "azimuthDeg": 15,
+        "altitudeDeg": 25.53421246043243,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 1101.34375,
+        "coverage": 1,
+        "nearAltitudeDeg": 25.53421246043243,
+        "midAltitudeDeg": 25.53421246043243
+      },
+      {
+        "azimuthDeg": 16,
+        "altitudeDeg": 29.091640840218187,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 1108.2265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 29.091640840218187,
+        "midAltitudeDeg": 29.091640840218187
+      },
+      {
+        "azimuthDeg": 17,
+        "altitudeDeg": 29.091640840218187,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 1108.2265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 29.091640840218187,
+        "midAltitudeDeg": 29.091640840218187
+      },
+      {
+        "azimuthDeg": 18,
+        "altitudeDeg": 32.02946511777108,
+        "distanceMeters": 45,
+        "elevationMeters": 905.42578125,
+        "coverage": 1,
+        "nearAltitudeDeg": 32.02946511777108,
+        "midAltitudeDeg": 32.02946511777108
+      },
+      {
+        "azimuthDeg": 19,
+        "altitudeDeg": 32.02946511777108,
+        "distanceMeters": 45,
+        "elevationMeters": 905.42578125,
+        "coverage": 1,
+        "nearAltitudeDeg": 32.02946511777108,
+        "midAltitudeDeg": 32.02946511777108
+      },
+      {
+        "azimuthDeg": 20,
+        "altitudeDeg": 32.02946511777108,
+        "distanceMeters": 45,
+        "elevationMeters": 905.42578125,
+        "coverage": 1,
+        "nearAltitudeDeg": 32.02946511777108,
+        "midAltitudeDeg": 32.02946511777108
+      },
+      {
+        "azimuthDeg": 21,
+        "altitudeDeg": 32.02946511777108,
+        "distanceMeters": 45,
+        "elevationMeters": 905.42578125,
+        "coverage": 1,
+        "nearAltitudeDeg": 32.02946511777108,
+        "midAltitudeDeg": 32.02946511777108
+      },
+      {
+        "azimuthDeg": 22,
+        "altitudeDeg": 32.02946511777108,
+        "distanceMeters": 45,
+        "elevationMeters": 905.42578125,
+        "coverage": 1,
+        "nearAltitudeDeg": 32.02946511777108,
+        "midAltitudeDeg": 32.02946511777108
+      },
+      {
+        "azimuthDeg": 23,
+        "altitudeDeg": 32.02946511777108,
+        "distanceMeters": 45,
+        "elevationMeters": 905.42578125,
+        "coverage": 1,
+        "nearAltitudeDeg": 32.02946511777108,
+        "midAltitudeDeg": 32.02946511777108
+      },
+      {
+        "azimuthDeg": 24,
+        "altitudeDeg": 32.60339589272742,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1112.21875,
+        "coverage": 1,
+        "nearAltitudeDeg": 32.60339589272742,
+        "midAltitudeDeg": 32.60339589272742
+      },
+      {
+        "azimuthDeg": 25,
+        "altitudeDeg": 32.60339589272742,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1112.21875,
+        "coverage": 1,
+        "nearAltitudeDeg": 32.60339589272742,
+        "midAltitudeDeg": 32.60339589272742
+      },
+      {
+        "azimuthDeg": 26,
+        "altitudeDeg": 32.60339589272742,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1112.21875,
+        "coverage": 1,
+        "nearAltitudeDeg": 32.60339589272742,
+        "midAltitudeDeg": 32.60339589272742
+      },
+      {
+        "azimuthDeg": 27,
+        "altitudeDeg": 33.42637806781502,
+        "distanceMeters": 325,
+        "elevationMeters": 1091.828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 33.42637806781502,
+        "midAltitudeDeg": 33.42637806781502
+      },
+      {
+        "azimuthDeg": 28,
+        "altitudeDeg": 33.42637806781502,
+        "distanceMeters": 325,
+        "elevationMeters": 1091.828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 33.42637806781502,
+        "midAltitudeDeg": 33.42637806781502
+      },
+      {
+        "azimuthDeg": 29,
+        "altitudeDeg": 33.42637806781502,
+        "distanceMeters": 325,
+        "elevationMeters": 1091.828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 33.42637806781502,
+        "midAltitudeDeg": 33.42637806781502
+      },
+      {
+        "azimuthDeg": 30,
+        "altitudeDeg": 33.42637806781502,
+        "distanceMeters": 325,
+        "elevationMeters": 1091.828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 33.42637806781502,
+        "midAltitudeDeg": 33.42637806781502
+      },
+      {
+        "azimuthDeg": 31,
+        "altitudeDeg": 34.692435322412834,
+        "distanceMeters": 285,
+        "elevationMeters": 1074.59765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 34.692435322412834,
+        "midAltitudeDeg": 34.692435322412834
+      },
+      {
+        "azimuthDeg": 32,
+        "altitudeDeg": 34.692435322412834,
+        "distanceMeters": 285,
+        "elevationMeters": 1074.59765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 34.692435322412834,
+        "midAltitudeDeg": 34.692435322412834
+      },
+      {
+        "azimuthDeg": 33,
+        "altitudeDeg": 34.692435322412834,
+        "distanceMeters": 285,
+        "elevationMeters": 1074.59765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 34.692435322412834,
+        "midAltitudeDeg": 34.692435322412834
+      },
+      {
+        "azimuthDeg": 34,
+        "altitudeDeg": 34.692435322412834,
+        "distanceMeters": 285,
+        "elevationMeters": 1074.59765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 34.692435322412834,
+        "midAltitudeDeg": 34.692435322412834
+      },
+      {
+        "azimuthDeg": 35,
+        "altitudeDeg": 34.692435322412834,
+        "distanceMeters": 285,
+        "elevationMeters": 1074.59765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 34.692435322412834,
+        "midAltitudeDeg": 34.692435322412834
+      },
+      {
+        "azimuthDeg": 36,
+        "altitudeDeg": 34.692435322412834,
+        "distanceMeters": 285,
+        "elevationMeters": 1074.59765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 34.692435322412834,
+        "midAltitudeDeg": 34.692435322412834
+      },
+      {
+        "azimuthDeg": 37,
+        "altitudeDeg": 33.32266510600853,
+        "distanceMeters": 325,
+        "elevationMeters": 1090.984375,
+        "coverage": 1,
+        "nearAltitudeDeg": 33.32266510600853,
+        "midAltitudeDeg": 33.32266510600853
+      },
+      {
+        "azimuthDeg": 38,
+        "altitudeDeg": 33.32266510600853,
+        "distanceMeters": 325,
+        "elevationMeters": 1090.984375,
+        "coverage": 1,
+        "nearAltitudeDeg": 33.32266510600853,
+        "midAltitudeDeg": 33.32266510600853
+      },
+      {
+        "azimuthDeg": 39,
+        "altitudeDeg": 35.63480119609348,
+        "distanceMeters": 285,
+        "elevationMeters": 1081.61328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.63480119609348,
+        "midAltitudeDeg": 35.63480119609348
+      },
+      {
+        "azimuthDeg": 40,
+        "altitudeDeg": 35.63480119609348,
+        "distanceMeters": 285,
+        "elevationMeters": 1081.61328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.63480119609348,
+        "midAltitudeDeg": 35.63480119609348
+      },
+      {
+        "azimuthDeg": 41,
+        "altitudeDeg": 35.63480119609348,
+        "distanceMeters": 285,
+        "elevationMeters": 1081.61328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.63480119609348,
+        "midAltitudeDeg": 35.63480119609348
+      },
+      {
+        "azimuthDeg": 42,
+        "altitudeDeg": 35.63480119609348,
+        "distanceMeters": 285,
+        "elevationMeters": 1081.61328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.63480119609348,
+        "midAltitudeDeg": 35.63480119609348
+      },
+      {
+        "azimuthDeg": 43,
+        "altitudeDeg": 35.63480119609348,
+        "distanceMeters": 285,
+        "elevationMeters": 1081.61328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.63480119609348,
+        "midAltitudeDeg": 35.63480119609348
+      },
+      {
+        "azimuthDeg": 44,
+        "altitudeDeg": 35.63480119609348,
+        "distanceMeters": 285,
+        "elevationMeters": 1081.61328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.63480119609348,
+        "midAltitudeDeg": 35.63480119609348
+      },
+      {
+        "azimuthDeg": 45,
+        "altitudeDeg": 35.63480119609348,
+        "distanceMeters": 285,
+        "elevationMeters": 1081.61328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.63480119609348,
+        "midAltitudeDeg": 35.63480119609348
+      },
+      {
+        "azimuthDeg": 46,
+        "altitudeDeg": 35.63480119609348,
+        "distanceMeters": 285,
+        "elevationMeters": 1081.61328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.63480119609348,
+        "midAltitudeDeg": 35.63480119609348
+      },
+      {
+        "azimuthDeg": 47,
+        "altitudeDeg": 36.61110443574215,
+        "distanceMeters": 245,
+        "elevationMeters": 1059.33203125,
+        "coverage": 1,
+        "nearAltitudeDeg": 36.61110443574215,
+        "midAltitudeDeg": 36.61110443574215
+      },
+      {
+        "azimuthDeg": 48,
+        "altitudeDeg": 36.61110443574215,
+        "distanceMeters": 245,
+        "elevationMeters": 1059.33203125,
+        "coverage": 1,
+        "nearAltitudeDeg": 36.61110443574215,
+        "midAltitudeDeg": 36.61110443574215
+      },
+      {
+        "azimuthDeg": 49,
+        "altitudeDeg": 36.34667403225687,
+        "distanceMeters": 285,
+        "elevationMeters": 1087.0234375,
+        "coverage": 1,
+        "nearAltitudeDeg": 36.34667403225687,
+        "midAltitudeDeg": 36.34667403225687
+      },
+      {
+        "azimuthDeg": 50,
+        "altitudeDeg": 36.34667403225687,
+        "distanceMeters": 285,
+        "elevationMeters": 1087.0234375,
+        "coverage": 1,
+        "nearAltitudeDeg": 36.34667403225687,
+        "midAltitudeDeg": 36.34667403225687
+      },
+      {
+        "azimuthDeg": 51,
+        "altitudeDeg": 36.34667403225687,
+        "distanceMeters": 285,
+        "elevationMeters": 1087.0234375,
+        "coverage": 1,
+        "nearAltitudeDeg": 36.34667403225687,
+        "midAltitudeDeg": 36.34667403225687
+      },
+      {
+        "azimuthDeg": 52,
+        "altitudeDeg": 36.34667403225687,
+        "distanceMeters": 285,
+        "elevationMeters": 1087.0234375,
+        "coverage": 1,
+        "nearAltitudeDeg": 36.34667403225687,
+        "midAltitudeDeg": 36.34667403225687
+      },
+      {
+        "azimuthDeg": 53,
+        "altitudeDeg": 36.34667403225687,
+        "distanceMeters": 285,
+        "elevationMeters": 1087.0234375,
+        "coverage": 1,
+        "nearAltitudeDeg": 36.34667403225687,
+        "midAltitudeDeg": 36.34667403225687
+      },
+      {
+        "azimuthDeg": 54,
+        "altitudeDeg": 36.34667403225687,
+        "distanceMeters": 285,
+        "elevationMeters": 1087.0234375,
+        "coverage": 1,
+        "nearAltitudeDeg": 36.34667403225687,
+        "midAltitudeDeg": 36.34667403225687
+      },
+      {
+        "azimuthDeg": 55,
+        "altitudeDeg": 36.34667403225687,
+        "distanceMeters": 285,
+        "elevationMeters": 1087.0234375,
+        "coverage": 1,
+        "nearAltitudeDeg": 36.34667403225687,
+        "midAltitudeDeg": 36.34667403225687
+      },
+      {
+        "azimuthDeg": 56,
+        "altitudeDeg": 35.045488918841606,
+        "distanceMeters": 285,
+        "elevationMeters": 1077.20703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.045488918841606,
+        "midAltitudeDeg": 35.045488918841606
+      },
+      {
+        "azimuthDeg": 57,
+        "altitudeDeg": 35.045488918841606,
+        "distanceMeters": 285,
+        "elevationMeters": 1077.20703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.045488918841606,
+        "midAltitudeDeg": 35.045488918841606
+      },
+      {
+        "azimuthDeg": 58,
+        "altitudeDeg": 35.045488918841606,
+        "distanceMeters": 285,
+        "elevationMeters": 1077.20703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.045488918841606,
+        "midAltitudeDeg": 35.045488918841606
+      },
+      {
+        "azimuthDeg": 59,
+        "altitudeDeg": 38.423028507133274,
+        "distanceMeters": 285,
+        "elevationMeters": 1103.390625,
+        "coverage": 1,
+        "nearAltitudeDeg": 38.423028507133274,
+        "midAltitudeDeg": 38.423028507133274
+      },
+      {
+        "azimuthDeg": 60,
+        "altitudeDeg": 38.423028507133274,
+        "distanceMeters": 285,
+        "elevationMeters": 1103.390625,
+        "coverage": 1,
+        "nearAltitudeDeg": 38.423028507133274,
+        "midAltitudeDeg": 38.423028507133274
+      },
+      {
+        "azimuthDeg": 61,
+        "altitudeDeg": 38.423028507133274,
+        "distanceMeters": 285,
+        "elevationMeters": 1103.390625,
+        "coverage": 1,
+        "nearAltitudeDeg": 38.423028507133274,
+        "midAltitudeDeg": 38.423028507133274
+      },
+      {
+        "azimuthDeg": 62,
+        "altitudeDeg": 38.423028507133274,
+        "distanceMeters": 285,
+        "elevationMeters": 1103.390625,
+        "coverage": 1,
+        "nearAltitudeDeg": 38.423028507133274,
+        "midAltitudeDeg": 38.423028507133274
+      },
+      {
+        "azimuthDeg": 63,
+        "altitudeDeg": 37.308938991834076,
+        "distanceMeters": 285,
+        "elevationMeters": 1094.49609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 37.308938991834076,
+        "midAltitudeDeg": 37.308938991834076
+      },
+      {
+        "azimuthDeg": 64,
+        "altitudeDeg": 37.308938991834076,
+        "distanceMeters": 285,
+        "elevationMeters": 1094.49609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 37.308938991834076,
+        "midAltitudeDeg": 37.308938991834076
+      },
+      {
+        "azimuthDeg": 65,
+        "altitudeDeg": 37.308938991834076,
+        "distanceMeters": 285,
+        "elevationMeters": 1094.49609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 37.308938991834076,
+        "midAltitudeDeg": 37.308938991834076
+      },
+      {
+        "azimuthDeg": 66,
+        "altitudeDeg": 37.308938991834076,
+        "distanceMeters": 285,
+        "elevationMeters": 1094.49609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 37.308938991834076,
+        "midAltitudeDeg": 37.308938991834076
+      },
+      {
+        "azimuthDeg": 67,
+        "altitudeDeg": 37.308938991834076,
+        "distanceMeters": 285,
+        "elevationMeters": 1094.49609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 37.308938991834076,
+        "midAltitudeDeg": 37.308938991834076
+      },
+      {
+        "azimuthDeg": 68,
+        "altitudeDeg": 37.308938991834076,
+        "distanceMeters": 285,
+        "elevationMeters": 1094.49609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 37.308938991834076,
+        "midAltitudeDeg": 37.308938991834076
+      },
+      {
+        "azimuthDeg": 69,
+        "altitudeDeg": 37.308938991834076,
+        "distanceMeters": 285,
+        "elevationMeters": 1094.49609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 37.308938991834076,
+        "midAltitudeDeg": 37.308938991834076
+      },
+      {
+        "azimuthDeg": 70,
+        "altitudeDeg": 37.308938991834076,
+        "distanceMeters": 285,
+        "elevationMeters": 1094.49609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 37.308938991834076,
+        "midAltitudeDeg": 37.308938991834076
+      },
+      {
+        "azimuthDeg": 71,
+        "altitudeDeg": 36.189159284202645,
+        "distanceMeters": 325,
+        "elevationMeters": 1115.08984375,
+        "coverage": 1,
+        "nearAltitudeDeg": 36.189159284202645,
+        "midAltitudeDeg": 36.189159284202645
+      },
+      {
+        "azimuthDeg": 72,
+        "altitudeDeg": 36.012514243144096,
+        "distanceMeters": 325,
+        "elevationMeters": 1113.5546875,
+        "coverage": 1,
+        "nearAltitudeDeg": 36.012514243144096,
+        "midAltitudeDeg": 36.012514243144096
+      },
+      {
+        "azimuthDeg": 73,
+        "altitudeDeg": 33.74841236295015,
+        "distanceMeters": 325,
+        "elevationMeters": 1094.4609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 33.74841236295015,
+        "midAltitudeDeg": 33.74841236295015
+      },
+      {
+        "azimuthDeg": 74,
+        "altitudeDeg": 33.74841236295015,
+        "distanceMeters": 325,
+        "elevationMeters": 1094.4609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 33.74841236295015,
+        "midAltitudeDeg": 33.74841236295015
+      },
+      {
+        "azimuthDeg": 75,
+        "altitudeDeg": 33.74841236295015,
+        "distanceMeters": 325,
+        "elevationMeters": 1094.4609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 33.74841236295015,
+        "midAltitudeDeg": 33.74841236295015
+      },
+      {
+        "azimuthDeg": 76,
+        "altitudeDeg": 35.975121555073606,
+        "distanceMeters": 285,
+        "elevationMeters": 1084.1875,
+        "coverage": 1,
+        "nearAltitudeDeg": 35.975121555073606,
+        "midAltitudeDeg": 35.975121555073606
+      },
+      {
+        "azimuthDeg": 77,
+        "altitudeDeg": 33.74841236295015,
+        "distanceMeters": 325,
+        "elevationMeters": 1094.4609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 33.74841236295015,
+        "midAltitudeDeg": 33.74841236295015
+      },
+      {
+        "azimuthDeg": 78,
+        "altitudeDeg": 33.74841236295015,
+        "distanceMeters": 325,
+        "elevationMeters": 1094.4609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 33.74841236295015,
+        "midAltitudeDeg": 33.74841236295015
+      },
+      {
+        "azimuthDeg": 79,
+        "altitudeDeg": 30.5302649051065,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1093.90625,
+        "coverage": 1,
+        "nearAltitudeDeg": 30.5302649051065,
+        "midAltitudeDeg": 30.5302649051065
+      },
+      {
+        "azimuthDeg": 80,
+        "altitudeDeg": 29.47524145162342,
+        "distanceMeters": 325,
+        "elevationMeters": 1061,
+        "coverage": 1,
+        "nearAltitudeDeg": 29.47524145162342,
+        "midAltitudeDeg": 29.47524145162342
+      },
+      {
+        "azimuthDeg": 81,
+        "altitudeDeg": 29.47524145162342,
+        "distanceMeters": 325,
+        "elevationMeters": 1061,
+        "coverage": 1,
+        "nearAltitudeDeg": 29.47524145162342,
+        "midAltitudeDeg": 29.47524145162342
+      },
+      {
+        "azimuthDeg": 82,
+        "altitudeDeg": 29.47524145162342,
+        "distanceMeters": 325,
+        "elevationMeters": 1061,
+        "coverage": 1,
+        "nearAltitudeDeg": 29.47524145162342,
+        "midAltitudeDeg": 29.47524145162342
+      },
+      {
+        "azimuthDeg": 83,
+        "altitudeDeg": 29.47524145162342,
+        "distanceMeters": 325,
+        "elevationMeters": 1061,
+        "coverage": 1,
+        "nearAltitudeDeg": 29.47524145162342,
+        "midAltitudeDeg": 29.47524145162342
+      },
+      {
+        "azimuthDeg": 84,
+        "altitudeDeg": 29.47524145162342,
+        "distanceMeters": 325,
+        "elevationMeters": 1061,
+        "coverage": 1,
+        "nearAltitudeDeg": 29.47524145162342,
+        "midAltitudeDeg": 29.47524145162342
+      },
+      {
+        "azimuthDeg": 85,
+        "altitudeDeg": 28.22112760200004,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1074.40625,
+        "coverage": 1,
+        "nearAltitudeDeg": 28.22112760200004,
+        "midAltitudeDeg": 28.22112760200004
+      },
+      {
+        "azimuthDeg": 86,
+        "altitudeDeg": 25.721340018462307,
+        "distanceMeters": 245,
+        "elevationMeters": 995.31640625,
+        "coverage": 1,
+        "nearAltitudeDeg": 25.721340018462307,
+        "midAltitudeDeg": 25.721340018462307
+      },
+      {
+        "azimuthDeg": 87,
+        "altitudeDeg": 25.721340018462307,
+        "distanceMeters": 245,
+        "elevationMeters": 995.31640625,
+        "coverage": 1,
+        "nearAltitudeDeg": 25.721340018462307,
+        "midAltitudeDeg": 25.721340018462307
+      },
+      {
+        "azimuthDeg": 88,
+        "altitudeDeg": 25.721340018462307,
+        "distanceMeters": 245,
+        "elevationMeters": 995.31640625,
+        "coverage": 1,
+        "nearAltitudeDeg": 25.721340018462307,
+        "midAltitudeDeg": 25.721340018462307
+      },
+      {
+        "azimuthDeg": 89,
+        "altitudeDeg": 25.721340018462307,
+        "distanceMeters": 245,
+        "elevationMeters": 995.31640625,
+        "coverage": 1,
+        "nearAltitudeDeg": 25.721340018462307,
+        "midAltitudeDeg": 25.721340018462307
+      },
+      {
+        "azimuthDeg": 90,
+        "altitudeDeg": 25.721340018462307,
+        "distanceMeters": 245,
+        "elevationMeters": 995.31640625,
+        "coverage": 1,
+        "nearAltitudeDeg": 25.721340018462307,
+        "midAltitudeDeg": 25.721340018462307
+      },
+      {
+        "azimuthDeg": 91,
+        "altitudeDeg": 23.510307138262213,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1037.0703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 23.510307138262213,
+        "midAltitudeDeg": 23.510307138262213
+      },
+      {
+        "azimuthDeg": 92,
+        "altitudeDeg": 23.510307138262213,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1037.0703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 23.510307138262213,
+        "midAltitudeDeg": 23.510307138262213
+      },
+      {
+        "azimuthDeg": 93,
+        "altitudeDeg": 23.510307138262213,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1037.0703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 23.510307138262213,
+        "midAltitudeDeg": 23.510307138262213
+      },
+      {
+        "azimuthDeg": 94,
+        "altitudeDeg": 23.510307138262213,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1037.0703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 23.510307138262213,
+        "midAltitudeDeg": 23.510307138262213
+      },
+      {
+        "azimuthDeg": 95,
+        "altitudeDeg": 23.510307138262213,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1037.0703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 23.510307138262213,
+        "midAltitudeDeg": 23.510307138262213
+      },
+      {
+        "azimuthDeg": 96,
+        "altitudeDeg": 22.738245920993283,
+        "distanceMeters": 245,
+        "elevationMeters": 979.96875,
+        "coverage": 1,
+        "nearAltitudeDeg": 22.738245920993283,
+        "midAltitudeDeg": 22.738245920993283
+      },
+      {
+        "azimuthDeg": 97,
+        "altitudeDeg": 22.738245920993283,
+        "distanceMeters": 245,
+        "elevationMeters": 979.96875,
+        "coverage": 1,
+        "nearAltitudeDeg": 22.738245920993283,
+        "midAltitudeDeg": 22.738245920993283
+      },
+      {
+        "azimuthDeg": 98,
+        "altitudeDeg": 22.22490273396608,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1027.36328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 22.22490273396608,
+        "midAltitudeDeg": 22.22490273396608
+      },
+      {
+        "azimuthDeg": 99,
+        "altitudeDeg": 22.22490273396608,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1027.36328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 22.22490273396608,
+        "midAltitudeDeg": 22.22490273396608
+      },
+      {
+        "azimuthDeg": 100,
+        "altitudeDeg": 22.22490273396608,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1027.36328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 22.22490273396608,
+        "midAltitudeDeg": 22.22490273396608
+      },
+      {
+        "azimuthDeg": 101,
+        "altitudeDeg": 21.878599992584203,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 1043.95703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.878599992584203,
+        "midAltitudeDeg": 21.878599992584203
+      },
+      {
+        "azimuthDeg": 102,
+        "altitudeDeg": 21.91016789135804,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 1044.22265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.91016789135804,
+        "midAltitudeDeg": 21.91016789135804
+      },
+      {
+        "azimuthDeg": 103,
+        "altitudeDeg": 21.91016789135804,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 1044.22265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.91016789135804,
+        "midAltitudeDeg": 21.91016789135804
+      },
+      {
+        "azimuthDeg": 104,
+        "altitudeDeg": 21.811727287506734,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1024.28125,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.811727287506734,
+        "midAltitudeDeg": 21.811727287506734
+      },
+      {
+        "azimuthDeg": 105,
+        "altitudeDeg": 21.811727287506734,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1024.28125,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.811727287506734,
+        "midAltitudeDeg": 21.811727287506734
+      },
+      {
+        "azimuthDeg": 106,
+        "altitudeDeg": 21.448955790052743,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1021.58984375,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.448955790052743,
+        "midAltitudeDeg": 21.448955790052743
+      },
+      {
+        "azimuthDeg": 107,
+        "altitudeDeg": 21.448955790052743,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1021.58984375,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.448955790052743,
+        "midAltitudeDeg": 21.448955790052743
+      },
+      {
+        "azimuthDeg": 108,
+        "altitudeDeg": 21.448955790052743,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1021.58984375,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.448955790052743,
+        "midAltitudeDeg": 21.448955790052743
+      },
+      {
+        "azimuthDeg": 109,
+        "altitudeDeg": 21.448955790052743,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1021.58984375,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.448955790052743,
+        "midAltitudeDeg": 21.448955790052743
+      },
+      {
+        "azimuthDeg": 110,
+        "altitudeDeg": 21.448955790052743,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1021.58984375,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.448955790052743,
+        "midAltitudeDeg": 21.448955790052743
+      },
+      {
+        "azimuthDeg": 111,
+        "altitudeDeg": 21.448955790052743,
+        "distanceMeters": 367.25,
+        "elevationMeters": 1021.58984375,
+        "coverage": 1,
+        "nearAltitudeDeg": 21.448955790052743,
+        "midAltitudeDeg": 21.448955790052743
+      },
+      {
+        "azimuthDeg": 112,
+        "altitudeDeg": 19.285743643912067,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 1022.51953125,
+        "coverage": 1,
+        "nearAltitudeDeg": 19.285743643912067,
+        "midAltitudeDeg": 19.285743643912067
+      },
+      {
+        "azimuthDeg": 113,
+        "altitudeDeg": 19.285743643912067,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 1022.51953125,
+        "coverage": 1,
+        "nearAltitudeDeg": 19.285743643912067,
+        "midAltitudeDeg": 19.285743643912067
+      },
+      {
+        "azimuthDeg": 114,
+        "altitudeDeg": 16.65629575152322,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 1017.609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 16.65629575152322,
+        "midAltitudeDeg": 16.65629575152322
+      },
+      {
+        "azimuthDeg": 115,
+        "altitudeDeg": 16.59574907082858,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 1000.984375,
+        "coverage": 1,
+        "nearAltitudeDeg": 16.59574907082858,
+        "midAltitudeDeg": 16.59574907082858
+      },
+      {
+        "azimuthDeg": 116,
+        "altitudeDeg": 15.561883490244094,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 1044.08203125,
+        "coverage": 1,
+        "nearAltitudeDeg": 15.561883490244094,
+        "midAltitudeDeg": 15.561883490244094
+      },
+      {
+        "azimuthDeg": 117,
+        "altitudeDeg": 13.75816661772684,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 978.91015625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.75816661772684,
+        "midAltitudeDeg": 13.75816661772684
+      },
+      {
+        "azimuthDeg": 118,
+        "altitudeDeg": 13.75816661772684,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 978.91015625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.75816661772684,
+        "midAltitudeDeg": 13.75816661772684
+      },
+      {
+        "azimuthDeg": 119,
+        "altitudeDeg": 13.454277881406743,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 989.4921875,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.454277881406743,
+        "midAltitudeDeg": 13.454277881406743
+      },
+      {
+        "azimuthDeg": 120,
+        "altitudeDeg": 10.37656807887417,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 953.28515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.37656807887417,
+        "midAltitudeDeg": 10.37656807887417
+      },
+      {
+        "azimuthDeg": 121,
+        "altitudeDeg": 10.37656807887417,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 953.28515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.37656807887417,
+        "midAltitudeDeg": 10.37656807887417
+      },
+      {
+        "azimuthDeg": 122,
+        "altitudeDeg": 10.37656807887417,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 953.28515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.37656807887417,
+        "midAltitudeDeg": 10.37656807887417
+      },
+      {
+        "azimuthDeg": 123,
+        "altitudeDeg": 10.37656807887417,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 953.28515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.37656807887417,
+        "midAltitudeDeg": 10.37656807887417
+      },
+      {
+        "azimuthDeg": 124,
+        "altitudeDeg": 8.280618471598817,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 945.546875,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.280618471598817,
+        "midAltitudeDeg": 8.280618471598817
+      },
+      {
+        "azimuthDeg": 125,
+        "altitudeDeg": 4.8753974363386465,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 917.29296875,
+        "coverage": 1,
+        "nearAltitudeDeg": 4.8753974363386465,
+        "midAltitudeDeg": 4.8753974363386465
+      },
+      {
+        "azimuthDeg": 126,
+        "altitudeDeg": 4.8753974363386465,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 917.29296875,
+        "coverage": 1,
+        "nearAltitudeDeg": 4.8753974363386465,
+        "midAltitudeDeg": 4.8753974363386465
+      },
+      {
+        "azimuthDeg": 127,
+        "altitudeDeg": 4.8753974363386465,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 917.29296875,
+        "coverage": 1,
+        "nearAltitudeDeg": 4.8753974363386465,
+        "midAltitudeDeg": 4.8753974363386465
+      },
+      {
+        "azimuthDeg": 128,
+        "altitudeDeg": 3.7162469165278296,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 904.2421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.7162469165278296,
+        "midAltitudeDeg": 3.7162469165278296
+      },
+      {
+        "azimuthDeg": 129,
+        "altitudeDeg": 3.7162469165278296,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 904.2421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.7162469165278296,
+        "midAltitudeDeg": 3.7162469165278296
+      },
+      {
+        "azimuthDeg": 130,
+        "altitudeDeg": 1.260561081475003,
+        "distanceMeters": 205,
+        "elevationMeters": 881.78515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 1.260561081475003,
+        "midAltitudeDeg": 1.260561081475003
+      },
+      {
+        "azimuthDeg": 131,
+        "altitudeDeg": 1.025168917441668,
+        "distanceMeters": 414.9925,
+        "elevationMeters": 884.7109375,
+        "coverage": 1,
+        "nearAltitudeDeg": 1.025168917441668,
+        "midAltitudeDeg": 1.025168917441668
+      },
+      {
+        "azimuthDeg": 132,
+        "altitudeDeg": -0.29377333264125977,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 874.8828125,
+        "coverage": 1,
+        "nearAltitudeDeg": -0.29377333264125977,
+        "midAltitudeDeg": -0.29377333264125977
+      },
+      {
+        "azimuthDeg": 133,
+        "altitudeDeg": -0.29377333264125977,
+        "distanceMeters": 468.941525,
+        "elevationMeters": 874.8828125,
+        "coverage": 1,
+        "nearAltitudeDeg": -0.29377333264125977,
+        "midAltitudeDeg": -0.29377333264125977
+      },
+      {
+        "azimuthDeg": 134,
+        "altitudeDeg": -0.6561808699726353,
+        "distanceMeters": 55000,
+        "elevationMeters": 484.734375,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.4035901712686778,
+        "midAltitudeDeg": -1.4035901712686778
+      },
+      {
+        "azimuthDeg": 135,
+        "altitudeDeg": -0.6563110703064341,
+        "distanceMeters": 55000,
+        "elevationMeters": 484.609375,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.4035901712686778,
+        "midAltitudeDeg": -1.4035901712686778
+      },
+      {
+        "azimuthDeg": 136,
+        "altitudeDeg": -0.6538616762485517,
+        "distanceMeters": 55000,
+        "elevationMeters": 486.9609375,
+        "coverage": 1,
+        "nearAltitudeDeg": -3.045284045258263,
+        "midAltitudeDeg": -2.464121703479217
+      },
+      {
+        "azimuthDeg": 137,
+        "altitudeDeg": -0.6431323470325998,
+        "distanceMeters": 55000,
+        "elevationMeters": 497.26171875,
+        "coverage": 1,
+        "nearAltitudeDeg": -3.045284045258263,
+        "midAltitudeDeg": -2.4570526446076557
+      },
+      {
+        "azimuthDeg": 138,
+        "altitudeDeg": -0.6407561877430297,
+        "distanceMeters": 55000,
+        "elevationMeters": 499.54296875,
+        "coverage": 1,
+        "nearAltitudeDeg": -3.045284045258263,
+        "midAltitudeDeg": -2.4562258492998983
+      },
+      {
+        "azimuthDeg": 139,
+        "altitudeDeg": -0.6343316038825765,
+        "distanceMeters": 55000,
+        "elevationMeters": 505.7109375,
+        "coverage": 1,
+        "nearAltitudeDeg": -3.222028627130002,
+        "midAltitudeDeg": -2.4597397224247515
+      },
+      {
+        "azimuthDeg": 140,
+        "altitudeDeg": -0.6314549841216587,
+        "distanceMeters": 55000,
+        "elevationMeters": 508.47265625,
+        "coverage": 1,
+        "nearAltitudeDeg": -4.527178979453603,
+        "midAltitudeDeg": -2.4638323282432215
+      },
+      {
+        "azimuthDeg": 141,
+        "altitudeDeg": -0.6069202798347697,
+        "distanceMeters": 55000,
+        "elevationMeters": 532.02734375,
+        "coverage": 1,
+        "nearAltitudeDeg": -4.954405210923451,
+        "midAltitudeDeg": -2.4677182139752056
+      },
+      {
+        "azimuthDeg": 142,
+        "altitudeDeg": -0.6064930582249487,
+        "distanceMeters": 55000,
+        "elevationMeters": 532.4375,
+        "coverage": 1,
+        "nearAltitudeDeg": -4.954405210923451,
+        "midAltitudeDeg": -2.4700331991481708
+      },
+      {
+        "azimuthDeg": 143,
+        "altitudeDeg": -0.612742698795392,
+        "distanceMeters": 55000,
+        "elevationMeters": 526.4375,
+        "coverage": 1,
+        "nearAltitudeDeg": -5.003921441439214,
+        "midAltitudeDeg": -2.4735883395443587
+      },
+      {
+        "azimuthDeg": 144,
+        "altitudeDeg": -0.6105699725019634,
+        "distanceMeters": 55000,
+        "elevationMeters": 528.5234375,
+        "coverage": 1,
+        "nearAltitudeDeg": -4.8762402613964175,
+        "midAltitudeDeg": -2.4753659027377215
+      },
+      {
+        "azimuthDeg": 145,
+        "altitudeDeg": -0.5951777843496981,
+        "distanceMeters": 55000,
+        "elevationMeters": 543.30078125,
+        "coverage": 1,
+        "nearAltitudeDeg": -4.67638427618596,
+        "midAltitudeDeg": -1.9925107412778775
+      },
+      {
+        "azimuthDeg": 146,
+        "altitudeDeg": -0.654834110172262,
+        "distanceMeters": 55000,
+        "elevationMeters": 486.02734375,
+        "coverage": 1,
+        "nearAltitudeDeg": -4.67638427618596,
+        "midAltitudeDeg": -1.489102375883836
+      },
+      {
+        "azimuthDeg": 147,
+        "altitudeDeg": -0.6683057687194613,
+        "distanceMeters": 55000,
+        "elevationMeters": 473.09375,
+        "coverage": 1,
+        "nearAltitudeDeg": -4.153455854106486,
+        "midAltitudeDeg": -0.8428333585887252
+      },
+      {
+        "azimuthDeg": 148,
+        "altitudeDeg": -0.40126468180602964,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 868.66015625,
+        "coverage": 1,
+        "nearAltitudeDeg": -3.2980033203523744,
+        "midAltitudeDeg": -0.40126468180602964
+      },
+      {
+        "azimuthDeg": 149,
+        "altitudeDeg": -0.0762619633783681,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 875.55078125,
+        "coverage": 1,
+        "nearAltitudeDeg": -2.866043692125576,
+        "midAltitudeDeg": -0.0762619633783681
+      },
+      {
+        "azimuthDeg": 150,
+        "altitudeDeg": 0.042084233605691364,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 878.4609375,
+        "coverage": 1,
+        "nearAltitudeDeg": -2.866043692125576,
+        "midAltitudeDeg": 0.042084233605691364
+      },
+      {
+        "azimuthDeg": 151,
+        "altitudeDeg": 0.7876485177305431,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 892.53515625,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.9446490424783516,
+        "midAltitudeDeg": 0.7876485177305431
+      },
+      {
+        "azimuthDeg": 152,
+        "altitudeDeg": 1.0714392278499343,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 900.7109375,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.967543573627034,
+        "midAltitudeDeg": 1.0714392278499343
+      },
+      {
+        "azimuthDeg": 153,
+        "altitudeDeg": 1.828446899025635,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 917.1953125,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.967543573627034,
+        "midAltitudeDeg": 1.828446899025635
+      },
+      {
+        "azimuthDeg": 154,
+        "altitudeDeg": 1.9745804432419036,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 920.37890625,
+        "coverage": 1,
+        "nearAltitudeDeg": -2.62272017130252,
+        "midAltitudeDeg": 1.9745804432419036
+      },
+      {
+        "azimuthDeg": 155,
+        "altitudeDeg": 2.5907241403654275,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 933.80859375,
+        "coverage": 1,
+        "nearAltitudeDeg": -2.62272017130252,
+        "midAltitudeDeg": 2.5907241403654275
+      },
+      {
+        "azimuthDeg": 156,
+        "altitudeDeg": 2.5907241403654275,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 933.80859375,
+        "coverage": 1,
+        "nearAltitudeDeg": -2.399666750795529,
+        "midAltitudeDeg": 2.5907241403654275
+      },
+      {
+        "azimuthDeg": 157,
+        "altitudeDeg": 2.588562239333656,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 927.25,
+        "coverage": 1,
+        "nearAltitudeDeg": -2.399666750795529,
+        "midAltitudeDeg": 2.588562239333656
+      },
+      {
+        "azimuthDeg": 158,
+        "altitudeDeg": 3.5979469978448404,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 946.74609375,
+        "coverage": 1,
+        "nearAltitudeDeg": -2.8267161967657954,
+        "midAltitudeDeg": 3.5979469978448404
+      },
+      {
+        "azimuthDeg": 159,
+        "altitudeDeg": 3.1079560465667946,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 937.27734375,
+        "coverage": 1,
+        "nearAltitudeDeg": -2.8267161967657954,
+        "midAltitudeDeg": 3.1079560465667946
+      },
+      {
+        "azimuthDeg": 160,
+        "altitudeDeg": 3.1079560465667946,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 937.27734375,
+        "coverage": 1,
+        "nearAltitudeDeg": -2.828545441810879,
+        "midAltitudeDeg": 3.1079560465667946
+      },
+      {
+        "azimuthDeg": 161,
+        "altitudeDeg": 2.0914286709253522,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 917.66015625,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.8864941697723627,
+        "midAltitudeDeg": 2.0914286709253522
+      },
+      {
+        "azimuthDeg": 162,
+        "altitudeDeg": 0.7213314254867844,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 891.2578125,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.808643027548677,
+        "midAltitudeDeg": 0.7213314254867844
+      },
+      {
+        "azimuthDeg": 163,
+        "altitudeDeg": 0.7213314254867844,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 891.2578125,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.808643027548677,
+        "midAltitudeDeg": 0.7213314254867844
+      },
+      {
+        "azimuthDeg": 164,
+        "altitudeDeg": 0.10879208253863742,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 879.4609375,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.9611331676657506,
+        "midAltitudeDeg": 0.10879208253863742
+      },
+      {
+        "azimuthDeg": 165,
+        "altitudeDeg": 0.10879208253863742,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 879.4609375,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.9611331676657506,
+        "midAltitudeDeg": 0.10879208253863742
+      },
+      {
+        "azimuthDeg": 166,
+        "altitudeDeg": -0.2688953463205461,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 872.1875,
+        "coverage": 1,
+        "nearAltitudeDeg": -2.352987711556854,
+        "midAltitudeDeg": -0.2688953463205461
+      },
+      {
+        "azimuthDeg": 167,
+        "altitudeDeg": -0.2688953463205461,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 872.1875,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.7232281077815144,
+        "midAltitudeDeg": -0.2688953463205461
+      },
+      {
+        "azimuthDeg": 168,
+        "altitudeDeg": -0.5463674963919029,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 866.84375,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.532219745097186,
+        "midAltitudeDeg": -0.5463674963919029
+      },
+      {
+        "azimuthDeg": 169,
+        "altitudeDeg": -0.6681186059683142,
+        "distanceMeters": 55000,
+        "elevationMeters": 473.2734375,
+        "coverage": 1,
+        "nearAltitudeDeg": -1.532219745097186,
+        "midAltitudeDeg": -1.532219745097186
+      },
+      {
+        "azimuthDeg": 170,
+        "altitudeDeg": -0.6095282619351091,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 866.95703125,
+        "coverage": 1,
+        "nearAltitudeDeg": -0.6095282619351091,
+        "midAltitudeDeg": -0.6095282619351091
+      },
+      {
+        "azimuthDeg": 171,
+        "altitudeDeg": -0.6095282619351091,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 866.95703125,
+        "coverage": 1,
+        "nearAltitudeDeg": -0.6095282619351091,
+        "midAltitudeDeg": -0.6095282619351091
+      },
+      {
+        "azimuthDeg": 172,
+        "altitudeDeg": 0.10787679237874596,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 879.18359375,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.10787679237874596,
+        "midAltitudeDeg": 0.10787679237874596
+      },
+      {
+        "azimuthDeg": 173,
+        "altitudeDeg": 0.10787679237874596,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 879.18359375,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.10787679237874596,
+        "midAltitudeDeg": 0.10787679237874596
+      },
+      {
+        "azimuthDeg": 174,
+        "altitudeDeg": 0.12735954550156017,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 879.515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.12735954550156017,
+        "midAltitudeDeg": 0.12735954550156017
+      },
+      {
+        "azimuthDeg": 175,
+        "altitudeDeg": 0.12735954550156017,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 879.515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.12735954550156017,
+        "midAltitudeDeg": 0.12735954550156017
+      },
+      {
+        "azimuthDeg": 176,
+        "altitudeDeg": 0.11796198588305205,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 879.35546875,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.11796198588305205,
+        "midAltitudeDeg": 0.11796198588305205
+      },
+      {
+        "azimuthDeg": 177,
+        "altitudeDeg": 0.11796198588305205,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 879.35546875,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.11796198588305205,
+        "midAltitudeDeg": 0.11796198588305205
+      },
+      {
+        "azimuthDeg": 178,
+        "altitudeDeg": 0.43678428992521073,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 884.7890625,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.43678428992521073,
+        "midAltitudeDeg": 0.43678428992521073
+      },
+      {
+        "azimuthDeg": 179,
+        "altitudeDeg": 0.43678428992521073,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 884.7890625,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.43678428992521073,
+        "midAltitudeDeg": 0.43678428992521073
+      },
+      {
+        "azimuthDeg": 180,
+        "altitudeDeg": 1.0232889078448881,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 897.07421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.8380782691647174,
+        "midAltitudeDeg": 1.0232889078448881
+      },
+      {
+        "azimuthDeg": 181,
+        "altitudeDeg": 0.8380782691647174,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 891.62890625,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.8380782691647174,
+        "midAltitudeDeg": 0.8380782691647174
+      },
+      {
+        "azimuthDeg": 182,
+        "altitudeDeg": 0.9698356334147317,
+        "distanceMeters": 863.9943626945906,
+        "elevationMeters": 891.95703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.9698356334147317,
+        "midAltitudeDeg": 0.9698356334147317
+      },
+      {
+        "azimuthDeg": 183,
+        "altitudeDeg": 0.9698356334147317,
+        "distanceMeters": 863.9943626945906,
+        "elevationMeters": 891.95703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 0.9698356334147317,
+        "midAltitudeDeg": 0.9698356334147317
+      },
+      {
+        "azimuthDeg": 184,
+        "altitudeDeg": 1.827911276775009,
+        "distanceMeters": 863.9943626945906,
+        "elevationMeters": 904.90625,
+        "coverage": 1,
+        "nearAltitudeDeg": 1.827911276775009,
+        "midAltitudeDeg": 1.827911276775009
+      },
+      {
+        "azimuthDeg": 185,
+        "altitudeDeg": 1.827911276775009,
+        "distanceMeters": 863.9943626945906,
+        "elevationMeters": 904.90625,
+        "coverage": 1,
+        "nearAltitudeDeg": 1.827911276775009,
+        "midAltitudeDeg": 1.827911276775009
+      },
+      {
+        "azimuthDeg": 186,
+        "altitudeDeg": 1.949252622609157,
+        "distanceMeters": 863.9943626945906,
+        "elevationMeters": 906.73828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 1.949252622609157,
+        "midAltitudeDeg": 1.949252622609157
+      },
+      {
+        "azimuthDeg": 187,
+        "altitudeDeg": 1.949252622609157,
+        "distanceMeters": 863.9943626945906,
+        "elevationMeters": 906.73828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 1.949252622609157,
+        "midAltitudeDeg": 1.949252622609157
+      },
+      {
+        "azimuthDeg": 188,
+        "altitudeDeg": 1.56711544769579,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 895.8203125,
+        "coverage": 1,
+        "nearAltitudeDeg": 1.56711544769579,
+        "midAltitudeDeg": 1.56711544769579
+      },
+      {
+        "azimuthDeg": 189,
+        "altitudeDeg": 1.56711544769579,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 895.8203125,
+        "coverage": 1,
+        "nearAltitudeDeg": 1.56711544769579,
+        "midAltitudeDeg": 1.56711544769579
+      },
+      {
+        "azimuthDeg": 190,
+        "altitudeDeg": 2.367502186606252,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 905.28515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 2.367502186606252,
+        "midAltitudeDeg": 2.367502186606252
+      },
+      {
+        "azimuthDeg": 191,
+        "altitudeDeg": 2.367502186606252,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 905.28515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 2.367502186606252,
+        "midAltitudeDeg": 2.367502186606252
+      },
+      {
+        "azimuthDeg": 192,
+        "altitudeDeg": 2.367502186606252,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 905.28515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 2.367502186606252,
+        "midAltitudeDeg": 2.367502186606252
+      },
+      {
+        "azimuthDeg": 193,
+        "altitudeDeg": 2.597913599079094,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 908.01171875,
+        "coverage": 1,
+        "nearAltitudeDeg": 2.597913599079094,
+        "midAltitudeDeg": 2.597913599079094
+      },
+      {
+        "azimuthDeg": 194,
+        "altitudeDeg": 2.597913599079094,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 908.01171875,
+        "coverage": 1,
+        "nearAltitudeDeg": 2.597913599079094,
+        "midAltitudeDeg": 2.597913599079094
+      },
+      {
+        "azimuthDeg": 195,
+        "altitudeDeg": 3.2998694600824856,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 911.828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.2998694600824856,
+        "midAltitudeDeg": 3.2998694600824856
+      },
+      {
+        "azimuthDeg": 196,
+        "altitudeDeg": 3.2998694600824856,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 911.828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.2998694600824856,
+        "midAltitudeDeg": 3.2998694600824856
+      },
+      {
+        "azimuthDeg": 197,
+        "altitudeDeg": 3.3417523413184846,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 908.23828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.3417523413184846,
+        "midAltitudeDeg": 3.3417523413184846
+      },
+      {
+        "azimuthDeg": 198,
+        "altitudeDeg": 3.6867178468658057,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 915.88671875,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.6867178468658057,
+        "midAltitudeDeg": 3.6867178468658057
+      },
+      {
+        "azimuthDeg": 199,
+        "altitudeDeg": 3.6867178468658057,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 915.88671875,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.6867178468658057,
+        "midAltitudeDeg": 3.6867178468658057
+      },
+      {
+        "azimuthDeg": 200,
+        "altitudeDeg": 3.6867178468658057,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 915.88671875,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.6867178468658057,
+        "midAltitudeDeg": 3.6867178468658057
+      },
+      {
+        "azimuthDeg": 201,
+        "altitudeDeg": 4.395188502790471,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 918.02734375,
+        "coverage": 1,
+        "nearAltitudeDeg": 4.395188502790471,
+        "midAltitudeDeg": 4.395188502790471
+      },
+      {
+        "azimuthDeg": 202,
+        "altitudeDeg": 3.5626558129946186,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 910.2890625,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.5626558129946186,
+        "midAltitudeDeg": 3.5626558129946186
+      },
+      {
+        "azimuthDeg": 203,
+        "altitudeDeg": 3.5626558129946186,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 910.2890625,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.5626558129946186,
+        "midAltitudeDeg": 3.5626558129946186
+      },
+      {
+        "azimuthDeg": 204,
+        "altitudeDeg": 3.8158274333710964,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 912.640625,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.8158274333710964,
+        "midAltitudeDeg": 3.8158274333710964
+      },
+      {
+        "azimuthDeg": 205,
+        "altitudeDeg": 3.8158274333710964,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 912.640625,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.8158274333710964,
+        "midAltitudeDeg": 3.8158274333710964
+      },
+      {
+        "azimuthDeg": 206,
+        "altitudeDeg": 3.8158274333710964,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 912.640625,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.8158274333710964,
+        "midAltitudeDeg": 3.8158274333710964
+      },
+      {
+        "azimuthDeg": 207,
+        "altitudeDeg": 3.8158274333710964,
+        "distanceMeters": 529.90392325,
+        "elevationMeters": 912.640625,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.8158274333710964,
+        "midAltitudeDeg": 3.8158274333710964
+      },
+      {
+        "azimuthDeg": 208,
+        "altitudeDeg": 3.8087722374680775,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 942.3515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.8087722374680775,
+        "midAltitudeDeg": 3.8087722374680775
+      },
+      {
+        "azimuthDeg": 209,
+        "altitudeDeg": 3.8087722374680775,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 942.3515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 3.8087722374680775,
+        "midAltitudeDeg": 3.8087722374680775
+      },
+      {
+        "azimuthDeg": 210,
+        "altitudeDeg": 4.707980622210339,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 957.76171875,
+        "coverage": 1,
+        "nearAltitudeDeg": 4.707980622210339,
+        "midAltitudeDeg": 4.707980622210339
+      },
+      {
+        "azimuthDeg": 211,
+        "altitudeDeg": 4.707980622210339,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 957.76171875,
+        "coverage": 1,
+        "nearAltitudeDeg": 4.707980622210339,
+        "midAltitudeDeg": 4.707980622210339
+      },
+      {
+        "azimuthDeg": 212,
+        "altitudeDeg": 5.368674690856116,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 969.109375,
+        "coverage": 1,
+        "nearAltitudeDeg": 5.368674690856116,
+        "midAltitudeDeg": 5.368674690856116
+      },
+      {
+        "azimuthDeg": 213,
+        "altitudeDeg": 5.102967510363399,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 964.54296875,
+        "coverage": 1,
+        "nearAltitudeDeg": 5.102967510363399,
+        "midAltitudeDeg": 5.102967510363399
+      },
+      {
+        "azimuthDeg": 214,
+        "altitudeDeg": 5.7909600468488005,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 976.375,
+        "coverage": 1,
+        "nearAltitudeDeg": 5.7909600468488005,
+        "midAltitudeDeg": 5.7909600468488005
+      },
+      {
+        "azimuthDeg": 215,
+        "altitudeDeg": 5.7909600468488005,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 976.375,
+        "coverage": 1,
+        "nearAltitudeDeg": 5.7909600468488005,
+        "midAltitudeDeg": 5.7909600468488005
+      },
+      {
+        "azimuthDeg": 216,
+        "altitudeDeg": 6.295813946688554,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 999.1015625,
+        "coverage": 1,
+        "nearAltitudeDeg": 5.7909600468488005,
+        "midAltitudeDeg": 6.295813946688554
+      },
+      {
+        "azimuthDeg": 217,
+        "altitudeDeg": 6.423833708835577,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1001.59765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 6.310904476563949,
+        "midAltitudeDeg": 6.423833708835577
+      },
+      {
+        "azimuthDeg": 218,
+        "altitudeDeg": 7.097897154041612,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1014.76171875,
+        "coverage": 1,
+        "nearAltitudeDeg": 6.310904476563949,
+        "midAltitudeDeg": 7.097897154041612
+      },
+      {
+        "azimuthDeg": 219,
+        "altitudeDeg": 7.296399130332959,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 1002.37109375,
+        "coverage": 1,
+        "nearAltitudeDeg": 7.296399130332959,
+        "midAltitudeDeg": 7.296399130332959
+      },
+      {
+        "azimuthDeg": 220,
+        "altitudeDeg": 8.284873274003193,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1038.0390625,
+        "coverage": 1,
+        "nearAltitudeDeg": 6.97979603265865,
+        "midAltitudeDeg": 8.284873274003193
+      },
+      {
+        "azimuthDeg": 221,
+        "altitudeDeg": 8.284873274003193,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1038.0390625,
+        "coverage": 1,
+        "nearAltitudeDeg": 6.97979603265865,
+        "midAltitudeDeg": 8.284873274003193
+      },
+      {
+        "azimuthDeg": 222,
+        "altitudeDeg": 8.284873274003193,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1038.0390625,
+        "coverage": 1,
+        "nearAltitudeDeg": 7.752119076662539,
+        "midAltitudeDeg": 8.284873274003193
+      },
+      {
+        "azimuthDeg": 223,
+        "altitudeDeg": 8.895843903194484,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1050.07421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 6.98679624756287,
+        "midAltitudeDeg": 8.895843903194484
+      },
+      {
+        "azimuthDeg": 224,
+        "altitudeDeg": 8.895843903194484,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1050.07421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 7.746268210411908,
+        "midAltitudeDeg": 8.895843903194484
+      },
+      {
+        "azimuthDeg": 225,
+        "altitudeDeg": 9.483959433951666,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1085.6875,
+        "coverage": 1,
+        "nearAltitudeDeg": 7.746268210411908,
+        "midAltitudeDeg": 9.483959433951666
+      },
+      {
+        "azimuthDeg": 226,
+        "altitudeDeg": 9.483959433951666,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1085.6875,
+        "coverage": 1,
+        "nearAltitudeDeg": 7.1531584559597645,
+        "midAltitudeDeg": 9.483959433951666
+      },
+      {
+        "azimuthDeg": 227,
+        "altitudeDeg": 9.777764922549183,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1092.265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 7.913628250339886,
+        "midAltitudeDeg": 9.777764922549183
+      },
+      {
+        "azimuthDeg": 228,
+        "altitudeDeg": 9.777764922549183,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1092.265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.391698644960869,
+        "midAltitudeDeg": 9.777764922549183
+      },
+      {
+        "azimuthDeg": 229,
+        "altitudeDeg": 10.04181617376904,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1098.1875,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.391698644960869,
+        "midAltitudeDeg": 10.04181617376904
+      },
+      {
+        "azimuthDeg": 230,
+        "altitudeDeg": 10.102117742711169,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1073.95703125,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.622015176880002,
+        "midAltitudeDeg": 10.102117742711169
+      },
+      {
+        "azimuthDeg": 231,
+        "altitudeDeg": 10.449928211166478,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1107.359375,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.96605920198862,
+        "midAltitudeDeg": 10.449928211166478
+      },
+      {
+        "azimuthDeg": 232,
+        "altitudeDeg": 10.35095201029214,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1105.1328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.96605920198862,
+        "midAltitudeDeg": 10.35095201029214
+      },
+      {
+        "azimuthDeg": 233,
+        "altitudeDeg": 10.634341177631418,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1111.51171875,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.807659108162271,
+        "midAltitudeDeg": 10.634341177631418
+      },
+      {
+        "azimuthDeg": 234,
+        "altitudeDeg": 10.423193471360477,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1106.7578125,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.807659108162271,
+        "midAltitudeDeg": 10.423193471360477
+      },
+      {
+        "azimuthDeg": 235,
+        "altitudeDeg": 10.635034692895797,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1111.52734375,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.807659108162271,
+        "midAltitudeDeg": 10.635034692895797
+      },
+      {
+        "azimuthDeg": 236,
+        "altitudeDeg": 10.635034692895797,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1111.52734375,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.765127376223262,
+        "midAltitudeDeg": 10.635034692895797
+      },
+      {
+        "azimuthDeg": 237,
+        "altitudeDeg": 10.707489606720083,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1113.16015625,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.765127376223262,
+        "midAltitudeDeg": 10.707489606720083
+      },
+      {
+        "azimuthDeg": 238,
+        "altitudeDeg": 10.707489606720083,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1113.16015625,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.38175393483698,
+        "midAltitudeDeg": 10.707489606720083
+      },
+      {
+        "azimuthDeg": 239,
+        "altitudeDeg": 10.444026131959307,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1107.2265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.38175393483698,
+        "midAltitudeDeg": 10.444026131959307
+      },
+      {
+        "azimuthDeg": 240,
+        "altitudeDeg": 10.633557601554111,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 1060.6796875,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.633557601554111,
+        "midAltitudeDeg": 10.633557601554111
+      },
+      {
+        "azimuthDeg": 241,
+        "altitudeDeg": 10.78857022692882,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1114.98828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.633557601554111,
+        "midAltitudeDeg": 10.78857022692882
+      },
+      {
+        "azimuthDeg": 242,
+        "altitudeDeg": 11.202629481731035,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1095.90234375,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.28890715390398,
+        "midAltitudeDeg": 11.202629481731035
+      },
+      {
+        "azimuthDeg": 243,
+        "altitudeDeg": 11.202629481731035,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1095.90234375,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.28890715390398,
+        "midAltitudeDeg": 11.202629481731035
+      },
+      {
+        "azimuthDeg": 244,
+        "altitudeDeg": 11.137485429991864,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 1069.5859375,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.137485429991864,
+        "midAltitudeDeg": 11.137485429991864
+      },
+      {
+        "azimuthDeg": 245,
+        "altitudeDeg": 10.951422809555318,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1090.87890625,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.089528949616268,
+        "midAltitudeDeg": 10.951422809555318
+      },
+      {
+        "azimuthDeg": 246,
+        "altitudeDeg": 10.96608509468782,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1091.171875,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.089528949616268,
+        "midAltitudeDeg": 10.96608509468782
+      },
+      {
+        "azimuthDeg": 247,
+        "altitudeDeg": 10.96608509468782,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1091.171875,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.423247029641459,
+        "midAltitudeDeg": 10.96608509468782
+      },
+      {
+        "azimuthDeg": 248,
+        "altitudeDeg": 10.897128845062594,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1117.4375,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.066866697202633,
+        "midAltitudeDeg": 10.897128845062594
+      },
+      {
+        "azimuthDeg": 249,
+        "altitudeDeg": 11.423200180749536,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1129.33203125,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.662557269015108,
+        "midAltitudeDeg": 11.423200180749536
+      },
+      {
+        "azimuthDeg": 250,
+        "altitudeDeg": 12.523831697342876,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1154.36328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.662557269015108,
+        "midAltitudeDeg": 12.523831697342876
+      },
+      {
+        "azimuthDeg": 251,
+        "altitudeDeg": 12.523831697342876,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1154.36328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.049111782829137,
+        "midAltitudeDeg": 12.523831697342876
+      },
+      {
+        "azimuthDeg": 252,
+        "altitudeDeg": 12.818893276660095,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1161.109375,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.049111782829137,
+        "midAltitudeDeg": 12.818893276660095
+      },
+      {
+        "azimuthDeg": 253,
+        "altitudeDeg": 12.818893276660095,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1161.109375,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.583552990781214,
+        "midAltitudeDeg": 12.818893276660095
+      },
+      {
+        "azimuthDeg": 254,
+        "altitudeDeg": 12.902983913529749,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 1101.04296875,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.902983913529749,
+        "midAltitudeDeg": 12.902983913529749
+      },
+      {
+        "azimuthDeg": 255,
+        "altitudeDeg": 12.604199820123004,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1156.19921875,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.52507554427323,
+        "midAltitudeDeg": 12.604199820123004
+      },
+      {
+        "azimuthDeg": 256,
+        "altitudeDeg": 12.604199820123004,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1156.19921875,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.52507554427323,
+        "midAltitudeDeg": 12.604199820123004
+      },
+      {
+        "azimuthDeg": 257,
+        "altitudeDeg": 12.943408447536962,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1163.9609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.907252435710834,
+        "midAltitudeDeg": 12.943408447536962
+      },
+      {
+        "azimuthDeg": 258,
+        "altitudeDeg": 13.198359730249228,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1169.80859375,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.907252435710834,
+        "midAltitudeDeg": 13.198359730249228
+      },
+      {
+        "azimuthDeg": 259,
+        "altitudeDeg": 13.198359730249228,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1169.80859375,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.17963786083649,
+        "midAltitudeDeg": 13.198359730249228
+      },
+      {
+        "azimuthDeg": 260,
+        "altitudeDeg": 13.416205853916361,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1213.515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.915555812854796,
+        "midAltitudeDeg": 13.416205853916361
+      },
+      {
+        "azimuthDeg": 261,
+        "altitudeDeg": 13.102151012645738,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1205.36328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.915555812854796,
+        "midAltitudeDeg": 13.102151012645738
+      },
+      {
+        "azimuthDeg": 262,
+        "altitudeDeg": 12.6764880215578,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1157.8515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.627628295409837,
+        "midAltitudeDeg": 12.6764880215578
+      },
+      {
+        "azimuthDeg": 263,
+        "altitudeDeg": 12.534473295722737,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1190.6796875,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.627628295409837,
+        "midAltitudeDeg": 12.534473295722737
+      },
+      {
+        "azimuthDeg": 264,
+        "altitudeDeg": 11.497870957455639,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1164.03125,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.266443559529861,
+        "midAltitudeDeg": 11.497870957455639
+      },
+      {
+        "azimuthDeg": 265,
+        "altitudeDeg": 10.885878430722972,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1117.18359375,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.266443559529861,
+        "midAltitudeDeg": 10.885878430722972
+      },
+      {
+        "azimuthDeg": 266,
+        "altitudeDeg": 10.192981787049455,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1101.58203125,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.585877105041696,
+        "midAltitudeDeg": 10.192981787049455
+      },
+      {
+        "azimuthDeg": 267,
+        "altitudeDeg": 10.173288863340318,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1130.26171875,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.585877105041696,
+        "midAltitudeDeg": 10.173288863340318
+      },
+      {
+        "azimuthDeg": 268,
+        "altitudeDeg": 10.344471607472009,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1134.609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.585877105041696,
+        "midAltitudeDeg": 10.344471607472009
+      },
+      {
+        "azimuthDeg": 269,
+        "altitudeDeg": 10.673849929741651,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1142.98828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.585877105041696,
+        "midAltitudeDeg": 10.673849929741651
+      },
+      {
+        "azimuthDeg": 270,
+        "altitudeDeg": 10.703298260303528,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1143.73828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.386811358877893,
+        "midAltitudeDeg": 10.703298260303528
+      },
+      {
+        "azimuthDeg": 271,
+        "altitudeDeg": 10.703298260303528,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1143.73828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.386811358877893,
+        "midAltitudeDeg": 10.703298260303528
+      },
+      {
+        "azimuthDeg": 272,
+        "altitudeDeg": 10.702838174148624,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1143.7265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.386811358877893,
+        "midAltitudeDeg": 10.702838174148624
+      },
+      {
+        "azimuthDeg": 273,
+        "altitudeDeg": 10.964949926340099,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 1008.421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.964949926340099,
+        "midAltitudeDeg": 10.964949926340099
+      },
+      {
+        "azimuthDeg": 274,
+        "altitudeDeg": 10.964949926340099,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 1008.421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.964949926340099,
+        "midAltitudeDeg": 10.964949926340099
+      },
+      {
+        "azimuthDeg": 275,
+        "altitudeDeg": 10.964949926340099,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 1008.421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.964949926340099,
+        "midAltitudeDeg": 10.964949926340099
+      },
+      {
+        "azimuthDeg": 276,
+        "altitudeDeg": 10.551662603358793,
+        "distanceMeters": 863.9943626945906,
+        "elevationMeters": 1038.29296875,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.551662603358793,
+        "midAltitudeDeg": 10.551662603358793
+      },
+      {
+        "azimuthDeg": 277,
+        "altitudeDeg": 11.271824765269425,
+        "distanceMeters": 863.9943626945906,
+        "elevationMeters": 1049.55859375,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.271824765269425,
+        "midAltitudeDeg": 11.271824765269425
+      },
+      {
+        "azimuthDeg": 278,
+        "altitudeDeg": 11.271824765269425,
+        "distanceMeters": 863.9943626945906,
+        "elevationMeters": 1049.55859375,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.271824765269425,
+        "midAltitudeDeg": 11.271824765269425
+      },
+      {
+        "azimuthDeg": 279,
+        "altitudeDeg": 11.43466349439184,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 1014.1875,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.43466349439184,
+        "midAltitudeDeg": 11.43466349439184
+      },
+      {
+        "azimuthDeg": 280,
+        "altitudeDeg": 11.915366626898262,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1140.5,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.43466349439184,
+        "midAltitudeDeg": 11.915366626898262
+      },
+      {
+        "azimuthDeg": 281,
+        "altitudeDeg": 12.0357719896274,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1143.23828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.43466349439184,
+        "midAltitudeDeg": 12.0357719896274
+      },
+      {
+        "azimuthDeg": 282,
+        "altitudeDeg": 12.0357719896274,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1143.23828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.430215426730317,
+        "midAltitudeDeg": 12.0357719896274
+      },
+      {
+        "azimuthDeg": 283,
+        "altitudeDeg": 11.900587684173916,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1140.1640625,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.430215426730317,
+        "midAltitudeDeg": 11.900587684173916
+      },
+      {
+        "azimuthDeg": 284,
+        "altitudeDeg": 11.848549608643003,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1173.0234375,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.761644675285003,
+        "midAltitudeDeg": 11.848549608643003
+      },
+      {
+        "azimuthDeg": 285,
+        "altitudeDeg": 12.234136523095536,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1182.9375,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.761644675285003,
+        "midAltitudeDeg": 12.234136523095536
+      },
+      {
+        "azimuthDeg": 286,
+        "altitudeDeg": 12.234136523095536,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1182.9375,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.12581240296198,
+        "midAltitudeDeg": 12.234136523095536
+      },
+      {
+        "azimuthDeg": 287,
+        "altitudeDeg": 12.730330710407586,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1195.73828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.221954479613817,
+        "midAltitudeDeg": 12.730330710407586
+      },
+      {
+        "azimuthDeg": 288,
+        "altitudeDeg": 13.081506750548126,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1204.828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.235964810419716,
+        "midAltitudeDeg": 13.081506750548126
+      },
+      {
+        "azimuthDeg": 289,
+        "altitudeDeg": 13.386445479835142,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1212.7421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.235964810419716,
+        "midAltitudeDeg": 13.386445479835142
+      },
+      {
+        "azimuthDeg": 290,
+        "altitudeDeg": 13.216460334305639,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1208.328125,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.496197020919265,
+        "midAltitudeDeg": 13.216460334305639
+      },
+      {
+        "azimuthDeg": 291,
+        "altitudeDeg": 13.072162953990231,
+        "distanceMeters": 1408.7200075622984,
+        "elevationMeters": 1204.5859375,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.496197020919265,
+        "midAltitudeDeg": 13.072162953990231
+      },
+      {
+        "azimuthDeg": 292,
+        "altitudeDeg": 13.176413626539675,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 1105.953125,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.176413626539675,
+        "midAltitudeDeg": 13.176413626539675
+      },
+      {
+        "azimuthDeg": 293,
+        "altitudeDeg": 12.690701113484852,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 1097.23828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.690701113484852,
+        "midAltitudeDeg": 12.690701113484852
+      },
+      {
+        "azimuthDeg": 294,
+        "altitudeDeg": 13.445330936247542,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 1110.79296875,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.445330936247542,
+        "midAltitudeDeg": 13.445330936247542
+      },
+      {
+        "azimuthDeg": 295,
+        "altitudeDeg": 13.445330936247542,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 1110.79296875,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.445330936247542,
+        "midAltitudeDeg": 13.445330936247542
+      },
+      {
+        "azimuthDeg": 296,
+        "altitudeDeg": 14.03787750524644,
+        "distanceMeters": 976.3136298448874,
+        "elevationMeters": 1121.49609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 14.03787750524644,
+        "midAltitudeDeg": 14.03787750524644
+      },
+      {
+        "azimuthDeg": 297,
+        "altitudeDeg": 14.045894627921259,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1153.421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 12.799284630723287,
+        "midAltitudeDeg": 14.045894627921259
+      },
+      {
+        "azimuthDeg": 298,
+        "altitudeDeg": 14.045894627921259,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1153.421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.044886129278792,
+        "midAltitudeDeg": 14.045894627921259
+      },
+      {
+        "azimuthDeg": 299,
+        "altitudeDeg": 14.53709582898432,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1163.49609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.044886129278792,
+        "midAltitudeDeg": 14.53709582898432
+      },
+      {
+        "azimuthDeg": 300,
+        "altitudeDeg": 14.53709582898432,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1163.49609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.044886129278792,
+        "midAltitudeDeg": 14.53709582898432
+      },
+      {
+        "azimuthDeg": 301,
+        "altitudeDeg": 14.8284255826473,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1169.4921875,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.565338262277942,
+        "midAltitudeDeg": 14.8284255826473
+      },
+      {
+        "azimuthDeg": 302,
+        "altitudeDeg": 14.083832244200252,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1190.21484375,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.565338262277942,
+        "midAltitudeDeg": 14.083832244200252
+      },
+      {
+        "azimuthDeg": 303,
+        "altitudeDeg": 14.097991968493101,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1154.48828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.594373032466748,
+        "midAltitudeDeg": 14.097991968493101
+      },
+      {
+        "azimuthDeg": 304,
+        "altitudeDeg": 15.096754044394212,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1213.75390625,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.594373032466748,
+        "midAltitudeDeg": 15.096754044394212
+      },
+      {
+        "azimuthDeg": 305,
+        "altitudeDeg": 15.096754044394212,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1213.75390625,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.365892175697066,
+        "midAltitudeDeg": 15.096754044394212
+      },
+      {
+        "azimuthDeg": 306,
+        "altitudeDeg": 15.22149434367633,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1216.66796875,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.365892175697066,
+        "midAltitudeDeg": 15.22149434367633
+      },
+      {
+        "azimuthDeg": 307,
+        "altitudeDeg": 15.866380269814638,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1231.7890625,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.365892175697066,
+        "midAltitudeDeg": 15.866380269814638
+      },
+      {
+        "azimuthDeg": 308,
+        "altitudeDeg": 15.708324659104349,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1228.07421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.17322540987853,
+        "midAltitudeDeg": 15.708324659104349
+      },
+      {
+        "azimuthDeg": 309,
+        "altitudeDeg": 15.708324659104349,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1228.07421875,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.17322540987853,
+        "midAltitudeDeg": 15.708324659104349
+      },
+      {
+        "azimuthDeg": 310,
+        "altitudeDeg": 15.521199740295415,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1223.68359375,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.713967588121305,
+        "midAltitudeDeg": 15.521199740295415
+      },
+      {
+        "azimuthDeg": 311,
+        "altitudeDeg": 15.521199740295415,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1223.68359375,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.032641714562978,
+        "midAltitudeDeg": 15.521199740295415
+      },
+      {
+        "azimuthDeg": 312,
+        "altitudeDeg": 14.984094248557323,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1211.125,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.032641714562978,
+        "midAltitudeDeg": 14.984094248557323
+      },
+      {
+        "azimuthDeg": 313,
+        "altitudeDeg": 14.984094248557323,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1211.125,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.500428180602453,
+        "midAltitudeDeg": 14.984094248557323
+      },
+      {
+        "azimuthDeg": 314,
+        "altitudeDeg": 15.010051710000523,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1211.73046875,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.302219711843811,
+        "midAltitudeDeg": 15.010051710000523
+      },
+      {
+        "azimuthDeg": 315,
+        "altitudeDeg": 15.010051710000523,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1211.73046875,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.042135923511546,
+        "midAltitudeDeg": 15.010051710000523
+      },
+      {
+        "azimuthDeg": 316,
+        "altitudeDeg": 14.84834326118833,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1207.9609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 11.042135923511546,
+        "midAltitudeDeg": 14.84834326118833
+      },
+      {
+        "azimuthDeg": 317,
+        "altitudeDeg": 14.84834326118833,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1207.9609375,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.569731183689623,
+        "midAltitudeDeg": 14.84834326118833
+      },
+      {
+        "azimuthDeg": 318,
+        "altitudeDeg": 14.410945651075954,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1197.79296875,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.648611553548696,
+        "midAltitudeDeg": 14.410945651075954
+      },
+      {
+        "azimuthDeg": 319,
+        "altitudeDeg": 14.410945651075954,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1197.79296875,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.303871816620934,
+        "midAltitudeDeg": 14.410945651075954
+      },
+      {
+        "azimuthDeg": 320,
+        "altitudeDeg": 14.112491025296247,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1154.78515625,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.303871816620934,
+        "midAltitudeDeg": 14.112491025296247
+      },
+      {
+        "azimuthDeg": 321,
+        "altitudeDeg": 14.188580752103196,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1156.34375,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.824720159026578,
+        "midAltitudeDeg": 14.188580752103196
+      },
+      {
+        "azimuthDeg": 322,
+        "altitudeDeg": 14.188580752103196,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1156.34375,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.912812663270342,
+        "midAltitudeDeg": 14.188580752103196
+      },
+      {
+        "azimuthDeg": 323,
+        "altitudeDeg": 13.448704913856732,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1175.5625,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.912812663270342,
+        "midAltitudeDeg": 13.448704913856732
+      },
+      {
+        "azimuthDeg": 324,
+        "altitudeDeg": 13.94621392448617,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1151.3828125,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.093749997058719,
+        "midAltitudeDeg": 13.94621392448617
+      },
+      {
+        "azimuthDeg": 325,
+        "altitudeDeg": 13.02389703013858,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1132.59765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.093749997058719,
+        "midAltitudeDeg": 13.02389703013858
+      },
+      {
+        "azimuthDeg": 326,
+        "altitudeDeg": 13.02389703013858,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1132.59765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 10.093749997058719,
+        "midAltitudeDeg": 13.02389703013858
+      },
+      {
+        "azimuthDeg": 327,
+        "altitudeDeg": 12.59711509313917,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1123.953125,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.824271486642305,
+        "midAltitudeDeg": 12.59711509313917
+      },
+      {
+        "azimuthDeg": 328,
+        "altitudeDeg": 12.59711509313917,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1123.953125,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.824271486642305,
+        "midAltitudeDeg": 12.59711509313917
+      },
+      {
+        "azimuthDeg": 329,
+        "altitudeDeg": 11.937016588249387,
+        "distanceMeters": 1246.6548739489367,
+        "elevationMeters": 1140.9921875,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.14264182891279,
+        "midAltitudeDeg": 11.937016588249387
+      },
+      {
+        "azimuthDeg": 330,
+        "altitudeDeg": 12.345352287323278,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1118.8671875,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.14264182891279,
+        "midAltitudeDeg": 12.345352287323278
+      },
+      {
+        "azimuthDeg": 331,
+        "altitudeDeg": 11.814535759516808,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1108.17578125,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.57966533123424,
+        "midAltitudeDeg": 11.814535759516808
+      },
+      {
+        "azimuthDeg": 332,
+        "altitudeDeg": 11.814535759516808,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1108.17578125,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.57966533123424,
+        "midAltitudeDeg": 11.814535759516808
+      },
+      {
+        "azimuthDeg": 333,
+        "altitudeDeg": 12.236336239397726,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1116.66796875,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.097701962855279,
+        "midAltitudeDeg": 12.236336239397726
+      },
+      {
+        "azimuthDeg": 334,
+        "altitudeDeg": 12.236336239397726,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1116.66796875,
+        "coverage": 1,
+        "nearAltitudeDeg": 8.097701962855279,
+        "midAltitudeDeg": 12.236336239397726
+      },
+      {
+        "azimuthDeg": 335,
+        "altitudeDeg": 11.619880361284874,
+        "distanceMeters": 1103.2344017247228,
+        "elevationMeters": 1104.265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 9.419008944745965,
+        "midAltitudeDeg": 11.619880361284874
+      },
+      {
+        "azimuthDeg": 336,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 337,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 338,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 339,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 340,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 341,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 342,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 343,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 344,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 345,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 346,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 347,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 348,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 349,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 350,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 351,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 352,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 353,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 354,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 355,
+        "altitudeDeg": 13.827111184424277,
+        "distanceMeters": 45,
+        "elevationMeters": 888.34765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 13.827111184424277,
+        "midAltitudeDeg": 13.827111184424277
+      },
+      {
+        "azimuthDeg": 356,
+        "altitudeDeg": 15.207196335258985,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 1061.265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 15.207196335258985,
+        "midAltitudeDeg": 15.207196335258985
+      },
+      {
+        "azimuthDeg": 357,
+        "altitudeDeg": 15.207196335258985,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 1061.265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 15.207196335258985,
+        "midAltitudeDeg": 15.207196335258985
+      },
+      {
+        "azimuthDeg": 358,
+        "altitudeDeg": 15.207196335258985,
+        "distanceMeters": 676.634319597925,
+        "elevationMeters": 1061.265625,
+        "coverage": 1,
+        "nearAltitudeDeg": 15.207196335258985,
+        "midAltitudeDeg": 15.207196335258985
+      },
+      {
+        "azimuthDeg": 359,
+        "altitudeDeg": 18.707306064800296,
+        "distanceMeters": 598.7914332725001,
+        "elevationMeters": 1080.09765625,
+        "coverage": 1,
+        "nearAltitudeDeg": 18.707306064800296,
+        "midAltitudeDeg": 18.707306064800296
+      }
+    ]
+  }
+}

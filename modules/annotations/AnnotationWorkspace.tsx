@@ -1,3 +1,4 @@
+import { MarkerSolarTimeline } from '../sky/MarkerSolarTimeline';
 import { useEffect, useRef, useState } from 'react';
 import { ComparisonEditorPositionButton } from '../mapComparison/ComparisonEditorPosition';
 import {
@@ -389,12 +390,14 @@ export function AnnotationWorkspace({
               </>
             ))}
           {tab === 'data' && <MarkerData item={item} change={change} />}
+          {tab === 'position' && <MarkerSolarTimeline markerId={item.id} markerName={item.name} coordinates={item.coordinates} />}
         </div>
       )}
       {!editing && view === 'details' && (
         <div className="marker-scroll marker-details">
           <h3>{item.name || '未命名'}</h3>
           <AnnotationLocation item={item} onEdit={() => startEdit(true)} />
+          <MarkerSolarTimeline markerId={item.id} markerName={item.name} coordinates={item.coordinates} />
           <p>{dimensionLabel(item)} · 体积约 {volume(item)?.toFixed(2)} m³</p>
           {(item.attributes ?? []).length > 0 && (
             <dl>

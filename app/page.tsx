@@ -6,7 +6,7 @@ import type { CatalogEntry } from '@/modules/collections/catalog';
 import { objectRecenterPlan } from '@/modules/map/objectCenter';
 import { collectionHighlightData } from '@/modules/collections/selectionHighlight';
 import { cachePackagePreview } from '@/modules/outdoor/cachePackagePreview';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MapSourceHealthResult } from '@/modules/mapSources/health';
 import { drawingMapProjection } from '@/modules/mapComparison/drawingMapProjection';
 import { AboutPanel } from '@/modules/help/AboutPanel';
@@ -76,6 +76,7 @@ import { createIndustryToolsState, IndustryTools, type IndustryToolsState } from
 import { MapActions } from '@/modules/controls/MapActions';
 import { CameraGizmo } from '@/modules/controls/CameraGizmo';
 import { RoutePanel } from '@/modules/navigation/RoutePanel';
+import { plannedRouteSkyJourney, requestSkyJourney, savedTrackSkyJourney } from '@/modules/sky/journeyPlayback';
 import { useNavigation } from '@/modules/navigation/useNavigation';
 import { useSearchQuickNavigation } from '@/modules/navigation/useSearchQuickNavigation';
 import { createSearchNavigationDraft } from '@/modules/navigation/searchNavigationDraft';
@@ -184,6 +185,7 @@ import {
 } from '@/modules/section/types';
 import { useAnnotations } from '@/modules/annotations/useAnnotations';
 import { AnnotationPanel } from '@/modules/annotations/AnnotationPanel';
+import { OpenMarkerSky, type SkyOrigin } from '@/modules/sky/markerView';
 import {
   AnnotationWorkspace,
   type MarkerTab,
@@ -224,7 +226,21 @@ import {
   type ViewState,
 } from '@/modules/map/types';
 
+const JourneyViewer = lazy(() => import('@/modules/sky/JourneyViewer').then(module => ({default:module.JourneyViewer})));
+const SkyViewer = lazy(() => import('@/modules/sky/SkyViewer').then(module => ({ default: module.SkyViewer })));
+
 export default function Home() {
+  const [skyJourney,setSkyJourney]=useState<import('@/modules/sky/journeyPlayback').SkyJourney|null>(null);
+  useEffect(()=>{
+    const open=(event:Event)=>{
+      const journey=(event as CustomEvent<import('@/modules/sky/journeyPlayback').SkyJourney>).detail;
+      if(journey?.segments?.length)setSkyJourney(journey);
+    };
+    window.addEventListener('shantu:sky-journey',open);
+    return ()=>window.removeEventListener('shantu:sky-journey',open);
+  },[]);
+  const [skyOrigin, setSkyOrigin] = useState<SkyOrigin | null>(null);
+  const skyStartedLocation = useRef(false);
   const desktopShell = isDesktopShell();
   useEffect(() => {
     const back = (event: Event) => {
@@ -2002,9 +2018,12 @@ export default function Home() {
 
   return (
     <TextSuggestions.Provider value={suggestionValues}>
+      <OpenMarkerSky.Provider value={setSkyOrigin}>
       <CurrentMapContext.Provider value={() => map.current?.shareMapStyle() ?? null}>
       <main
         className="observatory home-map"
+        data-journey-open={!!skyJourney}
+        data-sky-open={!!skyOrigin}
         data-comparing={comparison !== null}
         data-ui-style="outdoor"
         data-guiding={guidance.active}
@@ -2141,6 +2160,11 @@ export default function Home() {
             onEdit: editPlannedPoints,
             onShow: () => map.current?.fitCollection(navigation.route!.coordinates, { top: 80, right: 32, bottom: 150, left: 24 }),
             onDetails: () => setComparison(null),
+            onPlayJourney: () => {
+              if (!navigation.route) return;
+              const title = defaultRouteName(navigation.start ?? { name: '起点' }, navigation.end ?? { name: '终点' });
+              requestSkyJourney(plannedRouteSkyJourney(navigation.route, title));
+            },
             onClose: () => setPanel(null),
             onDelete: stopNavigation,
           } : null}
@@ -2232,6 +2256,9 @@ export default function Home() {
           onSelectMarker: id => annotations.items.some(item => item.id === id) && annotations.select(id),
           selectedTrack: !editor.session && selectedTrack ? { id: selectedTrack.id, name: selectedTrack.name } : null,
           onRecenterSelectedTrack: () => selectedTrack && recenterObject({ kind: 'track', id: selectedTrack.id }),
+          onPlaySelectedTrack: selectedTrack?.segments.some(line => line.length > 0)
+            ? () => requestSkyJourney(savedTrackSkyJourney(selectedTrack))
+            : undefined,
           editingTrack: !!editor.session,
           onBackEditor: backEditor,
           onEditSelectedTrack: () => {
@@ -3475,6 +3502,15 @@ export default function Home() {
             setPanel(null);
             setRouteQr('');
           }}
+          onSky={() => {
+            const center = map.current?.centerCoordinate() ?? mapCenter ?? INITIAL_VIEW.center;
+            setSkyOrigin({ coordinates: [center[0], center[1]] });
+            setPanel(null);
+            if (!position.watching) {
+              skyStartedLocation.current = true;
+              position.locate();
+            }
+          }}
           onPhotoMarkers={() => { gpsPhotoPoints.current = []; }}
           onSection={TERRAIN_SECTION_ENABLED ? toggleSection : undefined}
           sectionActive={sectionEditing || survey.active}
@@ -4254,8 +4290,23 @@ export default function Home() {
             }}
           />
         )}
+        {skyJourney && <Suspense fallback={<div className="journey-viewer" role="status">正在打开行程模拟…</div>}>
+          <JourneyViewer journey={skyJourney} onClose={()=>setSkyJourney(null)}/>
+        </Suspense>}
+        {skyOrigin && <Suspense fallback={<div className="sky-viewer" role="status">正在打开日月观景…</div>}>
+          <SkyViewer mapPoint={skyOrigin.coordinates} markerName={skyOrigin.markerName} fix={skyOrigin.markerName ? null : position.fix} locate={() => {
+            if (!position.watching) skyStartedLocation.current = true;
+            position.locate();
+          }} onClose={() => {
+            setSkyOrigin(null);
+            if (skyOrigin.markerName) return;
+            if (skyStartedLocation.current) { position.stopLocation(); skyStartedLocation.current = false; }
+            setPanel('tools');
+          }}/>
+        </Suspense>}
       </main>
       </CurrentMapContext.Provider>
+      </OpenMarkerSky.Provider>
     </TextSuggestions.Provider>
   );
 }

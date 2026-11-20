@@ -55,6 +55,7 @@ import { linkedRouteMarkers, routeConnectionLabel } from './routeInfo';
 import { useRouteDialogFocus } from './useRouteDialogFocus';
 import type { ElevationSample } from '../journey/metrics.ts';
 import { withTerrainProfileSamples } from './terrainProfileSamples.ts';
+import { requestSkyJourney, savedTrackSkyJourney } from '../sky/journeyPlayback';
 import './routeWindows.css';
 
 export function RouteBack({ onBack }: { onBack: () => void }) {
@@ -125,11 +126,11 @@ export function RouteDetails({
   const onProfileSamples = (samples: ElevationSample[], profileLines: Coordinate[][]) => {
     setProfileSnapshot({ trackId: track.id, geometryKey: trackGeometryKey, lines: profileLines, samples });
   };
-  const shareWithProfile = () => {
+  const trackWithProfile = () => {
     const snapshot = profileSnapshot?.trackId === track.id && profileSnapshot.geometryKey === trackGeometryKey
       ? profileSnapshot
       : null;
-    onShare(snapshot ? withTerrainProfileSamples(track, snapshot.lines, snapshot.samples) : track);
+    return snapshot ? withTerrainProfileSamples(track, snapshot.lines, snapshot.samples) : track;
   };
   const root = useRouteDialogFocus(() =>
     confirmDelete ? setConfirmDelete(false) : onBack(),
@@ -168,7 +169,7 @@ export function RouteDetails({
           <button
             className="route-solid"
             disabled={track.segments.reduce((count, line) => count + line.length, 0) < 2}
-            onClick={shareWithProfile}
+            onClick={() => onShare(trackWithProfile())}
           >
             <Share2 size={16} />
             分享
@@ -208,6 +209,11 @@ export function RouteDetails({
           <section className="route-detail-group route-detail-stats-group" aria-label="路线统计">
           {(track.source === 'recorded' || hasTrackTime(track)) ? <RecordedDetails track={track} /> : <p className="route-origin-note">{trackSourceLabel(track)} · 不包含实走用时、速度记录。{onSource && <button onClick={onSource}>查看实走原件：{sourceName}</button>}</p>}
           <RouteAnalysisSummary track={track} onShowMetric={onShowMetric} />
+          {track.id !== DRAFT_ID && track.segments.some(line => line.length > 0) && (
+            <button type="button" className="route-solid" onClick={() => requestSkyJourney(savedTrackSkyJourney(trackWithProfile()))}>
+              轨迹模拟
+            </button>
+          )}
           <details className="route-detail-basic-more">
           <summary>基本资料</summary>
           <dl className="route-data-rows">

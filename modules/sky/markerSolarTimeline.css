@@ -1,0 +1,114 @@
+.marker-solar-timeline {
+  min-width: 0;
+  margin-block: 3px;
+  font-size: 11px;
+}
+.marker-solar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.marker-solar-actions .marker-sky-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  gap: 3px;
+  padding-inline: 5px;
+  min-height: 28px;
+}
+.marker-solar-actions .marker-solar-switch {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  flex: 1 1 auto;
+  width: auto;
+  min-height: 28px;
+  padding-inline: 7px;
+  color: var(--ui-text, inherit);
+}
+.marker-solar-switch i {
+  position: relative;
+  width: 23px;
+  height: 12px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  margin-inline-start: auto;
+  opacity: .7;
+}
+.marker-solar-switch i::before {
+  position: absolute;
+  inset: 2px auto 2px 2px;
+  width: 6px;
+  border-radius: 50%;
+  content: '';
+  background: currentColor;
+}
+.marker-solar-switch[aria-checked='true'] i {
+  color: var(--ui-accent, #d8d76f);
+  opacity: 1;
+}
+.marker-solar-switch[aria-checked='true'] i::before {
+  inset-inline: auto 2px;
+}
+.marker-solar-day {
+  display: grid;
+  gap: 3px;
+  padding: 4px 7px;
+  margin-top: 3px;
+  border-radius: var(--ui-control-radius, 4px);
+  background: var(--ui-field, #16202b);
+  font-variant-numeric: tabular-nums;
+}
+.marker-solar-day .marker-solar-time,
+.marker-solar-day .marker-solar-times,
+.marker-solar-day .marker-solar-crossings {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+}
+.marker-solar-day .marker-solar-crossings { justify-content: flex-start; }
+.marker-solar-day .marker-solar-rail {
+  position: relative;
+  height: 10px;
+  border-radius: 4px;
+  background: color-mix(in srgb, currentColor 17%, transparent);
+}
+.marker-solar-rail i {
+  position: absolute;
+  inset-block: 0;
+}
+.marker-solar-light {
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ui-accent, #d8d76f) 64%, transparent);
+}
+.marker-solar-event {
+  width: 1px;
+  background: var(--ui-accent, #d8d76f);
+}
+.marker-solar-now {
+  width: 2px;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+.marker-solar-day .marker-solar-times,
+.marker-solar-day .marker-solar-basis { font-size: 10px; opacity: .78; }
+
+.marker-solar-diagram { min-width:0; }
+.marker-solar-symbols { position:relative; height:18px; }
+.marker-solar-symbol {
+  position: absolute;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  inline-size: 17px;
+  block-size: 17px;
+  transform: translateX(-50%);
+}
+.marker-solar-day .marker-solar-symbol svg { inline-size: 17px; block-size: 17px; }
+.marker-solar-day .rise { color:#ffd377; }
+.marker-solar-day .set { color:#ff9c78; }
+.marker-solar-day .marker-solar-symbol svg, .marker-solar-day .marker-solar-caption svg { display:block; flex:none; filter:drop-shadow(0 1px 1px #18212b); }
+.marker-solar-caption { display:inline-flex; align-items:center; gap:3px; }

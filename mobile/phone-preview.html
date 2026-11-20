@@ -30,9 +30,17 @@ if(check){
 frame.style.width=width+'px';frame.style.height=height+'px';
 let keyboard,material;
 function fit(){const stage=document.querySelector('#preview-stage').getBoundingClientRect();const availableWidth=Math.max(1,stage.width-16),availableHeight=Math.max(1,stage.height-16);const scale=Math.min(1,availableWidth/width,availableHeight/screenHeight);phone.style.width=width*scale+'px';phone.style.height=screenHeight*scale+'px';frame.style.top=statusBarHeight*scale+'px';frame.style.transform='scale('+scale+')';keyboard?.setScale(scale)}
-frame.src='/'+location.hash;
+const scene=new URLSearchParams(location.search).get('scene');
+const skyPreview=scene==='sky'||scene==='journey'||scene==='marker';
+if(skyPreview) {
+  document.title=scene==='journey'?'山兔 · 第一人称行程模拟':scene==='marker'?'山兔 · 标记点观景':'山兔 · 青城山日月观景';
+  document.querySelector('#preview-material').hidden=true;
+  document.body.style.display='block';
+  document.querySelector('#preview-stage').style.height='100%';
+}
+frame.src=(skyPreview?(scene==='journey'?'/journey-preview.html':scene==='marker'?'/sky-preview.html?marker=1':'/sky-preview.html'):'/')+location.hash;
 frame.addEventListener('load',()=>{const sync=()=>history.replaceState(null,'',location.pathname+location.search+frame.contentWindow.location.hash);frame.contentWindow.addEventListener('hashchange',sync);sync()});
 keyboard=installPhonePreviewKeyboard({phone,frame,width,height});
-material=installPhonePreviewMaterial({frame,onLayoutChange:fit});
+if(!skyPreview)material=installPhonePreviewMaterial({frame,onLayoutChange:fit});
 addEventListener('resize',fit);fit();
 </script></body></html>

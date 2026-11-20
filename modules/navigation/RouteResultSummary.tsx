@@ -3,6 +3,8 @@ import { RouteProviderNote } from './RouteProviderNote';
 import { RouteElevationSummary } from '../journey/RouteElevationSummary';
 import { formatDistance, formatDuration, TRAVEL_MODES, type PlannedRoute } from './types';
 import { RouteRemovalControl } from './RouteRemovalControl';
+import { defaultRouteName } from './routeName';
+import { plannedRouteSkyJourney, requestSkyJourney } from '../sky/journeyPlayback';
 import './routeResultSummary.css';
 
 export function RouteResultSummary({ route, start, end, mode, loading, planningError, planningPositionStatus = '', onModeChange, onSwap, onShow, onEdit, onSave, onShare, onCache, onStartNavigation, navigating, guidanceError, saveMessage, onEditPoints, onCancel, previewMode, onPreview, onPreviewTopDown, onExitPreview, quickRouteControls }: {
@@ -70,6 +72,10 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
           setDetailsOpen(!detailsOpen);
         }}>{detailsOpen ? '收起详情' : '路线详情'}</button>
         {onPreview && <button type="button" onClick={onPreview}>第一人称预览</button>}
+        {route.coordinates.length > 0 && <button type="button" disabled={loading} onClick={() => {
+          const title = defaultRouteName(start ?? { name: '起点' }, end ?? { name: '终点' });
+          requestSkyJourney(plannedRouteSkyJourney(route, title));
+        }}>轨迹模拟</button>}
         {onEditPoints && <button type="button" onClick={onEditPoints}>编辑线点</button>}
         {onCache && <button type="button" onClick={onCache}>缓存地图</button>}
         {onCancel && <RouteRemovalControl onRemove={onCancel} label="清除当前规划" buttonClassName="route-danger" />}

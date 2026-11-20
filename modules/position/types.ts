@@ -8,6 +8,7 @@ export type PositionFix = {
   speed?: number;
   heading?: number;
   headingAccuracy?: number;
+  mslAltitudeMeters?: number;
 };
 export type LocationMode = 'auto' | 'network';
 export type DirectionMode = 'free' | 'north' | 'device' | 'motion';

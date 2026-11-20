@@ -1,3 +1,4 @@
+import { MarkerSolarTimeline } from '../sky/MarkerSolarTimeline';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Camera, Pencil, Share2, Upload, X } from 'lucide-react';
 import { SmartTextarea } from '../input/SmartText';
@@ -161,6 +162,7 @@ export function PinEditor({ state, item, photos, pendingPhoto, onClose, onShare,
         <output aria-label="标记地面海拔" aria-live="polite">{state.reading ? '读取中…' : item.groundElevation === null ? '暂无数据' : `${Number(item.groundElevation.toFixed(1))} 米`}</output>
         <button disabled={state.reading} aria-label="重新读取标记地面海拔" onClick={() => void state.refreshElevation(item.id, item.coordinates)}>重读</button>
       </div>
+      <MarkerSolarTimeline markerId={item.id} markerName={item.name} coordinates={item.coordinates} />
       <div className="pin-style-row">
         <button aria-label="选择标记图案" onClick={() => setPicker('icon')}><span>图案</span><AnnotationIcon item={item} size={18}/><b>{markerIcon(item.icon).name}</b><span>⌄</span></button>
         <button aria-label="选择标记颜色" onClick={() => setPicker('color')}><span>颜色</span><i style={{ background: item.color }}/><b>{COLORS.includes(item.color.toLowerCase()) ? '预设' : '自定'}</b><span>⌄</span></button>

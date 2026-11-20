@@ -4,7 +4,7 @@
   --compare-top: calc(var(--home-top) + 36px);
   --compare-half: calc((100% - var(--compare-top) - var(--home-bottom) - 44px) / 2);
 }
-.observatory.home-map[data-comparing='true'] > :not(.map-canvas):not(.map-comparison-ui) { display: none !important; }
+.observatory.home-map[data-comparing='true'] > :not(.map-canvas):not(.map-comparison-ui):not(.sky-viewer):not(.journey-viewer) { display: none !important; }
 .observatory.home-map[data-comparing='true']::before { display: none; }
 .observatory.home-map[data-comparing='true'] > .map-canvas {
   left: 0 !important; right: 0 !important; bottom: auto !important;

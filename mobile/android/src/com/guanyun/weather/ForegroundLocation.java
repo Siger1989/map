@@ -104,6 +104,14 @@ final class ForegroundLocation implements LocationListener {
                     if(best.hasSpeed())fix.put("speed",best.getSpeed());
                     if(best.hasBearing())fix.put("heading",best.getBearing());
                     if(best.hasBearingAccuracy())fix.put("headingAccuracy",best.getBearingAccuracyDegrees());
+                    if (android.os.Build.VERSION.SDK_INT >= 34 &&
+                        best.hasMslAltitude() && best.hasMslAltitudeAccuracy() &&
+                        Double.isFinite(best.getMslAltitudeMeters()) &&
+                        Float.isFinite(best.getMslAltitudeAccuracyMeters()) &&
+                        best.getMslAltitudeAccuracyMeters() > 0) {
+                        fix.put("mslAltitudeMeters", best.getMslAltitudeMeters());
+                        fix.put("mslAltitudeAccuracyMeters", best.getMslAltitudeAccuracyMeters());
+                    }
                     state.put("fix",fix);
                 }
             }

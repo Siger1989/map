@@ -14,11 +14,13 @@ final class ArchiveOutput {
     }
     String finish(String token, boolean share) {
         String name = transfer.name(token);
+        final boolean video = ArchiveTransfer.isSkyVideo(name);
+        if (video && share) return "请先保存录像再分享";
         final File file;
         try { file = transfer.finish(token); }
         catch (Exception e) { return e.getMessage() == null ? "压缩包校验失败" : e.getMessage(); }
         final String extension = name.substring(name.lastIndexOf('.') + 1);
-        final String mime = RouteShareProvider.mime(name);
+        final String mime = video ? "video/" + extension : RouteShareProvider.mime(name);
         activity.runOnUiThread(() -> {
             if (!activity.trustedForeground()) { file.delete(); return; }
             if (!share) { files.saveGenerated(name, mime, file); return; }

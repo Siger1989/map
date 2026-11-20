@@ -2,6 +2,8 @@ package com.guanyun.weather;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.UUID;
@@ -9,6 +11,7 @@ import java.util.zip.ZipFile;
 
 /** No caller-supplied paths. One bounded, ordered transfer into private cache. */
 final class ArchiveTransfer {
+    private static final int VIDEO_LIMIT = 64 * 1024 * 1024;
     static final int LIMIT = 256 * 1024 * 1024;
     private final File directory;
     private String token, name;
@@ -22,10 +25,12 @@ final class ArchiveTransfer {
         if (token != null) return "已有压缩包正在输出";
         boolean zip = name != null && name.matches("Shantu-(route|collection)-[0-9]{1,16}\\.zip");
         boolean text = name != null && name.matches("(Shantu-workspace\\.json|Shantu-(route-coordinates-[0-9]{1,16}|coordinates-[0-9]{4}-[0-9]{2}-[0-9]{2})\\.(json|csv))");
-        if ((!zip && !text) || size < (zip ? 22 : 2) || size > (zip ? LIMIT : 100 * 1024 * 1024)) return "文件名称或大小无效";
+        boolean video = isSkyVideo(name);
+        if ((!zip && !text && !video) || size < (zip ? 22 : video ? 12 : 2)
+                || size > (zip ? LIMIT : video ? VIDEO_LIMIT : 100 * 1024 * 1024)) return "文件名称或大小无效";
         try {
             if (!directory.isDirectory() && !directory.mkdirs()) throw new Exception();
-            File[] old = directory.listFiles(f -> f.getName().matches("[a-f0-9-]{36}\\.(zip|json|csv)") && System.currentTimeMillis() - f.lastModified() > 86400000L);
+            File[] old = directory.listFiles(f -> f.getName().matches("[a-f0-9-]{36}\\.(zip|json|csv|webm|mp4)") && System.currentTimeMillis() - f.lastModified() > 86400000L);
             if (old != null) for (File f : old) f.delete();
             token = UUID.randomUUID().toString(); this.name = name; expected = size; written = 0;
             file = new File(directory, token + name.substring(name.lastIndexOf('.'))); stream = new FileOutputStream(file); touched = System.currentTimeMillis();
@@ -47,6 +52,7 @@ final class ArchiveTransfer {
         try {
             if (written != expected) throw new Exception("压缩包尚未传输完整");
             stream.close(); stream = null;
+            if (isSkyVideo(name)) validateVideo(file, name);
             if (name.endsWith(".zip")) try (ZipFile zip = new ZipFile(file)) {
                 if (zip.size() == 0 || zip.size() > 4000) throw new Exception("压缩包条目数量无效");
                 java.util.Enumeration<? extends java.util.zip.ZipEntry> entries = zip.entries();
@@ -60,6 +66,17 @@ final class ArchiveTransfer {
             }
             File complete = file; file = null; token = null; name = null; return complete;
         } catch (Exception e) { close(); throw e; }
+    }
+    static boolean isSkyVideo(String name) {
+        return name != null && name.matches("Shantu-sky-journey-[0-9]{1,16}\\.(mp4|webm)");
+    }
+    private static void validateVideo(File file, String name) throws Exception {
+        try (DataInputStream input = new DataInputStream(new FileInputStream(file))) {
+            int signature = input.readInt();
+            if (name.endsWith(".webm") ? signature == 0x1a45dfa3
+                    : signature >= 8 && input.readInt() == 0x66747970) return;
+        }
+        throw new Exception("录像格式无效");
     }
     synchronized void cancel(String id) { if (token != null && token.equals(id)) close(); }
     synchronized void close() {
