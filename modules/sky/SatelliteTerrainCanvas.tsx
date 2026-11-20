@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import type { SkyObserver } from './astronomy';
 import type { DeviceSkyOptics, DeviceSkyPose } from './deviceSkyCamera';
-import { createSatelliteTerrain, type SatelliteTerrainStatus } from './satelliteTerrainRenderer';
+import { createSatelliteTerrain, type SatelliteTerrainCamera, type SatelliteTerrainStatus } from './satelliteTerrainRenderer';
+
+import type { JourneyTerrainRoute } from './journeyRouteOverlay';
 
 interface Props {
   observer: SkyObserver;
@@ -10,6 +12,8 @@ interface Props {
   width: number;
   height: number;
   eyeHeightMeters?: number;
+  journeyRoute?: JourneyTerrainRoute;
+  onCameraResolved?: (camera: SatelliteTerrainCamera) => void;
   onRender?: () => void;
   onStatus?: (status: SatelliteTerrainStatus) => void;
   canvasRef?: (canvas: HTMLCanvasElement | null) => void;
@@ -35,8 +39,8 @@ export function SatelliteTerrainCanvas(props: Props) {
     request.current = requestAnimationFrame(() => {
       request.current = 0;
       if (!renderer.current) return;
-      const { observer, pose, optics, width, height, eyeHeightMeters } = view.current;
-      publish(renderer.current.draw(observer, pose, optics, width, height, eyeHeightMeters));
+      const { observer, pose, optics, width, height, eyeHeightMeters, journeyRoute, onCameraResolved } = view.current;
+      publish(renderer.current.draw(observer, pose, optics, width, height, eyeHeightMeters, journeyRoute, onCameraResolved));
       view.current.onRender?.();
     });
   }
@@ -76,7 +80,7 @@ export function SatelliteTerrainCanvas(props: Props) {
     return () => props.canvasRef?.(null);
   }, [props.canvasRef]);
 
-  useEffect(() => { queue(); }, [props.observer, props.pose, props.optics, props.width, props.height, props.eyeHeightMeters]);
+  useEffect(() => { queue(); }, [props.observer, props.pose, props.optics, props.width, props.height, props.eyeHeightMeters, props.journeyRoute]);
 
   return <canvas ref={element} aria-hidden="true" data-layer="satellite-terrain" style={{
     position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none',

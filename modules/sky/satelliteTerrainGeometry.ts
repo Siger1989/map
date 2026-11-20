@@ -26,8 +26,8 @@ export function coordinate(x: number, y: number, zoom: number) {
   return [360 * x / size - 180, Math.atan(Math.sinh(Math.PI * (1 - 2 * y / size))) / rad] as const;
 }
 
-export function eyeCell(longitude: number, latitude: number) {
-  const [x, y] = mercator(longitude, latitude, 14);
+export function eyeCell(longitude: number, latitude: number, zoom = 14) {
+  const [x, y] = mercator(longitude, latitude, zoom);
   return `${Math.floor(2 * x)}/${Math.floor(2 * y)}`;
 }
 
@@ -42,9 +42,11 @@ function delta(lon: number, x: number, period: number) {
 }
 
 /** One base ring and nested subdivisions, sorted from the observer out. */
-export function planSatelliteTiles(longitude: number, latitude: number): Tile[] {
+export function planSatelliteTiles(longitude: number, latitude: number, nearZoom = detailZoom,
+  focus: readonly (readonly [number, number])[] = []): Tile[] {
   const [centerX, centerY] = mercator(longitude, latitude, baseZoom);
   const size = 2 ** baseZoom;
+  const focusCoordinates = focus.map(([lng, lat]) => mercator(lng, lat, baseZoom));
   const startX = Math.floor(centerX);
   const startY = Math.floor(centerY);
   const leaves: Tile[] = [];
@@ -58,18 +60,23 @@ export function planSatelliteTiles(longitude: number, latitude: number): Tile[] 
     const distanceX = delta(centerX * scale, value.x + 0.5, size * scale);
     const distanceY = centerY * scale - value.y - 0.5;
     const edge = Math.hypot(Math.max(0, Math.abs(distanceX) - .5), Math.max(0, Math.abs(distanceY) - .5));
-    return { edge, center: Math.hypot(distanceX, distanceY) / scale };
+    const contained = focusCoordinates.reduce((count, [x,y]) => {
+      const localX = delta(x * scale, value.x + .5, size * scale);
+      const localY = y * scale - value.y - .5;
+      return count + (localX >= -.5 && localX < .5 && localY >= -.5 && localY < .5 ? 1 : 0);
+    }, 0);
+    return { edge, center: Math.hypot(distanceX, distanceY) / scale, contained };
   }
   while (leaves.length + 3 <= maxTiles) {
     const selected = leaves.map((value, index) => ({ value, index, ...score(value) }))
-      .filter(({ value, edge }) => value.z < detailZoom && edge < 0.38)
-      .sort((a, b) => (a.edge ? 1 : 0) - (b.edge ? 1 : 0) || a.value.z - b.value.z || a.center - b.center)[0];
+      .filter(({ value, edge, contained }) => value.z < nearZoom && (contained > 0 || edge < 0.38))
+      .sort((a, b) => Number(b.contained > 0) - Number(a.contained > 0) || (a.contained && b.contained ? 0 : (a.edge ? 1 : 0) - (b.edge ? 1 : 0)) || a.value.z - b.value.z || b.contained - a.contained || a.center - b.center)[0];
     if (!selected) break;
     const { z, x, y } = selected.value;
     leaves.splice(selected.index, 1, tile(z + 1, 2 * x, 2 * y), tile(z + 1, 2 * x + 1, 2 * y),
       tile(z + 1, 2 * x, 2 * y + 1), tile(z + 1, 2 * x + 1, 2 * y + 1));
   }
-  return leaves.sort((a, b) => score(a).center - score(b).center);
+  return leaves.sort((a, b) => Number(score(b).contained > 0) - Number(score(a).contained > 0) || score(a).center - score(b).center);
 }
 
 export function earthPosition(longitude: number, latitude: number, height: number): Vec3 {

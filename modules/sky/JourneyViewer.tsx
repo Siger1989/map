@@ -32,10 +32,12 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   const [canvas,setCanvas]=useState<HTMLCanvasElement|null>(null);
   const recording=useRef<ReturnType<typeof startSkyJourneyRecording>|null>(null);
   const captureSurface=useRef<HTMLCanvasElement|null>(null);
+  const presented = useRef<{canvas: HTMLCanvasElement; fraction: number} | null>(null);
   const timing=useRef({index:0,count:1});
   const encodingState=useRef({phase,imagery});
   encodingState.current={phase,imagery};
   const composeRecordingFrame=useCallback((frame:HTMLCanvasElement,fraction:number)=>{
+    presented.current = {canvas: frame, fraction};
     const rec=recording.current;
     const state=encodingState.current;
     if(rec?.timedFrames && (state.phase!=='recording'||!['ready','partial'].includes(state.imagery)))return;
@@ -45,7 +47,11 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
     if(!target || !frame.width || !frame.height)return;
     target.getContext('2d',{alpha:false})?.drawImage(frame,0,0,target.width,target.height);
     if(!rec)return;
-    if(!rec.timedFrames){rec.requestFrame();return;}
+    if(!rec.timedFrames){
+      rec.requestFrame();
+      if(fraction >= 1 && state.phase === 'recording') setPhase('saving');
+      return;
+    }
     if(!rec.requestFrame(true,Math.round(clock.index*1e6/12)))return;
     if(clock.index===clock.count){clock.index++;setPhase('saving');return;}
     clock.index++;setProgress(clock.index/clock.count);
@@ -55,9 +61,7 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   lastProgress.current=progress;
   const capture=phase==='arming' || phase==='recording' || phase==='saving';
   const distance=progress*model.totalDistanceM;
-  const frame=getJourneyPlaybackFrame(model,distance);
-  const bearing=frame?.headingDeg ?? 0;
-  const slope=frame?.cameraElevationM!=null && frame.lookAtElevationM!=null ? Math.atan2(frame.lookAtElevationM-frame.cameraElevationM,22)*180/Math.PI : 0;
+  const frame=useMemo(()=>getJourneyPlaybackFrame(model,distance),[model,distance]);
   const [stage,setStage]=useState<HTMLDivElement|null>(null);
   const [size,setSize]=useState({width:390,height:480});
   useEffect(()=>{
@@ -77,7 +81,12 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   const textured=imagery==='ready'||imagery==='partial';
   useEffect(()=>{
     if(phase!=='arming'||!canvas||!textured)return;
-    const timer=window.setTimeout(()=>{
+    let request = 0;
+    const startAtTrailhead = () => {
+      if (presented.current?.canvas !== canvas || presented.current.fraction !== 0) {
+        request = requestAnimationFrame(startAtTrailhead);
+        return;
+      }
       try{
         const target=document.createElement('canvas');
         const scale=Math.min(1,960/Math.max(1,canvas.width,canvas.height));
@@ -90,8 +99,9 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
         composeRecordingFrame(canvas,0);
         setMessage('');setPhase('recording');
       }catch(e){abort(e instanceof Error?e.message:'此设备无法录制视频');}
-    },450);
-    return ()=>clearTimeout(timer);
+    };
+    request = requestAnimationFrame(startAtTrailhead);
+    return ()=>cancelAnimationFrame(request);
   },[phase,canvas,textured,seconds,abort,composeRecordingFrame]);
   useEffect(()=>{
     if(phase!=='recording' && phase!=='playing')return;
@@ -109,7 +119,7 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
       lastProgress.current=initial;setProgress(initial);
       if(initial<1){raf=requestAnimationFrame(tick);return;}
       if(phase==='playing'){setPhase('paused');return;}
-      setPhase('saving');
+      // The recorder finishes when the compositor presents the actual arrival frame.
     };
     raf=requestAnimationFrame(tick);return ()=>cancelAnimationFrame(raf);
   },[phase,seconds,textured,abort]);
@@ -118,13 +128,12 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
     // Let the compositor paint the arrival moment before asking for the final encoded chunk.
     const timer=window.setTimeout(async()=>{
       const rec=recording.current;if(!rec)return;
-      if(canvas && !rec.timedFrames)composeRecordingFrame(canvas,1);
       try{const blob=await rec.stop();if(mounted.current && recording.current===rec){setMovie(blob);setMessage('录像已完成，可以保存');}}
       catch(e){if(mounted.current)setMessage(e instanceof Error?e.message:'视频编码失败');}
       finally{if(mounted.current && recording.current===rec){recording.current=null;captureSurface.current=null;setPhase('paused');}}
     },150);
     return ()=>clearTimeout(timer);
-  },[phase,canvas,composeRecordingFrame]);
+  },[phase]);
   useEffect(()=>{
     if(phase!=='arming')return;
     const timeout=window.setTimeout(()=>abort('尚未收到可录制的天地图卫星影像，请加载后重试'),20000);
@@ -133,7 +142,7 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   const select=(fraction:number)=>{if(capture)return;setPhase('paused');setProgress(clamp(fraction));};
   const launch=(record:boolean)=>{
     if(!valid){setForm(true);setMessage('请填写有效的出发和到达日期时间，到达须晚于出发');return;}
-    if(record||progress>=1){lastProgress.current=0;setProgress(0);}
+    if(record||progress>=1){presented.current=null;lastProgress.current=0;setProgress(0);}
     setForm(false);setMessage('');setPhase(record?'arming':'playing');
   };
   const save=async()=>{
@@ -143,14 +152,13 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   };
   const at=(start??Date.now())+Math.max(0,(end??0)-(start??0))*progress;
   const status=imagery==='unavailable'||imagery==='error'?'天地图卫星影像暂不可用':imagery==='loading'?'正在加载天地图卫星影像':imagery==='partial'?'部分卫星影像已加载':'';
-  const pose=useMemo(()=>({azimuth:bearing,altitude:Math.min(24,Math.max(-24,slope-4)),roll:0}),[bearing,slope]);
-  return <section className="journey-viewer" role="dialog" aria-modal="true" aria-label="第一人称行程模拟" onKeyDown={e=>{
+  return <section className="journey-viewer" role="dialog" aria-modal="true" aria-label="第三人称行程模拟" onKeyDown={e=>{
     if(e.key==='Escape'){e.preventDefault();e.stopPropagation();onClose();}
   }}>
-    <header><div><strong>行程模拟</strong><small>{journey.name}</small></div><button autoFocus type="button" onClick={onClose}>退出</button></header>
+    <header><div><strong>第三人称行程模拟</strong><small>{journey.name}</small></div><button autoFocus type="button" onClick={onClose}>退出</button></header>
     <div className="journey-window" ref={setStage}>
-      {frame && <JourneyStage position={frame.cameraCoordinates} altitude={frame.cameraElevationM} pose={pose} time={at} zone={zone} name={journey.name} progress={progress}
-        distance={distance} total={model.totalDistanceM} {...size} onCanvas={setCanvas} onFrame={composeRecordingFrame} onImagery={setImagery}/>}
+      {frame && <JourneyStage model={model} frame={frame} time={at} zone={zone} name={journey.name} progress={progress}
+        {...size} onCanvas={setCanvas} onFrame={composeRecordingFrame} onImagery={setImagery}/>}
       {status && <span className="journey-imagery">{status}</span>}
     </div>
     <section className="journey-controls" aria-label="行程时间轴">

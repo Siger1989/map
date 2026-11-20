@@ -1,10 +1,19 @@
 import type { SkyObserver } from './astronomy';
 import type { DeviceSkyOptics, DeviceSkyPose } from './deviceSkyCamera';
 import {
-  buildSatelliteMesh, demTileFor, earthAxis, earthPosition, eyeCell, mercator, planSatelliteTiles, surfaceHeight,
+  buildSatelliteMesh, demTileFor, earthAxis, earthPosition, eyeCell, mercator, planSatelliteTiles, surfaceHeight, terrainHeight,
   type Tile, type Vec3,
 } from './satelliteTerrainGeometry';
 import { loadSatelliteDem, loadSatelliteTile, satelliteImageryAvailable } from './satelliteTerrainTiles';
+import { buildJourneyRouteOverlay, routeImageryFocus, type JourneyTerrainRoute, type RouteProjection } from './journeyRouteOverlay';
+import { resolveJourneyCamera } from './journeyCamera';
+
+export interface SatelliteTerrainCamera {
+  observer: SkyObserver;
+  pose: DeviceSkyPose;
+  routeReady: boolean;
+  subjectAltitude: number | null;
+}
 
 export type SatelliteTerrainStatus = 'loading' | 'ready' | 'partial' | 'unavailable' | 'error';
 const rad = Math.PI / 180;
@@ -51,7 +60,10 @@ interface Mesh {
   count: number;
 }
 
-function link(gl: WebGLRenderingContext) {
+const overlayVertex = 'attribute vec3 position; void main(){gl_Position=vec4(position,1.0);}';
+const overlayFragment = 'precision mediump float; uniform vec4 ink; void main(){gl_FragColor=ink;}';
+
+function link(gl: WebGLRenderingContext, vs = vertexShader, fs = fragmentShader) {
   function compile(type: number, source: string) {
     const shader = gl.createShader(type);
     if (!shader) throw Error('三维地形无法初始化');
@@ -61,8 +73,8 @@ function link(gl: WebGLRenderingContext) {
     gl.deleteShader(shader);
     throw Error('三维地形着色失败');
   }
-  const vertex = compile(gl.VERTEX_SHADER, vertexShader);
-  const fragment = compile(gl.FRAGMENT_SHADER, fragmentShader);
+  const vertex = compile(gl.VERTEX_SHADER, vs);
+  const fragment = compile(gl.FRAGMENT_SHADER, fs);
   const program = gl.createProgram();
   if (!program) throw Error('三维地形无法初始化');
   gl.attachShader(program, vertex);
@@ -98,6 +110,55 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
   gl.enableVertexAttribArray(coordinate);
   gl.enableVertexAttribArray(imageUv);
 
+  let overlay: { program: WebGLProgram; buffer: WebGLBuffer; attribute: number; ink: WebGLUniformLocation | null } | null = null;
+
+  function drawRoute(route: JourneyTerrainRoute, view: RouteProjection, subjectAltitude: number | null) {
+    if (!overlay) {
+      const routeProgram = link(gl, overlayVertex, overlayFragment);
+      const buffer = gl.createBuffer();
+      if (!buffer) { gl.deleteProgram(routeProgram); return false; }
+      overlay = { program: routeProgram, buffer, attribute: gl.getAttribLocation(routeProgram, 'position'), ink: gl.getUniformLocation(routeProgram, 'ink') };
+    }
+    const { program: routeProgram, buffer, attribute, ink } = overlay;
+    const geometry = buildJourneyRouteOverlay(route, view, meshHeightAt, subjectAltitude);
+    gl.useProgram(routeProgram);
+    gl.disableVertexAttribArray(coordinate);
+    gl.disableVertexAttribArray(imageUv);
+    gl.enableVertexAttribArray(attribute);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.vertexAttribPointer(attribute, 3, gl.FLOAT, false, 0, 0);
+    gl.depthMask(false);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    const paint = (vertices: number[], color: [number,number,number,number]) => {
+      if (!vertices.length) return;
+      gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
+      gl.uniform4fv(ink,color);
+      gl.drawArrays(gl.TRIANGLES,0,vertices.length/3);
+    };
+    // A muted trace behind ridges preserves orientation without merging
+    // occluded and terrain-visible parts of the route.
+    gl.depthFunc(gl.GREATER);
+    paint(geometry.past,[.16,.66,.69,.34]);
+    paint(geometry.future,[1,.67,.17,.42]);
+    gl.depthFunc(gl.LEQUAL);
+    paint(geometry.casing,[.03,.10,.13,.94]);
+    paint(geometry.past,[.20,.88,.85,1]);
+    paint(geometry.future,[1,.76,.24,1]);
+    gl.disable(gl.DEPTH_TEST);
+    paint(geometry.outline,[.04,.12,.17,1]);
+    paint(geometry.arrow,[1,.93,.69,1]);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LESS);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+    gl.disableVertexAttribArray(attribute);
+    gl.enableVertexAttribArray(coordinate);
+    gl.enableVertexAttribArray(imageUv);
+    gl.useProgram(program);
+    return geometry.arrow.length > 0;
+  }
+
   let active = true;
   let area = '';
   let tiles: Tile[] = [];
@@ -119,7 +180,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     const existing = incomingDem.get(dem.key);
     if (existing) return existing.request;
     const controller = new AbortController();
-    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(9_000)]);
+    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(12_000)]);
     const request = loadSatelliteDem(dem, signal).then(heights => {
       if (active && !signal.aborted && heights) {
         if (demCache.size >= maxResident) demCache.delete(demCache.keys().next().value!);
@@ -219,7 +280,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     }
   }
 
-  function requestArea(observer: SkyObserver) {
+  function requestArea(observer: SkyObserver, route?: JourneyTerrainRoute) {
     const { longitude, latitude } = observer;
     if (!satelliteImageryAvailable() || !Number.isFinite(longitude) || !Number.isFinite(latitude) ||
         Math.abs(latitude) > 85.05112878) {
@@ -232,10 +293,12 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
       }
       return;
     }
-    const cell = eyeCell(longitude, latitude);
+    const focus = route ? routeImageryFocus(route) : [];
+    const corridor = focus.map(([lng,lat]) => eyeCell(lng,lat,16)).join('|');
+    const cell = eyeCell(longitude, latitude, route ? 16 : 14) + (route ? '|' + corridor : '');
     if (cell === area) return;
     area = cell;
-    tiles = planSatelliteTiles(longitude, latitude);
+    tiles = planSatelliteTiles(longitude, latitude, route ? 17 : undefined, focus);
     desired = new Set(tiles.map(tile => tile.key));
     for (const [key, controller] of pending) {
       if (!desired.has(key)) controller.abort();
@@ -244,23 +307,46 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     schedule();
   }
 
-  function groundAt(observer: SkyObserver) {
-    for (const tile of tiles) {
-      const [x, y] = mercator(observer.longitude, observer.latitude, tile.z);
-      if (x < tile.x || x >= tile.x + 1 || y < tile.y || y >= tile.y + 1) continue;
-      const mesh = resident.get(tile.key);
-      if (!mesh) return null;
-      const elevation = surfaceHeight(tile, mesh.height, x - tile.x, y - tile.y);
-      return Number.isFinite(elevation) ? elevation : null;
+  function meshHeightAt(longitude: number, latitude: number) {
+    for (let z = 17; z >= 9; z--) {
+      const [x, y] = mercator(longitude, latitude, z);
+      const tx = Math.floor(x), ty = Math.floor(y);
+      const key = [z,tx,ty].join('/');
+      const mesh = desired.has(key) ? resident.get(key) : undefined;
+      if (mesh) {
+        const elevation = surfaceHeight(mesh.tile, mesh.height, x-tx, y-ty);
+        return Number.isFinite(elevation) ? elevation : null;
+      }
+    }
+    return null;
+  }
+
+  function heightAt(longitude: number, latitude: number) {
+    const rendered = meshHeightAt(longitude, latitude);
+    if (rendered !== null) return rendered;
+    for (let z = 12; z >= 9; z--) {
+      const [x,y] = mercator(longitude,latitude,z);
+      const tx=Math.floor(x),ty=Math.floor(y);
+      const heights=demCache.get([z,tx,ty].join('/'));
+      if (!heights) continue;
+      const height=terrainHeight(heights,x-tx,y-ty);
+      if (Number.isFinite(height)) return height;
     }
     return null;
   }
 
   function draw(observer: SkyObserver, pose: DeviceSkyPose, optics: DeviceSkyOptics, width: number, height: number,
-    eyeHeightMeters?: number): SatelliteTerrainStatus {
+    eyeHeightMeters?: number, journey?: JourneyTerrainRoute, onCamera?: (camera: SatelliteTerrainCamera) => void): SatelliteTerrainStatus {
     if (!active || gl.isContextLost()) return 'error';
-    requestArea(observer);
-    const dpr = Math.min(1.65, window.devicePixelRatio || 1);
+    requestArea(observer, journey);
+    const camera = journey ? resolveJourneyCamera(journey.frame, optics, { heightAt, skylineHeightAt: meshHeightAt }) : null;
+    if (camera) {
+      observer = { longitude: camera.position[0], latitude: camera.position[1], elevationM: camera.altitude ?? undefined };
+      pose = camera.pose;
+    }
+    const dpr = journey
+      ? Math.min(2, window.devicePixelRatio || 1, 1440 / Math.max(1, width, height))
+      : Math.min(1.65, window.devicePixelRatio || 1);
     const px = Math.round(width * dpr), py = Math.round(height * dpr);
     if (px < 1 || py < 1) return 'loading';
     if (canvas.width !== px || canvas.height !== py) {
@@ -273,18 +359,22 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
 
     // Wait for the tile under the eye. Rendering nearby coarser geometry from a
     // camera whose mesh-relative height is still unknown can occlude the skyline.
-    const ground = groundAt(observer);
+    const ground = (journey ? heightAt : meshHeightAt)(observer.longitude, observer.latitude);
     if (ground === null) return pending.size ? 'loading' : 'unavailable';
     const heightAboveMesh = ground + Math.max(1.7, eyeHeightMeters ?? 1.7);
-    const eyeAltitude = eyeHeightMeters == null ? Math.max(observer.elevationM ?? heightAboveMesh, heightAboveMesh) : heightAboveMesh;
+    const eyeAltitude = camera?.altitude ?? (eyeHeightMeters == null ? Math.max(observer.elevationM ?? heightAboveMesh, heightAboveMesh) : heightAboveMesh);
     const eye = earthPosition(observer.longitude, observer.latitude, eyeAltitude);
     const axis = (azimuth: number, altitude: number) => earthAxis(observer.longitude, observer.latitude, azimuth, altitude);
     const r = axis(pose.azimuth + 90, 0), u = axis(pose.azimuth, pose.altitude + 90);
     const c = Math.cos(pose.roll * rad), s = Math.sin(pose.roll * rad);
-    gl.uniform3fv(viewForward, axis(pose.azimuth, pose.altitude));
-    gl.uniform3fv(viewRight, r.map((value, i) => value * c + u[i] * s));
-    gl.uniform3fv(viewUp, u.map((value, i) => value * c - r[i] * s));
-    gl.uniform2f(tangent, Math.tan(optics.horizontalFov * rad / 2), Math.tan(optics.verticalFov * rad / 2));
+    const forward = axis(pose.azimuth, pose.altitude);
+    const right = r.map((value, i) => value * c + u[i] * s) as Vec3;
+    const up = u.map((value, i) => value * c - r[i] * s) as Vec3;
+    const tanX = Math.tan(optics.horizontalFov * rad / 2), tanY = Math.tan(optics.verticalFov * rad / 2);
+    gl.uniform3fv(viewForward, forward);
+    gl.uniform3fv(viewRight, right);
+    gl.uniform3fv(viewUp, up);
+    gl.uniform2f(tangent, tanX, tanY);
     let drawn = 0;
     for (const tile of tiles) {
       const mesh = resident.get(tile.key);
@@ -298,6 +388,10 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
       gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
       drawn++;
     }
+    if (journey && camera && drawn > 0) {
+      const routeReady = drawRoute(journey, { eye, right, up, forward, tanX, tanY, near: initialNear, far: horizonDistance, width, height }, camera.subjectAltitude);
+      onCamera?.({ observer, pose, routeReady, subjectAltitude: camera.subjectAltitude });
+    }
     if (drawn === tiles.length) return 'ready';
     if (drawn > 0) return 'partial';
     return pending.size ? 'loading' : 'unavailable';
@@ -310,6 +404,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     demCache.clear();
     for (const mesh of resident.values()) drop(mesh);
     resident.clear();
+    if (overlay) { gl.deleteBuffer(overlay.buffer); gl.deleteProgram(overlay.program); }
     gl.deleteProgram(program);
   }
 

@@ -1,5 +1,6 @@
 import { metresBetween, type PlannedRoute } from "../navigation/types.ts";
 import type { ManualTrack } from "../tracks/drawing.ts";
+import { journeyBearing, journeyDestination, JOURNEY_CAMERA_HEIGHT_M, JOURNEY_CAMERA_LAG_M } from "./journeyCamera.ts";
 
 export type SkyJourneyCoordinate = readonly [longitude: number, latitude: number];
 
@@ -41,6 +42,7 @@ export interface JourneyPlaybackFrame {
   lookAtElevationM: number | null;
   cameraCoordinates: [number, number];
   cameraElevationM: number | null;
+  cameraHeightM: number;
 }
 
 export const SKY_JOURNEY_EVENT = "shantu:sky-journey";
@@ -120,15 +122,6 @@ export function createJourneyPlayback(journey: SkyJourney): JourneyPlaybackModel
   return { totalDistanceM, segments, pointCount };
 }
 
-function bearingRadians(from: SkyJourneyCoordinate, to: SkyJourneyCoordinate): number {
-  const [lon1, lat1] = from.map(degrees => degrees / DEGREES);
-  const [lon2, lat2] = to.map(degrees => degrees / DEGREES);
-  const lonDelta = lon2 - lon1;
-  const y = Math.sin(lonDelta) * Math.cos(lat2);
-  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lonDelta);
-  return Math.atan2(y, x);
-}
-
 function interpolateCoordinates(from: SkyJourneyCoordinate, to: SkyJourneyCoordinate, ratio: number): [number, number] {
   if (ratio <= 0) return [...from];
   if (ratio >= 1) return [...to];
@@ -182,6 +175,23 @@ function sampleSegment(segment: JourneyPlaybackSegment, distanceM: number) {
   };
 }
 
+/** Follow the actual local edge, including immediately after a switchback. */
+function segmentHeading(segment: JourneyPlaybackSegment, distanceM: number, coordinates: SkyJourneyCoordinate): number | null {
+  const points = segment.points;
+  if (segment.endDistanceM - segment.startDistanceM < 0.001) return null;
+  let lo = 0;
+  let hi = points.length;
+  while (lo < hi) {
+    const middle = Math.floor((lo + hi) / 2);
+    if (points[middle].distanceM <= distanceM + 0.001) lo = middle + 1;
+    else hi = middle;
+  }
+  if (lo < points.length) return journeyBearing(coordinates, points[lo].coordinates);
+  let prior = points.length - 2;
+  while (prior >= 0 && points[prior].distanceM >= distanceM - 0.001) prior--;
+  return prior >= 0 ? (journeyBearing(coordinates, points[prior].coordinates) + 180) % 360 : null;
+}
+
 export function getJourneyPlaybackFrame(
   model: JourneyPlaybackModel,
   requestedDistanceM: number,
@@ -204,11 +214,11 @@ export function getJourneyPlaybackFrame(
   const nonNegative = (value: number | undefined, fallback: number) =>
     value !== undefined && Number.isFinite(value) ? Math.max(0, value) : fallback;
   const lookDistanceM = Math.min(segment.endDistanceM, distanceM + nonNegative(settings.lookAheadM, 30));
-  const cameraDistanceM = Math.max(segment.startDistanceM, distanceM - nonNegative(settings.cameraLagM, 8));
   const ahead = sampleSegment(segment, lookDistanceM);
-  const camera = sampleSegment(segment, cameraDistanceM);
-  const headingDeg = lookDistanceM > cameraDistanceM
-    ? (bearingRadians(camera.coordinates, ahead.coordinates) * DEGREES + 360) % 360 : null;
+  const headingDeg = segmentHeading(segment, distanceM, frame.coordinates);
+  const cameraHeightM = nonNegative(settings.cameraHeightM, JOURNEY_CAMERA_HEIGHT_M);
+  const cameraCoordinates = headingDeg === null ? frame.coordinates
+    : journeyDestination(frame.coordinates, headingDeg + 180, nonNegative(settings.cameraLagM, JOURNEY_CAMERA_LAG_M));
 
   return {
     ...frame,
@@ -217,7 +227,8 @@ export function getJourneyPlaybackFrame(
     headingDeg,
     lookAt: ahead.coordinates,
     lookAtElevationM: ahead.elevationM,
-    cameraCoordinates: camera.coordinates,
-    cameraElevationM: camera.elevationM === null ? null : camera.elevationM + nonNegative(settings.cameraHeightM, 3),
+    cameraCoordinates,
+    cameraElevationM: frame.elevationM === null ? null : frame.elevationM + cameraHeightM,
+    cameraHeightM,
   };
 }
