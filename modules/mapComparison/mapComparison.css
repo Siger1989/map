@@ -345,6 +345,13 @@ html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison
   }
   .observatory.home-map[data-comparing='true'] > .map-comparison-secondary { left: 50% !important; top: calc(var(--compare-top) + 32px) !important; }
   .map-comparison-panes { grid-template-rows: minmax(0, 1fr); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Size the open menu against its own half of the screen. */
+  .map-comparison-toolbar { position: relative; }
+  .map-comparison-toolbar .comparison-source-picker { position: static; }
+  .map-comparison-toolbar .comparison-source-popup {
+    left: 8px;
+    width: min(250px, calc(100% - 16px));
+  }
   .map-comparison-pane + .map-comparison-pane { box-shadow: -1px 0 var(--ui-line); }
   .map-comparison-marker-menu { bottom: calc(44px + var(--home-bottom) + 4px); }
 }
