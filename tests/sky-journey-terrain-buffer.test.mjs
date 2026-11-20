@@ -3,6 +3,7 @@ import test from 'node:test';
 import { createJourneyPlayback, getJourneyPlaybackFrame } from '../modules/sky/journeyPlayback.ts';
 import { ancestor, closestLoadedTile, journeyGroundFootprint, mergeTerrainPatches, planJourneyWindow, refineJourneyLeaves, tileAt, windowCovers } from '../modules/sky/journeyTerrainBuffer.ts';
 import { buildSatelliteMesh, planSatelliteTiles, resampleAncestorDem, sampledSurfaceHeight, surfaceHeight, terrainHeight } from '../modules/sky/satelliteTerrainGeometry.ts';
+import { buildTerrainTransitions, sampleTransition } from '../modules/sky/satelliteTerrainTransitions.ts';
 
 const line = lengthKm => createJourneyPlayback({segments:[[
   {coordinates:[103.57,30.9]}, {coordinates:[103.57+lengthKm/95.4,30.9]},
@@ -72,6 +73,29 @@ test('missing z12 DEM uses the matching parent quadrant and preserves no-data',(
     assert.ok(Math.abs(terrainHeight(coarse,x,y)-terrainHeight(heights,u,v))<2);
   }
   assert.ok(resampleAncestorDem(child,parent,new Float32Array(65536).fill(NaN)).every(Number.isNaN));
+});
+
+test('the coarser slope joins a finer neighbour across a real width with geographic imagery coordinates',()=>{
+  const make=(z,x,y,height)=>{
+    const tile={z,x,y,key:`${z}/${x}/${y}`};
+    const grid=buildSatelliteMesh(tile,new Float32Array(65536).fill(height));
+    return {tile,samples:grid.samples,steps:grid.steps,origin:grid.origin,coarseDem:false};
+  };
+  const coarse=make(14,1000,1000,100), finer=make(15,2002,2000,220);
+  const result=buildTerrainTransitions([{leaf:coarse.tile,mesh:coarse},{leaf:finer.tile,mesh:finer}]);
+  assert.equal(result.draws.length,1);
+  assert.equal(result.draws[0].mesh,coarse);
+  const band=result.bands.get(coarse), u=1-band[0].inset[1];
+  const heightAt=f=>sampleTransition(band,(1000+f)*8,(1000+.25)*8);
+  assert.equal(heightAt(.5),null);
+  assert.ok(Math.abs(heightAt(.9999)-220)<1);
+  assert.ok(Math.abs(heightAt((1+u)/2)-160)<1);
+  const us=[...result.vertices].filter((_,i)=>i%5===3);
+  assert.ok(Math.max(...us)-Math.min(...us)>.05);
+  const missing=make(15,2002,2000,NaN);
+  const noEdge=buildTerrainTransitions([{leaf:coarse.tile,mesh:coarse},{leaf:missing.tile,mesh:missing}]);
+  assert.equal(noEdge.draws.length,0);
+  assert.equal(noEdge.bounds.size,0);
 });
 
 test('a missing child uses its closest real covering tile, including the parent of a missing base tile',()=>{

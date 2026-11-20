@@ -1,11 +1,12 @@
 import type { SkyObserver } from './astronomy';
 import type { DeviceSkyOptics, DeviceSkyPose } from './deviceSkyCamera';
 import {
-  buildSatelliteMesh, coordinate as tileCoordinate, demTileFor, earthAxis, earthPosition, eyeCell, mercator, planSatelliteTiles, resampleAncestorDem, sampledSurfaceHeight, terrainHeight,
+  buildSatelliteMesh, demTileFor, earthAxis, earthPosition, eyeCell, mercator, planSatelliteTiles, resampleAncestorDem, sampledSurfaceHeight, terrainHeight,
   type Tile, type Vec3,
 } from './satelliteTerrainGeometry';
 import { loadSatelliteDem, loadSatelliteTile, satelliteImageryAvailable } from './satelliteTerrainTiles';
 import { buildJourneyRouteOverlay, routeImageryFocus, type JourneyTerrainRoute, type RouteProjection } from './journeyRouteOverlay';
+import { buildTerrainTransitions, sampleTransition } from './satelliteTerrainTransitions.ts';
 import { createJourneyCameraRail } from './journeyCameraRail.ts';
 import { ancestor, closestLoadedTile, journeyGpuLookahead, journeyGroundFootprint, mergeTerrainPatches, planJourneyWindow, refineJourneyLeaves, uniqueTiles, windowCovers, type JourneyTerrainBuffer, type JourneyWindow } from './journeyTerrainBuffer.ts';
 export type { JourneyTerrainBuffer } from './journeyTerrainBuffer.ts';
@@ -45,7 +46,11 @@ void main(){
 }
 `;
 const fragmentShader = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
+#endif
 uniform sampler2D imagery;
 uniform vec4 uvBounds;
 varying vec2 uv;
@@ -196,7 +201,8 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
   let nextMeshId=0;
   let patches: { leaf: Tile; mesh: Mesh }[] = [];
   const seamBuffer=gl.createBuffer();
-  let seamSignature='', seams:{mesh:Mesh;start:number;count:number}[]=[];
+  let seamSignature='';
+  let transitions:ReturnType<typeof buildTerrainTransitions<Mesh>>|null=null;
   let coveredLeaves = 0;
   const levels = Array.from({length:18}, () => new Map<number,Mesh>());
   let revision = 0;
@@ -507,51 +513,18 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     if(!seamBuffer)return;
     const signature=patches.map(({leaf,mesh})=>leaf.key+'='+mesh.id).join('|');
     if(signature===seamSignature)return;
-    seamSignature=signature;seams=[];
-    const vertices:number[]=[];
-    for(const {leaf,mesh} of patches){
-      const start=vertices.length/5, span=2**(17-leaf.z), left=leaf.x*span, top=leaf.y*span;
-      const sample=(m:Mesh,x:number,y:number)=>{
-        const scale=2**(17-m.tile.z), period=2**m.tile.z;
-        let u=x/scale-m.tile.x;if(u>period/2)u-=period;if(u< -period/2)u+=period;
-        return sampledSurfaceHeight(m.samples,m.steps,u,y/scale-m.tile.y);
-      };
-      const edge=(dx:number,dy:number)=>{
-        const pieces=Math.max(2,Math.ceil(mesh.steps*2**(mesh.tile.z-leaf.z)));
-        let previous:number[][]|null=null;
-        for(let i=0;i<=pieces;i++){
-          const f=i/pieces;
-          const x=left+(dx?(dx>0?1:0):f)*span,y=top+(dy?(dy>0?1:0):f)*span;
-          // Probe just inside the other side. At the corners, stay on this edge.
-          const inset=Math.max(.00001,span*1e-8),along=i===0?inset:i===pieces?-inset:0;
-          const adjacent=drawnMesh(x+dx*inset+(dx?0:along),y+dy*inset+(dy?0:along));
-          if(!adjacent || adjacent===mesh){previous=null;continue;}
-          const own=sample(mesh,x,y), other=sample(adjacent,x,y);
-          if(!Number.isFinite(own)||!Number.isFinite(other)){previous=null;continue;}
-          const [lng,lat]=tileCoordinate(x,y,17), uvScale=2**(17-mesh.tile.z);
-          const u=x/uvScale-mesh.tile.x,v=y/uvScale-mesh.tile.y;
-          const vertex=(h:number)=>{
-            const point=earthPosition(lng,lat,h);
-            return [point[0]-mesh.origin[0],point[1]-mesh.origin[1],point[2]-mesh.origin[2],u,v];
-          };
-          // Bridge only the two drawn edge surfaces at identical lon/lat.
-          // A small sub-metre overlap closes subpixel MSAA/rounding pinholes.
-          const pair=[vertex(Math.max(own,other)+.12),vertex(Math.min(own,other)-.55)];
-          if(previous)vertices.push(...previous[0],...previous[1],...pair[0],...pair[0],...previous[1],...pair[1]);
-          previous=pair;
-        }
-      };
-      edge(-1,0);edge(1,0);edge(0,-1);edge(0,1);
-      if(vertices.length/5>start)seams.push({mesh,start,count:vertices.length/5-start});
-    }
+    seamSignature=signature;
+    transitions=buildTerrainTransitions(patches);
     gl.bindBuffer(gl.ARRAY_BUFFER,seamBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER,transitions.vertices,gl.DYNAMIC_DRAW);
   }
 
   function meshHeightAt(longitude: number, latitude: number) {
     const [x,y] = mercator(longitude, latitude, 17);
     const mesh = drawnMesh(x,y);
     if (!mesh) return null;
+    const transitioned=sampleTransition(windowPlan?transitions?.bands.get(mesh):undefined,x,y);
+    if(transitioned!==null)return transitioned;
     const scale = 2 ** (mesh.tile.z-17);
     const height = sampledSurfaceHeight(mesh.samples, mesh.steps, x*scale-mesh.tile.x, y*scale-mesh.tile.y);
     return Number.isFinite(height) ? height : null;
@@ -705,6 +678,8 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
           count=(last-first)*rowIndices;
         }
       }
+      const trim=journey ? transitions?.bounds.get(leaf.key) : undefined;
+      if(trim)gl.uniform4fv(uvBounds,trim);
       gl.uniform3f(offset, mesh.origin[0] - eye[0], mesh.origin[1] - eye[1], mesh.origin[2] - eye[2]);
       gl.bindTexture(gl.TEXTURE_2D, mesh.texture);
       gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertex);
@@ -715,12 +690,18 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     }
     const drawn=patches.length;
     for(const patch of patches)paintMesh(patch.leaf,patch.mesh);
-    if (journey && seamBuffer && seams.length) {
+    if (journey && seamBuffer && transitions?.draws.length) {
       gl.bindBuffer(gl.ARRAY_BUFFER,seamBuffer);
       gl.vertexAttribPointer(coordinate,3,gl.FLOAT,false,20,0);
       gl.vertexAttribPointer(imageUv,2,gl.FLOAT,false,20,12);
       gl.uniform4f(uvBounds,0,0,1,1);
-      for(const {mesh,start,count} of seams){
+      const sideX=Math.hypot(1,tanX),sideY=Math.hypot(1,tanY);
+      for(const {mesh,start,count,center,radius} of transitions.draws){
+        const x=center[0]-eye[0],y=center[1]-eye[1],z=center[2]-eye[2];
+        const dot=(axis:Vec3)=>x*axis[0]+y*axis[1]+z*axis[2];
+        const depth=dot(forward);
+        if(depth < -radius || Math.abs(dot(right))>depth*tanX+radius*sideX ||
+            Math.abs(dot(up))>depth*tanY+radius*sideY)continue;
         gl.uniform3f(offset,mesh.origin[0]-eye[0],mesh.origin[1]-eye[1],mesh.origin[2]-eye[2]);
         gl.bindTexture(gl.TEXTURE_2D,mesh.texture);
         gl.drawArrays(gl.TRIANGLES,start,count);
