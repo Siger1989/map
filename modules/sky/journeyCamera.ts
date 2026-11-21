@@ -1,6 +1,7 @@
 import { metresBetween } from '../navigation/types.ts';
 import type { DeviceSkyOptics, DeviceSkyPose } from './deviceSkyCamera.ts';
 import type { JourneyPlaybackFrame, SkyJourneyCoordinate } from './journeyPlayback.ts';
+import { shortestTurn } from './skyPoseMotion.ts';
 
 const radiusM = 6_371_008.8;
 const degrees = 180 / Math.PI;
@@ -58,11 +59,33 @@ function viewAngle(screenY: number, tangent: number) {
   return Math.atan((1 - 2 * screenY) * tangent) * degrees;
 }
 
-export function keepJourneySubjectInFrame(pitch: number, eye: number, subject: number, distance: number, verticalFov: number) {
+/** Preserve motion inside the normal framing range and ease into the limit without a hard stop. */
+export function limitCameraOffset(value: number, limit: number, linearFraction = .5) {
+  if (limit <= 0) return 0;
+  const linear = limit * linearFraction;
+  const tail = limit - linear;
+  const magnitude = Math.abs(value);
+  if (magnitude <= linear) return value;
+  return Math.sign(value) * (linear + tail * Math.tanh((magnitude - linear) / tail));
+}
+
+export function journeyCameraAzimuth(frame: JourneyPlaybackFrame, position: SkyJourneyCoordinate, horizontalFov: number) {
+  const subjectBearing = journeyBearing(position, frame.coordinates);
+  if (!frame.cameraMotion) return subjectBearing;
+  const aimBearing = journeyBearing(position, frame.cameraTarget);
+  // A separate yaw axis follows the softened target while leaving room for the true arrow.
+  return wrap(subjectBearing + limitCameraOffset(shortestTurn(subjectBearing, aimBearing), horizontalFov * .4, .85));
+}
+
+export function keepJourneySubjectInFrame(pitch: number, eye: number, subject: number, distance: number, verticalFov: number, cushioned = false) {
   if (distance <= .1) return pitch;
   const tangent = Math.tan(clamp(verticalFov, 10, 150) / degrees / 2);
   const elevation = altitudeAngle(subject - eye, distance);
-  return clamp(pitch, elevation - viewAngle(subjectBand[0], tangent), elevation - viewAngle(subjectBand[1], tangent));
+  const low = elevation - viewAngle(subjectBand[0], tangent);
+  const high = elevation - viewAngle(subjectBand[1], tangent);
+  if (!cushioned) return clamp(pitch, low, high);
+  const center = (low + high) / 2;
+  return center + limitCameraOffset(pitch - center, (high - low) / 2, .8);
 }
 
 function heightAt(terrain: JourneyCameraTerrain | undefined, point: SkyJourneyCoordinate) {
@@ -141,12 +164,13 @@ export function resolveJourneyCamera(
       altitude = Math.max(altitude, subjectAltitude + Math.min(eyeHeight, eyeHeight < height ? 20 : 35));
     }
     const distance = metresBetween(position, frame.coordinates);
-    const azimuth = distance > 0.1 ? journeyBearing(position, frame.coordinates) : frame.cameraHeadingDeg ?? frame.headingDeg ?? 0;
+    const azimuth = distance > 0.1 ? journeyCameraAzimuth(frame, position, optics.horizontalFov) : frame.cameraHeadingDeg ?? frame.headingDeg ?? 0;
     let subjectOccluded = false;
     if (terrain && ground !== null && subjectGround !== null && subjectAltitude !== null && altitude !== null && distance > 1) {
       let minimumVisible = altitude;
+      const subjectBearing = frame.cameraMotion ? journeyBearing(position, frame.coordinates) : azimuth;
       for (const fraction of [.10, .20, .30, .40, .50, .60, .70, .80, .90, .95]) {
-        const obstacle = heightAt(terrain, journeyDestination(position, azimuth, distance * fraction));
+        const obstacle = heightAt(terrain, journeyDestination(position, subjectBearing, distance * fraction));
         if (obstacle === null) continue;
         minimumVisible = Math.max(minimumVisible, (obstacle + 0.7 - fraction * subjectAltitude) / (1 - fraction));
       }
@@ -160,7 +184,7 @@ export function resolveJourneyCamera(
     const desiredPitch = skyPitch(sections, tangent);
     let pitch = desiredPitch;
     if (altitude !== null && subjectAltitude !== null)
-      pitch = keepJourneySubjectInFrame(pitch, altitude, subjectAltitude, distance, optics.verticalFov);
+      pitch = keepJourneySubjectInFrame(pitch, altitude, subjectAltitude, distance, optics.verticalFov, Boolean(frame.cameraMotion));
     pitch = clamp(pitch, -78, 45);
     return { position, altitude, subjectAltitude, groundKnown, subjectOccluded, distance, desiredPitch,
       skyFraction: visibleSky(sections, pitch, tangent), pose: { azimuth, altitude: pitch, roll: 0 } satisfies DeviceSkyPose };
@@ -172,16 +196,17 @@ export function resolveJourneyCamera(
       (base.subjectOccluded || base.skyFraction < targetSky - .012)) {
     const travel = (frame.cameraHeadingDeg ?? frame.headingDeg) + 180;
     const reducedEye = Math.min(height, JOURNEY_MIN_EYE_HEIGHT_M);
-    const setback = base.distance + clamp((targetSky - base.skyFraction) * 400, 13, 67);
+    const boom = frame.cameraLagM;
+    const setback = boom + clamp((targetSky - base.skyFraction) * 400, 13, 67);
     const score = (candidate: typeof base) =>
       Math.abs(targetSky - candidate.skyFraction) + (candidate.subjectOccluded ? 1 : 0) +
       Math.abs(candidate.distance - base.distance) * .0006;
     const improvedAt = (distance: number, eye: number) => {
-      const point = distance === base.distance ? frame.cameraCoordinates : journeyDestination(frame.coordinates, travel, distance);
+      const point = distance === boom ? frame.cameraCoordinates : journeyDestination(frame.cameraTarget, travel, distance);
       const candidate = evaluate(point, eye);
       if (candidate && score(candidate) < score(best)) best = candidate;
     };
-    improvedAt(base.distance, reducedEye);
+    improvedAt(boom, reducedEye);
     if (best.subjectOccluded || best.skyFraction < targetSky - .02) {
       improvedAt(setback, (height + reducedEye) / 2);
       if (best.subjectOccluded || best.skyFraction < targetSky - .022) improvedAt(setback, reducedEye);

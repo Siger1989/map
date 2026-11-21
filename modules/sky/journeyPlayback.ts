@@ -1,6 +1,7 @@
 import { metresBetween, type PlannedRoute } from "../navigation/types.ts";
 import type { ManualTrack } from "../tracks/drawing.ts";
-import { journeyBearing, journeyDestination, JOURNEY_CAMERA_HEIGHT_M, JOURNEY_CAMERA_LAG_M } from "./journeyCamera.ts";
+import { journeyBearing, journeyDestination, JOURNEY_CAMERA_HEIGHT_M, JOURNEY_CAMERA_LAG_M, limitCameraOffset } from "./journeyCamera.ts";
+import { createJourneyGimbal, JOURNEY_GIMBAL_RADIUS_SECONDS } from "./journeyGimbal.ts";
 import { indexJourneyTurns, journeyCameraHeading, type JourneyTurn } from "./journeyHeadingProfile.ts";
 
 export type SkyJourneyCoordinate = readonly [longitude: number, latitude: number];
@@ -40,7 +41,9 @@ export interface JourneyPlaybackFrame {
   distanceM: number;
   segmentIndex: number;
   headingDeg: number | null;
+  arrowHeadingDeg: number | null;
   cameraHeadingDeg: number | null;
+  cameraTarget: SkyJourneyCoordinate;
   lookAt: [number, number];
   lookAtElevationM: number | null;
   cameraCoordinates: [number, number];
@@ -48,6 +51,12 @@ export interface JourneyPlaybackFrame {
   cameraHeightM: number;
   cameraLagM: number;
   cameraTurnRadiusM: number;
+  cameraMotion?: JourneyCameraMotion;
+}
+
+interface JourneyCameraMotion {
+  metresPerSecond: number;
+  sample(segment: JourneyPlaybackSegment, distanceM: number): { coordinates: [number, number]; headingDeg: number };
 }
 
 interface JourneyPlaybackSettings {
@@ -55,6 +64,7 @@ interface JourneyPlaybackSettings {
   cameraLagM?: number;
   cameraHeightM?: number;
   turnRadiusM?: number;
+  cameraMotion?: JourneyCameraMotion;
 }
 
 export const SKY_JOURNEY_EVENT = "shantu:sky-journey";
@@ -204,6 +214,58 @@ function segmentHeading(segment: JourneyPlaybackSegment, distanceM: number, coor
   return prior >= 0 ? (journeyBearing(coordinates, points[prior].coordinates) + 180) % 360 : null;
 }
 
+/** Tie the gimbal to the selected replay duration so playback, seeking and export sample the same pose. */
+export function journeyCameraSettings(model: JourneyPlaybackModel, playbackSeconds: number): JourneyPlaybackSettings {
+  if (!(playbackSeconds > 0 && Number.isFinite(playbackSeconds) && model.totalDistanceM > 0)) return {};
+  const metresPerSecond = model.totalDistanceM / playbackSeconds;
+  if (!Number.isFinite(metresPerSecond)) return {};
+  const turnRadiusM = Math.max(20, Math.min(2400, metresPerSecond * 0.6));
+  const radiusSeconds = Math.min(JOURNEY_GIMBAL_RADIUS_SECONDS, 360 / metresPerSecond);
+  const followRadiusSeconds = Math.min(radiusSeconds, 36 / metresPerSecond);
+  const filters = new Map<JourneyPlaybackSegment, {
+    wide: ReturnType<typeof createJourneyGimbal>;
+    close: ReturnType<typeof createJourneyGimbal>;
+  }>();
+  return {
+    turnRadiusM,
+    cameraMotion: {
+      metresPerSecond,
+      sample(segment, distanceM) {
+        let pair = filters.get(segment);
+        if (!pair) {
+          const duration = (segment.endDistanceM - segment.startDistanceM) / metresPerSecond;
+          const sample = (seconds: number) => {
+            const station = Math.min(segment.endDistanceM, segment.startDistanceM + seconds * metresPerSecond);
+            const { coordinates } = sampleSegment(segment, station);
+            const heading = segmentHeading(segment, station, coordinates) ?? 0;
+            return {
+              coordinates,
+              headingDeg: journeyCameraHeading(segment.turns, station - segment.startDistanceM, heading, turnRadiusM),
+            };
+          };
+          const wide = createJourneyGimbal(0, duration, sample, radiusSeconds);
+          const close = followRadiusSeconds < radiusSeconds ? createJourneyGimbal(0, duration, sample, followRadiusSeconds) : wide;
+          pair = { wide, close };
+          if (filters.size >= 8) filters.delete(filters.keys().next().value!);
+          filters.set(segment, pair);
+        }
+        const time = (distanceM - segment.startDistanceM) / metresPerSecond;
+        const wide = pair.wide(time);
+        if (pair.wide === pair.close) return wide;
+        // Use the shorter window to stay with the road at a tight bend. Both targets
+        // are filtered so keeping the arrow in view doesn't reintroduce GPS jitter.
+        const close = pair.close(time).coordinates;
+        const separation = metresBetween(close, wide.coordinates);
+        const offset = limitCameraOffset(separation, JOURNEY_CAMERA_LAG_M * .09);
+        return {
+          coordinates: separation > offset ? interpolateCoordinates(close, wide.coordinates, offset / separation) : wide.coordinates,
+          headingDeg: wide.headingDeg,
+        };
+      },
+    },
+  };
+}
+
 export function getJourneyPlaybackFrame(
   model: JourneyPlaybackModel,
   requestedDistanceM: number,
@@ -239,20 +301,35 @@ export function getJourneySegmentFrame(
   const ahead = sampleSegment(segment, lookDistanceM);
   const headingDeg = segmentHeading(segment, distanceM, frame.coordinates);
   const cameraTurnRadiusM = nonNegative(settings.turnRadiusM, 20);
-  const cameraHeadingDeg = headingDeg === null ? null : journeyCameraHeading(
-    segment.turns, distanceM - segment.startDistanceM, headingDeg, cameraTurnRadiusM,
-  );
   const cameraHeightM = nonNegative(settings.cameraHeightM, JOURNEY_CAMERA_HEIGHT_M);
   const cameraLagM = nonNegative(settings.cameraLagM, JOURNEY_CAMERA_LAG_M);
+  const cameraMotion = cameraLagM > 0 && headingDeg !== null ? settings.cameraMotion : undefined;
+  const gimbal = cameraMotion?.sample(segment, distanceM);
+  const stationInSegment = distanceM - segment.startDistanceM;
+  const cameraHeadingDeg = gimbal?.headingDeg ?? (headingDeg === null ? null :
+    journeyCameraHeading(segment.turns, stationInSegment, headingDeg, cameraTurnRadiusM));
+  let cameraTarget: SkyJourneyCoordinate = frame.coordinates;
+  if (gimbal) {
+    // Keep the subject in front of the boom even when the stabilized target shortcuts a tight hairpin.
+    const offset = metresBetween(frame.coordinates, gimbal.coordinates);
+    const bounded = limitCameraOffset(offset, cameraLagM * .23, .85);
+    cameraTarget = offset > bounded
+      ? interpolateCoordinates(frame.coordinates, gimbal.coordinates, bounded / offset) : gimbal.coordinates;
+  }
   const cameraCoordinates = cameraHeadingDeg === null ? frame.coordinates
-    : journeyDestination(frame.coordinates, cameraHeadingDeg + 180, cameraLagM);
+    : journeyDestination(cameraTarget, cameraHeadingDeg + 180, cameraLagM);
+  const arrowHeadingDeg = headingDeg !== null && cameraMotion ? journeyCameraHeading(
+    segment.turns, stationInSegment, headingDeg, Math.min(35, cameraMotion.metresPerSecond * .14),
+  ) : headingDeg;
 
   return {
     ...frame,
     distanceM,
     segmentIndex,
     headingDeg,
+    arrowHeadingDeg,
     cameraHeadingDeg,
+    cameraTarget,
     lookAt: ahead.coordinates,
     lookAtElevationM: ahead.elevationM,
     cameraCoordinates,
@@ -260,5 +337,6 @@ export function getJourneySegmentFrame(
     cameraHeightM,
     cameraLagM,
     cameraTurnRadiusM,
+    cameraMotion,
   };
 }

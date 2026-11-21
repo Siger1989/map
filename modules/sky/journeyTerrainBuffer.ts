@@ -1,5 +1,5 @@
 import { getJourneyPlaybackFrame, type JourneyPlaybackModel } from './journeyPlayback.ts';
-import { journeyDestination } from './journeyCamera.ts';
+import { journeyCameraAzimuth, journeyDestination } from './journeyCamera.ts';
 import { mercator, type Tile } from './satelliteTerrainGeometry.ts';
 import { routeImageryFocus } from './journeyRouteOverlay.ts';
 
@@ -93,7 +93,7 @@ function footprint(points: readonly (readonly [number,number])[], z:number, marg
 
 export function journeyGroundFootprint(route: Parameters<typeof routeImageryFocus>[0], horizontalFov:number, marginM=0) {
   const {frame}=route, eye=frame.cameraCoordinates;
-  const bearing=frame.cameraHeadingDeg ?? frame.headingDeg ?? 0;
+  const bearing=frame.cameraMotion ? journeyCameraAzimuth(frame,eye,horizontalFov) : frame.cameraHeadingDeg ?? frame.headingDeg ?? 0;
   const half=Math.min(72,Math.max(8,horizontalFov/2));
   const corners=(ahead:number) => {
     const spread=ahead/Math.cos(half*Math.PI/180);

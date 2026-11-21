@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getObserverTimeZone } from './astronomy';
-import { createJourneyPlayback, getJourneyPlaybackFrame, type SkyJourney } from './journeyPlayback';
+import { createJourneyPlayback, getJourneyPlaybackFrame, journeyCameraSettings, type SkyJourney } from './journeyPlayback';
 import { journeyInstant, journeyNextDay, journeyTimeAt, localMinute } from './journeyClock';
 import { JourneyStage, type ImageryStatus } from './JourneyStage';
 import type { JourneyTerrainBuffer } from './satelliteTerrainRenderer';
@@ -85,9 +85,8 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   lastProgress.current=progress;
   const capture=phase==='arming' || phase==='recording' || phase==='saving';
   const distance=progress*model.totalDistanceM;
-  const frame=useMemo(()=>getJourneyPlaybackFrame(model,distance,{
-    turnRadiusM:Math.max(20,Math.min(2400,model.totalDistanceM/seconds*0.6)),
-  }),[model,distance,seconds]);
+  const cameraSettings=useMemo(()=>journeyCameraSettings(model,seconds),[model,seconds]);
+  const frame=useMemo(()=>getJourneyPlaybackFrame(model,distance,cameraSettings),[model,distance,cameraSettings]);
   const [stage,setStage]=useState<HTMLDivElement|null>(null);
   const [size,setSize]=useState({width:390,height:480});
   useEffect(()=>{
@@ -212,7 +211,7 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
         <button autoFocus type="button" onClick={onClose}>退出</button></div></header>
     <div className="journey-window" ref={setStage} data-buffer-state={buffer?.status??'loading'} data-frame-ready={textured}
       data-detail-zoom={buffer?.minDetailZoom} data-detail-loaded={buffer?.detailLoaded} data-detail-total={buffer?.detailTotal}
-      data-frame-degraded={buffer?.frameDegraded}>
+      data-frame-degraded={buffer?.frameDegraded} data-camera-motion={frame?.cameraMotion ? 'gimbal' : undefined}>
       {frame && <JourneyStage model={model} frame={frame} time={at} zone={zone} name={journey.name} progress={progress}
         {...size} layers={layers} retryKey={retryKey} onBuffer={onBuffer} onPresent={onPresent} captureFrames={phase==='arming'||phase==='recording'||phase==='saving'}
         onCanvas={setCanvas} onFrame={composeRecordingFrame} onImagery={setImagery}/>}

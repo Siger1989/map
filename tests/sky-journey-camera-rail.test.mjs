@@ -3,7 +3,9 @@ import test from 'node:test';
 import { metresBetween } from '../modules/navigation/types.ts';
 import { resolveJourneyCamera } from '../modules/sky/journeyCamera.ts';
 import { createJourneyCameraRail } from '../modules/sky/journeyCameraRail.ts';
-import { createJourneyPlayback, getJourneyPlaybackFrame } from '../modules/sky/journeyPlayback.ts';
+import { createJourneyPlayback, getJourneyPlaybackFrame, journeyCameraSettings } from '../modules/sky/journeyPlayback.ts';
+import { earthAxis, earthPosition } from '../modules/sky/satelliteTerrainGeometry.ts';
+import { shortestTurn } from '../modules/sky/skyPoseMotion.ts';
 
 const points = coordinates => coordinates.map(coordinates => ({ coordinates }));
 const route = createJourneyPlayback({ name:'valley', segments:[
@@ -81,4 +83,61 @@ test('a disjoint segment starts on its own terrain even at the date line', () =>
   assert.ok(Math.abs(camera.altitude-2143)<.01);
   assert.ok(metresBetween(camera.position,frame.coordinates)<100);
   assert.ok(Math.abs(camera.position[0])>179.9);
+});
+
+test('gimbal keeps a recorded zigzag on the true route and suppresses camera and arrow jolts', () => {
+  const journey = createJourneyPlayback({ name: 'GPS jitter', segments: [Array.from({length: 61}, (_, i) => ({
+    coordinates: [103.58 + (i % 2 ? .00005 : -.00005), 30.88 + i * .000045],
+    elevationM: 500, timeMs: i * 1000,
+  }))] });
+  const filtered = journeyCameraSettings(journey, 15);
+  const direct = { turnRadiusM: filtered.turnRadiusM };
+  const terrain = { heightAt: () => 500, horizonAt: () => 0 };
+  const rails = [createJourneyCameraRail(), createJourneyCameraRail()];
+  const views = [[], []];
+  for (let i = 0; i <= 900; i++) {
+    const station = i / 900 * journey.totalDistanceM;
+    const frames = [direct, filtered].map(settings => getJourneyPlaybackFrame(journey, station, settings));
+    assert.deepEqual(frames[1].coordinates, frames[0].coordinates);
+    assert.equal(frames[1].timeMs, frames[0].timeMs);
+    assert.equal(frames[1].headingDeg, frames[0].headingDeg);
+    frames.forEach((frame, j) => {
+      const camera = rails[j].resolve(journey, frame, optics, terrain, 0);
+      views[j].push({ camera, arrow: frame.arrowHeadingDeg });
+    });
+  }
+  const peakTurn = (list, angle) => Math.max(...list.slice(1).map((view, i) =>
+    Math.abs(shortestTurn(angle(list[i]), angle(view)))));
+  assert.ok(peakTurn(views[1], view => view.camera.pose.azimuth) < .6 * peakTurn(views[0], view => view.camera.pose.azimuth));
+  assert.ok(peakTurn(views[1], view => view.arrow) < .2 * peakTurn(views[0], view => view.arrow));
+});
+
+test('gimbal stays on frame through a hairpin, at the dateline, and after backward seeking', () => {
+  const settings = journeyCameraSettings(route, 15);
+  const terrain = { heightAt: (_lng, lat) => lat > 40 ? 2100 : 500, horizonAt: () => 0 };
+  const rail = createJourneyCameraRail();
+  const lastStation = route.segments[0].endDistanceM;
+  const sample = (distance, resolver = rail) => {
+    const frame = getJourneyPlaybackFrame(route, distance, settings);
+    return { frame, camera: resolver.resolve(route, frame, optics, terrain, 0) };
+  };
+  const reference = [];
+  const dot = (a, b) => a.reduce((sum, value, i) => sum + value * b[i], 0);
+  for (let i = 0; i <= 240; i++) {
+    const { frame, camera } = sample(lastStation * i / 240);
+    const eye = earthPosition(...camera.position, camera.altitude);
+    const arrow = earthPosition(...frame.coordinates, camera.subjectAltitude + 2.5);
+    const vector = arrow.map((value, j) => value - eye[j]);
+    const forward = earthAxis(...camera.position, camera.pose.azimuth, camera.pose.altitude);
+    const side = earthAxis(...camera.position, camera.pose.azimuth + 90, 0);
+    assert.ok(dot(forward, vector) > 0);
+    assert.ok(Math.abs(dot(side, vector) / dot(forward, vector)) < Math.tan(optics.horizontalFov * Math.PI / 360) * .90);
+    if (i === 80 || i === 160) reference.push(camera);
+  }
+  const cut = sample(lastStation + .001);
+  assert.equal(cut.frame.segmentIndex, 1);
+  assert.equal(cut.camera.subjectAltitude, 2101);
+  assert.ok(Math.abs(cut.frame.cameraTarget[0]) > 179.9);
+  assert.deepEqual(sample(lastStation * 160 / 240).camera, reference[1]);
+  assert.deepEqual(sample(lastStation * 80 / 240, createJourneyCameraRail()).camera, reference[0]);
 });

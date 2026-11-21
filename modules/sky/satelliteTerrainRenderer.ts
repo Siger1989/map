@@ -187,6 +187,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
   let focusTiles: Tile[] = [], nearTiles:Tile[]=[];
   let gpuRequired=new Set<string>();
   let planFov=0;
+  let planMotion: JourneyTerrainRoute['frame']['cameraMotion'];
   let planTurn=0,planLag=0;
   let focusFrame:JourneyTerrainRoute['frame'] | null=null;
   let focusFov=0;
@@ -420,6 +421,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     const fov=Math.ceil(optics.horizontalFov/2)*2;
     const needsWindow = route && (!windowPlan || routeModel !== route.model ||
       planFov!==fov || planTurn!==route.frame.cameraTurnRadiusM || planLag!==route.frame.cameraLagM ||
+      planMotion!==route.frame.cameraMotion ||
       !windowCovers(windowPlan,route.frame.distanceM,route.model.totalDistanceM));
     if(route && (route.frame!==focusFrame || focusFov!==fov)){
       focusFrame=route.frame;focusFov=fov;
@@ -432,8 +434,8 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     const cell = eyeCell(longitude, latitude, route ? 16 : 14) + (route ? '|'+progressCell+'|'+focusKey : '');
     if (cell === area && !needsWindow) return;
     if (needsWindow && route) {
-      planFov=fov;planTurn=route.frame.cameraTurnRadiusM;planLag=route.frame.cameraLagM;
-      windowPlan = planJourneyWindow(route.model, route.frame.distanceM,fov,{turnRadiusM:planTurn,cameraLagM:planLag});
+      planFov=fov;planTurn=route.frame.cameraTurnRadiusM;planLag=route.frame.cameraLagM;planMotion=route.frame.cameraMotion;
+      windowPlan = planJourneyWindow(route.model, route.frame.distanceM,fov,{turnRadiusM:planTurn,cameraLagM:planLag,cameraMotion:planMotion});
       fallbacks.clear();
       routeModel = route.model;
       readinessTiles=windowPlan.startup;
@@ -449,7 +451,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
       // enclosing view's imagery until a closer source is available.
       const visible=uniqueTiles([focusTiles,roots,originals]);
       if(needsWindow || aheadCell!==progressCell){
-        aheadCell=progressCell;upcoming=journeyGpuLookahead(route.model,route.frame.distanceM,fov,{turnRadiusM:planTurn,cameraLagM:planLag});
+        aheadCell=progressCell;upcoming=journeyGpuLookahead(route.model,route.frame.distanceM,fov,{turnRadiusM:planTurn,cameraLagM:planLag,cameraMotion:planMotion});
       }
       const gpu=uniqueTiles([visible,upcoming]).slice(0,maxJourneyResident-12);
       gpuRequired=new Set(gpu.map(t=>t.key));

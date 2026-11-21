@@ -135,7 +135,7 @@ export function buildJourneyRouteOverlay(route: JourneyTerrainRoute, view: Route
   if(subjectAltitude!==null){
     const [lng,lat]=route.frame.coordinates;
     const world=earthPosition(lng,lat,subjectAltitude+2.5);
-    const heading=earthAxis(lng,lat,route.frame.headingDeg??0,0);
+    const heading=earthAxis(lng,lat,route.frame.arrowHeadingDeg??0,0);
     const tip=world.map((value,i)=>value+heading[i]*8) as Vec3;
     const center=project(world,view), ahead=project(tip,view);
     if(center.z>view.near && ahead.z>view.near){
