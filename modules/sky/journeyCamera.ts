@@ -22,6 +22,9 @@ const horizonSamples = [
 }));
 export const JOURNEY_CAMERA_LAG_M = 90;
 export const JOURNEY_CAMERA_HEIGHT_M = 43;
+export const JOURNEY_CAMERA_DISTANCE_MIN_M = 55;
+export const JOURNEY_CAMERA_DISTANCE_MAX_M = 200;
+export const JOURNEY_CAMERA_DISTANCE_STEP_M = 5;
 
 export interface JourneyCameraTerrain {
   heightAt: (longitude: number, latitude: number) => number | null;
@@ -32,6 +35,12 @@ export interface JourneyCameraTerrain {
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 const wrap = (angle: number) => ((angle % 360) + 360) % 360;
 const usable = (height: number | null | undefined): height is number => height != null && Number.isFinite(height);
+
+export function normalizeJourneyCameraDistance(distanceM: number) {
+  if (!Number.isFinite(distanceM)) return JOURNEY_CAMERA_LAG_M;
+  const step = JOURNEY_CAMERA_DISTANCE_STEP_M;
+  return clamp(Math.round(distanceM / step) * step, JOURNEY_CAMERA_DISTANCE_MIN_M, JOURNEY_CAMERA_DISTANCE_MAX_M);
+}
 
 export function journeyBearing(from: SkyJourneyCoordinate, to: SkyJourneyCoordinate) {
   const [lon1, lat1] = from.map(angle => angle / degrees);

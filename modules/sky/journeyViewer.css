@@ -30,3 +30,46 @@
 .observatory[data-journey-open='true'] > :not(.journey-viewer) {visibility:hidden!important;pointer-events:none!important;}
 .journey-imagery { top:43px; }
 .journey-imagery button { margin-inline-start:6px; }
+.journey-distance {
+  position:absolute;
+  top:4px;
+  right:10px;
+  display:grid;
+  justify-items:end;
+  gap:4px;
+  max-width:calc(50% - 14px);
+}
+.journey-distance .journey-distance-toggle {
+  min-height:36px;
+  font-size:13px;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.journey-distance-toggle[aria-expanded="true"] {color:var(--ui-accent,#efbd68);}
+.journey-distance-toggle:disabled {opacity:.55;}
+.journey-distance-panel {
+  box-sizing:border-box;
+  width:min(168px,calc(50vw - 14px));
+  padding:4px 8px 6px;
+  border:1px solid var(--ui-border,#506268);
+  border-radius:var(--ui-radius-panel,8px);
+  background:var(--ui-panel,#213135);
+  color:var(--ui-text,#eef3eb);
+  box-shadow:var(--ui-shadow,0 4px 12px #0004);
+}
+.journey-distance-panel input {
+  display:block;
+  width:100%;
+  height:36px;
+  margin:0;
+  accent-color:#efbd68;
+}
+.journey-distance-panel input:focus-visible,.journey-distance-toggle:focus-visible {
+  outline:2px solid var(--ui-accent,#efbd68);
+  outline-offset:-2px;
+}
+.journey-distance-scale {display:flex;justify-content:space-between;font-size:12px;}
+.journey-window[data-distance-open="true"] .journey-imagery {
+  box-sizing:border-box;
+  max-width:calc(100% - min(168px,calc(50vw - 14px)) - 24px);
+}

@@ -1,6 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { getObserverTimeZone } from './astronomy';
 import { createJourneyPlayback, getJourneyPlaybackFrame, journeyCameraSettings, type SkyJourney } from './journeyPlayback';
+import {
+  JOURNEY_CAMERA_DISTANCE_MAX_M, JOURNEY_CAMERA_DISTANCE_MIN_M, JOURNEY_CAMERA_DISTANCE_STEP_M,
+  JOURNEY_CAMERA_LAG_M, normalizeJourneyCameraDistance,
+} from './journeyCamera';
 import { journeyInstant, journeyNextDay, journeyTimeAt, localMinute } from './journeyClock';
 import { JourneyStage, type ImageryStatus } from './JourneyStage';
 import type { JourneyTerrainBuffer } from './satelliteTerrainRenderer';
@@ -11,6 +15,18 @@ import './journeyViewer.css';
 type Phase='paused'|'preparing'|'playing'|'arming'|'recording'|'saving';
 const clamp=(x:number)=>Math.max(0,Math.min(1,x));
 const recordingFps=24;
+const cameraDistanceStorageKey='shantu:journey:camera-distance-m';
+
+function savedCameraDistance(): number {
+  try {
+    const stored=window.localStorage.getItem(cameraDistanceStorageKey);
+    if(stored!==null){
+      const value=Number(stored);
+      if(value===normalizeJourneyCameraDistance(value))return value;
+    }
+  } catch { /* Storage can be unavailable inside a restricted preview. */ }
+  return JOURNEY_CAMERA_LAG_M;
+}
 
 export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():void}) {
   const model=useMemo(()=>createJourneyPlayback(journey),[journey]);
@@ -32,6 +48,35 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   },[start,end,nextDay,zone]);
   const valid=start!==null && end!==null && end>start && model.totalDistanceM>0;
   const [seconds,setSeconds]=useState(30);
+  const [cameraDistance,setCameraDistance]=useState(savedCameraDistance);
+  const [appliedCameraDistance,setAppliedCameraDistance]=useState(cameraDistance);
+  const [distanceOpen,setDistanceOpen]=useState(false);
+  const pendingCameraDistance=useRef(cameraDistance);
+  const appliedDistanceRef=useRef(cameraDistance);
+  const cameraDistanceTimer=useRef<number|undefined>(undefined);
+  const distanceControls=useRef<HTMLDivElement>(null);
+  const distanceToggle=useRef<HTMLButtonElement>(null);
+  const distancePanelId=useId();
+  const applyCameraDistance=useCallback(()=>{
+    window.clearTimeout(cameraDistanceTimer.current);
+    const next=pendingCameraDistance.current;
+    if(next===appliedDistanceRef.current)return;
+    appliedDistanceRef.current=next;
+    setAppliedCameraDistance(next);
+    try { window.localStorage.setItem(cameraDistanceStorageKey,String(next)); }
+    catch { /* The current journey can still use the chosen distance. */ }
+  },[]);
+  useEffect(()=>()=>window.clearTimeout(cameraDistanceTimer.current),[]);
+  const changeCameraDistance=(distanceM:number)=>{
+    const next=normalizeJourneyCameraDistance(distanceM);
+    pendingCameraDistance.current=next;
+    setCameraDistance(next);
+    window.clearTimeout(cameraDistanceTimer.current);
+    // Wait for a drag to settle before rebuilding the camera's terrain corridor.
+    cameraDistanceTimer.current=window.setTimeout(applyCameraDistance,120);
+  };
+  const closeDistance=()=>{applyCameraDistance();setDistanceOpen(false);};
+  const closeViewer=()=>{applyCameraDistance();onClose();};
   const [form,setForm]=useState(true);
   const [phase,setPhase]=useState<Phase>('paused');
   const [layers,setLayers]=useJourneySkyLayers();
@@ -85,7 +130,7 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   lastProgress.current=progress;
   const capture=phase==='arming' || phase==='recording' || phase==='saving';
   const distance=progress*model.totalDistanceM;
-  const cameraSettings=useMemo(()=>journeyCameraSettings(model,seconds),[model,seconds]);
+  const cameraSettings=useMemo(()=>journeyCameraSettings(model,seconds,appliedCameraDistance),[model,seconds,appliedCameraDistance]);
   const frame=useMemo(()=>getJourneyPlaybackFrame(model,distance,cameraSettings),[model,distance,cameraSettings]);
   const [stage,setStage]=useState<HTMLDivElement|null>(null);
   const [size,setSize]=useState({width:390,height:480});
@@ -184,6 +229,7 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   };
   const launch=(record:boolean)=>{
     if(!valid){setForm(true);setMessage('请填写有效的出发和到达日期时间，到达须晚于出发');return;}
+    closeDistance();
     if(record||progress>=1){presented.current=null;lastProgress.current=0;setProgress(0);}
     setForm(false);setMessage('');setPhase(record?'arming':'preparing');
   };
@@ -203,19 +249,37 @@ export function JourneyViewer({journey,onClose}:{journey:SkyJourney;onClose():vo
   const status=missing?'当前路段地图未能加载':buffering?'正在预载沿途地图'+count:
     degraded?fallbackText:missingAhead?`沿途有 ${buffer.unavailableTiles} 块地图暂缺`:'';
   const retry=()=>{currentBuffer.current=null;setBuffer(null);setMessage('');setRetryKey(key=>key+1);};
-  return <section className="journey-viewer" role="dialog" aria-modal="true" aria-label="第三人称行程模拟" onKeyDown={e=>{
-    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();onClose();}
+  return <section className="journey-viewer" role="dialog" aria-modal="true" aria-label="第三人称行程模拟" onPointerDown={e=>{
+    if(distanceOpen && !distanceControls.current?.contains(e.target as Node))closeDistance();
+  }} onKeyDown={e=>{
+    if(e.key!=='Escape')return;
+    e.preventDefault();e.stopPropagation();
+    if(distanceOpen){closeDistance();distanceToggle.current?.focus();}
+    else closeViewer();
   }}>
     <header><div><strong>第三人称行程模拟</strong><small>{journey.name}</small></div>
       <div className="journey-header-actions"><JourneySkyLayers layers={layers} onChange={setLayers} disabled={capture}/>
-        <button autoFocus type="button" onClick={onClose}>退出</button></div></header>
+        <button autoFocus type="button" onClick={closeViewer}>退出</button></div></header>
     <div className="journey-window" ref={setStage} data-buffer-state={buffer?.status??'loading'} data-frame-ready={textured}
       data-detail-zoom={buffer?.minDetailZoom} data-detail-loaded={buffer?.detailLoaded} data-detail-total={buffer?.detailTotal}
-      data-frame-degraded={buffer?.frameDegraded} data-camera-motion={frame?.cameraMotion ? 'gimbal' : undefined}>
+      data-frame-degraded={buffer?.frameDegraded} data-camera-motion={frame?.cameraMotion ? 'gimbal' : undefined}
+      data-camera-distance={appliedCameraDistance} data-distance-open={distanceOpen && !capture}>
       {frame && <JourneyStage model={model} frame={frame} time={at} zone={zone} name={journey.name} progress={progress}
         {...size} layers={layers} retryKey={retryKey} onBuffer={onBuffer} onPresent={onPresent} captureFrames={phase==='arming'||phase==='recording'||phase==='saving'}
         onCanvas={setCanvas} onFrame={composeRecordingFrame} onImagery={setImagery}/>}
       {status && <span className="journey-imagery" role="status">{status}{(missing||degraded||missingAhead) && <button type="button" onClick={retry}>重试加载</button>}</span>}
+      <div className="journey-distance" ref={distanceControls}>
+        <button type="button" className="journey-distance-toggle" ref={distanceToggle} disabled={capture||!frame}
+          aria-label={`镜头距离 ${cameraDistance} 米`} aria-expanded={distanceOpen} aria-controls={distancePanelId}
+          onClick={()=>distanceOpen?closeDistance():setDistanceOpen(true)}>距离 {cameraDistance} m</button>
+        <div className="journey-distance-panel" id={distancePanelId} hidden={!distanceOpen||capture}>
+          <input type="range" aria-label="镜头距离" aria-valuetext={`${cameraDistance} 米`} value={cameraDistance}
+            min={JOURNEY_CAMERA_DISTANCE_MIN_M} max={JOURNEY_CAMERA_DISTANCE_MAX_M} step={JOURNEY_CAMERA_DISTANCE_STEP_M}
+            disabled={capture} onChange={e=>changeCameraDistance(e.target.valueAsNumber)} onPointerUp={applyCameraDistance}
+            onPointerCancel={applyCameraDistance} onBlur={applyCameraDistance}/>
+          <div className="journey-distance-scale" aria-hidden="true"><span>近</span><span>远</span></div>
+        </div>
+      </div>
     </div>
     <section className="journey-controls" aria-label="行程时间轴">
       {form && <div className="journey-dates">

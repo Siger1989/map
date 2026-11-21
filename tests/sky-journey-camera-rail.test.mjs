@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { metresBetween } from '../modules/navigation/types.ts';
-import { keepJourneySubjectInFrame, resolveJourneyCamera } from '../modules/sky/journeyCamera.ts';
+import { keepJourneySubjectInFrame, normalizeJourneyCameraDistance, resolveJourneyCamera } from '../modules/sky/journeyCamera.ts';
 import { createJourneyCameraRail } from '../modules/sky/journeyCameraRail.ts';
 import { createJourneyPlayback, getJourneyPlaybackFrame, journeyCameraSettings } from '../modules/sky/journeyPlayback.ts';
 import { earthAxis, earthPosition } from '../modules/sky/satelliteTerrainGeometry.ts';
@@ -155,4 +155,32 @@ test('the gimbal does not re-pitch for in-frame terrain changes but protects the
   const y = (1 - Math.tan(arrowAngle) / Math.tan(fov * Math.PI / 360)) / 2;
   assert.ok(adjusted < viewPitch - 5);
   assert.ok(y < .866);
+});
+
+test('distance settings move the real camera at the same route time and keep the arrow in view', () => {
+  const straight = createJourneyPlayback({
+    name: 'straight',
+    segments: [[{ coordinates: [104, 30], timeMs: 0 }, { coordinates: [104, 30.02], timeMs: 2000 }]],
+  });
+  const terrain = { heightAt: () => 500, horizonAt: () => 0 };
+  const rail = createJourneyCameraRail();
+  const station = straight.totalDistanceM / 2;
+  const dot = (a, b) => a.reduce((sum, value, i) => sum + value * b[i], 0);
+  for (const wanted of [55, 90, 200, 55]) {
+    const frame = getJourneyPlaybackFrame(straight, station, journeyCameraSettings(straight, 30, wanted));
+    const view = rail.resolve(straight, frame, optics, terrain, 0);
+    assert.equal(frame.timeMs, 1000);
+    assert.ok(Math.abs(metresBetween(frame.coordinates, view.position) - wanted) < .01);
+    const eye = earthPosition(...view.position, view.altitude);
+    const arrow = earthPosition(...frame.coordinates, view.subjectAltitude + 2.5);
+    const vector = arrow.map((value, i) => value - eye[i]);
+    const tilt = earthAxis(...view.position, view.pose.azimuth, view.pose.altitude);
+    const up = earthAxis(...view.position, view.pose.azimuth, view.pose.altitude + 90);
+    const ndc = dot(vector, up) / dot(vector, tilt) / Math.tan(optics.verticalFov * Math.PI / 360);
+    assert.ok(ndc > -.73 && ndc < .40);
+  }
+  assert.equal(normalizeJourneyCameraDistance(NaN), 90);
+  assert.equal(normalizeJourneyCameraDistance(42), 55);
+  assert.equal(normalizeJourneyCameraDistance(151), 150);
+  assert.equal(normalizeJourneyCameraDistance(400), 200);
 });

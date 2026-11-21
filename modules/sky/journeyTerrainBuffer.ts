@@ -1,5 +1,5 @@
 import { getJourneyPlaybackFrame, type JourneyPlaybackModel } from './journeyPlayback.ts';
-import { journeyCameraAzimuth, journeyDestination } from './journeyCamera.ts';
+import { JOURNEY_CAMERA_LAG_M, journeyCameraAzimuth, journeyDestination } from './journeyCamera.ts';
 import { mercator, type Tile } from './satelliteTerrainGeometry.ts';
 import { routeImageryFocus } from './journeyRouteOverlay.ts';
 
@@ -102,7 +102,8 @@ export function journeyGroundFootprint(route: Parameters<typeof routeImageryFocu
   // Preserve the foreground's physical pixel size at high latitudes.
   const latitudeOffset=Math.max(0,Math.floor(Math.log2(.85/Math.cos(eye[1]*Math.PI/180))));
   const detailZoom=17-latitudeOffset;
-  const detail=uniqueTiles([footprint([...corners(200),frame.coordinates],detailZoom,marginM),
+  const foreground = 200 + Math.max(0, frame.cameraLagM - JOURNEY_CAMERA_LAG_M);
+  const detail=uniqueTiles([footprint([...corners(foreground),frame.coordinates],detailZoom,marginM),
     routeImageryFocus(route).map(([x,y])=>tileAt(x,y,detailZoom))]);
   const middle=footprint(corners(640),Math.max(9,15-latitudeOffset),marginM);
   const horizon=footprint(corners(3200),Math.max(9,12-latitudeOffset),marginM);

@@ -1,6 +1,6 @@
 import { metresBetween, type PlannedRoute } from "../navigation/types.ts";
 import type { ManualTrack } from "../tracks/drawing.ts";
-import { journeyBearing, journeyDestination, JOURNEY_CAMERA_HEIGHT_M, JOURNEY_CAMERA_LAG_M, limitCameraOffset } from "./journeyCamera.ts";
+import { journeyBearing, journeyDestination, JOURNEY_CAMERA_HEIGHT_M, JOURNEY_CAMERA_LAG_M, limitCameraOffset, normalizeJourneyCameraDistance } from "./journeyCamera.ts";
 import { createJourneyGimbal, JOURNEY_GIMBAL_RADIUS_SECONDS } from "./journeyGimbal.ts";
 import { indexJourneyTurns, journeyCameraHeading, type JourneyTurn } from "./journeyHeadingProfile.ts";
 
@@ -215,10 +215,14 @@ function segmentHeading(segment: JourneyPlaybackSegment, distanceM: number, coor
 }
 
 /** Tie the gimbal to the selected replay duration so playback, seeking and export sample the same pose. */
-export function journeyCameraSettings(model: JourneyPlaybackModel, playbackSeconds: number): JourneyPlaybackSettings {
-  if (!(playbackSeconds > 0 && Number.isFinite(playbackSeconds) && model.totalDistanceM > 0)) return {};
+export function journeyCameraSettings(model: JourneyPlaybackModel, playbackSeconds: number, distanceM = JOURNEY_CAMERA_LAG_M): JourneyPlaybackSettings {
+  const cameraLagM = normalizeJourneyCameraDistance(distanceM);
+  // Lift the distant view a little as the boom retreats, to keep the road and arrow visible.
+  const cameraHeightM = JOURNEY_CAMERA_HEIGHT_M + (cameraLagM - JOURNEY_CAMERA_LAG_M) * .22;
+  const framing = { cameraLagM, cameraHeightM };
+  if (!(playbackSeconds > 0 && Number.isFinite(playbackSeconds) && model.totalDistanceM > 0)) return framing;
   const metresPerSecond = model.totalDistanceM / playbackSeconds;
-  if (!Number.isFinite(metresPerSecond)) return {};
+  if (!Number.isFinite(metresPerSecond)) return framing;
   const turnRadiusM = Math.max(20, Math.min(2400, metresPerSecond * 0.6));
   const radiusSeconds = Math.min(JOURNEY_GIMBAL_RADIUS_SECONDS, 360 / metresPerSecond);
   const followRadiusSeconds = Math.min(radiusSeconds, 36 / metresPerSecond);
@@ -227,6 +231,7 @@ export function journeyCameraSettings(model: JourneyPlaybackModel, playbackSecon
     close: ReturnType<typeof createJourneyGimbal>;
   }>();
   return {
+    ...framing,
     turnRadiusM,
     cameraMotion: {
       metresPerSecond,
@@ -256,7 +261,7 @@ export function journeyCameraSettings(model: JourneyPlaybackModel, playbackSecon
         // are filtered so keeping the arrow in view doesn't reintroduce GPS jitter.
         const close = pair.close(time).coordinates;
         const separation = metresBetween(close, wide.coordinates);
-        const offset = limitCameraOffset(separation, JOURNEY_CAMERA_LAG_M * .09);
+        const offset = limitCameraOffset(separation, cameraLagM * .09);
         return {
           coordinates: separation > offset ? interpolateCoordinates(close, wide.coordinates, offset / separation) : wide.coordinates,
           headingDeg: wide.headingDeg,
