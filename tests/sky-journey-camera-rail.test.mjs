@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { metresBetween } from '../modules/navigation/types.ts';
-import { resolveJourneyCamera } from '../modules/sky/journeyCamera.ts';
+import { keepJourneySubjectInFrame, resolveJourneyCamera } from '../modules/sky/journeyCamera.ts';
 import { createJourneyCameraRail } from '../modules/sky/journeyCameraRail.ts';
 import { createJourneyPlayback, getJourneyPlaybackFrame, journeyCameraSettings } from '../modules/sky/journeyPlayback.ts';
 import { earthAxis, earthPosition } from '../modules/sky/satelliteTerrainGeometry.ts';
@@ -140,4 +140,19 @@ test('gimbal stays on frame through a hairpin, at the dateline, and after backwa
   assert.ok(Math.abs(cut.frame.cameraTarget[0]) > 179.9);
   assert.deepEqual(sample(lastStation * 160 / 240).camera, reference[1]);
   assert.deepEqual(sample(lastStation * 80 / 240, createJourneyCameraRail()).camera, reference[0]);
+});
+
+test('the gimbal does not re-pitch for in-frame terrain changes but protects the bottom margin', () => {
+  const eye = 543;
+  const viewPitch = -13;
+  const distance = 90;
+  const fov = 65;
+  for (const ground of [486, 500, 515])
+    assert.equal(keepJourneySubjectInFrame(viewPitch, eye, ground, distance, fov, true), viewPitch);
+  const deepValley = 410;
+  const adjusted = keepJourneySubjectInFrame(viewPitch, eye, deepValley, distance, fov, true);
+  const arrowAngle = Math.atan2(deepValley - eye, distance) - adjusted * Math.PI / 180;
+  const y = (1 - Math.tan(arrowAngle) / Math.tan(fov * Math.PI / 360)) / 2;
+  assert.ok(adjusted < viewPitch - 5);
+  assert.ok(y < .866);
 });

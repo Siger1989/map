@@ -8,6 +8,8 @@ const degrees = 180 / Math.PI;
 // The composed frame masks approximately 5.5% at the top, 9.2% at the bottom.
 const targetSky = .055 + (.908 - .055) * .29;
 const subjectBand = [0.58, 0.81] as const;
+// A stabilized view can let the arrow move within the terrain, above the lower HUD.
+const gimbalSubjectBand = [0.45, 0.865] as const;
 export const JOURNEY_MIN_EYE_HEIGHT_M = 29;
 const maxTerrainLiftM = 80;
 const horizonSamples = [
@@ -81,8 +83,9 @@ export function keepJourneySubjectInFrame(pitch: number, eye: number, subject: n
   if (distance <= .1) return pitch;
   const tangent = Math.tan(clamp(verticalFov, 10, 150) / degrees / 2);
   const elevation = altitudeAngle(subject - eye, distance);
-  const low = elevation - viewAngle(subjectBand[0], tangent);
-  const high = elevation - viewAngle(subjectBand[1], tangent);
+  const band = cushioned ? gimbalSubjectBand : subjectBand;
+  const low = elevation - viewAngle(band[0], tangent);
+  const high = elevation - viewAngle(band[1], tangent);
   if (!cushioned) return clamp(pitch, low, high);
   const center = (low + high) / 2;
   return center + limitCameraOffset(pitch - center, (high - low) / 2, .8);
