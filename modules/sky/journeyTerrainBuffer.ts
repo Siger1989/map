@@ -9,6 +9,7 @@ export interface JourneyTerrainBuffer {
   total: number;
   frameReady: boolean;
   throughDistanceM: number;
+  readyThroughDistanceM: number | null;
   detailLoaded: number;
   detailTotal: number;
   minDetailZoom: number;
@@ -63,6 +64,7 @@ export interface JourneyWindow {
   detail: Tile[];
   surroundings: Tile[];
   startup: Tile[];
+  checkpoints: { distanceM: number; tiles: Tile[] }[];
 }
 
 const maxAhead = 9000;
@@ -150,6 +152,7 @@ export function planJourneyWindow(model: JourneyPlaybackModel, distanceM: number
   const start = Math.max(0, Math.min(distanceM,model.totalDistanceM));
   const limit = Math.min(start + maxAhead, model.totalDistanceM);
   const overview = new Map<string,Tile>(), detail = new Map<string,Tile>(), startup = new Map<string,Tile>();
+  const checkpoints: JourneyWindow['checkpoints'] = [];
   let end = start;
   const distances = new Set<number>([start,limit]);
   for (let d = start + 65; d < limit; d += 65) distances.add(d);
@@ -177,6 +180,7 @@ export function planJourneyWindow(model: JourneyPlaybackModel, distanceM: number
     if (end > start && detail.size + overview.size + additions > maxCorridorTiles) break;
     for (const tile of regional) overview.set(tile.key,tile);
     for (const tile of nearby) detail.set(tile.key,tile);
+    checkpoints.push({distanceM:distance,tiles:uniqueTiles([nearby,regional])});
     end = distance;
   }
   const surroundings = new Map<string, Tile>();
@@ -195,7 +199,7 @@ export function planJourneyWindow(model: JourneyPlaybackModel, distanceM: number
   // Prefer regional coverage when the corridor crosses several base tiles.
   const backdrop = [...surroundings.values()];
   for(const t of [...detail.values(),...overview.values(),...backdrop])startup.set(t.key,t);
-  return { start, end, overview:[...overview.values()], detail:[...detail.values()], surroundings: backdrop, startup:[...startup.values()] };
+  return { start, end, overview:[...overview.values()], detail:[...detail.values()], surroundings: backdrop, startup:[...startup.values()], checkpoints };
 }
 
 export function windowCovers(plan: JourneyWindow, distance: number, total: number) {

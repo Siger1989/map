@@ -12,7 +12,7 @@ const phone=document.querySelector('#phone'),frame=document.querySelector('ifram
 // Keep the right-side preview fixed by default; named sizes are for separate QA tabs.
 // Pura X presets reproduce the official 1320:2120 inner-screen shape.
 // CSS density is illustrative; HarmonyOS display settings/container may differ.
-const checks={'360x780':[360,780],'390x480':[390,480],'360x360':[360,360],
+const checks={'390x857':[390,857],'360x780':[360,780],'390x480':[390,480],'360x360':[360,360],
   'find-x8-landscape':[390*2760/1256,390],
   'pura-x':[440,440*2120/1320],'pura-x-landscape':[440*2120/1320,440]};
 const requested=new URLSearchParams(location.search).get('viewport');
@@ -30,20 +30,29 @@ if(check){
 frame.style.width=width+'px';frame.style.height=height+'px';
 let keyboard,material;
 function fit(){const stage=document.querySelector('#preview-stage').getBoundingClientRect();const availableWidth=Math.max(1,stage.width-16),availableHeight=Math.max(1,stage.height-16);const scale=Math.min(1,availableWidth/width,availableHeight/screenHeight);phone.style.width=width*scale+'px';phone.style.height=screenHeight*scale+'px';frame.style.top=statusBarHeight*scale+'px';frame.style.transform='scale('+scale+')';keyboard?.setScale(scale)}
-const scene=new URLSearchParams(location.search).get('scene');
-const skyPreview=scene==='sky'||scene==='journey'||scene==='marker';
-if(skyPreview) {
-  document.title=scene==='journey'?'山兔 · 第三人称行程模拟':scene==='marker'?'山兔 · 标记点观景':'山兔 · 青城山日月观景';
+const params=new URLSearchParams(location.search);
+const scene=params.get('scene');
+const demo=params.get('weather-demo');
+const weatherDemo=demo==='snow'||demo==='cloud' ? demo : null;
+const scenePreview=scene==='sky'||scene==='journey'||scene==='marker'||scene==='weather'||scene==='live-weather'||scene==='floating-nav';
+if(scenePreview) {
+  document.title=scene==='floating-nav'?'山兔 · 悬浮窗口布局':scene==='live-weather'?'山兔 · 地图实时天气':scene==='weather'?'山兔 · 沿途天气':scene==='journey'?'山兔 · 第三人称行程模拟':scene==='marker'?'山兔 · 标记点观景':'山兔 · 青城山日月观景';
   document.querySelector('#preview-material').hidden=true;
   document.body.style.display='block';
   document.querySelector('#preview-stage').style.height='100%';
 }
-const route=new URLSearchParams(location.search).get('route');
-const journeyPage='/journey-preview.html'+(route==='road'||route==='winding'?'?route='+route:'');
-const skyPage=new URLSearchParams(location.search).has('night')?'/sky-preview.html?night=1':'/sky-preview.html';
-frame.src=(skyPreview?(scene==='journey'?journeyPage:scene==='marker'?'/sky-preview.html?marker=1':skyPage):'/')+location.hash;
+const route=params.get('route');
+const journeyParams=new URLSearchParams();
+if(route==='road'||route==='winding')journeyParams.set('route',route);
+if(params.has('rain'))journeyParams.set('rain','1');
+if(weatherDemo)journeyParams.set('weather-demo',weatherDemo);
+const journeyPage='/journey-preview.html'+(journeyParams.size?'?'+journeyParams:'');
+const skyPage=params.has('night')?'/sky-preview.html?night=1':'/sky-preview.html';
+frame.src=(scene==='floating-nav'?'/floating-navigation-preview.html':scene==='live-weather'?(weatherDemo?'/?weather-demo='+weatherDemo:'/'):
+  scene==='weather'?'/journey-preview.html?route=winding&weather=1':scene==='journey'?journeyPage:
+  scene==='marker'?'/sky-preview.html?marker=1':scene==='sky'?skyPage:'/')+location.hash;
 frame.addEventListener('load',()=>{const sync=()=>history.replaceState(null,'',location.pathname+location.search+frame.contentWindow.location.hash);frame.contentWindow.addEventListener('hashchange',sync);sync()});
 keyboard=installPhonePreviewKeyboard({phone,frame,width,height});
-if(!skyPreview)material=installPhonePreviewMaterial({frame,onLayoutChange:fit});
+if(!scenePreview)material=installPhonePreviewMaterial({frame,onLayoutChange:fit});
 addEventListener('resize',fit);fit();
 </script></body></html>

@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react';
 import type { MoonGuide } from './moonGuideGeometry';
 import { constellationOptions } from './constellations';
 
@@ -8,15 +9,24 @@ interface Props {
 }
 
 export function SkyTargetControls(p:Props) {
-  return <div className="sky-readout sky-target-controls">
-    <label>目标 <select aria-label="观景目标" value={p.id} onChange={e=>p.onSelect(e.target.value)}>
-      <optgroup label="日月与银河"><option value="sun">太阳</option><option value="moon">月亮</option><option value="milky-way">银河中心</option></optgroup>
-      <optgroup label="星座">{constellationOptions.map(star=><option key={star.id} value={star.id}>{star.name}</option>)}</optgroup>
-    </select></label>
-    <button type="button" onClick={p.onFind} disabled={p.searching}>{p.searching?'查找中…':p.following&&!p.cameraLive?'解除跟踪':'找'+p.label}</button>
-    <button type="button" aria-pressed={p.showStars} onClick={p.onStars}>星座</button>
-    <button type="button" aria-pressed={p.showGalaxy} onClick={p.onGalaxy}>银河</button>
-    <small>{p.guide.message}{p.faint?' · 天光较亮':''}</small>
+  return <div className="sky-target-controls">
+    <div className="sky-target-row">
+      <label>
+        目标
+        <span className="sky-target-picker">
+          <span className="sky-target-value" aria-hidden="true">{p.label}</span>
+          <ChevronDown size={13} aria-hidden="true" />
+          <select aria-label="观景目标" value={p.id} onChange={e=>p.onSelect(e.target.value)}>
+            <optgroup label="日月与银河"><option value="sun">太阳</option><option value="moon">月亮</option><option value="milky-way">银河中心</option></optgroup>
+            <optgroup label="星座">{constellationOptions.map(star=><option key={star.id} value={star.id}>{star.name}</option>)}</optgroup>
+          </select>
+        </span>
+      </label>
+      <button type="button" onClick={p.onFind} disabled={p.searching}>{p.searching?'查找中…':p.following&&!p.cameraLive?'解除跟踪':'找'+p.label}</button>
+      <button type="button" aria-pressed={p.showStars} onClick={p.onStars}>星座</button>
+      <button type="button" aria-pressed={p.showGalaxy} onClick={p.onGalaxy}>银河</button>
+    </div>
+    <small className="sky-target-note">{p.guide.message}{p.faint?' · 天光较亮':''}</small>
   </div>;
 }
 

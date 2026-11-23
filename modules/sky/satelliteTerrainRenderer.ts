@@ -453,6 +453,12 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
       if(needsWindow || aheadCell!==progressCell){
         aheadCell=progressCell;upcoming=journeyGpuLookahead(route.model,route.frame.distanceM,fov,{turnRadiusM:planTurn,cameraLagM:planLag,cameraMotion:planMotion});
       }
+      const early: Tile[][] = [];
+      for (const checkpoint of windowPlan.checkpoints) {
+        if (checkpoint.distanceM < route.frame.distanceM) continue;
+        early.push(checkpoint.tiles);
+        if (checkpoint.distanceM >= route.frame.distanceM + 320) break;
+      }
       const gpu=uniqueTiles([visible,upcoming]).slice(0,maxJourneyResident-12);
       gpuRequired=new Set(gpu.map(t=>t.key));
       if(needsWindow)for(const t of readinessTiles)if(failed.has(t.key)||staged.get(t.key)?.complete===false)requestParent(t);
@@ -463,7 +469,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
         }
         if(failed.has(t.key)||staged.get(t.key)?.complete===false)requestParent(t);
       }
-      requests=uniqueTiles([[ancestor(nearTiles[0],9)],nearTiles,focusTiles,roots,gpu,readinessTiles,visible]);
+      requests=uniqueTiles([[ancestor(nearTiles[0],9)],nearTiles,focusTiles,roots,...early,gpu,readinessTiles,visible]);
     } else requests = tiles;
     desired = new Set(requests.map(tile => tile.key));
     if (needsWindow) {
@@ -550,21 +556,30 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
   function journeyBuffer(): JourneyTerrainBuffer {
     const total = readinessTiles.length;
     let loaded = 0, unavailableTiles=0, degraded = false;
+    const ready = new Set<string>();
     for (const tile of readinessTiles) {
       const saved=staged.get(tile.key);
-      if (saved?.complete || resident.get(tile.key)?.complete) {loaded++;if(saved && coarserDem.has(saved.heights))degraded=true;}
+      if (saved?.complete || resident.get(tile.key)?.complete) {loaded++;ready.add(tile.key);if(saved && coarserDem.has(saved.heights))degraded=true;}
       else if (failed.has(tile.key) || staged.get(tile.key)?.complete===false) {
         let found=false;
         for(let z=tile.z-1;z>=minCover(tile);z--){
           const key=ancestor(tile,z).key;
-          if(staged.get(key)?.complete || resident.get(key)?.complete){ loaded++;degraded=true;found=true;break;}
+          if(staged.get(key)?.complete || resident.get(key)?.complete){ loaded++;ready.add(tile.key);degraded=true;found=true;break;}
         }
         if(!found && exhausted(tile))unavailableTiles++;
       }
     }
+    let readyThroughDistanceM: number | null = null;
+    if (frameReady && focusFrame && windowPlan) {
+      for (const checkpoint of windowPlan.checkpoints) {
+        if (checkpoint.distanceM < focusFrame.distanceM) continue;
+        if (!checkpoint.tiles.every(tile => ready.has(tile.key))) break;
+        readyThroughDistanceM = checkpoint.distanceM;
+      }
+    }
     const prepared=loaded+unavailableTiles===total && total>0;
     const status = frameUnavailable ? 'unavailable' : prepared && frameReady ? (unavailableTiles||degraded||frameDegraded ? 'degraded' : 'ready') : pending.size ? 'loading' : 'unavailable';
-    return {status, loaded, total, unavailableTiles, frameReady, frameDegraded, detailLoaded, detailTotal:nearTiles.length, minDetailZoom, throughDistanceM:windowPlan?.end ?? 0};
+    return {status, loaded, total, unavailableTiles, frameReady, frameDegraded, detailLoaded, detailTotal:nearTiles.length, minDetailZoom, throughDistanceM:windowPlan?.end ?? 0, readyThroughDistanceM};
   }
 
   function minCover(tile:Tile){return Math.max(8,tile.z-2);}

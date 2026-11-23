@@ -5,7 +5,9 @@ import type { TerrainHorizon } from '../modules/sky/terrainHorizon';
 import { SkyViewer } from '../modules/sky/SkyViewer';
 import { usePosition } from '../modules/position/usePosition';
 import '../app/globals.css';
+import '../modules/controls/outdoorSurfaces.css';
 import '../modules/controls/outdoorTheme.css';
+import '../modules/appearance/roundedSpring.css';
 
 function QingchengPreview() {
   const position = usePosition();

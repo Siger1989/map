@@ -1,7 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GuidanceSession } from './session';
+import { fetchRouteWeather, type RouteForecast } from '../journey/weatherProvider';
+import { buildFloatingMarkerEvents, buildFloatingRainEvents, buildFloatingWeatherRoute, type FloatingNavigationMark } from './floatingRouteEvents';
 import {
   buildFloatingNavigationPayload,
+  FLOATING_NAVIGATION_MAX_EVENTS,
+  type FloatingNavigationRouteEvent,
   parseFloatingNavigationStatus,
   serializeFloatingNavigationOptions,
   serializeFloatingNavigationPayload,
@@ -23,14 +27,72 @@ const emptyStatus: FloatingNavigationStatus = {
   message: '',
 };
 
+const noMarks: readonly FloatingNavigationMark[] = [];
+const forecastRefreshMs = 15 * 60_000;
+const rainProgressStepM = 250;
+
 /** React UI for the native cross-app map. Native preferences remain the only saved source. */
 export function useFloatingNavigation(
   session: GuidanceSession | null,
-  options: { manageSession?: boolean; observe?: boolean } = {},
+  options: {
+    manageSession?: boolean;
+    observe?: boolean;
+    showWeather?: boolean;
+    marks?: readonly FloatingNavigationMark[];
+  } = {},
 ) {
   const [status, setStatus] = useState(emptyStatus);
   const [localMessage, setLocalMessage] = useState('');
   const [foregroundEpoch, setForegroundEpoch] = useState(0);
+  const [pageVisible, setPageVisible] = useState(() => typeof document !== 'undefined' && document.visibilityState === 'visible');
+  const [weatherTime, setWeatherTime] = useState(Date.now);
+  const [request, setRequest] = useState<{ layout: ReturnType<typeof buildFloatingWeatherRoute>; forecast: RouteForecast } | null>(null);
+  const canSendEvents = options.manageSession !== false && status.routeEventsSupported === true;
+  // A temporary return-to-route line has its own geometry and no matching traversal estimate.
+  const path = canSendEvents && session?.route.coordinates === session?.path?.points ? session?.path : undefined;
+  const coordinates = path?.points;
+  const stops = path ? session?.route.stops : undefined;
+  const marks = options.marks ?? noMarks;
+  const markerEvents = useMemo(() => path ? buildFloatingMarkerEvents(path, stops, marks) : [], [path, stops, marks]);
+  const duration = path ? session?.route.duration ?? 0 : 0;
+  const weatherEnabled = options.showWeather === true && status.enabled && status.windowEnabled && status.overlayAllowed !== false && pageVisible;
+  const weatherLayout = useMemo(() => coordinates && duration > 0
+    ? buildFloatingWeatherRoute(coordinates, duration)
+    : null, [coordinates, duration]);
+  const forecastPeriod = Math.floor(weatherTime / forecastRefreshMs);
+
+  useEffect(() => {
+    if (!weatherEnabled || !weatherLayout?.stops.length) return;
+    const controller = new AbortController();
+    void Promise.resolve().then(async () => {
+      if (controller.signal.aborted || document.visibilityState !== 'visible') return;
+      const forecast = await fetchRouteWeather(weatherLayout.stops, controller.signal, { liquidRain: true }).catch(() => null);
+      if (!controller.signal.aborted && forecast) setRequest({ layout: weatherLayout, forecast });
+    });
+    return () => controller.abort();
+  }, [weatherEnabled, weatherLayout, forecastPeriod]);
+
+  useEffect(() => {
+    if (!weatherEnabled || !weatherLayout) return;
+    setWeatherTime(Date.now());
+    const timer = window.setInterval(() => setWeatherTime(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, [weatherEnabled, weatherLayout]);
+
+  const progressM = path ? session?.progress ?? 0 : 0;
+  const rainProgressM = Math.floor(progressM / rainProgressStepM) * rainProgressStepM;
+  const rainEvents = useMemo(() => options.showWeather && status.windowEnabled && weatherLayout && request?.layout === weatherLayout
+    ? buildFloatingRainEvents(weatherLayout, request.forecast, rainProgressM, weatherTime)
+    : [], [options.showWeather, status.windowEnabled, weatherLayout, request, rainProgressM, weatherTime]);
+  const upcomingEvents = canSendEvents && session && status.windowEnabled
+    ? [...markerEvents.filter(event => event.distanceM >= progressM - 10), ...rainEvents]
+        .sort((first, second) => first.distanceM - second.distanceM)
+        .slice(0, FLOATING_NAVIGATION_MAX_EVENTS)
+    : undefined;
+  const currentEvents = useRef<{ events: FloatingNavigationRouteEvent[] | undefined; signature: string }>({ events: undefined, signature: '' });
+  const eventSignature = upcomingEvents?.length ? JSON.stringify(upcomingEvents) : '';
+  currentEvents.current = { events: upcomingEvents, signature: eventSignature };
+
   const currentSession = useRef(session);
   currentSession.current = session;
   const lastSent = useRef<{
@@ -40,6 +102,7 @@ export function useFloatingNavigation(
     color: string;
     mode: FloatingNavigationMode;
     kind: 'route' | 'position';
+    eventSignature: string;
   } | null>(null);
   const requestedRoute = useRef(false);
 
@@ -80,6 +143,8 @@ export function useFloatingNavigation(
       const liveSession = currentSession.current;
       const kind = liveSession ? 'route' : 'position';
       const payload = buildFloatingNavigationPayload(liveSession, nextMode, kind);
+      const { events, signature } = currentEvents.current;
+      if (kind === 'route' && events !== undefined) payload.events = events;
       const serialized = serializeFloatingNavigationPayload(payload);
       if (action === 'start') bridge.start(serialized);
       else if (action === 'update') bridge.update(serialized);
@@ -92,6 +157,7 @@ export function useFloatingNavigation(
         color: payload.color ?? '',
         mode: nextMode,
         kind,
+        eventSignature: kind === 'route' ? signature : '',
       };
       setLocalMessage('');
       refresh();
@@ -121,7 +187,9 @@ export function useFloatingNavigation(
       if (document.visibilityState === 'visible') setForegroundEpoch((epoch) => epoch + 1);
     };
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') {
+      const visible = document.visibilityState === 'visible';
+      setPageVisible(visible);
+      if (visible) {
         refresh();
         restore();
         setForegroundEpoch((epoch) => epoch + 1);
@@ -209,9 +277,9 @@ export function useFloatingNavigation(
     const segments = session?.route.segments;
     const previous = lastSent.current;
     if (previous?.coordinates === coordinates && previous.segments === segments && previous.label === label && previous.color === color &&
-        previous.mode === status.mode && previous.kind === kind) return;
+        previous.mode === status.mode && previous.kind === kind && previous.eventSignature === eventSignature) return;
     send('update', status.mode);
-  }, [foregroundEpoch, options.manageSession, send, session, session?.route.coordinates, session?.route.segments, session?.route.stops, session?.route.style?.color, status]);
+  }, [eventSignature, foregroundEpoch, options.manageSession, send, session, session?.route.coordinates, session?.route.segments, session?.route.stops, session?.route.style?.color, status.enabled, status.mode]);
 
   // A permission sheet can outlive navigation. Cancel only an unstarted route request; a running
   // native service remains active and is switched to position mode by the live-session effect.

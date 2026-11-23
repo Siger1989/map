@@ -57,6 +57,11 @@
 .record-group-control { background:var(--ui-raised, #e3eee2); }
 .record-group-along { background:var(--ui-raised, #e5edf0); }
 .record-group-settings { background:var(--ui-raised, #eeeadd); }
+.record-system-settings { display:grid; gap:4px; padding:2px 2px 4px; }
+.record-system-settings > div { display:flex; align-items:center; justify-content:space-between; gap:4px; min-width:0; }
+.record-system-settings > div > span { overflow-wrap:anywhere; }
+.record-system-settings button { flex:none; }
+.record-system-settings small { color:var(--ui-muted, #516b78); font-size:11px; line-height:1.35; }
 .record-group-files { background:var(--ui-raised, #e8e6f0); }
 .observatory .record-console summary { min-height:36px; display:flex; align-items:center; cursor:pointer; }
 .observatory .record-console button,.observatory .record-console input:not([type='checkbox']),.observatory .record-console select { height:36px !important; min-height:36px !important; }

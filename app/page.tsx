@@ -37,6 +37,7 @@ import { PhotoViewer } from '@/modules/photos/PhotoViewer';
 import { useMapFocusLock, type CameraSnapshot } from '@/modules/controls/useMapFocusLock';
 import { useScreenAwake } from '@/modules/position/useScreenAwake';
 import { useRecording } from '@/modules/outdoor/useRecording';
+import { OPEN_RECORDING_EVENT, recordingSystem } from '@/modules/outdoor/recordingSystem';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
 import { RouteCachePanel } from '@/modules/outdoor/RouteCachePanel';
 import { OfflineMapProgressPrompt } from '@/modules/outdoor/OfflineMapProgressPrompt';
@@ -71,6 +72,7 @@ import { basemapConfiguration } from '@/modules/cartography/basemaps';
 import { usesSentinel, usesTianditu, SENTINEL_MAXZOOM, SENTINEL_NAME } from '@/modules/cartography/sentinel';
 import { tiandituBase, TIANDITU_LAYERS } from '@/modules/cartography/tianditu';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
+import { LiveMapWeather } from '@/modules/weather/LiveMapWeather';
 import { INDUSTRY_TOOLS_ENABLED, mountIndustryToolsPanel, showIndustryToolsEntry } from '@/config/features';
 import { createIndustryToolsState, IndustryTools, type IndustryToolsState } from '@/modules/industry/IndustryTools';
 import { MapActions } from '@/modules/controls/MapActions';
@@ -229,7 +231,9 @@ import {
 const JourneyViewer = lazy(() => import('@/modules/sky/JourneyViewer').then(module => ({default:module.JourneyViewer})));
 const SkyViewer = lazy(() => import('@/modules/sky/SkyViewer').then(module => ({ default: module.SkyViewer })));
 
-export default function Home() {
+const liveMapWeatherStorageKey = 'shantu:map:live-weather';
+
+export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapshot } = {}) {
   const [skyJourney,setSkyJourney]=useState<import('@/modules/sky/journeyPlayback').SkyJourney|null>(null);
   useEffect(()=>{
     const open=(event:Event)=>{
@@ -347,6 +351,11 @@ export default function Home() {
   const [sourcesNavigation, setSourcesNavigation] =
     useState<MapSourcesNavigation | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const [liveMapWeather, setLiveMapWeather] = useState(Boolean(weatherPreview));
+  useEffect(() => {
+    if (weatherPreview) return;
+    try { setLiveMapWeather(localStorage.getItem(liveMapWeatherStorageKey) === 'true'); } catch { /* Optional preference. */ }
+  }, [weatherPreview]);
   const [view, setView] = useState<ViewState>(INITIAL_VIEW);
   const [mapReadyEpoch, setMapReadyEpoch] = useState(0);
   const outdoorCameraApplied = useRef(false);
@@ -414,7 +423,7 @@ export default function Home() {
     return { ...session, route: { ...session.route, coordinates: rejoin.route.coordinates, segments: rejoin.route.segments,
       stops: [{ name: '返回原路线', coordinates: rejoin.target.point }] } };
   }, [guidance.session, guidance.rejoin]);
-  const floatingNavigation = useFloatingNavigation(floatingSession);
+  const floatingNavigation = useFloatingNavigation(floatingSession, { showWeather: liveMapWeather, marks: annotations.items });
   useEffect(() => {
     if (!guidance.active) searchNavigationDraft.clear();
   }, [guidance.active, searchNavigationDraft]);
@@ -472,6 +481,19 @@ export default function Home() {
   >([]);
   const [outdoorPhotos, setOutdoorPhotos] = useState(false);
   const [outdoorRecording, setOutdoorRecording] = useState(false);
+  const [recordingTileRequest, setRecordingTileRequest] = useState(0);
+  useEffect(() => {
+    const showRecording = () => {
+      if (!recordingSystem()?.takeOpenRecording()) return;
+      setOutdoorPhotos(false);
+      setOutdoorRecording(true);
+      setRecordingTileRequest(value => value + 1);
+      setPanel('outdoor');
+    };
+    window.addEventListener(OPEN_RECORDING_EVENT, showRecording);
+    showRecording();
+    return () => window.removeEventListener(OPEN_RECORDING_EVENT, showRecording);
+  }, [setPanel]);
   useEffect(() => {
     if (panel !== 'favorites') {
       setCollectionOutputKey(null);
@@ -2273,6 +2295,8 @@ export default function Home() {
           },
         }}>
         <TerrainMap
+          initialCamera={weatherPreview}
+          persistCamera={!weatherPreview}
           onReady={() => setMapReadyEpoch((epoch) => epoch + 1)}
           mapSource={mapSources.source}
           onSourceStatus={mapSources.setStatus}
@@ -3463,6 +3487,7 @@ export default function Home() {
                 }
               })
           )}
+        {liveMapWeather && mapReadyEpoch > 0 && !comparison && !skyOrigin && !skyJourney && <LiveMapWeather key={mapReadyEpoch} mapRef={map} />}
         <ControlDock
           floatingNavigation={floatingNavigation.supported || process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW === '1' ? <FloatingNavigationControls controls={floatingNavigation} preview={process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW === '1'} /> : undefined}
           industryEnabled={showIndustryToolsEntry(INDUSTRY_TOOLS_ENABLED)}
@@ -3511,6 +3536,13 @@ export default function Home() {
               position.locate();
             }
           }}
+          liveWeather={{ enabled: liveMapWeather, onToggle: () => {
+            const enabled = !liveMapWeather;
+            setLiveMapWeather(enabled);
+            if (!weatherPreview) {
+              try { localStorage.setItem(liveMapWeatherStorageKey, String(enabled)); } catch { /* Optional preference. */ }
+            }
+          } }}
           onPhotoMarkers={() => { gpsPhotoPoints.current = []; }}
           onSection={TERRAIN_SECTION_ENABLED ? toggleSection : undefined}
           sectionActive={sectionEditing || survey.active}
@@ -3690,7 +3722,7 @@ export default function Home() {
           {panel === 'outdoor' && (
             <OutdoorPanel
               onImport={openRouteImportDialog}
-              key={outdoorPhotos?'photos':'record'}
+              key={`${outdoorPhotos ? 'photos' : 'record'}-${recordingTileRequest}`}
               initialTab={desktopShell || outdoorPhotos ? 'photos' : 'record'}
               recordingEnabled={!desktopShell}
               locationError={!!position.locationError}

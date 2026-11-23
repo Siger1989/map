@@ -20,6 +20,16 @@
   <application android:label="${hybridApplicationLabel}" tools:replace="android:label,android:usesCleartextTraffic" android:icon="@drawable/shantu_hybrid_launcher" android:roundIcon="@drawable/shantu_hybrid_launcher" android:theme="@style/ShantuHybridTheme"
     android:allowBackup="false" android:usesCleartextTraffic="true" android:hardwareAccelerated="true" android:largeHeap="true" android:supportsRtl="true" android:enableOnBackInvokedCallback="false">
     <service android:name="com.guanyun.weather.RecordingService" android:exported="false" android:foregroundServiceType="location" />
+    <service android:name="com.guanyun.weather.RecordingTileService" android:exported="true"
+      android:icon="@drawable/ic_recording_tile" android:label="@string/recording_tile_label"
+      android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+      <intent-filter>
+        <action android:name="android.service.quicksettings.action.QS_TILE" />
+      </intent-filter>
+    </service>
+    <activity android:name="com.guanyun.weather.RecordingTileActivity" android:exported="false"
+      android:excludeFromRecents="true" android:launchMode="singleTop"
+      android:taskAffinity="${applicationId}.recordingTile" android:theme="@style/ShantuRecordingTileTheme" />
     <service android:name="com.guanyun.weather.OfflineDownloadService" android:exported="false" android:foregroundServiceType="dataSync" />
     <service android:name="com.shantu.nativeapp.floating.FloatingNavigationService" android:exported="false" android:foregroundServiceType="location" />
     <activity android:name="com.shantu.nativeapp.floating.FloatingLockMapActivity" android:exported="false" android:excludeFromRecents="true" android:launchMode="singleTop" android:taskAffinity="${applicationId}.lockmap" android:theme="@style/ShantuLockMapTheme" />

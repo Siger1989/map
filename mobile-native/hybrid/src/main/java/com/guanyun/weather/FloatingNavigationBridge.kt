@@ -307,6 +307,7 @@ class FloatingNavigationBridge(
             .put("enabled", enabled)
             .put("visible", service.optBoolean("visible", false))
             .put("windowEnabled", service.optBoolean("windowEnabled", true))
+            .put("routeEventsSupported", service.optBoolean("routeEventsSupported", false))
             .put("lockscreenEnabled", service.optBoolean("lockscreenEnabled", true))
             .put("energySaving", service.optBoolean("energySaving", false))
             .put("lockscreenKeepOn", service.optBoolean("lockscreenKeepOn", false))

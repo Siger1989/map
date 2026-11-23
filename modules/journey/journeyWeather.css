@@ -1,0 +1,220 @@
+.journey-viewer.journey-weather {
+  --route-weather-dry: #f8dc83;
+  --route-weather-trace: #91e6ff;
+  --route-weather-light: #3aa9ff;
+  --route-weather-moderate: #a493ff;
+  --route-weather-heavy: #f77fc5;
+  --route-weather-intense: #ff8068;
+  --route-weather-unknown: #9ca7ad;
+  display: grid;
+  grid-template-rows: auto minmax(145px, 1fr) auto;
+  background: var(--ui-panel, #213135);
+  color: var(--ui-text, #f0f3eb);
+}
+.journey-weather .route-weather-heading {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  padding: max(8px, env(safe-area-inset-top)) 10px 8px;
+  background: var(--ui-panel, #213135);
+}
+.route-weather-heading h2 { margin: 0; font-size: 17px; font-weight: 650; }
+.route-weather-heading small { color: var(--ui-muted, #bfccc3); }
+.journey-weather button {
+  border-color: var(--ui-border, #506268);
+  background: var(--ui-field, #2a3e41);
+  color: var(--ui-text, #f7f4e8);
+}
+.journey-weather .route-weather-back,
+.journey-weather .route-weather-refresh {
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+}
+.route-weather-refresh:disabled { opacity: .55; }
+.route-weather-map-slot { position: relative; min-height: 0; overflow: hidden; }
+.route-weather-legend {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  display: grid;
+  gap: 3px;
+  max-width: calc(100% - 20px);
+  color: var(--ui-text, #f0f3eb);
+  border: 1px solid var(--ui-border, #506268);
+  border-radius: var(--ui-radius-control, 8px);
+  background: var(--ui-panel, #203134);
+  padding: 5px 8px;
+  font-size: 10px;
+  line-height: 1.25;
+  pointer-events: none;
+}
+.route-weather-legend > span { font-weight: 650; }
+.route-weather-legend > div { display: flex; flex-wrap: wrap; gap: 3px 6px; }
+.route-weather-legend [data-kind] { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.route-weather-legend [data-kind]::before { content: ''; width: 8px; height: 3px; background: var(--route-weather-color); border-radius: 2px; }
+.journey-weather [data-kind="dry"] { --route-weather-color: var(--route-weather-dry); }
+.journey-weather [data-kind="trace"] { --route-weather-color: var(--route-weather-trace); }
+.journey-weather [data-kind="light"] { --route-weather-color: var(--route-weather-light); }
+.journey-weather [data-kind="moderate"] { --route-weather-color: var(--route-weather-moderate); }
+.journey-weather [data-kind="heavy"] { --route-weather-color: var(--route-weather-heavy); }
+.journey-weather [data-kind="intense"] { --route-weather-color: var(--route-weather-intense); }
+.journey-weather [data-kind="unknown"] { --route-weather-color: var(--route-weather-unknown); }
+.route-weather-legend [data-kind="unknown"]::before,
+.route-weather-track [data-kind="unknown"] { background: repeating-linear-gradient(90deg, var(--route-weather-color) 0 3px, transparent 3px 5px); }
+.route-weather-sheet {
+  display: grid;
+  align-content: start;
+  grid-auto-rows: max-content;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: 0;
+  max-height: calc(100dvh - 205px);
+  overflow: auto;
+  padding: 9px max(10px, env(safe-area-inset-right)) max(9px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  border-top: 1px solid var(--ui-border, #506268);
+  background: var(--ui-panel, #213135);
+}
+.route-weather-query { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+.route-weather-query input, .route-weather-duration input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  color: var(--ui-input-text, var(--ui-text, #f6f4e8));
+  background: var(--ui-field, #2a3e41);
+  border: 1px solid var(--ui-border, #506268);
+  border-radius: var(--ui-radius-control, 8px);
+  min-height: 40px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 16px;
+}
+.route-weather-query input::placeholder { color: var(--ui-muted, #bfccc3); font-size: 13px; }
+.route-weather-query button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 65px;
+  font-weight: 600;
+  background: var(--ui-accent, #efbd68);
+  border-color: transparent;
+  color: var(--ui-accent-contrast, #1c2728);
+}
+.route-weather-feedback, .route-weather-summary {
+  margin: 0;
+  padding: 5px 7px;
+  border-radius: var(--ui-radius-control, 8px);
+  background: var(--ui-field, #2a3e41);
+  color: var(--ui-text, #f0f3eb);
+  font-size: 12px;
+}
+.route-weather-summary { display: flex; align-items: center; gap: 6px; }
+.route-weather-summary svg { flex: none; color: var(--route-weather-trace); }
+.route-weather-rain-parts { display: flex; gap: 5px; overflow-x: auto; }
+.journey-weather .route-weather-rain-parts button {
+  flex: none;
+  min-height: 30px;
+  padding: 2px 7px;
+  font-size: 12px;
+  color: var(--ui-text, #f0f3eb);
+  font-variant-numeric: tabular-nums;
+}
+.route-weather-rain-parts button::before,
+.route-weather-time-details strong::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: 5px;
+  border-radius: 50%;
+  background: var(--route-weather-color);
+}
+.route-weather-comparison-title,
+.route-weather-time-heading,
+.route-weather-time-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.journey-weather .route-weather-comparison-title button { padding: 2px 7px; min-height: 29px; font-size: 12px; }
+.route-weather-comparison-title strong, .route-weather-time-heading strong { font-size: 13px; }
+.route-weather-duration { display: flex; align-items: center; gap: 6px; }
+.route-weather-duration label { display: flex; align-items: center; gap: 6px; }
+.route-weather-duration input { width: 7ch; }
+.route-weather-options {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(105px, 1fr);
+  gap: 5px;
+  overflow-x: auto;
+}
+.journey-weather .route-weather-option {
+  min-height: 61px;
+  padding: 4px 6px;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.journey-weather .route-weather-option[aria-pressed="true"] {
+  border-color: var(--ui-accent, #efbd68);
+  background: var(--ui-selected, var(--ui-field, #354748));
+}
+.route-weather-option[aria-pressed="true"] time { color: var(--ui-accent, #efbd68); }
+.route-weather-option-time { display: flex; align-items: baseline; gap: 5px; }
+.route-weather-option-time time { font-size: 15px; font-weight: 650; }
+.route-weather-option small,
+.route-weather-time-heading > span,
+.route-weather-time-details,
+.route-weather-sheet footer { color: var(--ui-muted, #c8d5ce); font-size: 11px; }
+.route-weather-time { display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
+.route-weather-time-details strong { color: var(--ui-text, #f0f3eb); font-weight: 600; }
+.route-weather-scrubber { position: relative; height: 34px; }
+.route-weather-track {
+  position: absolute;
+  display: flex;
+  left: 7px;
+  right: 7px;
+  top: calc(50% - 3px);
+  height: 6px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--ui-field, #2a3e41);
+  pointer-events: none;
+}
+.route-weather-track span { min-width: 0; background: var(--route-weather-color); }
+.route-weather-scrubber input {
+  appearance: none;
+  display: block;
+  position: relative;
+  margin: 0;
+  width: 100%;
+  height: 34px;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.route-weather-scrubber input::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 20px;
+  border: 2px solid var(--ui-panel, #213135);
+  border-radius: 6px;
+  background: var(--ui-accent, #efbd68);
+}
+.route-weather-scrubber input::-moz-range-thumb {
+  width: 13px;
+  height: 17px;
+  border: 2px solid var(--ui-panel, #213135);
+  border-radius: 6px;
+  background: var(--ui-accent, #efbd68);
+}
+.journey-weather :is(button, input):focus-visible { outline: 2px solid var(--ui-accent, #efbd68); outline-offset: -2px; }
+.route-weather-sheet footer { min-height: 14px; }
+@media (max-height: 560px) {
+  .route-weather-sheet { gap: 6px; }
+  .journey-weather .route-weather-option { min-height: 55px; }
+}

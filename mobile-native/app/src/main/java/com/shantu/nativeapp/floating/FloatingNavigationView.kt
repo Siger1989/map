@@ -5,6 +5,7 @@ import android.graphics.DashPathEffect
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import java.util.Locale
 import android.graphics.RectF
 import android.view.MotionEvent
 import android.view.View
@@ -12,6 +13,8 @@ import com.shantu.nativeapp.geology.NativeMvtFeature
 import kotlin.math.*
 
 internal data class FloatingRouteSegment(val access: Boolean, val coordinates: List<FloatingCoordinate>)
+
+internal data class FloatingRouteEvent(val kind: String, val distanceMeters: Double, val label: String, val validUntilMs: Long?)
 
 internal data class FloatingTileGeometry(val z: Int, val x: Int, val y: Int, val features: List<NativeMvtFeature>)
 internal data class FloatingTileRenderCounters(
@@ -31,7 +34,9 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     }
     var route: List<FloatingCoordinate> = emptyList(); set(value) { if (field !== value) { field = value; routePath = null; invalidate() } }
     var routeSegments: List<FloatingRouteSegment> = emptyList(); set(value) { if (field !== value) { field = value; routePath = null; invalidate() } }
-    var kind: String = "route"
+    var kind: String = "route"; set(value) {
+        if (field != value) { field = value; routePath = null; recordedPath = null; invalidate() }
+    }
     var routeColor: Int = FloatingNavigationGeometry.DEFAULT_ROUTE_COLOR; set(value) { if (field != value) { field = value; invalidate() } }
     var recordedSegments: List<List<FloatingCoordinate>> = emptyList(); set(value) { if (field !== value) { field = value; recordedPath = null; invalidate() } }
     var recordingPhase: String = "idle"; set(value) { if (field != value) { field = value; invalidate() } }
@@ -52,7 +57,9 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     var heading: Double? = null; set(value) { field = value; invalidate() }
     var mode: String = "north"; set(value) { field = value; invalidate() }
     var stateText: String = "等待定位"; set(value) { field = value; invalidate() }
-    var routeRemainingMeters: Double? = null; set(value) { field = value; invalidate() }
+    var routeRemainingMeters: Double? = null; set(value) { if (field != value) { field = value; invalidate() } }
+    var routeEvents: List<FloatingRouteEvent> = emptyList(); set(value) { if (field !== value) { field = value; invalidate() } }
+    var routeProgressMeters: Double? = null; set(value) { if (field != value) { field = value; invalidate() } }
     var routeOffRoute: Boolean = false; set(value) { field = value; invalidate() }
     var label: String = "路线"; set(value) { field = value; invalidate() }
     var tiles: List<FloatingTileGeometry> = emptyList(); set(value) {
@@ -74,6 +81,13 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND }
     private val arrowPath = Path().apply { moveTo(0f, -1f); lineTo(.58f, .72f); lineTo(0f, .43f); lineTo(-.58f, .72f); close() }
     private val round = density * 8f
+    private val compactMapRight get() = width * (2f / 3f)
+    private val compactMapBottom get() = if (kind == "route") (height - px(28f)).coerceAtLeast(0f) else height.toFloat()
+    private val actionLeft get() = px(4f)
+    private val actionTop get() = px(4f)
+    private val actionBottom get() = min(px(29f), compactMapBottom)
+    private val actionSlotWidth get() = min(px(33f), (compactMapRight - 2f * actionLeft).coerceAtLeast(0f) / 4f)
+    private val zoomBounds = RectF()
     private var downX = 0f; private var downY = 0f; private var initialRawX = 0f; private var initialRawY = 0f; private var dragging = false; private var resizing = false
     private var routePath: List<Pair<Boolean, Path>>? = null
     private val accessDash by lazy { DashPathEffect(floatArrayOf(px(8f), px(8f)), 0f) }
@@ -117,6 +131,7 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     private fun px(dp: Float) = dp * density
     private fun text(canvas: Canvas, value: String, x: Float, baseline: Float, size: Float, color: Int, align: Paint.Align = Paint.Align.LEFT, maxWidthPx: Float = width - px(16f)) {
         p.color = color; p.textSize = px(size); p.typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); p.textAlign = align
+        if (maxWidthPx <= 0f) return
         val safe = value.take(42)
         val shown = if (p.measureText(safe) > maxWidthPx) android.text.TextUtils.ellipsize(safe, android.text.TextPaint(p), maxWidthPx, android.text.TextUtils.TruncateAt.END).toString() else safe
         canvas.drawText(shown, x, baseline, p)
@@ -127,12 +142,10 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         p.color = if (lockscreenPresentation) android.graphics.Color.BLACK else 0xff07130e.toInt()
         if (lockscreenPresentation) canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), p)
         else canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), round, round, p)
-        val header = if (lockscreenPresentation) 0f else px(32f)
-        if (!lockscreenPresentation) drawCompactToolbar(canvas)
         val left = 0f
-        val top = header
-        val right = width - left
-        val bottom = height.toFloat()
+        val top = 0f
+        val right = if (lockscreenPresentation) width.toFloat() else compactMapRight
+        val bottom = if (lockscreenPresentation) height.toFloat() else compactMapBottom
         p.color = if (lockscreenPresentation) android.graphics.Color.BLACK else 0xff0a1a12.toInt()
         canvas.drawRect(left, top, right, bottom, p)
         canvas.save(); canvas.clipRect(left, top, right, bottom)
@@ -140,32 +153,38 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         val navCenter = center
         if (navCenter != null) {
             val bearing = mapBearing?.takeIf { it.isFinite() && it in 0.0..<360.0 }
-            val cX = (left + right) / 2f; val cY = (top + bottom) / 2f
+            val cX = if (lockscreenPresentation || right >= px(110f)) (left + right) / 2f else right * .56f
+            val cY = (top + bottom) / 2f
             if (mode == "compass" && bearing == null) {
                 renderCounters = FloatingTileRenderCounters()
                 text(canvas, stateText.ifBlank { "等待罗盘方向" }, cX, top + (bottom - top) * .72f,
-                    10f, 0xffb7c59c.toInt(), Paint.Align.CENTER)
-                drawPositionGlyph(canvas, cX, cY, null)
+                    10f, 0xffb7c59c.toInt(), Paint.Align.CENTER, right - px(12f))
+                drawPositionGlyph(canvas, cX, cY, null, emphasized = !lockscreenPresentation && recordingPhase == "recording")
             } else {
                 canvas.save(); if ((mode == "motion" || mode == "compass") && bearing != null) canvas.rotate(-bearing.toFloat(), cX, cY)
                 drawTiles(canvas, navCenter, cX, cY)
                 drawRoute(canvas, navCenter, cX, cY)
                 drawRecordedTrack(canvas, navCenter, cX, cY)
                 // The center glyph is shown only when supplied by a real current location.
-                if (hasRealLocation && heading != null) {
+                val emphasizePosition = !lockscreenPresentation && recordingPhase == "recording"
+                if (!emphasizePosition && hasRealLocation && heading != null) {
                     canvas.save(); canvas.translate(cX, cY); canvas.rotate(heading!!.toFloat()); canvas.scale(px(11.5f), px(11.5f))
                     p.color = 0x5537dfff.toInt(); canvas.drawCircle(0f, 0f, .92f, p)
                     p.color = 0xaa37dfff.toInt(); canvas.drawCircle(0f, 0f, .68f, p)
                     p.color = 0xff8af0f3.toInt(); canvas.drawPath(arrowPath, p)
                     p.color = 0xff21bdd0.toInt(); canvas.drawCircle(0f, .24f, .15f, p)
                     canvas.restore()
-                } else if (hasRealLocation) {
+                } else if (!emphasizePosition && hasRealLocation) {
                     p.color = 0x3337dfff; canvas.drawCircle(cX, cY, px(13f), p)
                     p.color = 0x7737dfff.toInt(); canvas.drawCircle(cX, cY, px(9f), p)
                     p.color = 0xff45dbe7.toInt(); canvas.drawCircle(cX, cY, px(5f), p)
                 }
                 canvas.restore()
                 drawMapLabels(canvas, left, top, right, bottom)
+                if (emphasizePosition) {
+                    val rotation = if (mode == "motion" || mode == "compass") bearing ?: 0.0 else 0.0
+                    drawPositionGlyph(canvas, cX, cY, heading?.minus(rotation), emphasized = true)
+                }
             }
         } else {
             renderCounters = FloatingTileRenderCounters()
@@ -174,14 +193,15 @@ internal class FloatingNavigationView(context: Context) : View(context) {
             if (bearing != null) {
                 drawCompassOnly(canvas, cX, top + (bottom - top) * .40f, bearing)
                 text(canvas, stateText.ifBlank { "罗盘方向，等待定位" }, cX, top + (bottom - top) * .72f,
-                    10f, 0xffb7c59c.toInt(), Paint.Align.CENTER)
+                    10f, 0xffb7c59c.toInt(), Paint.Align.CENTER, right - px(12f))
             } else {
                 val status = if (mode == "compass") stateText.ifBlank { "等待罗盘方向，等待定位" } else "等待定位"
-                text(canvas, status, cX, (top + bottom) / 2f, 12f, 0xffbdff54.toInt(), Paint.Align.CENTER)
+                text(canvas, status, cX, (top + bottom) / 2f, 12f, 0xffbdff54.toInt(), Paint.Align.CENTER, right - px(12f))
             }
         }
         canvas.restore()
-        if (navCenter != null && (mode != "compass" || mapBearing?.let { it.isFinite() && it in 0.0..<360.0 } == true)) {
+        val showNorth = navCenter != null && (mode != "compass" || mapBearing?.let { it.isFinite() && it in 0.0..<360.0 } == true)
+        if (showNorth && lockscreenPresentation) {
             drawNorthReference(canvas, (left + right) / 2f, (top + bottom) / 2f,
                 min(right - left, bottom - top) * .32f)
         }
@@ -192,24 +212,36 @@ internal class FloatingNavigationView(context: Context) : View(context) {
                 12f, 0xffbdff54.toInt(), Paint.Align.CENTER, width * .6f)
             return
         }
-        // Direction reference; never substitute route direction when heading is absent.
+        if (showNorth) drawCompactCompass(canvas)
+        drawZoomControls(canvas)
+        drawCompactActions(canvas)
+        if (kind == "route") drawRouteProgress(canvas, right, bottom)
+        drawEventRail(canvas, right, top, height.toFloat())
         drawResizeGrip(canvas)
     }
 
     /** Screen-space direction stays readable; route geometry never supplies a heading. */
-    private fun drawPositionGlyph(canvas: Canvas, x: Float, y: Float, relativeHeading: Double?) {
+    private fun drawPositionGlyph(canvas: Canvas, x: Float, y: Float, relativeHeading: Double?, emphasized: Boolean = false) {
         if (!hasRealLocation) return
         if (relativeHeading != null && relativeHeading.isFinite()) {
             canvas.save()
             canvas.translate(x, y)
             canvas.rotate(relativeHeading.toFloat())
-            canvas.scale(px(14f), px(14f))
-            p.color = 0x4437dfff; canvas.drawCircle(0f, 0f, 1.05f, p)
+            val glyphSize = px(if (emphasized) 17f else 14f)
+            canvas.scale(glyphSize, glyphSize)
+            p.color = if (emphasized) 0x6637dfff else 0x4437dfff; canvas.drawCircle(0f, 0f, 1.05f, p)
+            if (emphasized) {
+                line.color = 0xff031311.toInt(); line.strokeWidth = .24f
+                canvas.drawPath(arrowPath, line)
+            }
             p.color = 0xff9af7ff.toInt(); canvas.drawPath(arrowPath, p)
             canvas.restore()
         } else {
-            p.color = 0x5537dfff; canvas.drawCircle(x, y, px(10f), p)
-            p.color = 0xff45dbe7.toInt(); canvas.drawCircle(x, y, px(5f), p)
+            p.color = 0x5537dfff; canvas.drawCircle(x, y, px(if (emphasized) 13f else 10f), p)
+            if (emphasized) {
+                p.color = 0xff031311.toInt(); canvas.drawCircle(x, y, px(9f), p)
+            }
+            p.color = 0xff45dbe7.toInt(); canvas.drawCircle(x, y, px(if (emphasized) 6.5f else 5f), p)
         }
     }
 
@@ -228,10 +260,14 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         p.color = 0xffbdff54.toInt(); canvas.drawCircle(x, y, px(2f), p)
     }
 
-    private fun drawNorthReference(canvas: Canvas, cx: Float, cy: Float, radius: Float) {
+    private fun northBearingRadians(): Double {
         val cameraBearing = if (mode == "motion" || mode == "compass")
             mapBearing?.takeIf { it.isFinite() && it in 0.0..<360.0 } ?: 0.0 else 0.0
-        val radians = Math.toRadians(cameraBearing)
+        return Math.toRadians(cameraBearing)
+    }
+
+    private fun drawNorthReference(canvas: Canvas, cx: Float, cy: Float, radius: Float) {
+        val radians = northBearingRadians()
         val x = cx - (sin(radians) * radius).toFloat()
         val y = cy - (cos(radians) * radius).toFloat()
         p.style = Paint.Style.FILL; p.color = 0xc0000000.toInt()
@@ -263,25 +299,142 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         p.style = Paint.Style.FILL
     }
 
-    private fun drawCompactToolbar(canvas: Canvas) {
-        p.color = 0xff10251a.toInt()
-        canvas.drawRect(0f, 0f, width.toFloat(), px(32f), p)
+    private fun drawCompactCompass(canvas: Canvas) {
+        val cx = compactMapRight - px(14f)
+        val cy = actionBottom + px(14f)
+        if (cx < px(12f) || cy + px(11f) > compactMapBottom) return
+        p.color = 0xe810251a.toInt()
+        canvas.drawCircle(cx, cy, px(11f), p)
+        val bearing = northBearingRadians()
+        val x = cx - px(9f) * sin(bearing).toFloat()
+        val y = cy - px(9f) * cos(bearing).toFloat()
+        p.color = 0xffbdff54.toInt()
+        canvas.drawCircle(x, y, px(1.6f), p)
+        text(canvas, "N", cx, cy + px(4f), 10f, 0xffeaffc2.toInt(), Paint.Align.CENTER, px(16f))
+    }
+
+    private fun drawCompactActions(canvas: Canvas) {
+        val slot = actionSlotWidth
+        if (slot <= px(3f) || actionBottom <= actionTop) return
         val symbols = arrayOf("‹", when (mode) { "north" -> "N"; "compass" -> "罗"; else -> "↑" },
             when (recordingPhase) { "recording" -> "Ⅱ"; "paused" -> "▶"; "finished" -> "✓"; else -> "●" },
-            "−", "+", "×")
-        val slot = width / symbols.size.toFloat()
+            "×")
         symbols.forEachIndexed { i, symbol ->
-            text(canvas, symbol, slot * (i + .5f), px(22f), if (i == 1 || i == 2) 14f else 21f,
-                if (i == 2) 0xffffdf4f.toInt() else if (i == 5) 0xffd6c66e.toInt() else 0xffbdff54.toInt(),
+            val x = actionLeft + i * slot
+            p.color = 0xe810251a.toInt()
+            canvas.drawRoundRect(x + px(1f), actionTop, x + slot - px(1f), actionBottom, px(4f), px(4f), p)
+            val fontSize = if (i == 1 || i == 2) 13f else 18f
+            val baseline = (actionTop + actionBottom) / 2f + px(fontSize * .32f)
+            text(canvas, symbol, x + slot / 2f, baseline, fontSize,
+                if (i == 2) 0xffffdf4f.toInt() else if (i == 3) 0xffd6c66e.toInt() else 0xffbdff54.toInt(),
                 Paint.Align.CENTER, slot - px(2f))
         }
         contentDescription = "悬浮地图：返回应用，${when (mode) { "north" -> "指北"; "compass" -> "罗盘朝上"; else -> "运动朝上" }}，轨迹${recordingPhase}，缩小，放大，关闭小窗。拖动地图移动窗口，拖右下角改变大小"
     }
 
+    private fun updateZoomBounds() {
+        val firstZoomY = actionBottom + px(4f)
+        val button = min(px(40f), min(compactMapRight * .30f + px(4f), (compactMapBottom - firstZoomY - px(4f)) / 2f))
+        if (button <= 0f) { zoomBounds.setEmpty(); return }
+        val top = max(firstZoomY, (compactMapBottom - 2f * button) / 2f)
+        zoomBounds.set(px(3f), top, px(3f) + button, top + 2f * button)
+    }
+
+    private fun drawZoomControls(canvas: Canvas) {
+        updateZoomBounds()
+        if (zoomBounds.isEmpty) return
+        p.color = 0xee10251a.toInt()
+        canvas.drawRoundRect(zoomBounds, px(4f), px(4f), p)
+        p.color = 0x446c8876
+        canvas.drawRect(zoomBounds.left + px(3f), zoomBounds.centerY(), zoomBounds.right - px(3f), zoomBounds.centerY() + px(1f), p)
+        val font = min(18f, zoomBounds.width() / density * .58f)
+        val baselineOffset = px(font * .31f)
+        text(canvas, "+", zoomBounds.centerX(), zoomBounds.top + zoomBounds.height() / 4f + baselineOffset,
+            font, 0xffbdff54.toInt(), Paint.Align.CENTER, zoomBounds.width())
+        text(canvas, "−", zoomBounds.centerX(), zoomBounds.bottom - zoomBounds.height() / 4f + baselineOffset,
+            font, 0xffbdff54.toInt(), Paint.Align.CENTER, zoomBounds.width())
+    }
+
+    private fun drawRouteProgress(canvas: Canvas, right: Float, top: Float) {
+        val inset = px(5f)
+        val innerWidth = right - 2f * inset
+        val bottom = height.toFloat()
+        if (innerWidth <= 0f || bottom - top < px(26f)) return
+        p.color = 0xff10251a.toInt()
+        canvas.drawRect(0f, top, right, bottom, p)
+        p.color = 0x446c8876
+        canvas.drawRect(0f, top, right, top + px(1f), p)
+
+        val travelled = routeProgressMeters
+        val remaining = routeRemainingMeters
+        val fraction = if (travelled != null && remaining != null && travelled + remaining > 0.0)
+            (travelled / (travelled + remaining)).coerceIn(0.0, 1.0) else null
+        p.color = 0x776c8876
+        canvas.drawRoundRect(inset, top + px(5f), right - inset, top + px(9f), px(2f), px(2f), p)
+        if (fraction != null && fraction > 0.0) {
+            p.color = 0xffbdff54.toInt()
+            canvas.drawRoundRect(inset, top + px(5f), inset + innerWidth * fraction.toFloat(), top + px(9f),
+                px(2f), px(2f), p)
+        }
+        val valueSize = if (right < px(125f)) 8f else 9f
+        val columnWidth = (innerWidth - px(3f)) / 2f
+        fun km(distance: Double?) = if (fraction == null || distance == null) "—"
+            else String.format(Locale.ROOT, "%.1f km", distance / 1_000.0)
+        text(canvas, "已走 ${km(travelled)}", inset, top + px(21f), valueSize, 0xffeaffc2.toInt(), maxWidthPx = columnWidth)
+        text(canvas, "剩余 ${km(remaining)}", right - inset, top + px(21f), valueSize, 0xffeaffc2.toInt(),
+            Paint.Align.RIGHT, columnWidth)
+    }
+
+    private fun drawEventRail(canvas: Canvas, left: Float, top: Float, bottom: Float) {
+        val railWidth = width - left
+        val narrow = railWidth < px(51f)
+        val inset = px(if (narrow) 2f else 5f)
+        val textWidth = railWidth - 2f * inset
+        val rowHeight = px(if (narrow) 24f else 30f)
+        val footerTop = bottom - px(if (narrow) 24f else 28f)
+        p.color = 0xff10251a.toInt()
+        canvas.drawRect(left, top, width.toFloat(), bottom, p)
+        p.color = 0x446c8876
+        canvas.drawRect(left, top, left + px(1f), bottom, p)
+        canvas.drawRect(left + inset, footerTop, width - inset, footerTop + px(1f), p)
+        val progress = routeProgressMeters
+        val now = System.currentTimeMillis()
+        var y = top + px(2f)
+        if (kind == "route" && progress != null) {
+            val ahead = routeEvents.mapNotNull { event ->
+                val distance = event.distanceMeters - progress
+                if (distance < 0.0 || (event.kind == "rain" && (event.validUntilMs ?: 0L) <= now)) null
+                else event to distance
+            }.sortedBy { (_, distance) -> distance }
+            for ((event, distance) in ahead) {
+                if (y + rowHeight > footerTop) break
+                val value = if (distance >= 1_000.0) String.format(Locale.ROOT, "%.1f公里", distance / 1_000.0)
+                    else "${distance.roundToInt()}米"
+                text(canvas, value, left + inset, y + px(if (narrow) 9f else 12f), if (narrow) 8f else 11f,
+                    0xffeaffc2.toInt(), maxWidthPx = textWidth)
+                text(canvas, event.label, left + inset, y + px(if (narrow) 19f else 25f), if (narrow) 7f else 9f,
+                    if (event.kind == "rain") 0xff91d9ff.toInt() else 0xffffdf4f.toInt(), maxWidthPx = textWidth)
+                y += rowHeight
+            }
+        }
+        if (y == top + px(2f) && kind == "route") {
+            val label = when {
+                routeOffRoute -> "已偏离路线"
+                progress == null -> if (hasRealLocation) "等待确认位置" else "等待定位"
+                else -> "前方暂无提示"
+            }
+            text(canvas, label, left + inset, top + px(15f), if (narrow) 7f else 9f,
+                0xffb7c59c.toInt(), maxWidthPx = textWidth)
+        }
+        val positionLabel = if (hasRealLocation) "当前位置" else "等待定位"
+        text(canvas, positionLabel, left + inset, footerTop + px(11f), if (narrow) 7f else 9f,
+            0xff9af7ff.toInt(), maxWidthPx = textWidth)
+    }
+
     private fun drawResizeGrip(canvas: Canvas) {
-        val right = width - px(4f); val bottom = height - px(3f)
+        val right = width - px(3f); val bottom = height - px(2f)
         line.color = 0xffbdff54.toInt(); line.strokeWidth = px(1.4f)
-        for (i in 0..2) canvas.drawLine(right - px(12f + i * 4f), bottom, right, bottom - px(12f + i * 4f), line)
+        for (i in 0..2) canvas.drawLine(right - px(4f + i * 3f), bottom, right, bottom - px(4f + i * 3f), line)
     }
 
     private fun drawRecordedTrack(canvas: Canvas, center: FloatingCoordinate, cx: Float, cy: Float) {
@@ -371,8 +524,8 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         val worldY = (1.0 - ln(tan(lat) + 1.0 / cos(lat)) / Math.PI) / 2.0 * n
         val scale = px(256f * FloatingNavigationGeometry.overzoomScale(zoom).toFloat())
         val cameraBearing = if (mode == "motion" || mode == "compass") mapBearing?.takeIf { it.isFinite() && it in 0.0..<360.0 } ?: 0.0 else 0.0
-        val viewportWidth = width.toFloat().coerceAtLeast(0f)
-        val viewportHeight = (height - if (lockscreenPresentation) 0f else px(32f)).coerceAtLeast(0f)
+        val viewportWidth = if (lockscreenPresentation) width.toFloat() else compactMapRight
+        val viewportHeight = if (lockscreenPresentation) height.toFloat() else compactMapBottom
         val orderedIndices = FloatingNavigationGeometry.prioritizeTileIndices(tileIndices, worldX, worldY, n, cameraBearing)
         visiblePathsScratch.clear(); budgetCandidatesScratch.clear(); budgetTilesScratch.clear(); visibleTilePlacementsScratch.clear()
         var visibleTileCount = 0
@@ -576,16 +729,21 @@ internal class FloatingNavigationView(context: Context) : View(context) {
             }
             MotionEvent.ACTION_UP -> {
                 if (dragging || resizing) { dragging = false; resizing = false; return true }
-                if (event.y < px(32f)) when ((event.x / (width / 6f)).toInt().coerceIn(0, 5)) {
-                    0 -> onReturn?.invoke()
-                    1 -> onMode?.invoke()
-                    2 -> {
-                        val action = when (recordingPhase) { "recording" -> "pause"; "paused" -> "resume"; "idle" -> "start"; else -> null }
-                        if (action == null) onReturn?.invoke() else onRecordAction?.invoke(action)
+                val slot = actionSlotWidth
+                val actionX = event.x - actionLeft
+                if (event.y >= actionTop && event.y < actionBottom && actionX >= 0f && actionX < 4f * slot) {
+                    when ((actionX / slot).toInt()) {
+                        0 -> onReturn?.invoke()
+                        1 -> onMode?.invoke()
+                        2 -> {
+                            val action = when (recordingPhase) { "recording" -> "pause"; "paused" -> "resume"; "idle" -> "start"; else -> null }
+                            if (action == null) onReturn?.invoke() else onRecordAction?.invoke(action)
+                        }
+                        3 -> onClose?.invoke()
                     }
-                    3 -> onZoom?.invoke(-1)
-                    4 -> onZoom?.invoke(1)
-                    5 -> onClose?.invoke()
+                } else {
+                    updateZoomBounds()
+                    if (zoomBounds.contains(event.x, event.y)) onZoom?.invoke(if (event.y < zoomBounds.centerY()) 1 else -1)
                 }
                 performClick(); return true
             }

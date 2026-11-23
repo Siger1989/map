@@ -15,6 +15,7 @@ export interface SkyJourneyPoint {
 export interface SkyJourney {
   name: string;
   segments: readonly (readonly SkyJourneyPoint[])[];
+  durationSeconds?: number;
 }
 
 interface JourneyPlaybackPoint extends SkyJourneyPoint {
@@ -107,7 +108,7 @@ export function plannedRouteSkyJourney(route: PlannedRoute, name: string): SkyJo
       segments.push(previous);
     }
   }
-  return { name: route.name?.trim() || name, segments };
+  return { name: route.name?.trim() || name, segments, durationSeconds: route.duration };
 }
 const DEGREES = 180 / Math.PI;
 

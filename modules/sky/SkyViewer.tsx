@@ -204,27 +204,6 @@ export function SkyViewer({
     altitude: Math.min(65, Math.max(3, sky.sun.altitudeDeg)),
     roll: 0,
   }));
-  const [hudBase, setHudBase] = useState<string>();
-  useEffect(() => {
-    if (!viewport) return;
-    function update() {
-      const channels = getComputedStyle(viewport!)
-        .color.match(/[\d.]+/g)
-        ?.slice(0, 3)
-        .map(Number);
-      if (channels?.length === 3)
-        setHudBase(
-          0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2] >
-            145
-            ? '#1e292e'
-            : '#faf5eb',
-        );
-    }
-    update();
-    const changes = new MutationObserver(update);
-    changes.observe(document.documentElement, { attributes: true });
-    return () => changes.disconnect();
-  }, [viewport]);
   const sensorPose = actual && (!manual || cameraLive) ? camera.pose : null;
   const targetPose = useMemo(()=>{
     if(sensorPose)return sensorPose;
@@ -422,7 +401,6 @@ export function SkyViewer({
   return (
     <section
       className="sky-viewer"
-      style={{ '--sky-hud-base': hudBase } as React.CSSProperties}
       data-live={cameraLive && camera.status === 'ready'}
       role="dialog"
       aria-modal="true"
@@ -501,7 +479,7 @@ export function SkyViewer({
       <div className="sky-head">
         <div className="sky-bar">
           <strong>{markerName ? '标记点观景' : '日月观景'}</strong>
-          {!markerName && <><button
+          {!markerName && <div className="sky-mode" role="group" aria-label="观景模式"><button
             aria-pressed={cameraLive}
             onClick={() => {
               stopSearch();setFollowing(false);
@@ -519,33 +497,33 @@ export function SkyViewer({
           >
             <Mountain size={16} />
             模拟
-          </button></>}
-          <button aria-label="退出日月观景" ref={exitRef} onClick={onClose}>
+          </button></div>}
+          <button className="sky-close" aria-label="退出日月观景" ref={exitRef} onClick={onClose}>
             <X size={18} />
           </button>
         </div>
         <div className="sky-info">
-          <span>
-            {markerName || (actual
+          <span className="sky-location">
+            <span>{markerName || (actual
               ? `定位 ±${Math.round(actual.accuracy)} m`
-              : demo
-                ? '青城山预演'
-                : '地图中心预演')}{' '}
-            · {lat.toFixed(3)}°, {lng.toFixed(3)}°
+              : demo ? '青城山预演' : '地图中心预演')}</span>
+            <small>{lat.toFixed(3)}°, {lng.toFixed(3)}°</small>
           </span>
           {cameraLive && actual && <span>
             {elevation !== null ? `${Math.round(elevation)} m · ${heightQuality}` : heightQuality}
           </span>}
-          {!markerName && <button
-            onClick={() => {
-              setSource('gps');
-              locate();
-            }}
-          >
-            重新定位
-          </button>}
-          {actual && !cameraLive && (
-            <button onClick={() => setSource('map')}>地图中心</button>
+          {(!markerName || (actual && !cameraLive)) && (
+            <div className="sky-source-actions">
+              {!markerName && (
+                <button onClick={() => {
+                  setSource('gps');
+                  locate();
+                }}>重新定位</button>
+              )}
+              {actual && !cameraLive && (
+                <button onClick={() => setSource('map')}>地图中心</button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -556,6 +534,7 @@ export function SkyViewer({
             {graphicsError || notice || status}
           </div>
         )}
+        <div className="sky-dock">
         <SkyTargetControls guide={guide} id={target} label={targetLabel} following={following} searching={searching}
           cameraLive={cameraLive} faint={faint} showStars={showStars} showGalaxy={showGalaxy} onSelect={selectTarget}
           onFind={findTarget} onStars={()=>setShowStars(v=>!v)} onGalaxy={()=>setShowGalaxy(v=>!v)}/>
@@ -602,6 +581,7 @@ export function SkyViewer({
             setTime(Date.now());
           }}
         />
+        </div>
       </div>
     </section>
   );

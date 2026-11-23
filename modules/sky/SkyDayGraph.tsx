@@ -111,21 +111,20 @@ export function SkyDayGraph({
           select(event);
       }}
     >
-      <rect width={width} height={height} rx="6" fill="#202e44" />
       <path
         d={`M0 31H${width}`}
-        stroke="#8894aa"
+        stroke="var(--ui-muted, #8894aa)"
         strokeWidth=".6"
         strokeDasharray="3 4"
       />
       <path
         d={line('moon')}
         fill="none"
-        stroke="#c1d5ff"
+        stroke="var(--sky-chart-moon, #c1d5ff)"
         strokeWidth="1.5"
         strokeDasharray="3 2.7"
       />
-      <path d={line('sun')} fill="none" stroke="#ffc66d" strokeWidth="1.8" />
+      <path d={line('sun')} fill="none" stroke="var(--sky-chart-sun, #ffc66d)" strokeWidth="1.8" />
       {visibility?.events.map((e) => {
         const x = at(e.timeMs),
           i = Math.min(96, Math.max(0, Math.round(((x - left) * 96) / span)));
@@ -136,7 +135,7 @@ export function SkyDayGraph({
               x2={x}
               y1={points[i].sun}
               y2={height}
-              stroke="#e6ac50"
+              stroke="var(--sky-chart-sun, #e6ac50)"
               strokeDasharray="2 3"
             />
             <circle cx={x} cy={points[i].sun} r="3" fill="#ffd681" />
@@ -148,7 +147,7 @@ export function SkyDayGraph({
         x2={at(time)}
         y1="0"
         y2={height}
-        stroke="#fff"
+        stroke="var(--ui-ink, #fff)"
         strokeOpacity=".85"
       />
       <g transform={`translate(${sun.x},${sun.sun})`}>

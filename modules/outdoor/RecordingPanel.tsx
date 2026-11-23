@@ -7,6 +7,7 @@ import { saveFile } from '../dataTransfer/download';
 import type { useRecording } from './useRecording';
 import { recordingTransfer, saveRecording } from './savedRecording';
 import { RecordingCompactSettings } from './RecordingCompactSettings';
+import { RecordingSystemSettings } from './RecordingSystemSettings';
 import './recordingConsole.css';
 
 export function RecordingPanel({ recorder, onShow, onSavedTrack, onTrackRemapped, onPhotos, onMarkCurrent, locationStatus, locationError = false }: {
@@ -55,6 +56,7 @@ export function RecordingPanel({ recorder, onShow, onSavedTrack, onTrackRemapped
     <details className="record-function-group record-group-settings"><summary>轨迹样式与采样设置</summary>
     <RecordingCompactSettings recorder={recorder} />
     </details>
+    <RecordingSystemSettings />
     <div className="record-console-footer"><span title="精度是接受新定位点的误差门槛，不是设备定位能力保证。">{recorder.native ? '设置对新记录点生效' : '网页仅前台记录'}</span><button disabled={!segments.length} onClick={() => act(() => saveFile('Shantu-recording.gpx', 'application/gpx+xml', exportGPX(recordingTransfer(record))))}>导出GPX</button></div>
   </section>;
 }

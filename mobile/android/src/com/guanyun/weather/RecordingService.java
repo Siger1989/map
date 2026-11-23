@@ -2,25 +2,39 @@ package com.guanyun.weather;
 
 import android.app.*;
 import android.content.*;
+import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.location.*;
 import android.os.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Explicit foreground recording survives WebView pause; no silent boot restart. */
 public final class RecordingService extends Service implements LocationListener {
+    static final String EXPECTED_RECORDING_ID = "recording.expectedId";
     private LocationManager manager;
     private PowerManager.WakeLock cpuLock;
+    private long nextCpuLockRenewal;
     private void renewCpuLock() {
-        if(cpuLock!=null) { if(cpuLock.isHeld()) cpuLock.release(); cpuLock.acquire(10*60*1000L); }
+        long now = SystemClock.elapsedRealtime();
+        if (cpuLock.isHeld() && now < nextCpuLockRenewal) return;
+        if (cpuLock.isHeld()) cpuLock.release();
+        cpuLock.acquire(10 * 60 * 1000L);
+        nextCpuLockRenewal = now + 5 * 60 * 1000L;
     }
     private final Handler scheduler = new Handler(Looper.getMainLooper());
+    private final Map<String, Long> providerIntervals = new HashMap<>();
+    private static final String[] PROVIDERS = {LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER};
     private long lastMotion;
-    private long requestedInterval = -1;
     private Location motionAnchor;
     private final Runnable refreshPolicy = new Runnable() {
         @Override public void run() {
-            try { renewCpuLock(); configureRequests(); }
-            catch (Exception e) { RecordingStore.error(RecordingService.this, "定位请求调整失败，请暂停后重试"); }
+            try {
+                if (!RecordingStore.isRecording(RecordingService.this)) { stopSelf(); return; }
+                renewCpuLock();
+                configureRequests();
+            } catch (SecurityException e) { pauseWithError("需要精确定位权限，请授权后继续"); return; }
+            catch (Exception e) { RecordingStore.error(RecordingService.this, "定位请求调整失败，正在重试"); }
             scheduler.postDelayed(this, 10000);
         }
     };
@@ -34,33 +48,49 @@ public final class RecordingService extends Service implements LocationListener 
         ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(new NotificationChannel(CHANNEL,"轨迹记录",NotificationManager.IMPORTANCE_LOW));
     }
     private void configureRequests() throws Exception {
+        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            throw new SecurityException("Precise location permission unavailable");
+        }
         org.json.JSONObject policy = SamplingPreferences.read(this);
         long interval = SamplingPolicy.requestInterval(policy.getInt("intervalSeconds"),
             policy.getBoolean("adaptive"), SystemClock.elapsedRealtime() - lastMotion);
-        if (requestedInterval == interval) return;
-        manager.removeUpdates(this);
-        requestedInterval = -1;
-        boolean provider = false;
-        for (String name : new String[]{LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER}) {
-            // Distance acceptance belongs to RecordingStore. Receive stationary fixes to detect motion again.
-            if (manager.isProviderEnabled(name)) { manager.requestLocationUpdates(name, interval, 0, this); provider = true; }
+        boolean available = false;
+        for (String name : PROVIDERS) {
+            try {
+                if (!manager.isProviderEnabled(name)) continue;
+                if (!Long.valueOf(interval).equals(providerIntervals.get(name))) {
+                    // Android updates the listener/provider pair without unregistering the other provider.
+                    manager.requestLocationUpdates(name, interval, 0, this);
+                    providerIntervals.put(name, interval);
+                }
+                available = true;
+            } catch (IllegalArgumentException | SecurityException unavailableProvider) {
+                // Retry this provider on the next refresh while the other registration can keep recording.
+                available |= providerIntervals.containsKey(name);
+            }
         }
-        if (!provider) throw new Exception("系统定位已关闭，请开启后继续");
-        requestedInterval = interval;
+        if (!available) RecordingStore.error(this, "定位信号不可用；恢复后将自动继续");
     }
-    private void observeMotion(Location p) throws Exception {
+    private boolean observeMotion(Location p) {
         long now = System.currentTimeMillis();
         if (!p.hasAccuracy() || !Float.isFinite(p.getAccuracy()) || p.getAccuracy() < 0 ||
             p.getAccuracy() > RecordingPreferences.accuracy(this) || p.getTime() > now + 5000 || now - p.getTime() > 20000 ||
             !Double.isFinite(p.getLatitude()) || !Double.isFinite(p.getLongitude()) ||
-            Math.abs(p.getLatitude()) > 85 || Math.abs(p.getLongitude()) > 180) return;
-        if (motionAnchor == null) { motionAnchor = new Location(p); lastMotion = SystemClock.elapsedRealtime(); return; }
+            Math.abs(p.getLatitude()) > 85 || Math.abs(p.getLongitude()) > 180) return false;
+        if (motionAnchor == null) { motionAnchor = new Location(p); lastMotion = SystemClock.elapsedRealtime(); return true; }
         double seconds = (p.getTime() - motionAnchor.getTime()) / 1000.0;
         float distance = motionAnchor.distanceTo(p);
-        if (seconds <= 0 || distance / seconds > 80) return;
+        if (seconds <= 0 || distance / seconds > 80) return false;
         if (distance >= Math.max(10, motionAnchor.getAccuracy() + p.getAccuracy())) {
-            motionAnchor = new Location(p); lastMotion = SystemClock.elapsedRealtime(); configureRequests();
+            motionAnchor = new Location(p); lastMotion = SystemClock.elapsedRealtime(); return true;
         }
+        return false;
+    }
+    private void pauseWithError(String message) {
+        try { if (RecordingStore.isRecording(this)) RecordingStore.command(this, "pause"); }
+        catch (Exception ignored) { }
+        RecordingStore.error(this, message);
+        stopSelf();
     }
     private Notification notification() {
         PendingIntent open = PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
@@ -73,24 +103,37 @@ public final class RecordingService extends Service implements LocationListener 
             if ("pause".equals(action) || "finish".equals(action)) { RecordingStore.command(this,action); stopSelf(); return START_NOT_STICKY; }
             if (Build.VERSION.SDK_INT >= 29) startForeground(51,notification(),ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION); else startForeground(51,notification());
             if ("recover".equals(action)) { if(!RecordingStore.recover(this)) { stopSelf(); return START_NOT_STICKY; } }
-            else RecordingStore.command(this,action);
+            else if (!RecordingStore.startOrResume(this, action, intent.getStringExtra(EXPECTED_RECORDING_ID))) {
+                if (RecordingStore.isRecording(this)) return START_STICKY;
+                stopSelf();
+                return START_NOT_STICKY;
+            }
             renewCpuLock();
-            lastMotion = SystemClock.elapsedRealtime(); motionAnchor = null; requestedInterval = -1;
-            configureRequests();
+            lastMotion = SystemClock.elapsedRealtime(); motionAnchor = null;
             scheduler.removeCallbacks(refreshPolicy);
-            scheduler.postDelayed(refreshPolicy, 10000);
+            scheduler.post(refreshPolicy);
         } catch (Exception e) {
-            try { RecordingStore.command(this,"pause"); } catch (Exception ignored) { }
-            RecordingStore.error(this,e instanceof SecurityException?"需要精确定位权限，请授权后继续":e.getMessage()); stopSelf();
+            String message = e.getMessage();
+            if (e instanceof SecurityException) message = "需要精确定位权限，请授权后继续";
+            pauseWithError(message == null ? "记录服务未能启动，请返回应用后重试" : message);
+            return START_NOT_STICKY;
         }
         return START_STICKY;
     }
     @Override public void onLocationChanged(Location p) {
-        try { observeMotion(p); RecordingStore.add(this,p); if (!RecordingStore.isRecording(this)) stopSelf(); }
-        catch (Exception e) { try { RecordingStore.command(this,"pause"); } catch(Exception ignored) { } RecordingStore.error(this,"记录写入失败，已暂停"); stopSelf(); }
+        try {
+            RecordingStore.add(this,p);
+            if (!RecordingStore.isRecording(this)) { stopSelf(); return; }
+        } catch (Exception e) { pauseWithError("记录写入失败，已暂停"); return; }
+        long stationaryMillis = SystemClock.elapsedRealtime() - lastMotion;
+        if (observeMotion(p) && stationaryMillis >= 60000) refreshRequestsSoon();
     }
-    @Override public void onProviderDisabled(String provider) { requestedInterval = -1; RecordingStore.error(this,"定位信号不可用；恢复后将自动继续"); }
-    @Override public void onProviderEnabled(String provider) { requestedInterval = -1; }
+    private void refreshRequestsSoon() {
+        scheduler.removeCallbacks(refreshPolicy);
+        scheduler.post(refreshPolicy);
+    }
+    @Override public void onProviderDisabled(String provider) { refreshRequestsSoon(); }
+    @Override public void onProviderEnabled(String provider) { refreshRequestsSoon(); }
     @Override public void onStatusChanged(String provider,int status,Bundle extras) { }
     @Override public IBinder onBind(Intent intent) { return null; }
     @Override public void onDestroy() {

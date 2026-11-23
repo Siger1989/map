@@ -1,3 +1,17 @@
+> **2026-11-23 悬浮窗紧凑导航布局**。网页示例与 `FloatingNavigationView` 的快捷操作进入地图上缘，左下显示纯进度条与公里数。`FloatingNavigationService` 用当前路线投影推导已走距离，原生右栏先按前方数值排序再适配行数。见 [悬浮窗复测](regional-weather-floating-20261123.md#悬浮窗里程与地图面积复测)。
+
+> **2026-11-23 区域天气与悬浮小地图**。主图天气改为 `liveWeatherRegions` 批量采样与 `drawWeatherRegions` 地理范围裁剪。Android `FloatingNavigationView` 使用两栏布局，`FloatingNavigationBridge` 转发版本 1 的可选路线事件能力，记录态使用高对比定位图形。见 [复测记录](regional-weather-floating-20261123.md)。
+
+> **2026-11-23 天气动画及行程首播**。`LiveMapWeather` 使用当前模型估算，`useJourneyRain` 扩展同批小时云量和雪量，共用 `weatherEffects` 绘制。`JourneyTerrainBuffer.readyThroughDistanceM` 表示已核验的连续前方覆盖，`throughDistanceM` 仍表示规划窗口终点。长白山飘雪、海拉尔多云、青城山 8.25 km 起播记录见 [本轮复测](weather-effects-20261123.md)。
+
+> **2026-11-23 行程雨滴预览**。预报适配在 `modules/journey/useJourneyRain.ts`，雨丝由 `modules/sky/journeyRain.ts` 绘入行程和录像共用画布。验收截图和试录在 `artifacts/screenshots/journey-rain-20261123/`，网页预览验收见 [UI 门禁](ui-quality-gate.md)。
+
+> **2026-11-23 安卓快捷记录与后台定位**。权限检查入口在轨迹记录面板。下拉磁贴、打开记录页和前台服务改动及证据见 [后台记录说明](native-android/background-recording-20261123.md)。
+
+> **2026-11-23 沿途天气预览**。青城山盘山路从私人页面 `/phone-preview.html?scene=weather` 进入。正式功能入口在「行程模拟」标题栏。天气解析、线路切分、分色与交互验证见 [沿途天气预览记录](route-weather-20261123.md)。
+
+> **2026-11-21 日月观景外观**。通过工具与标记点进入同一套共享主题。定位归到上方，目标和时序归到下方。网页尺寸、实景状态切换边界和天气源核对见 [观景与天气调研](sky-observation-20261121.md)。
+
 > **2026-11-21 行程云台式防抖**。使用右侧青城山盘山路。验证播放、暂停和录制在同一里程的机位一致，重点复查 15 秒回放的 45% 与 52% 俯仰、急弯箭头及 30 秒稳定性。见 [213 交付记录](release-0.2.213.md)。
 
 > **2026-11-21 行程地图和跟随镜头**。从私人手机预览的青城山盘山公路进入。重点复查起点、4 公里、发卡弯及 91.1% 处的地形边界，覆盖真实图源缺失、恢复、过夜录像及手机实际帧率。详见 [212 交付记录](release-0.2.212.md)。

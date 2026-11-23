@@ -1,5 +1,6 @@
 package com.guanyun.weather
 
+import android.content.Intent
 import android.graphics.Color
 import android.view.MotionEvent
 import android.webkit.JavascriptInterface
@@ -18,6 +19,7 @@ class NativeReactActivity : MainActivity() {
     private var mapSurfaceRoot: FrameLayout? = null
     private var floatingNavigation: FloatingNavigationBridge? = null
     private var skyCamera: SkyCameraBridge? = null
+    private var recordingSystem: RecordingSystemBridge? = null
 
     override fun createContentRoot(): FrameLayout = object : FrameLayout(this) {
         override fun dispatchTouchEvent(event: MotionEvent): Boolean {
@@ -79,6 +81,10 @@ class NativeReactActivity : MainActivity() {
         floatingNavigation = FloatingNavigationBridge(this, content).also {
             content.addJavascriptInterface(it, FloatingNavigationBridge.JS_NAME)
         }
+        recordingSystem = RecordingSystemBridge(this, content).also {
+            content.addJavascriptInterface(it, RecordingSystemBridge.JS_NAME)
+            if (intent?.action == RecordingTileService.ACTION_OPEN_RECORDING) it.requestOpenRecording()
+        }
     }
 
     override fun onContentPageStarted(url: String?) {
@@ -93,6 +99,7 @@ class NativeReactActivity : MainActivity() {
         skyCamera?.onResume()
         floatingNavigation?.onHostResume()
         FloatingRecordingCoordinator.onHostResume(this)
+        recordingSystem?.onResume()
         maps?.onHostResume()
         overlay?.setForeground(true)
         // A permission/system sheet can reject region updates while backgrounded.
@@ -101,6 +108,10 @@ class NativeReactActivity : MainActivity() {
             "window.dispatchEvent(new Event('shantu:native-map-resume'))", null)
         if (trustedForeground()) content?.evaluateJavascript(
             "window.dispatchEvent(new Event('shantu:floating-navigation'))", null)
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.action == RecordingTileService.ACTION_OPEN_RECORDING) recordingSystem?.requestOpenRecording()
     }
     override fun onPause() {
         skyCamera?.onPause()
@@ -128,6 +139,7 @@ class NativeReactActivity : MainActivity() {
         overlay?.close(); overlay = null
         mapSurfaceRoot = null
         content?.removeJavascriptInterface("ShantuNativeMap")
+        content?.removeJavascriptInterface(RecordingSystemBridge.JS_NAME); recordingSystem = null
         content?.removeJavascriptInterface(FloatingNavigationBridge.JS_NAME); content = null
         super.onDestroy()
     }

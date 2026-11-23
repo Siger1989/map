@@ -26,8 +26,8 @@ async function mountProbe(t, bridge) {
   const { createRoot } = await import('react-dom/client');
   const { useFloatingNavigation } = await import('../.openai/guidance-floating-navigation-hook-test/useFloatingNavigation.js');
   let controls;
-  function Probe({ session }) {
-    controls = useFloatingNavigation(session);
+  function Probe({ session, options }) {
+    controls = useFloatingNavigation(session, options);
     return null;
   }
   const root = createRoot(document.getElementById('root'));
@@ -157,4 +157,44 @@ test('rapid independent switch updates send only changed keys and preserve both 
   assert.equal(native.energySaving, true);
   assert.equal(native.lockscreenKeepOn, true);
   assert.equal(native.outdoorContours, true, 'legacy native state may remain stored while the new UI ignores it');
+});
+
+test('route sidebar only fetches while the native window is enabled and does not resend on unchanged GPS progress', async (t) => {
+  const native = { available: true, enabled: true, visible: false, mode: 'north', windowEnabled: false, routeEventsSupported: true };
+  const updated = [];
+  const bridge = {
+    status: () => JSON.stringify(native),
+    start: () => {},
+    update: (raw) => updated.push(JSON.parse(raw)),
+    stop: () => {},
+  };
+  const mounted = await mountProbe(t, bridge);
+  const { React, root, Probe } = mounted;
+  const previousFetch = globalThis.fetch;
+  let fetchCount = 0;
+  globalThis.fetch = async () => {
+    fetchCount++;
+    const nextHour = (Math.floor(Date.now() / 3_600_000) + 1) * 3600;
+    return { ok: true, json: async () => ({ hourly: { time: [nextHour, nextHour + 3600], rain: [0.2, 0.2], showers: [0, 0] } }) };
+  };
+  t.after(() => { globalThis.fetch = previousFetch; });
+  const coordinates = [[103, 30], [103.01, 30]];
+  const route = { coordinates, duration: 60 };
+  const path = { points: coordinates, cumulative: [0, 963], length: 963 };
+  const marks = [{ visible: true, kind: 'pin', name: '桥', coordinates: [103.004, 30] }];
+  const render = (progress, showWeather = true) => React.act(async () => {
+    root.render(React.createElement(Probe, { session: { route, path, progress }, options: { showWeather, marks } }));
+  });
+  await render(0);
+  assert.equal(fetchCount, 0);
+  native.windowEnabled = true;
+  await React.act(async () => window.dispatchEvent(new window.Event('shantu:floating-navigation')));
+  assert.equal(fetchCount, 1);
+  assert.deepEqual(updated.at(-1).events.map(event => event.kind), ['rain', 'marker']);
+  const before = updated.length;
+  await render(1);
+  assert.equal(updated.length, before);
+  await render(1, false);
+  assert.deepEqual(updated.at(-1).events.map(event => event.kind), ['marker']);
+  assert.equal(fetchCount, 1);
 });

@@ -1,0 +1,36 @@
+.live-map-weather {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+}
+
+.live-map-weather-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.live-map-weather-status {
+  position: absolute;
+  top: calc(72px + var(--safe-top, 0px));
+  left: var(--edge-left, 8px);
+  max-width: calc(100% - 80px);
+  padding: 3px 8px;
+  border-radius: var(--ui-control-radius, 4px);
+  background: var(--ui-field, #142229);
+  color: var(--ui-text, var(--text, #fff));
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.home-map:has(.position-status) .live-map-weather-status {
+  top: calc(106px + var(--safe-top, 0px));
+}
+
+.live-map-weather-source {
+  display: block;
+  font-size: 10px;
+}

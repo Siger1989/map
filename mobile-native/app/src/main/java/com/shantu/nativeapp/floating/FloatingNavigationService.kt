@@ -94,8 +94,10 @@ class FloatingNavigationService : Service(), LocationListener {
         @Volatile private var modeState = "north"
         @Volatile private var kindState = "position"
         @Volatile private var zoomState = FloatingNavigationGeometry.MIN_ZOOM
-        @Volatile private var widthDpState = 184.0
-        @Volatile private var heightDpState = 216.0
+        private const val DEFAULT_WINDOW_WIDTH_DP = 248f
+        private const val DEFAULT_WINDOW_HEIGHT_DP = 184f
+        @Volatile private var widthDpState = DEFAULT_WINDOW_WIDTH_DP.toDouble()
+        @Volatile private var heightDpState = DEFAULT_WINDOW_HEIGHT_DP.toDouble()
         @Volatile private var messageState = ""
         @Volatile private var lockscreenScreenOnState = false
         @Volatile private var lockscreenLockedState = false
@@ -176,6 +178,7 @@ class FloatingNavigationService : Service(), LocationListener {
             .put("outdoorContours", false)
             .put("optionsConfigured", context?.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)?.getBoolean(PREF_OPTIONS_CONFIGURED, false) ?: false)
             .put("kind", kindState).put("zoom", zoomState).put("widthDp", widthDpState).put("heightDp", heightDpState)
+            .put("routeEventsSupported", true)
             .put("message", messageState.take(80))
             .put("lockscreen", JSONObject().put("screenOn", lockscreenScreenOnState).put("locked", lockscreenLockedState)
                 .put("launchPending", lockscreenLaunchPendingState).put("attached", lockscreenAttachedState)
@@ -402,11 +405,35 @@ class FloatingNavigationService : Service(), LocationListener {
                 }
                 parts
             } else null
+            val events = if (payload.has("events")) {
+                require(kind == "route") { "仅导航路线支持前方提示" }
+                val values = payload.optJSONArray("events") ?: throw IllegalArgumentException("前方提示格式无效")
+                require(values.length() <= 32) { "前方提示数量超出限制" }
+                JSONArray().apply {
+                    for (i in 0 until values.length()) {
+                        val item = values.optJSONObject(i) ?: throw IllegalArgumentException("前方提示格式无效")
+                        val eventKind = item.optString("kind")
+                        require(eventKind == "rain" || eventKind == "marker") { "前方提示类型无效" }
+                        val distance = (item.opt("distanceM") as? Number)?.toDouble()
+                        require(distance != null && distance.isFinite() && distance >= 0.0) { "前方提示距离无效" }
+                        val eventLabel = (item.opt("label") as? String)?.trim()
+                        require(eventLabel != null && eventLabel.length in 1..80 && eventLabel.none(Char::isISOControl)) { "前方提示名称无效" }
+                        val validUntil = optionalDimension(item, "validUntilMs", 1.0..9_007_199_254_740_991.0)
+                        require(if (eventKind == "rain") validUntil != null && validUntil % 1.0 == 0.0 else validUntil == null) {
+                            "前方提示有效时限无效"
+                        }
+                        val normalized = JSONObject().put("kind", eventKind).put("distanceM", distance).put("label", eventLabel)
+                        if (validUntil != null) normalized.put("validUntilMs", validUntil.toLong())
+                        put(normalized)
+                    }
+                }
+            } else null
             val width = optionalDimension(payload, "widthDp", 100.0..320.0)
             val height = optionalDimension(payload, "heightDp", 100.0..400.0)
             val out = JSONObject().put("version", 1).put("kind", kind).put("mode", mode).put("label", label)
                 .put("coordinates", coordinates)
             if (segments != null) out.put("segments", segments)
+            if (events != null) out.put("events", events)
             for (key in listOf(PREF_WINDOW_ENABLED, PREF_LOCKSCREEN_ENABLED, PREF_ENERGY_SAVING, PREF_LOCKSCREEN_KEEP_ON)) if (payload.has(key)) {
                 require(payload.opt(key) is Boolean) { "$key 必须是布尔值" }
                 out.put(key, payload.getBoolean(key))
@@ -448,13 +475,20 @@ class FloatingNavigationService : Service(), LocationListener {
                     })
                 }
             }.orEmpty()
+            val events = safe.optJSONArray("events")?.let { values ->
+                List(values.length()) { i ->
+                    val item = values.getJSONObject(i)
+                    FloatingRouteEvent(item.getString("kind"), item.getDouble("distanceM"), item.getString("label"),
+                        item.optLong("validUntilMs", 0L).takeIf { item.has("validUntilMs") })
+                }
+            }.orEmpty()
             return ParsedSession(safe.getString("kind"), safe.getString("mode"), safe.getString("label"), points,
                 if (safe.has("zoom")) safe.getInt("zoom") else null,
                 optionalDimension(safe, "widthDp", 100.0..320.0)?.toFloat(), optionalDimension(safe, "heightDp", 100.0..400.0)?.toFloat(),
-                FloatingNavigationGeometry.parseRouteColor(safe.getString("kind"), safe.has("color"), safe.opt("color") as? String), segments)
+                FloatingNavigationGeometry.parseRouteColor(safe.getString("kind"), safe.has("color"), safe.opt("color") as? String), segments, events)
         }
 
-        private data class ParsedSession(val kind: String, val mode: String, val label: String, val points: List<FloatingCoordinate>, val zoom: Int?, val widthDp: Float?, val heightDp: Float?, val routeColor: Int, val segments: List<FloatingRouteSegment>)
+        private data class ParsedSession(val kind: String, val mode: String, val label: String, val points: List<FloatingCoordinate>, val zoom: Int?, val widthDp: Float?, val heightDp: Float?, val routeColor: Int, val segments: List<FloatingRouteSegment>, val events: List<FloatingRouteEvent>)
     }
 
     private val alive = AtomicBoolean(false)
@@ -473,12 +507,14 @@ class FloatingNavigationService : Service(), LocationListener {
     private var routeFile: File? = null
     private var route = emptyList<FloatingCoordinate>()
     private var routeSegments = emptyList<FloatingRouteSegment>()
+    private var routeEvents = emptyList<FloatingRouteEvent>()
+    private var routeLengthMeters = 0.0
     private var kind = "route"
     private var routeColor = FloatingNavigationGeometry.DEFAULT_ROUTE_COLOR
     private var currentRecordingSnapshot = RecordingSnapshot("idle", emptyList())
     private var zoom = FloatingNavigationGeometry.MIN_ZOOM
-    private var windowWidthDp = 184f
-    private var windowHeightDp = 216f
+    private var windowWidthDp = DEFAULT_WINDOW_WIDTH_DP
+    private var windowHeightDp = DEFAULT_WINDOW_HEIGHT_DP
     private var windowEnabled = true
     private var lockscreenEnabled = true
     private var energySaving = false
@@ -538,8 +574,8 @@ class FloatingNavigationService : Service(), LocationListener {
         publishLockscreenStatus()
         val prefs = getSharedPreferences("floating_navigation_layout", MODE_PRIVATE)
         zoom = prefs.getInt("zoom", FloatingNavigationGeometry.MIN_ZOOM).coerceIn(FloatingNavigationGeometry.MIN_ZOOM, FloatingNavigationGeometry.MAX_ZOOM)
-        windowWidthDp = prefs.getFloat("widthDp", 184f)
-        windowHeightDp = prefs.getFloat("heightDp", 216f)
+        windowWidthDp = prefs.getFloat("widthDp", DEFAULT_WINDOW_WIDTH_DP)
+        windowHeightDp = prefs.getFloat("heightDp", DEFAULT_WINDOW_HEIGHT_DP)
         mode = storedMode(applicationContext)
         windowEnabled = storedWindowEnabled(applicationContext)
         lockscreenEnabled = storedLockscreenEnabled(applicationContext)
@@ -870,6 +906,8 @@ class FloatingNavigationService : Service(), LocationListener {
         routeColor = parsed.routeColor
         if (route != parsed.points) route = parsed.points
         if (routeSegments != parsed.segments) routeSegments = parsed.segments
+        if (routeEvents != parsed.events) routeEvents = parsed.events
+        if (routeChanged) routeLengthMeters = FloatingNavigationGeometry.routeLengthMeters(route)
         parsed.zoom?.let { zoom = it }
         parsed.widthDp?.let { windowWidthDp = it }
         parsed.heightDp?.let { windowHeightDp = it }
@@ -1060,7 +1098,7 @@ class FloatingNavigationService : Service(), LocationListener {
             "motion" -> mapBearing
             else -> null
         }
-        view.heading = if (mode == "compass") compassDirection else freshHeading
+        view.heading = if (mode == "compass" && view.lockscreenPresentation) compassDirection else freshHeading
         view.stateText = when {
             mode == "compass" && freshCompass != null -> compassMessage.ifBlank { if (!presentation.visible) "罗盘方向，等待定位" else "罗盘方向" }
             mode == "compass" && previewCompass != null -> compassMessage.ifBlank { "上次方向，正在更新" } + if (!presentation.visible) "，等待定位" else ""
@@ -1073,8 +1111,16 @@ class FloatingNavigationService : Service(), LocationListener {
             else -> "导航中"
         }
         val routeProjection = cachedRouteProjection.takeIf { reliable && kind == "route" }
-        view.routeRemainingMeters = routeProjection?.remainingMeters
-        view.routeOffRoute = routeProjection?.offRoute == true
+        if (view.lockscreenPresentation) {
+            view.routeRemainingMeters = routeProjection?.remainingMeters
+        } else {
+            view.routeEvents = routeEvents
+            val gpsProjection = routeProjection.takeIf { fix?.provider == LocationManager.GPS_PROVIDER }
+            val onRoute = gpsProjection?.takeIf { !it.offRoute && routeLengthMeters > 0.0 }
+            view.routeOffRoute = gpsProjection?.offRoute == true
+            view.routeRemainingMeters = onRoute?.remainingMeters
+            view.routeProgressMeters = onRoute?.let { (routeLengthMeters - it.remainingMeters).coerceAtLeast(0.0) }
+        }
         synchronized(tileCache) { view.tiles = tileCache.values.toList() }
         view.invalidate()
     }
@@ -1176,12 +1222,11 @@ class FloatingNavigationService : Service(), LocationListener {
             val density = resources.displayMetrics.density.toDouble().coerceAtLeast(.1)
             val lockView = lockscreenView?.takeIf { it.isAttachedToWindow && it.width > 0 && it.height > 0 }
             val targetView = lockView ?: overlay
-            val widthPx = targetView?.width?.takeIf { it > 0 } ?: (184.0 * density).roundToInt()
-            val heightPx = targetView?.height?.takeIf { it > 0 } ?: (216.0 * density).roundToInt()
-            // Lock map has no header/footer. The ordinary map's compact header occupies
-            // the top 32dp; there is no footer after the latest view layout.
+            val widthPx = targetView?.width?.takeIf { it > 0 } ?: (windowWidthDp * density).roundToInt()
+            val heightPx = targetView?.height?.takeIf { it > 0 } ?: (windowHeightDp * density).roundToInt()
+            // Request against the full canvas so overlaid controls cannot reduce tile coverage.
             val viewportWidthDp = widthPx / density
-            val viewportHeightDp = (heightPx / density - if (lockView == null) 32.0 else 0.0).coerceAtLeast(0.0)
+            val viewportHeightDp = heightPx / density
             // A circle with the viewport's half-diagonal contains all four corners after
             // any camera rotation, so this remains conservative for motion-up rendering.
             val tileSizeDp = 256.0 * FloatingNavigationGeometry.overzoomScale(zoom)

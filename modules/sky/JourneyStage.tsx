@@ -8,6 +8,7 @@ import { resolveJourneyCamera } from './journeyCamera';
 import type { JourneyPlaybackFrame, JourneyPlaybackModel } from './journeyPlayback';
 import type { JourneyTerrainBuffer } from './satelliteTerrainRenderer';
 import { createJourneyStars } from './journeyStars';
+import { drawWeatherEffects, weatherEffectsVisible, type WeatherEffectsState } from './weatherEffects';
 import type { JourneySkyLayerSettings } from './JourneySkyLayers';
 
 export type ImageryStatus='loading'|'ready'|'partial'|'unavailable'|'error';
@@ -15,13 +16,14 @@ interface Props {
   model: JourneyPlaybackModel; frame: JourneyPlaybackFrame; time:number; zone:string;
   name:string; progress:number; width:number; height:number;
   captureFrames:boolean; retryKey:number;
+  weather:WeatherEffectsState; playheadSeconds:number;
   layers:JourneySkyLayerSettings;
   onBuffer(buffer:JourneyTerrainBuffer):void; onPresent(fraction:number):void;
   onFrame(canvas:HTMLCanvasElement,fraction:number):void; onCanvas(canvas:HTMLCanvasElement|null):void; onImagery(status:ImageryStatus):void;
 }
 
 /** The visible stages and the movie use the same camera, DEM imagery and clock. */
-export function JourneyStage({model,frame,time,zone,name,progress,width,height,layers,captureFrames,retryKey,onBuffer,onPresent,onCanvas,onImagery,onFrame}:Props) {
+export function JourneyStage({model,frame,time,zone,name,progress,width,height,layers,captureFrames,retryKey,weather,playheadSeconds,onBuffer,onPresent,onCanvas,onImagery,onFrame}:Props) {
   const [base,setBase]=useState<HTMLCanvasElement|null>(null);
   const [terrain,setTerrain]=useState<HTMLCanvasElement|null>(null);
   const [stars,setStars]=useState<HTMLCanvasElement|null>(null);
@@ -79,8 +81,8 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
   },[base]);
   const stamp=useMemo(()=>localMinute(time,zone).replace('T',' '),[Math.floor(time/60000),zone]);
   const shot = useMemo(() => ({stamp, name, progress, distance:frame.distanceM, total:model.totalDistanceM,
-    width, height, frame, fallbackPose:fallback.pose, optics, sky, time, layers,captureFrames}),
-    [stamp, name, progress, frame, model, width, height, fallback, optics, sky,time,layers,captureFrames]);
+    width, height, frame, fallbackPose:fallback.pose, optics, sky, time, layers,captureFrames,weather,playheadSeconds}),
+    [stamp, name, progress, frame, model, width, height, fallback, optics, sky,time,layers,captureFrames,weather,playheadSeconds]);
   const current = useRef(shot);
   current.current = shot;
   useLayoutEffect(()=>{
@@ -88,7 +90,7 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
     const ctx=output.getContext('2d',{alpha:true});
     if(!ctx)return;
     let raf=0, priorSatellite=-1, priorShot:typeof shot|null=null,starsReady=true;
-    let previousPose:DeviceSkyPose|null=null, previousTerrain=false, fullComposite=false;
+    let previousPose:DeviceSkyPose|null=null, previousTerrain=false, fullComposite=false, priorWeather=false;
     function draw(){
       if(document.hidden)return;
       const p=current.current;
@@ -129,13 +131,15 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
       if(output!.width!==w||output!.height!==h){output!.width=w;output!.height=h;}
       // During playback the browser composites the two WebGL surfaces directly.
       // Reading both back into 2D is only necessary for an actual video frame.
-      if(fullComposite || p.captureFrames)ctx!.clearRect(0,0,w,h);
+      const hasWeather=weatherEffectsVisible(p.weather);
+      if(fullComposite || p.captureFrames || hasWeather || priorWeather)ctx!.clearRect(0,0,w,h);
       else {
         ctx!.clearRect(0,0,w,Math.ceil(36*h/p.height));
         const bottom=Math.floor((p.height-66)*h/p.height);
         ctx!.clearRect(0,bottom,w,h-bottom);
       }
       fullComposite=p.captureFrames;
+      priorWeather=hasWeather;
       if(p.captureFrames){
         ctx!.drawImage(base!,0,0,w,h);
         if(showStars && stars?.width && stars.height)ctx!.drawImage(stars,0,0,w,h);
@@ -143,6 +147,8 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
       }
       ctx!.save();ctx!.scale(w/p.width,h/p.height);
       const hud=ctx!;
+      if(hasWeather)drawWeatherEffects(hud,p.width,Math.max(0,p.height-66),
+        {...p.weather,isDay:p.sky.sun.altitudeDeg>=-6},p.playheadSeconds);
       const caption=(name:string,az:number,alt:number)=>name+' '+Math.round(az)+'° / '+(alt>=0?'+':'')+Math.round(alt)+'°';
       hud.font='12px sans-serif';
       const sun=p.layers.sun?caption('太阳',p.sky.sun.azimuthDeg,p.sky.sun.altitudeDeg):'';

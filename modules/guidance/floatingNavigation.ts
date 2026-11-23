@@ -3,6 +3,12 @@ import type { GuidanceSession } from './session';
 
 export type FloatingNavigationMode = 'north' | 'motion' | 'compass';
 export type FloatingNavigationKind = 'position' | 'route';
+export type FloatingNavigationRouteEvent = {
+  kind: 'rain' | 'marker';
+  distanceM: number;
+  label: string;
+  validUntilMs?: number;
+};
 
 export type FloatingNavigationStatus = {
   available: boolean;
@@ -18,6 +24,7 @@ export type FloatingNavigationStatus = {
   locationAllowed?: boolean;
   notificationAllowed?: boolean;
   overlayAllowed?: boolean;
+  routeEventsSupported?: boolean;
   zoom?: number;
   widthDp?: number;
   heightDp?: number;
@@ -29,6 +36,7 @@ export type FloatingNavigationPayload = {
   label: string;
   coordinates: Coordinate[];
   segments?: PlannedRoute['segments'];
+  events?: FloatingNavigationRouteEvent[];
   kind?: FloatingNavigationKind;
   color?: string;
   windowEnabled?: boolean;
@@ -57,6 +65,7 @@ declare global {
 export const FLOATING_NAVIGATION_MAX_POINTS = 100_000;
 export const FLOATING_NAVIGATION_MAX_BYTES = 4 * 1024 * 1024;
 const MAX_LABEL_LENGTH = 160;
+export const FLOATING_NAVIGATION_MAX_EVENTS = 32;
 
 export function buildFloatingNavigationPayload(
   session: GuidanceSession | null,
@@ -132,7 +141,21 @@ export function serializeFloatingNavigationPayload(payload: FloatingNavigationPa
   if (payload.lockscreenEnabled !== undefined && typeof payload.lockscreenEnabled !== 'boolean') throw new Error('lockscreenEnabled必须为布尔值');
   if (payload.energySaving !== undefined && typeof payload.energySaving !== 'boolean') throw new Error('energySaving必须为布尔值');
   if (payload.lockscreenKeepOn !== undefined && typeof payload.lockscreenKeepOn !== 'boolean') throw new Error('lockscreenKeepOn必须为布尔值');
-  const allowed = new Set(['version', 'mode', 'label', 'coordinates', 'segments', 'kind', 'color', 'windowEnabled', 'lockscreenEnabled', 'energySaving', 'lockscreenKeepOn']);
+  if (payload.events !== undefined) {
+    if (payload.kind === 'position' || !Array.isArray(payload.events) || payload.events.length > FLOATING_NAVIGATION_MAX_EVENTS) {
+      throw new Error('悬浮导航路线事件无效');
+    }
+    for (const event of payload.events) {
+      if (!event || (event.kind !== 'rain' && event.kind !== 'marker') ||
+          !Number.isFinite(event.distanceM) || event.distanceM < 0 ||
+          typeof event.label !== 'string' || !event.label.trim() || event.label.length > 80 || /[\u0000-\u001f\u007f-\u009f]/.test(event.label) ||
+          (event.kind === 'rain' && (!Number.isSafeInteger(event.validUntilMs) || event.validUntilMs! <= 0)) ||
+          (event.kind === 'marker' && event.validUntilMs !== undefined)) {
+        throw new Error('悬浮导航路线事件无效');
+      }
+    }
+  }
+  const allowed = new Set(['version', 'mode', 'label', 'coordinates', 'segments', 'events', 'kind', 'color', 'windowEnabled', 'lockscreenEnabled', 'energySaving', 'lockscreenKeepOn']);
   if (Object.keys(payload).some((key) => !allowed.has(key))) throw new Error('悬浮地图数据字段无效');
   const serialized = JSON.stringify(payload);
   validateFloatingNavigationPayloadBytes(serialized);
@@ -166,6 +189,7 @@ export function parseFloatingNavigationStatus(raw: unknown): FloatingNavigationS
     kind: status.kind === 'position' ? 'position' : 'route',
     ...(typeof status.locationAllowed === 'boolean' ? { locationAllowed: status.locationAllowed } : {}),
     ...(typeof status.notificationAllowed === 'boolean' ? { notificationAllowed: status.notificationAllowed } : {}),
+    ...(status.routeEventsSupported === true ? { routeEventsSupported: true } : {}),
     ...(typeof status.overlayAllowed === 'boolean' ? { overlayAllowed: status.overlayAllowed } : {}),
     ...(typeof status.zoom === 'number' && Number.isFinite(status.zoom) ? { zoom: status.zoom } : {}),
     ...(typeof status.widthDp === 'number' && Number.isFinite(status.widthDp) ? { widthDp: status.widthDp } : {}),

@@ -1,0 +1,107 @@
+.journey-weather-map {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: #151d21;
+  background-image: linear-gradient(#b0c1bf15 1px, transparent 1px), linear-gradient(90deg, #b0c1bf15 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.journey-weather-map-imagery,
+.journey-weather-map-route {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.journey-weather-map-imagery {
+  filter: brightness(.8) saturate(.82);
+}
+
+.journey-weather-map-route {
+  cursor: crosshair;
+}
+
+.journey-weather-map-route polyline {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.journey-weather-map-outline {
+  stroke: #102027;
+  stroke-width: 6px;
+}
+
+.journey-weather-map-segment {
+  stroke: var(--route-weather-color, #9ca7ad);
+  stroke-width: 3.5px;
+  cursor: pointer;
+}
+
+.journey-weather-map-segment[data-kind="unknown"] { stroke-dasharray: 3 5; }
+
+.journey-weather-map-active,
+.journey-weather-map-cursor {
+  pointer-events: none;
+}
+
+.journey-weather-map-active polyline:nth-child(1) {
+  stroke: #102027;
+  stroke-width: 11px;
+}
+
+.journey-weather-map-active polyline:nth-child(2) {
+  stroke: #f4feec;
+  stroke-width: 8px;
+}
+
+.journey-weather-map-active polyline:nth-child(3) {
+  stroke: var(--route-weather-color, #9ca7ad);
+  stroke-width: 5px;
+}
+.journey-weather-map-active[data-kind="unknown"] polyline { stroke-dasharray: 3 6; }
+
+.journey-weather-map-segment:focus-visible {
+  outline: none;
+  filter: drop-shadow(0 0 2px white);
+  stroke-width: 6px;
+}
+
+.journey-weather-map-cursor circle:first-child {
+  fill: #16221c;
+  stroke: #f6ffe7;
+  stroke-width: 2px;
+}
+
+.journey-weather-map-cursor circle:last-child {
+  fill: var(--accent, #d9f28b);
+}
+
+.journey-weather-map-credit,
+.journey-weather-map-empty {
+  position: absolute;
+  z-index: 1;
+  padding: 2px 5px;
+  border-radius: 4px;
+  line-height: 1.3;
+  font-size: 10px;
+  color: #e5ebeb;
+  background: #101818d9;
+  pointer-events: none;
+}
+
+.journey-weather-map-credit {
+  right: 4px;
+  bottom: 4px;
+}
+
+.journey-weather-map-empty {
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+}

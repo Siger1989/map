@@ -22,6 +22,25 @@ test('a typical 7.34 km itinerary warms its entire route, including the final hi
   assert.ok(window.surroundings.some(t=>t.z===9));
 });
 
+test('the initial journey lookahead can prepare independently of the full route',()=>{
+  const route = line(8.25);
+  const start = 215;
+  const window = planJourneyWindow(route,start);
+  const first = window.checkpoints.findIndex(checkpoint => checkpoint.distanceM >= start + 320);
+  assert.ok(first > 0);
+  assert.equal(window.checkpoints[0].distanceM,start);
+  assert.equal(window.checkpoints.at(-1).distanceM,window.end);
+  const early = new Set(window.checkpoints.slice(0,first + 1).flatMap(checkpoint => checkpoint.tiles.map(tile => tile.key)));
+  const full = new Set(window.startup.map(tile => tile.key));
+  assert.ok([...early].every(key => full.has(key)));
+  assert.ok(early.size < full.size);
+  for (let distance = start; distance <= start + 320; distance += 16) {
+    const frame = getJourneyPlaybackFrame(route,distance);
+    const {detail,middle,horizon} = journeyGroundFootprint({model:route,frame},42);
+    for (const tile of [...detail,...middle,...horizon]) assert.ok(early.has(tile.key),`${tile.key} at ${distance}m`);
+  }
+});
+
 test('bounded overlapping windows move with long routes and recalibrate after backward seeks',()=>{
   const route=line(80), first=planJourneyWindow(route,0);
   assert.ok(first.end>=5000 && first.end<=9000);
