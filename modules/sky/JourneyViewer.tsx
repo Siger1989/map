@@ -1,6 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { CloudSun } from 'lucide-react';
-import { useJourneyRain } from '../journey/useJourneyRain.ts';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { getObserverTimeZone } from './astronomy';
 import { createJourneyPlayback, getJourneyPlaybackFrame, journeyCameraSettings, type SkyJourney } from './journeyPlayback';
 import {
@@ -18,10 +16,6 @@ type Phase='paused'|'preparing'|'playing'|'arming'|'recording'|'saving';
 const clamp=(x:number)=>Math.max(0,Math.min(1,x));
 const recordingFps=24;
 const cameraDistanceStorageKey='shantu:journey:camera-distance-m';
-const effectsStorageKey='shantu:journey:rain';
-const weatherAmountFormat=new Intl.NumberFormat('zh-CN',{maximumFractionDigits:2});
-const JourneyWeather = lazy(() => import('../journey/JourneyWeather').then(module => ({ default: module.JourneyWeather })));
-
 function savedCameraDistance(): number {
   try {
     const stored=window.localStorage.getItem(cameraDistanceStorageKey);
@@ -33,8 +27,8 @@ function savedCameraDistance(): number {
   return JOURNEY_CAMERA_LAG_M;
 }
 
-export function JourneyViewer({journey,onClose,showWeather=false,showWeatherEffects=false}:{
-  journey:SkyJourney;onClose():void;showWeather?:boolean;showWeatherEffects?:boolean;
+export function JourneyViewer({journey,onClose}:{
+  journey:SkyJourney;onClose():void;
 }) {
   const model=useMemo(()=>createJourneyPlayback(journey),[journey]);
   const origin=useMemo(()=>getJourneyPlaybackFrame(model,0),[model]);
@@ -86,26 +80,6 @@ export function JourneyViewer({journey,onClose,showWeather=false,showWeatherEffe
   const closeDistance=()=>{applyCameraDistance();setDistanceOpen(false);};
   const closeViewer=()=>{applyCameraDistance();onClose();};
   const [form,setForm]=useState(true);
-  const [weather,setWeather]=useState(showWeather);
-  const [effectsEnabled,setEffectsEnabled]=useState(()=>{
-    if(showWeatherEffects)return true;
-    try{return window.localStorage.getItem(effectsStorageKey)==='true';}catch{return false;}
-  });
-  const toggleWeatherEffects=()=>{
-    const next=!effectsEnabled;
-    setEffectsEnabled(next);
-    if(showWeatherEffects)return;
-    try{window.localStorage.setItem(effectsStorageKey,String(next));}catch{ /* The current choice still applies. */ }
-  };
-  const forecast=useJourneyRain(model,start,end,effectsEnabled && !weather);
-  const weatherLoading=forecast.status==='loading';
-  const [reduceMotion,setReduceMotion]=useState(false);
-  useEffect(()=>{
-    const query=window.matchMedia('(prefers-reduced-motion: reduce)');
-    const update=()=>setReduceMotion(query.matches);
-    update();query.addEventListener('change',update);
-    return ()=>query.removeEventListener('change',update);
-  },[]);
   const [phase,setPhase]=useState<Phase>('paused');
   const [layers,setLayers]=useJourneySkyLayers();
   const [progress,setProgress]=useState(0);
@@ -118,7 +92,8 @@ export function JourneyViewer({journey,onClose,showWeather=false,showWeatherEffe
   const onBuffer=useCallback((next:JourneyTerrainBuffer)=>{
     const prior=currentBuffer.current;
     if(prior && prior.status===next.status && prior.loaded===next.loaded && prior.total===next.total &&
-      prior.frameReady===next.frameReady && prior.frameDegraded===next.frameDegraded && prior.detailLoaded===next.detailLoaded &&
+      prior.frameReady===next.frameReady && prior.frameDegraded===next.frameDegraded &&
+      prior.frameTerrainOnly===next.frameTerrainOnly && prior.frameHasImagery===next.frameHasImagery && prior.detailLoaded===next.detailLoaded &&
       prior.detailTotal===next.detailTotal && prior.minDetailZoom===next.minDetailZoom &&
       prior.throughDistanceM===next.throughDistanceM && prior.readyThroughDistanceM===next.readyThroughDistanceM &&
       prior.unavailableTiles===next.unavailableTiles)return;
@@ -177,13 +152,13 @@ export function JourneyViewer({journey,onClose,showWeather=false,showWeatherEffe
     document.addEventListener('visibilitychange',background);
     return ()=>document.removeEventListener('visibilitychange',background);
   },[phase,abort]);
-  const textured=(imagery==='ready'||imagery==='partial') && !!buffer?.frameReady;
-  const prepared=textured && (buffer?.status==='ready'||buffer?.status==='degraded');
+  const drawable=(imagery==='ready'||imagery==='partial') && !!buffer?.frameReady;
+  const prepared=drawable && (buffer?.status==='ready'||buffer?.status==='degraded');
   const lookaheadM=Math.min(320,Math.max(120,model.totalDistanceM/seconds*1.25));
-  const playbackReady=textured && (prepared || (buffer?.readyThroughDistanceM ?? -1)>=Math.min(model.totalDistanceM,distance+lookaheadM));
+  const playbackReady=drawable && (prepared || (buffer?.readyThroughDistanceM ?? -1)>=Math.min(model.totalDistanceM,distance+lookaheadM));
   useEffect(()=>{
-    if(phase==='preparing' && playbackReady && !weatherLoading)setPhase('playing');
-  },[phase,playbackReady,weatherLoading]);
+    if(phase==='preparing' && playbackReady)setPhase('playing');
+  },[phase,playbackReady]);
   useEffect(()=>{
     if(phase!=='arming'||!canvas||!prepared)return;
     let request = 0;
@@ -210,7 +185,7 @@ export function JourneyViewer({journey,onClose,showWeather=false,showWeatherEffe
   },[phase,canvas,prepared,seconds,abort,composeRecordingFrame]);
   useEffect(()=>{
     if(phase!=='recording' && phase!=='playing')return;
-    if(!textured) {if(phase==='recording')recording.current?.pause();return;}
+    if(!drawable) {if(phase==='recording')recording.current?.pause();return;}
     if(phase==='recording')recording.current?.resume();
     if(phase==='recording' && recording.current?.timedFrames)return;
     let initial=lastProgress.current, previous=performance.now(), raf=0;
@@ -227,7 +202,7 @@ export function JourneyViewer({journey,onClose,showWeather=false,showWeatherEffe
       // The recorder finishes when the compositor presents the actual arrival frame.
     };
     raf=requestAnimationFrame(tick);return ()=>cancelAnimationFrame(raf);
-  },[phase,seconds,textured,abort]);
+  },[phase,seconds,drawable,abort]);
   useEffect(()=>{
     if(phase!=='saving'||!recording.current)return;
     // Let the compositor paint the arrival moment before asking for the final encoded chunk.
@@ -239,7 +214,7 @@ export function JourneyViewer({journey,onClose,showWeather=false,showWeatherEffe
     },150);
     return ()=>clearTimeout(timer);
   },[phase]);
-  const missing=imagery==='unavailable'||imagery==='error'||buffer?.status==='unavailable';
+  const missing=!drawable && (imagery==='unavailable'||imagery==='error'||buffer?.status==='unavailable');
   useEffect(()=>{
     if(missing && phase==='recording')abort('当前路段缺少地图，录制已停止。请重试加载后重新录制。');
   },[missing,phase,abort]);
@@ -270,31 +245,17 @@ export function JourneyViewer({journey,onClose,showWeather=false,showWeatherEffe
     catch(e){setMessage(e instanceof Error?e.message:'保存失败，可以重试');}
   };
   const at=start===null ? Date.now() : journeyTimeAt(start,end??start,progress);
-  const {rainMm,snowCm,cloudCover}=forecast.weatherAt(start===null ? 0 : (at-start)/1000);
-  const frameWeather=useMemo(()=>({rainMm,snowCm,cloudCover}),[rainMm,snowCm,cloudCover]);
-  const weatherParts=[];
-  if(rainMm!==null && rainMm>0)weatherParts.push(`小时雨量 ${weatherAmountFormat.format(rainMm)} mm`);
-  if(snowCm!==null && snowCm>0)weatherParts.push(`小时降雪 ${weatherAmountFormat.format(snowCm)} cm`);
-  if(cloudCover!==null){
-    const cloud=cloudCover>=75?'阴':cloudCover>=25?'多云':cloudCover>10?'少云':'晴';
-    weatherParts.push(`${cloud} ${Math.round(cloudCover)}%`);
-  }
-  if(!weatherParts.length && rainMm===0 && snowCm===0)weatherParts.push('当前路段无降水');
-  const weatherText=weatherLoading?'正在读取沿途天气…':forecast.status==='historical'?'请选择未来时段':
-    weatherParts.join(' · ')||'当前时段暂无天气预报';
   const count=buffer?.total ? ` ${buffer.loaded}/${buffer.total}` : '';
   const degraded=buffer?.frameReady && buffer.frameDegraded;
   const missingAhead=!!buffer?.unavailableTiles && buffer.status==='degraded';
-  const fallbackText=buffer && buffer.detailLoaded<buffer.detailTotal
+  const fallbackText=buffer?.frameTerrainOnly ? '影像暂不可用 · 地形预览' : buffer && buffer.detailLoaded<buffer.detailTotal
     ? '此段高清影像暂缺，显示较低分辨率影像' : '此段部分地图数据使用较低精度';
-  const status=missing?'当前路段地图未能加载':phase==='arming'&&!prepared?'正在为录像预载沿途地图'+count:
-    phase==='preparing'&&!playbackReady?'正在加载起播路段':!textured?'正在加载当前路段':
+  const status=imagery==='error'?'当前设备无法绘制行程画面':missing?'当前路段缺少可用地形':
+    phase==='arming'&&!prepared?'正在为录像预载沿途地图'+count:
+    phase==='preparing'&&!playbackReady?'正在加载起播路段':!drawable?'正在加载当前路段':
     degraded?fallbackText:missingAhead?`沿途有 ${buffer.unavailableTiles} 块地图暂缺`:
     phase==='paused'&&!playbackReady?'正在预载前方地图'+count:'';
-  const retry=()=>{currentBuffer.current=null;setBuffer(null);setMessage('');setRetryKey(key=>key+1);};
-  if (weather) return <Suspense fallback={<section className="journey-viewer" role="status">正在打开沿途天气…</section>}>
-    <JourneyWeather name={journey.name} model={model} initialDuration={valid ? (end-start)/1000 : 0} onBack={()=>setWeather(false)}/>
-  </Suspense>;
+  const retry=()=>{currentBuffer.current=null;setBuffer(null);setImagery('loading');setMessage('');setRetryKey(key=>key+1);};
   return <section className="journey-viewer" role="dialog" aria-modal="true" aria-label="第三人称行程模拟" onPointerDown={e=>{
     if(distanceOpen && !distanceControls.current?.contains(e.target as Node))closeDistance();
   }} onKeyDown={e=>{
@@ -305,20 +266,15 @@ export function JourneyViewer({journey,onClose,showWeather=false,showWeatherEffe
   }}>
     <header><div><strong>第三人称行程模拟</strong><small>{journey.name}</small></div>
       <div className="journey-header-actions"><JourneySkyLayers layers={layers} onChange={setLayers} disabled={capture}/>
-        <button type="button" disabled={capture||!origin} onClick={()=>{
-          closeDistance();setPhase('paused');lastPresented.current=null;
-          currentBuffer.current=null;setBuffer(null);setImagery('loading');setWeather(true);
-        }}>沿途天气</button>
         <button autoFocus type="button" onClick={closeViewer}>退出</button></div></header>
-    <div className="journey-window" ref={setStage} data-buffer-state={buffer?.status??'loading'} data-frame-ready={textured}
+    <div className="journey-window" ref={setStage} data-buffer-state={buffer?.status??'loading'} data-frame-ready={drawable}
       data-playback-ready={playbackReady} data-ready-through-m={buffer?.readyThroughDistanceM ?? undefined}
       data-detail-zoom={buffer?.minDetailZoom} data-detail-loaded={buffer?.detailLoaded} data-detail-total={buffer?.detailTotal}
       data-frame-degraded={buffer?.frameDegraded} data-camera-motion={frame?.cameraMotion ? 'gimbal' : undefined}
       data-camera-distance={appliedCameraDistance} data-distance-open={distanceOpen && !capture}
-      data-rain-mm={rainMm ?? undefined} data-snow-cm={snowCm ?? undefined} data-cloud-cover={cloudCover ?? undefined}>
+      data-terrain-preview={buffer?.frameTerrainOnly}>
       {frame && <JourneyStage model={model} frame={frame} time={at} zone={zone} name={journey.name} progress={progress}
         {...size} layers={layers} retryKey={retryKey} onBuffer={onBuffer} onPresent={onPresent} captureFrames={phase==='arming'||phase==='recording'||phase==='saving'}
-        weather={frameWeather} playheadSeconds={reduceMotion ? 0 : progress*seconds}
         onCanvas={setCanvas} onFrame={composeRecordingFrame} onImagery={setImagery}/>}
       {status && <span className="journey-imagery" role="status">{status}{(missing||degraded||missingAhead) && <button type="button" onClick={retry}>重试加载</button>}</span>}
       <div className="journey-distance" ref={distanceControls}>
@@ -342,11 +298,6 @@ export function JourneyViewer({journey,onClose,showWeather=false,showWeatherEffe
           <button type="button" disabled={!nextDay || capture} aria-pressed={nextDaySelected} onClick={toggleArrivalDay}>次日到达</button>
         </div>
       </div>}
-      <div className="journey-weather-settings">
-        <button type="button" aria-pressed={effectsEnabled} disabled={capture || !origin}
-          onClick={toggleWeatherEffects}><CloudSun size={15} aria-hidden="true"/>天气动画</button>
-        {effectsEnabled && <small title="Open-Meteo 小时预报，百分比表示云量">{weatherText}{forecast.stale && weatherParts.length ? ' · 缓存预报' : ''}</small>}
-      </div>
       <div className="journey-timeline">
       <input aria-label="行程进度" type="range" min={0} max={10000} value={Math.round(progress*10000)} disabled={capture} onChange={e=>select(Number(e.target.value)/10000)}/>
       {midnight && <div className="journey-day-boundary">
@@ -361,7 +312,7 @@ export function JourneyViewer({journey,onClose,showWeather=false,showWeatherEffe
           {[15,30,60,90].map(n=><option key={n} value={n}>{n} 秒回放</option>)}
         </select>
         <button disabled={capture||!origin} onClick={()=>phase==='playing'||phase==='preparing'?setPhase('paused'):launch(false)}>{phase==='preparing'?'取消等待':phase==='playing'?'暂停':progress>=1?'重播':'播放'}</button>
-        <button disabled={phase==='saving'||!origin||(!capture&&weatherLoading)} onClick={()=>capture?abort('录像已取消'):launch(true)}>{capture?'取消录像':'录制整段'}</button>
+        <button disabled={phase==='saving'||!origin} onClick={()=>capture?abort('录像已取消'):launch(true)}>{capture?'取消录像':'录制整段'}</button>
         {movie && <button disabled={capture} onClick={()=>void save()}>保存录像</button>}
       </div>
       {(message||capture||!valid) && <small role="status">{message || (phase==='arming'?'正在准备起点画面…':phase==='recording'?'正在录制整段行程':phase==='saving'?'正在生成视频…':!origin?'轨迹没有可播放的线段':'到达时间须晚于出发时间')}</small>}

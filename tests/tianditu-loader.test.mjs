@@ -343,6 +343,27 @@ test('429 shares a long cooldown across tile subdomains and huge delays do not o
   huge.dispose();
 });
 
+test('terrain mode can read exact cached imagery during a provider cooldown without queuing a miss', () => withImageDecoder(async () => {
+  const cache = memoryCache();
+  const signal = new AbortController().signal;
+  let now = 1_800_000_000_000;
+  let calls = 0;
+  const loader = createTiandituLoader({ cache, now: () => now, startIntervalMs: 1, fetcher: async () =>
+    ++calls === 1 ? imageResponse() : new Response(null, { status: 429, headers: { 'Retry-After': '60' } }),
+  });
+  try {
+    assert.deepEqual(await loader.loadExactAvailable(tile(), signal), validPng);
+    now += 2;
+    await assert.rejects(loader.loadExactAvailable(tile({ x: 2 }), signal), { code: 'rate-limited' });
+    assert.deepEqual(await loader.loadExactAvailable(tile({ host: 't6' }), signal), validPng);
+    await assert.rejects(loader.loadExactAvailable(tile({ x: 3 }), signal), { code: 'rate-limited' });
+    assert.equal(loader.snapshot().queuedRequests, 0);
+    assert.equal(calls, 2);
+  } finally {
+    loader.dispose();
+  }
+}));
+
 test('503 HTTP-date cooldown is shared and never shortened by a later response', async () => {
   const now = Date.parse('2026-10-27T00:00:00.000Z');
   let calls = 0;
@@ -435,12 +456,11 @@ test('429 adaptive pacing enforces one second between starts even with Retry-Aft
     return calls === 1 ? new Response(null, { status: 429, headers: { 'Retry-After': '0' } }) : imageResponse();
   } });
   await withImageDecoder(async () => {
-    const first = loader.load(tile(), new AbortController().signal).catch(error => error);
+    await assert.rejects(loader.load(tile(), new AbortController().signal), { code: 'rate-limited' });
     const second = loader.load(tile({ x: 2 }), new AbortController().signal);
     await until(() => loader.snapshot().queuedRequests === 1);
     await new Promise(resolve => setTimeout(resolve, 50));
     assert.equal(calls, 1);
-    assert.equal(await first.then(error => error.code), 'rate-limited');
     await second;
     assert.equal(calls, 2);
     assert.ok(startedAt[1] - startedAt[0] >= 950);

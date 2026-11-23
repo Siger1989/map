@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import {createRoot} from 'react-dom/client';
 import {AppearanceProvider} from '../modules/appearance/AppearanceProvider';
 import {JourneyViewer} from '../modules/sky/JourneyViewer';
-import type {SkyJourney} from '../modules/sky/journeyPlayback';
+import {JourneyWeather} from '../modules/journey/JourneyWeather';
+import {createJourneyPlayback, type SkyJourney} from '../modules/sky/journeyPlayback';
 import windingRoad from './preview-data/qingcheng-winding-road.json';
 import { findWeatherDemo } from './preview-data/weather-demos';
 import '../app/globals.css';
@@ -23,14 +25,13 @@ const road: [number, number][] = [
 const query = new URLSearchParams(location.search);
 const showWeather = query.has('weather');
 const demo = findWeatherDemo(query.get('weather-demo'));
-const showWeatherEffects = query.has('rain') || !!demo;
 const sample = query.get('route');
 const points: [number, number][] = demo?.points ?? (sample==='winding'
   ? windingRoad.coordinates.map(([longitude,latitude])=>[longitude,latitude]) : sample==='road' ? road : mountain);
 const tomorrowInChina = new Date(Date.now() + 32 * 3600000).toISOString().slice(0, 10);
-const start = demo ? Math.ceil(Date.now() / 60_000) * 60_000 : showWeatherEffects
+const start = demo ? Math.ceil(Date.now() / 60_000) * 60_000 : showWeather
   ? Date.parse(tomorrowInChina + 'T11:00+08:00') : Date.UTC(2026, 10, 20, 2);
-const durationHours = demo ? 2 : showWeather || showWeatherEffects ? 3 : 1;
+const durationHours = demo ? 2 : showWeather ? 3 : 1;
 const journey: SkyJourney = {
   name: demo ? `${demo.name} · © OpenStreetMap 贡献者` : sample==='winding' ? '青城山盘山路 · © OpenStreetMap 贡献者' : sample==='road' ? '青城山 · 公路示例' : '青城山 · 示例轨迹',
   segments: [points.map((coordinates, index) => ({
@@ -38,4 +39,12 @@ const journey: SkyJourney = {
     timeMs: start + durationHours * 3600000 * index / (points.length - 1),
   }))],
 };
-createRoot(document.getElementById('root')!).render(<AppearanceProvider><JourneyViewer journey={journey} showWeather={showWeather} showWeatherEffects={showWeatherEffects} onClose={()=>window.location.assign('/')}/></AppearanceProvider>);
+const weatherModel = showWeather ? createJourneyPlayback(journey) : null;
+function JourneyPreview() {
+  const [weather, setWeather] = useState(showWeather);
+  return weather && weatherModel
+    ? <JourneyWeather name={journey.name} model={weatherModel} initialDuration={durationHours * 3600} onBack={() => setWeather(false)} />
+    : <JourneyViewer journey={journey} onClose={() => window.location.assign('/')} />;
+}
+
+createRoot(document.getElementById('root')!).render(<AppearanceProvider><JourneyPreview /></AppearanceProvider>);

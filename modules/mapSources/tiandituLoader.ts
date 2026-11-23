@@ -393,7 +393,7 @@ export function createTiandituLoader(options: LoaderOptions = {}) {
     }
   };
 
-  const loadOne = async (rawUrl: string, signal: AbortSignal): Promise<ArrayBuffer> => {
+  const loadOne = async (rawUrl: string, signal: AbortSignal, waitForCooldown = true): Promise<ArrayBuffer> => {
     assertActive(signal);
     const parsed = parseTiandituTileUrl(rawUrl);
     if (!parsed) throw new TiandituLoadError('invalid-url', 0, false);
@@ -420,6 +420,9 @@ export function createTiandituLoader(options: LoaderOptions = {}) {
     }
 
     assertActive(signal);
+    if (!waitForCooldown && cooldownUntil > now()) {
+      throw new TiandituLoadError('rate-limited', cooldownUntil, true);
+    }
     let flight = flights.get(identity.key);
     if (!flight) {
       const url = new URL(parsed.url.toString());
@@ -523,7 +526,7 @@ export function createTiandituLoader(options: LoaderOptions = {}) {
     });
   };
 
-  return { load, snapshot, dispose };
+  return { load, loadExactAvailable: (url: string, signal: AbortSignal) => loadOne(url, signal, false), snapshot, dispose };
 }
 
 function parseTiandituTileUrl(rawUrl: string): ParsedTile | undefined {

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 // Exercise the production scheduler/readiness logic without network or private keys.
 // Only tile transport and WebGL are test doubles; mesh, coverage, camera and route
 // generation run unchanged. Real-image browser evidence is recorded separately.
-test('a journey draws a verified distant parent, rejects absent imagery and recovers its detail on retry', async () => {
+test('a journey draws distant imagery or real relief, retries detail and rejects missing elevations', async () => {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const bundle = await build({
     stdin: { contents: `
@@ -24,6 +24,7 @@ test('a journey draws a verified distant parent, rejects absent imagery and reco
           return {width:256,height:256,close(){}};
         }
         export async function loadSatelliteDem() {
+          if(globalThis.journeyLoadingFixture.noDem) return null;
           return Float32Array.from({length:65536},(_,i)=>500+(i%256)/10+(i>>8)/10);
         }
       ` }));
@@ -54,34 +55,53 @@ test('a journey draws a verified distant parent, rejects absent imagery and reco
     {longitude:frame.cameraCoordinates[0],latitude:frame.cameraCoordinates[1]},
     {azimuth:frame.headingDeg,altitude:0,roll:0}, optics, 390, 704, undefined, {model,frame},
   );
-  const settle = async () => {
+  const settle = async (ready = state => state.status !== 'loading') => {
     draw();
     for (let i=0; i<100; i++) {
       await new Promise(resolve => setImmediate(resolve));
       draw();
-      if (renderer.journeyBuffer().status !== 'loading') return renderer.journeyBuffer();
+      const state = renderer.journeyBuffer();
+      if (ready(state)) return state;
     }
     assert.fail('controlled tile requests did not settle');
   };
   try {
     renderer = createSatelliteTerrain(canvas, () => {});
-    const coarse = await settle();
+    const coarse = await settle(state => state.status === 'degraded' && state.minDetailZoom === 14);
     assert.equal(coarse.status, 'degraded');
     assert.equal(coarse.frameReady, true);
     assert.equal(coarse.frameDegraded, true);
     assert.equal(coarse.minDetailZoom, 14);
     assert.equal(coarse.loaded, coarse.total);
+    assert.equal(coarse.frameHasImagery, true);
 
     fixture.maximumZoom = 17;
     renderer.retryJourneyBuffer();
-    const recovered = await settle();
+    const recovered = await settle(state => state.status === 'ready');
     assert.equal(recovered.status, 'ready');
     assert.equal(recovered.frameReady, true);
     assert.equal(recovered.minDetailZoom, 17);
     assert.equal(recovered.detailLoaded, recovered.detailTotal);
+    assert.equal(recovered.frameTerrainOnly, false);
 
     renderer.dispose();
     fixture.unavailable = true;
+    renderer = createSatelliteTerrain(canvas, () => {});
+    const relief = await settle();
+    assert.equal(relief.status, 'degraded');
+    assert.equal(relief.frameReady, true);
+    assert.equal(relief.frameTerrainOnly, true);
+    assert.equal(relief.frameHasImagery, false);
+    assert.ok(relief.readyThroughDistanceM > 0);
+
+    fixture.unavailable = false;
+    renderer.retryJourneyBuffer();
+    const textured = await settle(state => state.status === 'ready');
+    assert.equal(textured.frameHasImagery, true);
+    assert.equal(textured.frameTerrainOnly, false);
+
+    renderer.dispose();
+    fixture.noDem = true;
     renderer = createSatelliteTerrain(canvas, () => {});
     const missing = await settle();
     assert.equal(missing.status, 'unavailable');

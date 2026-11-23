@@ -14,6 +14,8 @@ export interface JourneyTerrainBuffer {
   detailTotal: number;
   minDetailZoom: number;
   frameDegraded: boolean;
+  frameTerrainOnly?: boolean;
+  frameHasImagery?: boolean;
   unavailableTiles: number;
 }
 

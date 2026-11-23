@@ -8,6 +8,8 @@ import { TERRAIN_URL, terrainRenderUrl } from '../terrain/tiles';
 import type { Tile } from './satelliteTerrainGeometry';
 
 const tileSize = 256;
+const journeyImageryBudgetMs = 3500;
+let nativeImageryRetryAt = 0;
 let terrainStore: ReturnType<typeof createBrowserTileCache> | undefined;
 
 // Compressed source bytes survive seeking, GPU eviction, and reopening a journey.
@@ -48,30 +50,39 @@ export function satelliteImageryAvailable() {
   return basemapConfiguration().domestic;
 }
 
-export async function loadSatelliteTile(tile: Tile, signal: AbortSignal, remember?: (image:Blob)=>void) {
+export async function loadSatelliteTile(tile: Tile, signal: AbortSignal, remember?: (image:Blob)=>void, journey = false) {
   const { token } = basemapConfiguration();
   const template = tiandituTiles('img', token)[0];
   const url = expand(template, tile);
   const key = 'tdt-img/' + tile.key;
   let fetched = false;
+  const imagerySignal = journey ? AbortSignal.any([signal, AbortSignal.timeout(journeyImageryBudgetMs)]) : signal;
   const response = location.hostname === 'appassets.androidplatform.net'
-    ? await cachedMapFetch(url,signal,undefined,true,async (request,requestSignal) => {
+    ? await cachedMapFetch(url,imagerySignal,undefined,true,async (request,requestSignal) => {
       const hit = await store().get(key);
       requestSignal.throwIfAborted();
       if (hit) return new Response(hit);
+      if (journey && Date.now() < nativeImageryRetryAt) return new Response(null, { status: 429 });
       fetched = true;
-      return fetchAndroidImagery(request, requestSignal);
+      const result = await fetchAndroidImagery(request, requestSignal);
+      if (journey && (result.status === 429 || result.status === 503)) {
+        const now = Date.now();
+        const header = result.headers.get('Retry-After');
+        const time = header && (/^\d+$/.test(header) ? now + Number(header) * 1000 : Date.parse(header));
+        nativeImageryRetryAt = Math.max(nativeImageryRetryAt, typeof time === 'number' && Number.isFinite(time) && time > now ? time : now + 30_000);
+      }
+      return result;
     })
-    : await fetchTiandituResponse(url, signal);
+    : await fetchTiandituResponse(url, imagerySignal, journey);
   if (!response.ok) return null;
   const bytes = await response.arrayBuffer();
   if (await isKnownNoImageryBytes(bytes)) return null;
-  signal.throwIfAborted();
+  imagerySignal.throwIfAborted();
   const image = new Blob([bytes]);
   const bitmap = await createImageBitmap(image);
-  if (signal.aborted || bitmap.width !== tileSize || bitmap.height !== tileSize) {
+  if (imagerySignal.aborted || bitmap.width !== tileSize || bitmap.height !== tileSize) {
     bitmap.close();
-    signal.throwIfAborted();
+    imagerySignal.throwIfAborted();
     return null;
   }
   if (fetched) store().put(key,bytes);

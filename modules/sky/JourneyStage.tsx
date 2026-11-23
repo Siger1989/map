@@ -8,7 +8,6 @@ import { resolveJourneyCamera } from './journeyCamera';
 import type { JourneyPlaybackFrame, JourneyPlaybackModel } from './journeyPlayback';
 import type { JourneyTerrainBuffer } from './satelliteTerrainRenderer';
 import { createJourneyStars } from './journeyStars';
-import { drawWeatherEffects, weatherEffectsVisible, type WeatherEffectsState } from './weatherEffects';
 import type { JourneySkyLayerSettings } from './JourneySkyLayers';
 
 export type ImageryStatus='loading'|'ready'|'partial'|'unavailable'|'error';
@@ -16,14 +15,13 @@ interface Props {
   model: JourneyPlaybackModel; frame: JourneyPlaybackFrame; time:number; zone:string;
   name:string; progress:number; width:number; height:number;
   captureFrames:boolean; retryKey:number;
-  weather:WeatherEffectsState; playheadSeconds:number;
   layers:JourneySkyLayerSettings;
   onBuffer(buffer:JourneyTerrainBuffer):void; onPresent(fraction:number):void;
   onFrame(canvas:HTMLCanvasElement,fraction:number):void; onCanvas(canvas:HTMLCanvasElement|null):void; onImagery(status:ImageryStatus):void;
 }
 
 /** The visible stages and the movie use the same camera, DEM imagery and clock. */
-export function JourneyStage({model,frame,time,zone,name,progress,width,height,layers,captureFrames,retryKey,weather,playheadSeconds,onBuffer,onPresent,onCanvas,onImagery,onFrame}:Props) {
+export function JourneyStage({model,frame,time,zone,name,progress,width,height,layers,captureFrames,retryKey,onBuffer,onPresent,onCanvas,onImagery,onFrame}:Props) {
   const [base,setBase]=useState<HTMLCanvasElement|null>(null);
   const [terrain,setTerrain]=useState<HTMLCanvasElement|null>(null);
   const [stars,setStars]=useState<HTMLCanvasElement|null>(null);
@@ -33,6 +31,8 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
   const rendered = useRef<{ frame: JourneyPlaybackFrame; pose: DeviceSkyPose; routeReady: boolean; width: number; height: number } | null>(null);
   const terrainStatus = useRef<ImageryStatus>('loading');
   const drawable = useRef(false);
+  const terrainPreview = useRef(false);
+  const imageryVisible = useRef(false);
   const hasPresentedTerrain = useRef(false);
   const redraw = useRef<(() => void) | null>(null);
   useLayoutEffect(()=>{
@@ -43,6 +43,8 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
   },[stars]);
   const rememberBuffer = useCallback((buffer:JourneyTerrainBuffer) => {
     drawable.current = buffer.frameReady;
+    terrainPreview.current = buffer.frameTerrainOnly === true;
+    imageryVisible.current = buffer.frameHasImagery ?? !terrainPreview.current;
     onBuffer(buffer);
   }, [onBuffer]);
   const scene=useRef<ReturnType<typeof createSkyScene>|null>(null);
@@ -81,8 +83,8 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
   },[base]);
   const stamp=useMemo(()=>localMinute(time,zone).replace('T',' '),[Math.floor(time/60000),zone]);
   const shot = useMemo(() => ({stamp, name, progress, distance:frame.distanceM, total:model.totalDistanceM,
-    width, height, frame, fallbackPose:fallback.pose, optics, sky, time, layers,captureFrames,weather,playheadSeconds}),
-    [stamp, name, progress, frame, model, width, height, fallback, optics, sky,time,layers,captureFrames,weather,playheadSeconds]);
+    width, height, frame, fallbackPose:fallback.pose, optics, sky, time, layers,captureFrames}),
+    [stamp, name, progress, frame, model, width, height, fallback, optics, sky,time,layers,captureFrames]);
   const current = useRef(shot);
   current.current = shot;
   useLayoutEffect(()=>{
@@ -90,7 +92,7 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
     const ctx=output.getContext('2d',{alpha:true});
     if(!ctx)return;
     let raf=0, priorSatellite=-1, priorShot:typeof shot|null=null,starsReady=true;
-    let previousPose:DeviceSkyPose|null=null, previousTerrain=false, fullComposite=false, priorWeather=false;
+    let previousPose:DeviceSkyPose|null=null, previousTerrain=false, fullComposite=false, priorCredit='';
     function draw(){
       if(document.hidden)return;
       const p=current.current;
@@ -111,10 +113,12 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
         return;
       }
       const pose=synced ? view.pose : p.fallbackPose;
-      const unchanged=priorShot===p && previousTerrain===hasTerrain && previousPose?.azimuth===pose.azimuth &&
+      const credit = !hasTerrain ? '' : terrainPreview.current
+        ? (imageryVisible.current ? '地形预览 · © 天地图' : '地形预览') : '影像 © 天地图';
+      const unchanged=priorCredit===credit && priorShot===p && previousTerrain===hasTerrain && previousPose?.azimuth===pose.azimuth &&
         previousPose.altitude===pose.altitude && previousPose.roll===pose.roll;
       priorSatellite=satelliteRevision.current;
-      priorShot=p;previousPose=pose;previousTerrain=hasTerrain;
+      priorShot=p;previousPose=pose;previousTerrain=hasTerrain;priorCredit=credit;
       // An off-screen tile finishing its download does not change the visible sky or HUD.
       if(unchanged && !p.captureFrames && starsReady){
         if(recordable)onPresent(p.progress);
@@ -131,15 +135,13 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
       if(output!.width!==w||output!.height!==h){output!.width=w;output!.height=h;}
       // During playback the browser composites the two WebGL surfaces directly.
       // Reading both back into 2D is only necessary for an actual video frame.
-      const hasWeather=weatherEffectsVisible(p.weather);
-      if(fullComposite || p.captureFrames || hasWeather || priorWeather)ctx!.clearRect(0,0,w,h);
+      if(fullComposite || p.captureFrames)ctx!.clearRect(0,0,w,h);
       else {
         ctx!.clearRect(0,0,w,Math.ceil(36*h/p.height));
         const bottom=Math.floor((p.height-66)*h/p.height);
         ctx!.clearRect(0,bottom,w,h-bottom);
       }
       fullComposite=p.captureFrames;
-      priorWeather=hasWeather;
       if(p.captureFrames){
         ctx!.drawImage(base!,0,0,w,h);
         if(showStars && stars?.width && stars.height)ctx!.drawImage(stars,0,0,w,h);
@@ -147,8 +149,6 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
       }
       ctx!.save();ctx!.scale(w/p.width,h/p.height);
       const hud=ctx!;
-      if(hasWeather)drawWeatherEffects(hud,p.width,Math.max(0,p.height-66),
-        {...p.weather,isDay:p.sky.sun.altitudeDeg>=-6},p.playheadSeconds);
       const caption=(name:string,az:number,alt:number)=>name+' '+Math.round(az)+'° / '+(alt>=0?'+':'')+Math.round(alt)+'°';
       hud.font='12px sans-serif';
       const sun=p.layers.sun?caption('太阳',p.sky.sun.azimuthDeg,p.sky.sun.altitudeDeg):'';
@@ -164,7 +164,7 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
       hud.fillText(p.stamp,14,p.height-41);
       hud.textAlign='right';hud.font='13px sans-serif';hud.fillText((p.distance/1000).toFixed(2)+' / '+(p.total/1000).toFixed(2)+' km',p.width-14,p.height-41);
       hud.fillStyle='#54646a';hud.fillRect(14,p.height-31,p.width-28,3);hud.fillStyle='#f3c05e';hud.fillRect(14,p.height-31,(p.width-28)*p.progress,3);
-      hud.fillStyle='#e3e9e8';hud.font='11px sans-serif';hud.fillText('影像 © 天地图',p.width-14,p.height-9);
+      hud.fillStyle='#e3e9e8';hud.font='11px sans-serif';hud.fillText(credit,p.width-14,p.height-9);
       hud.textAlign='left';hud.fillText(p.name,14,p.height-9,p.width-135);
       hud.restore();
       if(recordable) {

@@ -18,10 +18,6 @@
 .journey-date-options {grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:6px;}
 .journey-date-options button {min-height:30px;border-radius:4px;font-size:13px;}
 .journey-date-options button[aria-pressed="true"] {border-color:#efbd68;color:#ffdb91;}
-.journey-weather-settings {display:flex;align-items:center;gap:8px;min-width:0;}
-.journey-viewer .journey-weather-settings button {display:inline-flex;align-items:center;gap:5px;min-height:32px;flex:none;}
-.journey-viewer .journey-weather-settings button[aria-pressed="true"] {color:var(--ui-accent,#efbd68);}
-.journey-weather-settings small {overflow-wrap:anywhere;}
 .journey-timeline input {display:block;}
 .journey-day-boundary {position:relative;height:24px;margin-inline:8px;}
 .journey-day-boundary i {position:absolute;top:-6px;height:8px;width:1px;background:#efbd68;pointer-events:none;}

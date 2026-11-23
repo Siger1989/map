@@ -55,9 +55,10 @@ export const mapTileRequestTransform: RequestTransformFunction = async (url, kin
 };
 
 /** Also used by fixed-level imagery; it keeps the existing offline-package boundary. */
-export async function fetchTiandituResponse(url: string, signal: AbortSignal): Promise<Response> {
+export async function fetchTiandituResponse(url: string, signal: AbortSignal, exactAvailable = false): Promise<Response> {
   return cachedMapFetch(url, signal, undefined, true, async (request, requestSignal) => {
-    const data = await sharedLoader().load(request, requestSignal);
+    const loader = sharedLoader();
+    const data = await (exactAvailable ? loader.loadExactAvailable(request, requestSignal) : loader.load(request, requestSignal));
     return new Response(data, { headers: { 'Content-Type': 'application/octet-stream' } });
   });
 }
