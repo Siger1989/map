@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 // Exercise the production scheduler/readiness logic without network or private keys.
 // Only tile transport and WebGL are test doubles; mesh, coverage, camera and route
 // generation run unchanged. Real-image browser evidence is recorded separately.
-test('a journey draws distant imagery or real relief, retries detail and rejects missing elevations', async () => {
+test('a journey draws imagery or real relief, switches providers and rejects missing elevations', async () => {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const bundle = await build({
     stdin: { contents: `
@@ -19,8 +19,20 @@ test('a journey draws distant imagery or real relief, retries detail and rejects
         export function satelliteImageryAvailable() { return true; }
         export async function loadSatelliteTile(tile,signal,remember) {
           const fixture=globalThis.journeyLoadingFixture;
+          fixture.legacyRequests++;
           if(fixture.unavailable || tile.z>fixture.maximumZoom) return null;
           remember?.(new Blob(['controlled imagery fixture']));
+          return {width:256,height:256,close(){}};
+        }
+        export async function loadJourneyImageryTile(source,tile,signal,remember) {
+          const fixture=globalThis.journeyLoadingFixture;
+          fixture.sourceRequests.push({id:source.id,z:tile.z});
+          if(source.id==='missing') return null;
+          if(source.id==='delayed') {
+            fixture.delayedSignals.push(signal);
+            await fixture.delayedTiles;
+          }
+          remember?.(new Blob([source.id]));
           return {width:256,height:256,close(){}};
         }
         export async function loadSatelliteDem() {
@@ -35,7 +47,12 @@ test('a journey draws distant imagery or real relief, retries detail and rejects
   const saved = { window: globalThis.window, createImageBitmap: globalThis.createImageBitmap };
   globalThis.window = { devicePixelRatio: 1 };
   globalThis.createImageBitmap = async () => ({ width: 256, height: 256, close() {} });
-  const fixture = globalThis.journeyLoadingFixture = { maximumZoom: 14, unavailable: false };
+  const fixture = globalThis.journeyLoadingFixture = {
+    maximumZoom: 14, unavailable: false, legacyRequests: 0, sourceRequests: [], delayedSignals: [],
+  };
+  const source = (id, minzoom = 0, maxzoom = 19) => ({
+    id, name: id, kind: 'online', format: 'png', attribution: '', minzoom, maxzoom, tileSize: 256, bytes: 0,
+  });
   const gl = new Proxy({}, { get(_target, name) {
     if (name === 'getExtension') return () => null;
     if (name === 'getShaderParameter' || name === 'getProgramParameter') return () => true;
@@ -107,6 +124,45 @@ test('a journey draws distant imagery or real relief, retries detail and rejects
     assert.equal(missing.status, 'unavailable');
     assert.equal(missing.frameReady, false);
     assert.equal(missing.loaded, 0);
+
+    renderer.dispose();
+    fixture.noDem = false;
+    const legacyRequests = fixture.legacyRequests;
+    renderer = createSatelliteTerrain(canvas, () => {}, source('first'));
+    const first = await settle(state => state.status === 'ready');
+    assert.equal(first.frameHasImagery, true);
+    assert.ok(fixture.sourceRequests.length > 0);
+    assert.ok(fixture.sourceRequests.every(request => request.id === 'first'));
+
+    let releaseDelayedTiles;
+    fixture.delayedTiles = new Promise(resolve => { releaseDelayedTiles = resolve; });
+    renderer.setJourneySource(source('delayed'));
+    assert.equal(renderer.journeyBuffer().frameHasImagery, false);
+    draw();
+    assert.ok(fixture.delayedSignals.length > 0);
+    renderer.setJourneySource(source('missing'));
+    assert.ok(fixture.delayedSignals.every(signal => signal.aborted));
+    releaseDelayedTiles();
+    const changed = await settle();
+    assert.equal(changed.status, 'degraded');
+    assert.equal(changed.frameReady, true);
+    assert.equal(changed.frameHasImagery, false);
+    assert.equal(changed.frameTerrainOnly, true);
+
+    const beforeRelief = fixture.sourceRequests.length;
+    renderer.setJourneySource(null);
+    const onlyRelief = await settle();
+    assert.equal(onlyRelief.frameTerrainOnly, true);
+    assert.equal(onlyRelief.frameHasImagery, false);
+    assert.equal(fixture.sourceRequests.length, beforeRelief);
+
+    renderer.setJourneySource(source('limited', 13, 14));
+    const limited = await settle(state => state.frameReady && state.frameHasImagery);
+    assert.equal(limited.minDetailZoom, 14);
+    const limitedRequests = fixture.sourceRequests.slice(beforeRelief);
+    assert.ok(limitedRequests.length > 0);
+    assert.ok(limitedRequests.every(({id,z}) => id === 'limited' && z >= 13 && z <= 14));
+    assert.equal(fixture.legacyRequests, legacyRequests);
   } finally {
     renderer?.dispose();
     for (const [name,value] of Object.entries(saved)) {

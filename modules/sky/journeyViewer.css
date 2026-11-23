@@ -1,6 +1,7 @@
 .journey-viewer {position:fixed;z-index:10000;inset:0;display:flex;flex-direction:column;background:#19272b;color:#eef3eb;font:14px/1.35 'Segoe UI','Microsoft YaHei',sans-serif;}
-.journey-viewer header {display:flex;align-items:center;justify-content:space-between;gap:8px;padding:max(8px,env(safe-area-inset-top)) 12px 8px;background:#213135;}
+.journey-viewer header {display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding:max(8px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left));background:#213135;}
 .journey-viewer header div {min-width:0;}
+.journey-title-row {display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .journey-viewer header strong,.journey-viewer header small {display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
 .journey-viewer header small,.journey-controls small {font-size:12px;color:#cad5ce;}
 .journey-viewer button,.journey-viewer select,.journey-viewer input[type="datetime-local"] {border:1px solid #506268;border-radius:var(--ui-radius-control,8px);background:#2b4043;color:#f6f6ef;min-height:34px;padding:4px 8px;}
@@ -8,6 +9,9 @@
 .journey-stage,.journey-source,.journey-satellite-source,.journey-composite {position:absolute;inset:0;width:100%;height:100%;}
 .journey-composite {pointer-events:none;}
 .journey-header-actions {display:flex;align-items:center;gap:6px;flex:none;}
+.journey-header-actions :is(.journey-sky-trigger,.journey-exit) {width:max-content;min-width:44px;white-space:nowrap;}
+.journey-source-row {display:flex;align-items:center;gap:8px;color:#cad5ce;white-space:nowrap;}
+.journey-viewer .journey-source-row select {flex:1;width:0;min-height:32px;border-radius:var(--ui-radius-control,4px);font-size:16px;text-overflow:ellipsis;}
 .journey-stars {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
 .journey-imagery,.journey-error {position:absolute;top:8px;left:10px;background:#172629e0;border-radius:8px;font-size:12px;padding:4px 8px;}
 .journey-controls {padding:8px max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));display:grid;gap:5px;max-height:50%;overflow:auto;background:#213135;}

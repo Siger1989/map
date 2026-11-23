@@ -9,19 +9,20 @@ import type { JourneyPlaybackFrame, JourneyPlaybackModel } from './journeyPlayba
 import type { JourneyTerrainBuffer } from './satelliteTerrainRenderer';
 import { createJourneyStars } from './journeyStars';
 import type { JourneySkyLayerSettings } from './JourneySkyLayers';
+import { plainText, type MapSource } from '../mapSources/types';
 
 export type ImageryStatus='loading'|'ready'|'partial'|'unavailable'|'error';
 interface Props {
   model: JourneyPlaybackModel; frame: JourneyPlaybackFrame; time:number; zone:string;
   name:string; progress:number; width:number; height:number;
   captureFrames:boolean; retryKey:number;
-  layers:JourneySkyLayerSettings;
+  layers:JourneySkyLayerSettings; journeySource:MapSource|null;
   onBuffer(buffer:JourneyTerrainBuffer):void; onPresent(fraction:number):void;
   onFrame(canvas:HTMLCanvasElement,fraction:number):void; onCanvas(canvas:HTMLCanvasElement|null):void; onImagery(status:ImageryStatus):void;
 }
 
 /** The visible stages and the movie use the same camera, DEM imagery and clock. */
-export function JourneyStage({model,frame,time,zone,name,progress,width,height,layers,captureFrames,retryKey,onBuffer,onPresent,onCanvas,onImagery,onFrame}:Props) {
+export function JourneyStage({model,frame,time,zone,name,progress,width,height,layers,journeySource,captureFrames,retryKey,onBuffer,onPresent,onCanvas,onImagery,onFrame}:Props) {
   const [base,setBase]=useState<HTMLCanvasElement|null>(null);
   const [terrain,setTerrain]=useState<HTMLCanvasElement|null>(null);
   const [stars,setStars]=useState<HTMLCanvasElement|null>(null);
@@ -35,6 +36,14 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
   const imageryVisible = useRef(false);
   const hasPresentedTerrain = useRef(false);
   const redraw = useRef<(() => void) | null>(null);
+  useLayoutEffect(()=>{
+    // The old source's canvas has been cleared by the terrain renderer.
+    rendered.current=null;
+    terrainStatus.current='loading';
+    drawable.current=false;
+    hasPresentedTerrain.current=false;
+    satelliteRevision.current++;
+  },[journeySource]);
   useLayoutEffect(()=>{
     if(!stars)return;
     const renderer=createJourneyStars(stars,()=>{satelliteRevision.current++;redraw.current?.();});
@@ -82,9 +91,11 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
     return ()=>{scene.current?.dispose();scene.current=null;};
   },[base]);
   const stamp=useMemo(()=>localMinute(time,zone).replace('T',' '),[Math.floor(time/60000),zone]);
+  const attribution=plainText(journeySource?.attribution);
+  const imageryCredit=journeySource ? (!attribution || attribution.startsWith('用户提供的') ? journeySource.name : attribution) : '';
   const shot = useMemo(() => ({stamp, name, progress, distance:frame.distanceM, total:model.totalDistanceM,
-    width, height, frame, fallbackPose:fallback.pose, optics, sky, time, layers,captureFrames}),
-    [stamp, name, progress, frame, model, width, height, fallback, optics, sky,time,layers,captureFrames]);
+    width, height, frame, fallbackPose:fallback.pose, optics, sky, time, layers,captureFrames,imageryCredit}),
+    [stamp, name, progress, frame, model, width, height, fallback, optics, sky,time,layers,captureFrames,imageryCredit]);
   const current = useRef(shot);
   current.current = shot;
   useLayoutEffect(()=>{
@@ -114,7 +125,7 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
       }
       const pose=synced ? view.pose : p.fallbackPose;
       const credit = !hasTerrain ? '' : terrainPreview.current
-        ? (imageryVisible.current ? '地形预览 · © 天地图' : '地形预览') : '影像 © 天地图';
+        ? (imageryVisible.current && p.imageryCredit ? `地形预览 · ${p.imageryCredit}` : '地形预览') : p.imageryCredit;
       const unchanged=priorCredit===credit && priorShot===p && previousTerrain===hasTerrain && previousPose?.azimuth===pose.azimuth &&
         previousPose.altitude===pose.altitude && previousPose.roll===pose.roll;
       priorSatellite=satelliteRevision.current;
@@ -164,8 +175,10 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
       hud.fillText(p.stamp,14,p.height-41);
       hud.textAlign='right';hud.font='13px sans-serif';hud.fillText((p.distance/1000).toFixed(2)+' / '+(p.total/1000).toFixed(2)+' km',p.width-14,p.height-41);
       hud.fillStyle='#54646a';hud.fillRect(14,p.height-31,p.width-28,3);hud.fillStyle='#f3c05e';hud.fillRect(14,p.height-31,(p.width-28)*p.progress,3);
-      hud.fillStyle='#e3e9e8';hud.font='11px sans-serif';hud.fillText(credit,p.width-14,p.height-9);
-      hud.textAlign='left';hud.fillText(p.name,14,p.height-9,p.width-135);
+      hud.fillStyle='#e3e9e8';hud.font='11px sans-serif';
+      const creditWidth=Math.min(hud.measureText(credit).width,p.width*.56);
+      if(creditWidth>0)hud.fillText(credit,p.width-14,p.height-9,creditWidth);
+      hud.textAlign='left';hud.fillText(p.name,14,p.height-9,Math.max(1,p.width-38-creditWidth));
       hud.restore();
       if(recordable) {
         onPresent(p.progress);
@@ -177,12 +190,12 @@ export function JourneyStage({model,frame,time,zone,name,progress,width,height,l
     onCanvas(output);
     return ()=>{redraw.current=null;cancelAnimationFrame(raf);onCanvas(null);};
   },[base,stars,terrain,output,onCanvas,onFrame,onPresent]);
-  useLayoutEffect(()=>{redraw.current?.();},[shot]);
+  useLayoutEffect(()=>{redraw.current?.();},[shot,journeySource]);
   return <div className="journey-stage">
     <canvas className="journey-source" ref={setBase}/>
     <canvas className="journey-stars" hidden={!layers.constellations&&!layers.milkyWay} aria-label="行程星空图层" ref={setStars}/>
     <div className="journey-satellite-source"><SatelliteTerrainCanvas observer={observer} pose={fallback.pose} optics={optics} width={width} height={height}
-      journeyRoute={route} liveJourneyFrame={!captureFrames} retryKey={retryKey} onBuffer={rememberBuffer} onCameraResolved={rememberCamera} onStatus={rememberStatus} onRender={terrainDrawn} canvasRef={setTerrain}/></div>
+      journeyRoute={route} journeySource={journeySource} liveJourneyFrame={!captureFrames} retryKey={retryKey} onBuffer={rememberBuffer} onCameraResolved={rememberCamera} onStatus={rememberStatus} onRender={terrainDrawn} canvasRef={setTerrain}/></div>
     <canvas className="journey-composite" ref={setOutput} aria-label="第三人称行程与录像画面"/>
     {error && <div className="journey-error" role="alert">{error}</div>}
   </div>;

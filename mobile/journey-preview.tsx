@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {createRoot} from 'react-dom/client';
 import {AppearanceProvider} from '../modules/appearance/AppearanceProvider';
 import {JourneyViewer} from '../modules/sky/JourneyViewer';
 import {JourneyWeather} from '../modules/journey/JourneyWeather';
 import {createJourneyPlayback, type SkyJourney} from '../modules/sky/journeyPlayback';
+import {journeySourceChoices} from '../modules/sky/journeySourceChoices';
+import {readLayerPreferences} from '../modules/map/layerPreferences';
+import {DEFAULT_LAYERS} from '../modules/map/types';
+import {readRasterDatums} from '../modules/mapSources/coordinates';
+import {useMapSources} from '../modules/mapSources/useMapSources';
 import windingRoad from './preview-data/qingcheng-winding-road.json';
 import { findWeatherDemo } from './preview-data/weather-demos';
 import '../app/globals.css';
@@ -42,9 +47,13 @@ const journey: SkyJourney = {
 const weatherModel = showWeather ? createJourneyPlayback(journey) : null;
 function JourneyPreview() {
   const [weather, setWeather] = useState(showWeather);
+  const { source, maps, ready } = useMapSources();
+  const [layers] = useState(() => readLayerPreferences({ ...DEFAULT_LAYERS, satellite: true, rasterDatums: readRasterDatums() }));
+  const choices = useMemo(() => journeySourceChoices(layers, source, maps), [layers, source, maps]);
   return weather && weatherModel
     ? <JourneyWeather name={journey.name} model={weatherModel} initialDuration={durationHours * 3600} onBack={() => setWeather(false)} />
-    : <JourneyViewer journey={journey} onClose={() => window.location.assign('/')} />;
+    : ready ? <JourneyViewer journey={journey} sourceChoices={choices} onClose={() => window.location.assign('/')} />
+      : <div className="journey-viewer" role="status">正在读取当前图源…</div>;
 }
 
 createRoot(document.getElementById('root')!).render(<AppearanceProvider><JourneyPreview /></AppearanceProvider>);

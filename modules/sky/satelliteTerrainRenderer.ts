@@ -4,7 +4,8 @@ import {
   buildSatelliteMesh, demTileFor, earthAxis, earthPosition, eyeCell, mercator, planSatelliteTiles, resampleAncestorDem, sampledSurfaceHeight, terrainHeight,
   type Tile, type Vec3,
 } from './satelliteTerrainGeometry';
-import { loadSatelliteDem, loadSatelliteTile, satelliteImageryAvailable } from './satelliteTerrainTiles';
+import { loadJourneyImageryTile, loadSatelliteDem, loadSatelliteTile, satelliteImageryAvailable } from './satelliteTerrainTiles';
+import type { MapSource } from '../mapSources/types';
 import { buildJourneyRouteOverlay, routeImageryFocus, type JourneyTerrainRoute, type RouteProjection } from './journeyRouteOverlay';
 import { buildTerrainTransitions, sampleTransition } from './satelliteTerrainTransitions.ts';
 import { createJourneyCameraRail } from './journeyCameraRail.ts';
@@ -128,7 +129,7 @@ function link(gl: WebGLRenderingContext, vs = vertexShader, fs = fragmentShader)
   throw Error('三维地形着色失败');
 }
 
-export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => void) {
+export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => void, initialJourneySource?: MapSource | null) {
   const context = canvas.getContext('webgl', { alpha: true, depth: true, antialias: true, preserveDrawingBuffer: true });
   if (!context) throw Error('设备未提供三维地形绘制能力');
   const gl: WebGLRenderingContext = context;
@@ -248,6 +249,36 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
   const coarserDem=new WeakSet<Float32Array>();
   const refreshDem=new Set<string>();
   const refreshImagery=new Set<string>();
+  let journeySource = initialJourneySource;
+
+  function setJourneySource(next?: MapSource | null) {
+    if (!active || next === journeySource) return false;
+    journeySource = next;
+    for (const controller of pending.values()) controller.abort();
+    pending.clear();
+    fallbacks.clear();
+    failed.clear();
+    refreshImagery.clear();
+    for (const mesh of resident.values()) drop(mesh);
+    resident.clear();
+    // Keep the source-independent elevation grids, but never show tiles from the
+    // old provider under the new source's name while replacement work is queued.
+    for (const [key, saved] of staged) {
+      staged.set(key, { ...saved, image: null });
+      if (next !== null) refreshImagery.add(key);
+    }
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    area = '';
+    frameReady = false;
+    frameDegraded = false;
+    frameUnavailable = false;
+    frameTerrainOnly = false;
+    frameHasImagery = false;
+    detailLoaded = 0;
+    minDetailZoom = 0;
+    revision++;
+    return true;
+  }
 
   function readExactDem(dem:Tile) {
     const cached = demCache.get(dem.key);
@@ -382,15 +413,18 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     requestParent(tile);
   }
 
-  function requestParent(tile: Tile) {
+  function requestParent(tile: Tile, imageryOnly = false) {
     if (!windowPlan || tile.z <= minimumCoverZoom) return;
+    if (imageryOnly && journeySource === null) return;
+    const parentZoom = imageryOnly && journeySource ? Math.min(tile.z - 1, journeySource.maxzoom) : tile.z - 1;
+    if (parentZoom < minimumCoverZoom || (imageryOnly && journeySource && parentZoom < journeySource.minzoom)) return;
     // If a request or a whole source level is unavailable, walk up the same
     // provider's pyramid. Coarse roots allow an actual image below every child.
-    const parent = ancestor(tile,tile.z-1);
+    const parent = ancestor(tile,parentZoom);
     if (gpuRequired.has(tile.key)) gpuRequired.add(parent.key);
     // An already desired parent may have failed before its child. Walk the ladder
     // on demand so a missing z17 can use its verified z16 or z15 ancestor.
-    if (failed.has(parent.key) && tile.z>minimumCoverZoom+1) requestParent(parent);
+    if (failed.has(parent.key)) requestParent(parent, imageryOnly);
     if (!resident.has(parent.key)) fallbacks.set(parent.key,parent);
   }
 
@@ -399,11 +433,21 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     // Await both outcomes so a failed DEM cannot orphan a decoded bitmap.
     const saved = staged.get(tile.key);
     const journey = !!windowPlan;
+    const source = journey ? journeySource : undefined;
     let image=saved?.image ?? null;
     const refreshing=refreshDem.delete(tile.key);
     const retryImage=refreshImagery.delete(tile.key);
-    const [dem, imagery] = await Promise.allSettled([saved && !refreshing ? Promise.resolve(saved.heights) : readDem(tile),
-      image ? createImageBitmap(image) : !saved || retryImage ? loadSatelliteTile(tile, signal, value=>{image=value;}, journey) : Promise.resolve(null)]);
+    const remember = (value: Blob) => { image = value; };
+    let imageRequest: Promise<ImageBitmap | null> = Promise.resolve(null);
+    if (image) imageRequest = createImageBitmap(image);
+    else if (!saved || retryImage) {
+      if (source === undefined) imageRequest = loadSatelliteTile(tile, signal, remember, journey);
+      else if (source && tile.z >= source.minzoom && tile.z <= source.maxzoom)
+        imageRequest = loadJourneyImageryTile(source, tile, signal, remember);
+    }
+    const [dem, imagery] = await Promise.allSettled([
+      saved && !refreshing ? Promise.resolve(saved.heights) : readDem(tile), imageRequest,
+    ]);
     const bitmap = imagery.status === 'fulfilled' ? imagery.value : null;
     try {
       if (!active || controller.signal.aborted) return;
@@ -426,7 +470,8 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
           }
         }
         if (windowPlan && (desired.has(tile.key)||fallbacks.has(tile.key))) staged.set(tile.key,{image:bitmap ? image : null,heights,complete});
-        if (!complete || !bitmap) requestParent(tile);
+        if (!complete) requestParent(tile);
+        else if (!bitmap) requestParent(tile, true);
         revision++;
         trim();
       } else {
@@ -436,9 +481,11 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
       if (active && !controller.signal.aborted) failedTile(tile);
     } finally {
       bitmap?.close();
-      pending.delete(tile.key);
-      schedule();
-      if (active) notify();
+      if (pending.get(tile.key) === controller) {
+        pending.delete(tile.key);
+        schedule();
+        if (active) notify();
+      }
     }
   }
 
@@ -509,7 +556,10 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     } else requests = tiles;
     desired = new Set(requests.map(tile => tile.key));
     if (needsWindow) {
-      for(const key of staged.keys())if(!desired.has(key)&&!fallbacks.has(key))staged.delete(key);
+      for(const key of staged.keys())if(!desired.has(key)&&!fallbacks.has(key)){
+        staged.delete(key);
+        refreshImagery.delete(key);
+      }
     }
     for (const [key, controller] of pending) {
       if (!desired.has(key) && !fallbacks.has(key)) controller.abort();
@@ -641,7 +691,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     demFallback.clear();
     for(const [key,saved] of staged){
       if(coarserDem.has(saved.heights))refreshDem.add(key);
-      if(!saved.image)refreshImagery.add(key);
+      if(!saved.image && journeySource !== null)refreshImagery.add(key);
     }
     schedule();
     notify();
@@ -794,5 +844,5 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     gl.deleteProgram(program);
   }
 
-  return { draw, dispose, journeyBuffer, retryJourneyBuffer };
+  return { draw, dispose, journeyBuffer, retryJourneyBuffer, setJourneySource };
 }

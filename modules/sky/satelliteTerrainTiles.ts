@@ -1,11 +1,15 @@
 import { basemapConfiguration, tiandituTiles } from '../cartography/basemaps';
 import { isKnownNoImageryBytes } from '../mapSources/noImageryTile';
 import { fetchTiandituResponse } from '../mapSources/tiandituProtocol';
+import { isTiandituTileUrl } from '../mapSources/tiandituLoader';
+import { fetchMapTile } from '../mapSources/tileTransport';
+import type { MapSource } from '../mapSources/types';
 import { createBrowserTileCache } from '../mapSources/browserTileCache';
 import { cachedMapFetch } from '../outdoor/tileCache';
 import { decodeTerrain } from '../section/terrainMath';
 import { TERRAIN_URL, terrainRenderUrl } from '../terrain/tiles';
 import type { Tile } from './satelliteTerrainGeometry';
+import { loadExactJourneyRaster } from './journeyImagery';
 
 const tileSize = 256;
 const journeyImageryBudgetMs = 3500;
@@ -23,6 +27,14 @@ function store() {
 
 function expand(template: string, { z, x, y }: Tile) {
   return template.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y));
+}
+
+function pauseNativeImageryAfterRateLimit(response: Response) {
+  if (response.status !== 429 && response.status !== 503) return;
+  const now = Date.now();
+  const header = response.headers.get('Retry-After');
+  const time = header && (/^\d+$/.test(header) ? now + Number(header) * 1000 : Date.parse(header));
+  nativeImageryRetryAt = Math.max(nativeImageryRetryAt, typeof time === 'number' && Number.isFinite(time) && time > now ? time : now + 30_000);
 }
 
 type NativeTileBridge = { cancelMapTile?: (requestId: string) => void };
@@ -65,12 +77,7 @@ export async function loadSatelliteTile(tile: Tile, signal: AbortSignal, remembe
       if (journey && Date.now() < nativeImageryRetryAt) return new Response(null, { status: 429 });
       fetched = true;
       const result = await fetchAndroidImagery(request, requestSignal);
-      if (journey && (result.status === 429 || result.status === 503)) {
-        const now = Date.now();
-        const header = result.headers.get('Retry-After');
-        const time = header && (/^\d+$/.test(header) ? now + Number(header) * 1000 : Date.parse(header));
-        nativeImageryRetryAt = Math.max(nativeImageryRetryAt, typeof time === 'number' && Number.isFinite(time) && time > now ? time : now + 30_000);
-      }
+      if (journey) pauseNativeImageryAfterRateLimit(result);
       return result;
     })
     : await fetchTiandituResponse(url, imagerySignal, journey);
@@ -88,6 +95,33 @@ export async function loadSatelliteTile(tile: Tile, signal: AbortSignal, remembe
   if (fetched) store().put(key,bytes);
   remember?.(image);
   return bitmap;
+}
+
+function fetchJourneyRaster(url: string, signal: AbortSignal) {
+  const address = new URL(url, location.origin);
+  if (address.origin === location.origin) return cachedMapFetch(address.href, signal);
+  if (!isTiandituTileUrl(url)) return fetchMapTile(url, signal);
+  if (location.hostname !== 'appassets.androidplatform.net') return fetchTiandituResponse(url, signal, true);
+  return cachedMapFetch(url, signal, undefined, true, async (request, requestSignal) => {
+    const digest = await globalThis.crypto?.subtle?.digest('SHA-256', new TextEncoder().encode(request)).catch(() => undefined);
+    const key = digest && 'journey-tdt/' + Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+    const hit = key && await store().get(key);
+    requestSignal.throwIfAborted();
+    if (hit) return new Response(hit);
+    if (Date.now() < nativeImageryRetryAt) return new Response(null, { status: 429 });
+    const response = await fetchAndroidImagery(request, requestSignal);
+    pauseNativeImageryAfterRateLimit(response);
+    if (!response.ok) return response;
+    const bytes = await response.arrayBuffer();
+    if (await isKnownNoImageryBytes(bytes)) return new Response(null, { status: 404 });
+    if (key) store().put(key, bytes);
+    return new Response(bytes, { headers: response.headers });
+  });
+}
+
+export function loadJourneyImageryTile(source: MapSource, tile: Tile, signal: AbortSignal, remember?: (image: Blob) => void) {
+  const boundedSignal = AbortSignal.any([signal, AbortSignal.timeout(journeyImageryBudgetMs)]);
+  return loadExactJourneyRaster(source, tile, fetchJourneyRaster, boundedSignal, remember);
 }
 
 export async function loadSatelliteDem(tile: Tile, signal: AbortSignal) {

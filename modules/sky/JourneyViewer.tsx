@@ -7,6 +7,8 @@ import {
 } from './journeyCamera';
 import { journeyInstant, journeyNextDay, journeyTimeAt, localMinute } from './journeyClock';
 import { JourneyStage, type ImageryStatus } from './JourneyStage';
+import type { JourneySourceChoice } from './journeySourceChoices';
+import { plainText } from '../mapSources/types';
 import type { JourneyTerrainBuffer } from './satelliteTerrainRenderer';
 import { JourneySkyLayers, useJourneySkyLayers } from './JourneySkyLayers';
 import { startSkyJourneyRecording, saveSkyJourneyRecording } from './journeyRecorder';
@@ -27,9 +29,12 @@ function savedCameraDistance(): number {
   return JOURNEY_CAMERA_LAG_M;
 }
 
-export function JourneyViewer({journey,onClose}:{
-  journey:SkyJourney;onClose():void;
+export function JourneyViewer({journey,sourceChoices,onClose}:{
+  journey:SkyJourney;sourceChoices:readonly JourneySourceChoice[];onClose():void;
 }) {
+  const [sourceId,setSourceId]=useState('current');
+  const sourceChoice=sourceChoices.find(choice=>choice.id===sourceId)??sourceChoices[0];
+  const source=sourceChoice?.source??null;
   const model=useMemo(()=>createJourneyPlayback(journey),[journey]);
   const origin=useMemo(()=>getJourneyPlaybackFrame(model,0),[model]);
   const zone=useMemo(()=>origin?getObserverTimeZone(origin.coordinates[1],origin.coordinates[0]):'UTC',[origin]);
@@ -248,14 +253,24 @@ export function JourneyViewer({journey,onClose}:{
   const count=buffer?.total ? ` ${buffer.loaded}/${buffer.total}` : '';
   const degraded=buffer?.frameReady && buffer.frameDegraded;
   const missingAhead=!!buffer?.unavailableTiles && buffer.status==='degraded';
-  const fallbackText=buffer?.frameTerrainOnly ? '影像暂不可用 · 地形预览' : buffer && buffer.detailLoaded<buffer.detailTotal
+  const terrainOnlyText=sourceChoice?.id==='terrain-only'?'仅地形预览':'当前图源暂无可用贴图 · 地形预览';
+  const fallbackText=buffer?.frameTerrainOnly ? (source?'影像暂不可用 · 地形预览':terrainOnlyText) : buffer && buffer.detailLoaded<buffer.detailTotal
     ? '此段高清影像暂缺，显示较低分辨率影像' : '此段部分地图数据使用较低精度';
   const status=imagery==='error'?'当前设备无法绘制行程画面':missing?'当前路段缺少可用地形':
     phase==='arming'&&!prepared?'正在为录像预载沿途地图'+count:
     phase==='preparing'&&!playbackReady?'正在加载起播路段':!drawable?'正在加载当前路段':
     degraded?fallbackText:missingAhead?`沿途有 ${buffer.unavailableTiles} 块地图暂缺`:
     phase==='paused'&&!playbackReady?'正在预载前方地图'+count:'';
-  const retry=()=>{currentBuffer.current=null;setBuffer(null);setImagery('loading');setMessage('');setRetryKey(key=>key+1);};
+  const resetBuffer=()=>{currentBuffer.current=null;setBuffer(null);setImagery('loading');setMessage('');};
+  const retry=()=>{resetBuffer();setRetryKey(key=>key+1);};
+  const changeSource=(id:string)=>{
+    if(capture || id===sourceChoice?.id)return;
+    presented.current=null;
+    lastPresented.current=null;
+    resetBuffer();
+    setPhase(phase==='playing'||phase==='preparing'?'preparing':'paused');
+    setSourceId(id);
+  };
   return <section className="journey-viewer" role="dialog" aria-modal="true" aria-label="第三人称行程模拟" onPointerDown={e=>{
     if(distanceOpen && !distanceControls.current?.contains(e.target as Node))closeDistance();
   }} onKeyDown={e=>{
@@ -264,19 +279,33 @@ export function JourneyViewer({journey,onClose}:{
     if(distanceOpen){closeDistance();distanceToggle.current?.focus();}
     else closeViewer();
   }}>
-    <header><div><strong>第三人称行程模拟</strong><small>{journey.name}</small></div>
-      <div className="journey-header-actions"><JourneySkyLayers layers={layers} onChange={setLayers} disabled={capture}/>
-        <button autoFocus type="button" onClick={closeViewer}>退出</button></div></header>
+    <header>
+      <div className="journey-title-row"><div><strong>第三人称行程模拟</strong><small>{journey.name}</small></div>
+        <div className="journey-header-actions"><JourneySkyLayers layers={layers} onChange={setLayers} disabled={capture}/>
+          <button autoFocus className="journey-exit" type="button" onClick={closeViewer}>退出</button></div>
+      </div>
+      <label className="journey-source-row">图源
+        <select aria-label="行程图源" value={sourceChoice?.id??''} disabled={capture} title={plainText(source?.attribution)}
+          onChange={e=>changeSource(e.target.value)}>
+          {(['当前','内置','我的图源','公共库'] as const).map(group=>{
+            const options=sourceChoices.filter(choice=>choice.group===group);
+            return options.length>0 && <optgroup key={group} label={group}>{options.map(choice=><option key={choice.id} value={choice.id}>
+              {choice.id==='current'?`当前 · ${choice.name}`:choice.name}
+            </option>)}</optgroup>;
+          })}
+        </select>
+      </label>
+    </header>
     <div className="journey-window" ref={setStage} data-buffer-state={buffer?.status??'loading'} data-frame-ready={drawable}
       data-playback-ready={playbackReady} data-ready-through-m={buffer?.readyThroughDistanceM ?? undefined}
       data-detail-zoom={buffer?.minDetailZoom} data-detail-loaded={buffer?.detailLoaded} data-detail-total={buffer?.detailTotal}
       data-frame-degraded={buffer?.frameDegraded} data-camera-motion={frame?.cameraMotion ? 'gimbal' : undefined}
       data-camera-distance={appliedCameraDistance} data-distance-open={distanceOpen && !capture}
-      data-terrain-preview={buffer?.frameTerrainOnly}>
+      data-terrain-preview={buffer?.frameTerrainOnly} data-frame-imagery={buffer?.frameHasImagery}>
       {frame && <JourneyStage model={model} frame={frame} time={at} zone={zone} name={journey.name} progress={progress}
-        {...size} layers={layers} retryKey={retryKey} onBuffer={onBuffer} onPresent={onPresent} captureFrames={phase==='arming'||phase==='recording'||phase==='saving'}
+        {...size} layers={layers} journeySource={source} retryKey={retryKey} onBuffer={onBuffer} onPresent={onPresent} captureFrames={capture}
         onCanvas={setCanvas} onFrame={composeRecordingFrame} onImagery={setImagery}/>}
-      {status && <span className="journey-imagery" role="status">{status}{(missing||degraded||missingAhead) && <button type="button" onClick={retry}>重试加载</button>}</span>}
+      {status && <span className="journey-imagery" role="status">{status}{(missing||(source&&(degraded||missingAhead))) && <button type="button" onClick={retry}>重试加载</button>}</span>}
       <div className="journey-distance" ref={distanceControls}>
         <button type="button" className="journey-distance-toggle" ref={distanceToggle} disabled={capture||!frame}
           aria-label={`镜头距离 ${cameraDistance} 米`} aria-expanded={distanceOpen} aria-controls={distancePanelId}

@@ -52,6 +52,7 @@ import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { MapComparisonHost, type ComparisonSession } from '@/modules/mapComparison/MapComparisonHost';
 import { createComparisonExitGate } from '@/modules/mapComparison/comparisonExitGate';
 import { comparisonChoices } from '@/modules/mapComparison/choices';
+import { journeySourceChoices } from '@/modules/sky/journeySourceChoices';
 import { FavoriteSourceSwitcher } from '@/modules/mapSources/FavoriteSourceSwitcher';
 import { readLastView, saveLastView, shouldFocusStartupPosition } from '@/modules/map/lastView';
 import { readLayerPreferences, saveLayerPreferences } from '@/modules/map/layerPreferences';
@@ -398,6 +399,8 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
     : usesSentinel(layers) ? SENTINEL_MAXZOOM : domesticBasemap ? TIANDITU_LAYERS[tiandituBase(layers)].maxzoom : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
   const rasterName = mapSources.source?.name ?? (usesSentinel(layers) ? `${SENTINEL_NAME} · 约10米` : domesticBasemap ? `天地图${TIANDITU_LAYERS[tiandituBase(layers)].name}` : layers.satellite ? layers.imageryMode === 'detail' ? '地表影像' : '最新云况影像' : '开源道路地形');
   const sourceChoices = useMemo(() => comparisonChoices(layers, mapSources.source, rasterName, mapSources.maps), [layers, mapSources.source, rasterName, mapSources.maps]);
+  const journeyChoices = useMemo(() => skyJourney ? journeySourceChoices(layers, mapSources.source, mapSources.maps) : [],
+    [skyJourney, layers, mapSources.source, mapSources.maps]);
   const favoriteSourceId = mapSources.source
     ? sourceChoices.find(choice => choice.id !== 'current' && choice.source?.id === mapSources.source?.id)?.id ?? 'current'
     : domesticBasemap ? `tdt-${tiandituBase(layers)}` : !layers.satellite ? 'terrain' : layers.imageryMode === 'latest' ? 'latest' : 'sentinel';
@@ -4323,7 +4326,8 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
           />
         )}
         {skyJourney && <Suspense fallback={<div className="journey-viewer" role="status">正在打开行程模拟…</div>}>
-          <JourneyViewer journey={skyJourney} onClose={()=>setSkyJourney(null)}/>
+          {mapSources.ready ? <JourneyViewer journey={skyJourney} sourceChoices={journeyChoices} onClose={()=>setSkyJourney(null)}/>
+            : <div className="journey-viewer" role="status">正在读取当前图源…</div>}
         </Suspense>}
         {skyOrigin && <Suspense fallback={<div className="sky-viewer" role="status">正在打开日月观景…</div>}>
           <SkyViewer mapPoint={skyOrigin.coordinates} markerName={skyOrigin.markerName} fix={skyOrigin.markerName ? null : position.fix} locate={() => {

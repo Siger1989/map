@@ -4,6 +4,7 @@ import type { DeviceSkyOptics, DeviceSkyPose } from './deviceSkyCamera';
 import { createSatelliteTerrain, type JourneyTerrainBuffer, type SatelliteTerrainCamera, type SatelliteTerrainStatus } from './satelliteTerrainRenderer';
 
 import type { JourneyTerrainRoute } from './journeyRouteOverlay';
+import type { MapSource } from '../mapSources/types';
 
 interface Props {
   observer: SkyObserver;
@@ -13,6 +14,7 @@ interface Props {
   height: number;
   eyeHeightMeters?: number;
   journeyRoute?: JourneyTerrainRoute;
+  journeySource?: MapSource | null;
   liveJourneyFrame?: boolean;
   retryKey?: number;
   onBuffer?: (buffer: JourneyTerrainBuffer) => void;
@@ -55,7 +57,7 @@ export function SatelliteTerrainCanvas(props: Props) {
     if (!canvas) return;
     function initialize() {
       try {
-        renderer.current = createSatelliteTerrain(canvas!, queue);
+        renderer.current = createSatelliteTerrain(canvas!, queue, view.current.journeySource);
         queue();
       } catch {
         publish('error');
@@ -86,13 +88,18 @@ export function SatelliteTerrainCanvas(props: Props) {
   }, [props.canvasRef]);
 
   useLayoutEffect(() => {
+    if (renderer.current?.setJourneySource(props.journeySource)) {
+      publish('loading');
+      queue();
+      return;
+    }
     // During playback React is already presenting an animation frame. Draw the map,
     // arrow and sky together before paint. Tile arrivals still coalesce through queue().
     if (props.liveJourneyFrame && renderer.current) {
       cancelAnimationFrame(request.current);
       draw();
     } else queue();
-  }, [props.observer, props.pose, props.optics, props.width, props.height, props.eyeHeightMeters, props.journeyRoute, props.liveJourneyFrame]);
+  }, [props.observer, props.pose, props.optics, props.width, props.height, props.eyeHeightMeters, props.journeyRoute, props.journeySource, props.liveJourneyFrame]);
 
   useEffect(() => {
     if (props.retryKey) {
