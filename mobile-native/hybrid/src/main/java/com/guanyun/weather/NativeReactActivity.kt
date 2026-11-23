@@ -3,6 +3,7 @@ package com.guanyun.weather
 import android.content.Intent
 import android.graphics.Color
 import android.view.MotionEvent
+import android.view.View
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.FrameLayout
@@ -75,7 +76,9 @@ class NativeReactActivity : MainActivity() {
                 maps?.handleMessage(json)
             }
         }, "ShantuNativeMap")
-        skyCamera = SkyCameraBridge(this, root, content).also {
+        skyCamera = SkyCameraBridge(this, root, content) { covered ->
+            mapRoot.visibility = if (covered) View.INVISIBLE else View.VISIBLE
+        }.also {
             content.addJavascriptInterface(it, SkyCameraBridge.JS_NAME)
         }
         floatingNavigation = FloatingNavigationBridge(this, content).also {

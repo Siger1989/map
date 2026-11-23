@@ -31,7 +31,6 @@ export interface DeviceSkyCameraState {
 
 interface NativeSkyCamera {
   setActive(active: boolean, preview: boolean): void
-  setViewport(left: number, top: number, width: number, height: number, pixelRatio: number): void
   setLocation(latitude: number, longitude: number, altitude: number): void
   setAltitudeReference?(latitude: number, longitude: number, altitude: number, source: string): void
   clearLocation(): void
@@ -85,9 +84,7 @@ export function useDeviceSkyCamera(
     if (!active || !viewport || !bridge) return
 
     const native = bridge
-    const target = viewport
     let timer: number | undefined
-    let animation = 0
     let latestSample: number | undefined
 
     function stateUpdate(event: Event) {
@@ -121,25 +118,12 @@ export function useDeviceSkyCamera(
       }
     }
 
-    function updateViewport() {
-      window.cancelAnimationFrame(animation)
-      animation = window.requestAnimationFrame(() => {
-        const { left, top, width, height } = target.getBoundingClientRect()
-        native.setViewport(left, top, width, height, window.devicePixelRatio)
-      })
-    }
-
-    function syncGeometry() {
-      updateViewport()
-      syncLocation(native, currentLocation.current)
-    }
-
     function stopPage() {
       native.setActive(false, false)
     }
 
     function resume() {
-      syncGeometry()
+      syncLocation(native, currentLocation.current)
       native.setActive(true, currentCameraEnabled.current)
     }
 
@@ -149,28 +133,18 @@ export function useDeviceSkyCamera(
 
     window.addEventListener('shantu:sky-camera', stateUpdate)
     window.addEventListener('shantu:native-map-resume', resume)
-    window.addEventListener('resize', updateViewport)
-    window.addEventListener('scroll', updateViewport, true)
     window.addEventListener('pagehide', stopPage)
     window.addEventListener('pageshow', restorePage)
-    window.visualViewport?.addEventListener('resize', updateViewport)
-    const observer = new ResizeObserver(updateViewport)
-    observer.observe(target)
     setState({ ...initialState('native'), status: 'starting' })
-    syncGeometry()
+    syncLocation(native, currentLocation.current)
 
     return () => {
       stopPage()
       window.removeEventListener('shantu:sky-camera', stateUpdate)
       window.removeEventListener('shantu:native-map-resume', resume)
-      window.removeEventListener('resize', updateViewport)
-      window.removeEventListener('scroll', updateViewport, true)
       window.removeEventListener('pagehide', stopPage)
       window.removeEventListener('pageshow', restorePage)
-      window.visualViewport?.removeEventListener('resize', updateViewport)
-      observer.disconnect()
       window.clearTimeout(timer)
-      window.cancelAnimationFrame(animation)
     }
   }, [active, bridge, viewport])
 

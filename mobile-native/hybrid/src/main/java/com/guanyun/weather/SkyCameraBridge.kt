@@ -40,13 +40,13 @@ import kotlin.math.hypot
 import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.roundToInt
 
 /** Owns the rear camera and device pose for the foreground, trusted sky page. */
 internal class SkyCameraBridge(
     private val activity: NativeReactActivity,
     root: FrameLayout,
     private val webView: WebView,
+    private val setMapCovered: (Boolean) -> Unit,
 ) : SensorEventListener, TextureView.SurfaceTextureListener {
     private val main = Handler(Looper.getMainLooper())
     private val cameraManager = activity.getSystemService(CameraManager::class.java)
@@ -97,7 +97,9 @@ internal class SkyCameraBridge(
     private val matrix = FloatArray(9)
 
     init {
-        root.addView(frame, root.indexOfChild(webView), FrameLayout.LayoutParams(0, 0))
+        // The camera and WebView share the root's padded content bounds.
+        // Using WebView coordinates as child margins would apply the root insets again.
+        root.addView(frame, root.indexOfChild(webView), FrameLayout.LayoutParams(-1, -1))
         displayManager.registerDisplayListener(displayListener, main)
         frame.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> resizePreview() }
     }
@@ -110,32 +112,16 @@ internal class SkyCameraBridge(
             if (!isActive || preview != cameraEnabled) permissionDenied = false
             isActive = true
             cameraEnabled = preview
+            // Own the scene for the entire live mode, even before a camera frame is ready.
+            setMapCovered(preview)
             reconcile()
         }
     }
 
+    // Older bundled pages still call this method. Native layout now owns the viewport.
+    @Suppress("UNUSED_PARAMETER")
     @JavascriptInterface
-    fun setViewport(left: Double, top: Double, width: Double, height: Double, scale: Double) = dispatch {
-        if (!listOf(left, top, width, height, scale).all(Double::isFinite) ||
-            scale !in 0.25..16.0 || width !in 1.0..10000.0 || height !in 1.0..10000.0) return@dispatch
-        val right = (left + width) * scale
-        val bottom = (top + height) * scale
-        if (left * scale < -1 || top * scale < -1 || right > webView.width + 1 ||
-            bottom > webView.height + 1) return@dispatch
-        val x = (left * scale).roundToInt() + webView.left
-        val y = (top * scale).roundToInt() + webView.top
-        val pixelWidth = right.roundToInt() - (left * scale).roundToInt()
-        val pixelHeight = bottom.roundToInt() - (top * scale).roundToInt()
-        val layout = frame.layoutParams as FrameLayout.LayoutParams
-        if (layout.leftMargin != x || layout.topMargin != y ||
-            layout.width != pixelWidth || layout.height != pixelHeight) {
-            layout.leftMargin = x
-            layout.topMargin = y
-            layout.width = pixelWidth
-            layout.height = pixelHeight
-            frame.layoutParams = layout
-        }
-    }
+    fun setViewport(left: Double, top: Double, width: Double, height: Double, scale: Double) = Unit
 
     @JavascriptInterface
     fun setLocation(latitude: Double, longitude: Double, altitude: Double) = dispatch {
@@ -189,6 +175,7 @@ internal class SkyCameraBridge(
         barometer.clear()
         stopCapture()
         stopSensors()
+        setMapCovered(false)
     }
 
     fun close() {

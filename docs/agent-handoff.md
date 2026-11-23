@@ -1,3 +1,9 @@
+> **2026-11-23 日月观景**。`SkyViewer` 的目标栏和「找太阳」移到顶部。安卓相机采用同父布局，实景开启后隐藏地图层，模拟和退出恢复。三尺寸浏览器焦点、模拟视频全屏和权限回退通过。见 [复测](sky-observation-20261121.md#2026-11-23-太阳默认与全屏实景)。
+
+> **2026-11-23 天气请求续修**。主图中心4点优先、外围每批至多16点，失败队列退避。长白山真实天气390/360缩放与中断后恢复通过；行程动画按选中UTC小时取数据。已有APK保持，结果见 [网络复测](weather-loading-journey-20261123.md#11-月-23-日续查真实接口与加载耗时)。
+
+> **2026-11-23 行程/天气故障追加**。`satelliteTerrainRenderer.ts`统一z8父级覆盖，新增`weatherRegionStore.ts`共享分批/缓存/重试，`drawWeatherRegions.ts`跨格云场。12定向/TSC/Web隔离构建通过；390/360天气夹具缩放保留覆盖，真实接口连接超时仍未闭环。214既有包未更新，不打包推送。见 [完整交接](weather-loading-journey-20261123.md)。
+
 > **2026-11-23 悬浮窗紧凑导航布局**。网页示例与 `FloatingNavigationView` 的快捷操作进入地图上缘，左下显示纯进度条与公里数。`FloatingNavigationService` 用当前路线投影推导已走距离，原生右栏先按前方数值排序再适配行数。见 [悬浮窗复测](regional-weather-floating-20261123.md#悬浮窗里程与地图面积复测)。
 
 > **2026-11-23 区域天气与悬浮小地图**。主图天气改为 `liveWeatherRegions` 批量采样与 `drawWeatherRegions` 地理范围裁剪。Android `FloatingNavigationView` 使用两栏布局，`FloatingNavigationBridge` 转发版本 1 的可选路线事件能力，记录态使用高对比定位图形。见 [复测记录](regional-weather-floating-20261123.md)。

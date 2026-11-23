@@ -17,7 +17,9 @@ export function SkyTargetControls(p:Props) {
           <span className="sky-target-value" aria-hidden="true">{p.label}</span>
           <ChevronDown size={13} aria-hidden="true" />
           <select aria-label="观景目标" value={p.id} onChange={e=>p.onSelect(e.target.value)}>
-            <optgroup label="日月与银河"><option value="sun">太阳</option><option value="moon">月亮</option><option value="milky-way">银河中心</option></optgroup>
+            <option value="sun">太阳</option>
+            <option value="moon">月亮</option>
+            <option value="milky-way">银河中心</option>
             <optgroup label="星座">{constellationOptions.map(star=><option key={star.id} value={star.id}>{star.name}</option>)}</optgroup>
           </select>
         </span>

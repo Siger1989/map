@@ -25,6 +25,9 @@ const maxResident = 48;
 const maxJourneyResident = 144;
 const initialNear = 0.75;
 const horizonDistance = 190_000;
+// Preparation, drawing and failure detection must accept the same real parents.
+// A z17 leaf can still be covered by a verified z14 image and its actual DEM.
+const minimumCoverZoom = 8;
 
 const vertexShader = `
 attribute vec3 coordinate;
@@ -349,14 +352,14 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
   }
 
   function requestParent(tile: Tile) {
-    if (!windowPlan || tile.z <= 8) return;
+    if (!windowPlan || tile.z <= minimumCoverZoom) return;
     // If a request or a whole source level is unavailable, walk up the same
     // provider's pyramid. Coarse roots allow an actual image below every child.
     const parent = ancestor(tile,tile.z-1);
     if (gpuRequired.has(tile.key)) gpuRequired.add(parent.key);
     // An already desired parent may have failed before its child. Walk the ladder
     // on demand so a missing z17 can use its verified z16 or z15 ancestor.
-    if (failed.has(parent.key) && tile.z>9) requestParent(parent);
+    if (failed.has(parent.key) && tile.z>minimumCoverZoom+1) requestParent(parent);
     if (!resident.has(parent.key)) fallbacks.set(parent.key,parent);
   }
 
@@ -463,7 +466,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
       gpuRequired=new Set(gpu.map(t=>t.key));
       if(needsWindow)for(const t of readinessTiles)if(failed.has(t.key)||staged.get(t.key)?.complete===false)requestParent(t);
       for(const t of focusTiles) {
-        for(let z=t.z-1;z>=9;z--){
+        for(let z=t.z-1;z>=minimumCoverZoom;z--){
           const parent=ancestor(t,z);
           if(staged.has(parent.key)||fallbacks.has(parent.key))gpuRequired.add(parent.key);
         }
@@ -490,9 +493,9 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     patches = [];
     for (const level of levels) level.clear();
     for (const leaf of tiles) {
-      let mesh = windowPlan ? closestLoadedTile(leaf,resident) : resident.get(leaf.key);
+      let mesh = windowPlan ? closestLoadedTile(leaf,resident,minimumCoverZoom) : resident.get(leaf.key);
       if (windowPlan && mesh && !mesh.complete) {
-        for (let z=mesh.tile.z-1; z>=8; z--) {
+        for (let z=mesh.tile.z-1; z>=minimumCoverZoom; z--) {
           const cover = resident.get(ancestor(leaf,z).key);
           if (cover?.complete) {mesh=cover;break;}
         }
@@ -562,7 +565,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
       if (saved?.complete || resident.get(tile.key)?.complete) {loaded++;ready.add(tile.key);if(saved && coarserDem.has(saved.heights))degraded=true;}
       else if (failed.has(tile.key) || staged.get(tile.key)?.complete===false) {
         let found=false;
-        for(let z=tile.z-1;z>=minCover(tile);z--){
+        for(let z=tile.z-1;z>=minimumCoverZoom;z--){
           const key=ancestor(tile,z).key;
           if(staged.get(key)?.complete || resident.get(key)?.complete){ loaded++;ready.add(tile.key);degraded=true;found=true;break;}
         }
@@ -582,9 +585,8 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     return {status, loaded, total, unavailableTiles, frameReady, frameDegraded, detailLoaded, detailTotal:nearTiles.length, minDetailZoom, throughDistanceM:windowPlan?.end ?? 0, readyThroughDistanceM};
   }
 
-  function minCover(tile:Tile){return Math.max(8,tile.z-2);}
   function exhausted(tile:Tile){
-    for(let z=tile.z;z>=minCover(tile);z--){
+    for(let z=tile.z;z>=minimumCoverZoom;z--){
       const key=z===tile.z?tile.key:ancestor(tile,z).key;
       if(!failed.has(key) && staged.get(key)?.complete!==false)return false;
     }
@@ -615,7 +617,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
       let usable=coveredLeaves===tiles.length, min=17;
       for(const tile of focusTiles) {
         let mesh=resident.get(tile.key);
-        if(!mesh?.complete) for(let z=tile.z-1;z>=minCover(tile);z--){
+        if(!mesh?.complete) for(let z=tile.z-1;z>=minimumCoverZoom;z--){
           const fallback=resident.get(ancestor(tile,z).key);
           if(fallback?.complete){mesh=fallback;break;}
         }

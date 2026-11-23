@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { MapHandle } from '@/modules/map/TerrainMap';
 import type { ProjectionFrame } from '@/modules/objectTransform/projection';
 import { drawWeatherRegions, type ProjectedWeatherRegion } from './drawWeatherRegions';
@@ -81,14 +81,15 @@ function projectRegions(map: MapHandle, frame: ProjectionFrame, cells: readonly 
   };
 
   for (const { id, bounds: [west, south, east, north], weather } of cells) {
-    if (!(weather.snowCm || weather.rainMm || (weather.cloudCover ?? 0) >= 40)) continue;
+    // Include known clear samples so cloud density can fade toward them across cells.
+    if (!(weather.snowCm || weather.rainMm || weather.cloudCover !== null)) continue;
     // Keep both sides of the same cell in the world copy nearest the map.
     const shift = 360 * Math.round((frame.longitude - (west + east) / 2) / 360);
     const nw = project(west + shift, north);
     const ne = project(east + shift, north);
     const se = project(east + shift, south);
     const sw = project(west + shift, south);
-    if (nw && ne && se && sw) result.push({ id, corners: [nw, ne, se, sw], weather });
+    if (nw && ne && se && sw) result.push({ id, corners: [nw, ne, se, sw], bounds: [west + shift, south, east + shift, north], weather });
   }
   return result;
 }
@@ -166,11 +167,7 @@ const emptyRegions: WeatherRegion[] = [];
 
 export function LiveMapWeather({ mapRef }: { mapRef: MapRef }) {
   const regions = useVisibleRegions(mapRef);
-  const { weather, status } = useWeatherRegions(regions ?? emptyRegions);
-  const cells = useMemo(() => (regions ?? []).flatMap(region => {
-    const value = weather.get(region.id);
-    return value ? [{ ...region, weather: value }] : [];
-  }), [regions, weather]);
+  const { cells, status, refreshing, stale } = useWeatherRegions(regions ?? emptyRegions);
 
   const snowRegions = cells.filter(cell => (cell.weather.snowCm ?? 0) > 0).length;
   const rainRegions = cells.filter(cell => (cell.weather.rainMm ?? 0) > 0).length;
@@ -185,19 +182,21 @@ export function LiveMapWeather({ mapRef }: { mapRef: MapRef }) {
   ].filter(Boolean);
   const summary = !regions ? '正在读取地图范围' : !regions.length ? '放大地图查看' :
     cells.length ? (conditions.join(' · ') || (dryRegions === cells.length ? '无降水' : '部分数据暂缺')) :
-    status === 'loading' ? '正在更新' : '天气暂不可用';
+    status === 'loading' ? '正在更新' : '天气连接较慢 · 正在重试';
 
   return (
     <div className="live-map-weather"
       data-region-count={regions?.length}
       data-loaded-regions={cells.length}
+      data-weather-refreshing={refreshing}
+      data-weather-stale={stale}
       data-snow-regions={snowRegions}
       data-rain-regions={rainRegions}
       data-dry-regions={dryRegions}
       data-weather-source={modelTime ? 'Open-Meteo' : undefined}>
       {cells.length > 0 && <WeatherCanvas mapRef={mapRef} cells={cells} />}
       <div className="live-map-weather-status" title={modelTime ? 'Open-Meteo 区域模型估算 · ' + modelTime.toLocaleString() : undefined}>
-        区域天气 · {summary}
+        区域天气 · {summary}{cells.length > 0 && refreshing ? ' · 更新中' : stale ? ' · 缓存' : ''}
         {modelTime && <span className="live-map-weather-source">
           Open-Meteo · {modelTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { WeatherRegionStore } from './weatherRegionStore.ts';
 
 export type WeatherBounds = readonly [west: number, south: number, east: number, north: number];
 
@@ -20,9 +21,9 @@ export type CurrentWeather = {
 };
 
 const mercatorLatitudeLimit = 85.05112878;
-const maxViewportSpan = 8;
+const maxViewportSpan = 60;
 const maxRegions = 32;
-const regionSteps = [0.0625, 0.125, 0.25, 0.5, 1, 2];
+const regionSteps = [0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16];
 
 /** Keep cell bounds in the map's world copy and request coordinates in the canonical world. */
 export function planWeatherRegions(bounds: WeatherBounds): WeatherRegion[] {
@@ -102,9 +103,15 @@ export async function fetchRegionWeather(samples: WeatherSample[], signal: Abort
     cell_selection: 'nearest',
     current: 'rain,showers,snowfall,cloud_cover,is_day',
     timeformat: 'unixtime',
+    forecast_days: '1',
   });
   const response = await fetch('https://api.open-meteo.com/v1/forecast?' + query, { signal });
-  if (!response.ok) throw new Error('Current weather request failed');
+  if (!response.ok) {
+    const retryAfter = response.headers.get('Retry-After');
+    const retryDelay = retryAfter && (/^\d+$/.test(retryAfter) ? Number(retryAfter) * 1000 : Date.parse(retryAfter) - Date.now());
+    const retryAfterMs = typeof retryDelay === 'number' && Number.isFinite(retryDelay) ? Math.min(86_400_000, Math.max(0, retryDelay)) : 0;
+    throw Object.assign(new Error('Current weather request failed'), { status: response.status, retryAfterMs });
+  }
   const payload: unknown = await response.json();
   const locations = Array.isArray(payload) ? payload : [payload];
   // A shortened batch cannot be mapped safely to IDs because the model returns its own grid coordinates.
@@ -116,102 +123,32 @@ export async function fetchRegionWeather(samples: WeatherSample[], signal: Abort
   return result;
 }
 
-const refreshMs = 12 * 60_000;
-const retryMs = 60_000;
-const debounceMs = 500;
-const cacheLimit = 256;
-const cache = new Map<string, { weather: CurrentWeather | null; expires: number }>();
+const store = new WeatherRegionStore(fetchRegionWeather);
 
-type WeatherStatus = 'loading' | 'ready' | 'unavailable';
-
-export function useWeatherRegions(regions: WeatherRegion[]): {
-  weather: ReadonlyMap<string, CurrentWeather>;
-  status: WeatherStatus;
-} {
-  // Bounds move between world copies without changing the weather stations.
-  const sampleKey = JSON.stringify(regions.map(({ id, center }) => ({ id, center })));
+export function useWeatherRegions(regions: WeatherRegion[]) {
+  const sampleKey = JSON.stringify(regions.map(({ id, center, bounds }) => ({ id, center, bounds })));
+  const owner = useMemo(() => Symbol('weather-viewport'), []);
   const [revision, setRevision] = useState(0);
 
+  useEffect(() => store.subscribe(() => setRevision(value => value + 1)), []);
   useEffect(() => {
-    const samples = JSON.parse(sampleKey) as WeatherSample[];
-    if (!samples.length) return;
-    let timer: number | undefined;
-    let active: AbortController | undefined;
-
-    const schedule = (delay: number) => {
-      timer = window.setTimeout(() => void update(), delay);
+    const samples = JSON.parse(sampleKey) as WeatherRegion[];
+    // Request the center first; completed batches become visible independently.
+    const centerX = samples.reduce((sum, r) => sum + (r.bounds[0] + r.bounds[2]) / 2, 0) / samples.length;
+    const centerY = samples.reduce((sum, r) => sum + r.center[1], 0) / samples.length;
+    samples.sort((a, b) => Math.hypot((a.bounds[0] + a.bounds[2]) / 2 - centerX, a.center[1] - centerY) -
+      Math.hypot((b.bounds[0] + b.bounds[2]) / 2 - centerX, b.center[1] - centerY));
+    const update = () => {
+      store.demand(owner, document.hidden ? [] : samples);
+      setRevision(value => value + 1);
     };
-
-    const update = async () => {
-      if (document.hidden) return;
-
-      const now = Date.now();
-      const missing = samples.filter(({ id }) => (cache.get(id)?.expires ?? 0) <= now);
-      if (missing.length) {
-        setRevision((revision) => revision + 1);
-        const controller = new AbortController();
-        active = controller;
-        const timeout = window.setTimeout(() => controller.abort(), 10_000);
-        let loaded = new Map<string, CurrentWeather>();
-        try {
-          loaded = await fetchRegionWeather(missing, controller.signal);
-        } catch {
-          // Retry failed cells after the same interval as cells with no current data.
-        } finally {
-          window.clearTimeout(timeout);
-        }
-        if (active !== controller) return;
-        active = undefined;
-        const finished = Date.now();
-        for (const { id } of missing) {
-          const weather = loaded.get(id) ?? null;
-          cache.delete(id);
-          cache.set(id, { weather, expires: finished + (weather ? refreshMs : retryMs) });
-        }
-        while (cache.size > cacheLimit) {
-          const oldest = cache.keys().next();
-          if (oldest.done) break;
-          cache.delete(oldest.value);
-        }
-        setRevision((revision) => revision + 1);
-      }
-
-      const expiry = Math.min(...samples.map(({ id }) => cache.get(id)?.expires ?? 0));
-      schedule(Math.max(debounceMs, expiry - Date.now()));
-    };
-
-    const cancel = () => {
-      window.clearTimeout(timer);
-      const pending = active;
-      active = undefined;
-      pending?.abort();
-    };
-
-    const handleVisibility = () => {
-      cancel();
-      if (!document.hidden) {
-        setRevision((revision) => revision + 1);
-        schedule(debounceMs);
-      }
-    };
-
-    if (!document.hidden) schedule(debounceMs);
-    document.addEventListener('visibilitychange', handleVisibility);
+    update();
+    document.addEventListener('visibilitychange', update);
     return () => {
-      cancel();
-      document.removeEventListener('visibilitychange', handleVisibility);
+      store.demand(owner, []);
+      document.removeEventListener('visibilitychange', update);
     };
-  }, [sampleKey]);
+  }, [sampleKey, owner]);
 
-  return useMemo(() => {
-    const weather = new Map<string, CurrentWeather>();
-    let missing = false;
-    const now = Date.now();
-    for (const { id } of regions) {
-      const entry = cache.get(id);
-      if (!entry || entry.expires <= now) missing = true;
-      else if (entry.weather) weather.set(id, entry.weather);
-    }
-    return { weather, status: weather.size ? 'ready' : missing ? 'loading' : 'unavailable' };
-  }, [regions, revision]);
+  return useMemo(() => store.snapshot(regions), [regions, revision]);
 }

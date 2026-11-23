@@ -21,6 +21,53 @@ export type RouteForecast = {
   points: RouteHour[][];
 };
 const cache = new Map<string, RouteForecast>();
+const hourMs = 3_600_000;
+const freshForecastMs = 15 * 60_000;
+
+export function journeyForecastHours(start: number, end: number) {
+  return {
+    startHour: Math.floor(start / hourMs) * hourMs,
+    // A frame at an exact hour still needs the following hour's precipitation total.
+    endHour: (Math.floor(end / hourMs) + 1) * hourMs,
+  };
+}
+
+type ForecastHours = ReturnType<typeof journeyForecastHours>;
+
+function coversHours(forecast: RouteForecast, count: number, hours: ForecastHours) {
+  return forecast.points.length === count && forecast.points.every(point =>
+    point.length && point[0].time <= hours.startHour && point.at(-1)!.time >= hours.endHour,
+  );
+}
+
+class ForecastHttpError extends Error {
+  readonly status: number;
+  constructor(status: number) {
+    super(status === 429 ? '天气服务请求较多，请稍后重试。' : `沿途天气暂不可用（${status}）`);
+    this.status = status;
+  }
+}
+
+async function requestForecast(query: URLSearchParams, signal: AbortSignal, shortWindow: boolean) {
+  const deadlines = shortWindow ? [5_000, 7_000] : [25_000];
+  for (const [attempt, deadline] of deadlines.entries()) {
+    signal.throwIfAborted();
+    const timeout = AbortSignal.timeout(deadline);
+    try {
+      const response = await fetch(`https://api.open-meteo.com/v1/forecast?${query}`, {
+        signal: AbortSignal.any([signal, timeout]),
+      });
+      if (!response.ok) throw new ForecastHttpError(response.status);
+      return await response.json();
+    } catch (error) {
+      signal.throwIfAborted();
+      const retryable = timeout.aborted || error instanceof TypeError ||
+        (error instanceof ForecastHttpError && error.status >= 500);
+      if (!retryable || attempt === deadlines.length - 1) throw error;
+    }
+  }
+}
+
 export function parseForecast(payload: unknown, count: number, liquidRain = false, journeySky = false): RouteHour[][] {
   const records = Array.isArray(payload) ? payload : [payload];
   if (records.length !== count)
@@ -78,7 +125,6 @@ export function matchForecast(
 }
 export function journeyWeatherForArrival(hours: RouteHour[] | undefined, arrival: number): JourneyFrameWeather {
   if (!hours?.length || !Number.isFinite(arrival)) return { rainMm: null, snowCm: null, cloudCover: null };
-  const hourMs = 3_600_000;
   // Rain and snowfall totals end at the supplied timestamp. Cloud cover is instantaneous.
   const nextIndex = hours.findIndex(hour => hour.time > arrival);
   const next = hours[nextIndex];
@@ -101,8 +147,11 @@ export function journeyWeatherForArrival(hours: RouteHour[] | undefined, arrival
 export async function fetchRouteWeather(
   stops: JourneySample[],
   signal: AbortSignal,
-  { liquidRain = false, journeySky = false, refresh = false }: { liquidRain?: boolean; journeySky?: boolean; refresh?: boolean } = {},
+  { liquidRain = false, journeySky = false, refresh = false, hours }: {
+    liquidRain?: boolean; journeySky?: boolean; refresh?: boolean; hours?: ForecastHours;
+  } = {},
 ): Promise<RouteForecast> {
+  signal.throwIfAborted();
   try {
     if (!cache.size && typeof localStorage !== 'undefined') {
       const stored = JSON.parse(
@@ -121,32 +170,46 @@ export async function fetchRouteWeather(
           cache.set(key, value);
     }
   } catch {}
-  const key = (journeySky ? 'journey-sky:' : liquidRain ? 'rain:' : '') + stops.map((s) => s.coordinates.join(',')).join(';'),
-    cached = cache.get(key);
-  if (!refresh && cached && Date.now() - cached.fetchedAt < 15 * 60000) return cached;
+  const requestedHours = journeySky ? hours : undefined;
+  const routeKey = (journeySky ? 'journey-sky:' : liquidRain ? 'rain:' : '') + stops.map((s) => s.coordinates.join(',')).join(';');
+  const key = requestedHours ? `${routeKey}|${requestedHours.startHour}:${requestedHours.endHour}` : routeKey;
+  let cached = cache.get(key);
+  if (requestedHours) {
+    // Reuse overlapping runs and existing whole-week caches only when they cover the new window.
+    for (const [storedKey, candidate] of cache) {
+      if ((storedKey === routeKey || storedKey.startsWith(`${routeKey}|`)) &&
+        (!cached || candidate.fetchedAt > cached.fetchedAt) && coversHours(candidate, stops.length, requestedHours)) {
+        cached = candidate;
+      }
+    }
+  }
+  if (!refresh && cached && Date.now() - cached.fetchedAt < freshForecastMs) return cached;
   const query = new URLSearchParams({
     latitude: stops.map((s) => s.coordinates[1].toFixed(5)).join(','),
     longitude: stops.map((s) => s.coordinates[0].toFixed(5)).join(','),
     hourly: journeySky ? 'rain,showers,precipitation,snowfall,cloud_cover' : liquidRain ? 'rain,showers,precipitation' : 'temperature_2m,precipitation,wind_speed_10m,weather_code',
-    forecast_days: '7',
     timeformat: 'unixtime',
     timezone: 'GMT',
     wind_speed_unit: 'ms',
   });
+  if (requestedHours) {
+    query.set('start_hour', new Date(requestedHours.startHour).toISOString().slice(0, 16));
+    query.set('end_hour', new Date(requestedHours.endHour).toISOString().slice(0, 16));
+  } else {
+    query.set('forecast_days', '7');
+  }
   try {
-    const response = await fetch(
-      `https://api.open-meteo.com/v1/forecast?${query}`,
-      { signal: AbortSignal.any([signal, AbortSignal.timeout(25000)]) },
-    );
-    if (!response.ok)
-      throw new Error(
-        response.status === 429
-          ? '天气服务请求较多，请稍后重试。'
-          : `沿途天气暂不可用（${response.status}）`,
-      );
+    const payload = await requestForecast(query, signal, !!requestedHours);
+    signal.throwIfAborted();
+    const points = parseForecast(payload, stops.length, liquidRain, journeySky);
+    if (requestedHours && !points.some(point => point.some(hour =>
+      hour.time >= requestedHours.startHour && hour.time <= requestedHours.endHour,
+    ))) {
+      throw new Error('天气服务未返回所选行程时段。');
+    }
     const result = {
       fetchedAt: Date.now(),
-      points: parseForecast(await response.json(), stops.length, liquidRain, journeySky),
+      points,
     };
     if (cache.size >= 12) cache.delete(cache.keys().next().value!);
     cache.set(key, result);

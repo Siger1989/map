@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { JourneyPlaybackModel } from '../sky/journeyPlayback';
 import { buildJourneyWeatherLayout, timeJourneyWeatherRoute } from './journeyWeatherRoute';
 import type { WeatherRoute } from './routeWeatherAnalysis';
-import { fetchRouteWeather, journeyWeatherForArrival, type JourneyFrameWeather, type RouteForecast } from './weatherProvider';
+import { fetchRouteWeather, journeyForecastHours, journeyWeatherForArrival, type JourneyFrameWeather, type RouteForecast } from './weatherProvider';
 
 type JourneyRain = {
   status: 'off' | 'loading' | 'ready' | 'historical' | 'unavailable';
@@ -33,29 +33,36 @@ export function useJourneyRain(
   const validInterval = start !== null && end !== null && Number.isFinite(start) && Number.isFinite(end) && end > start;
   const historical = validInterval && end <= cutoff;
   const canFetch = enabled && layout.stops.length > 0 && validInterval && !historical && start < lastForecastTime;
-  const [request, setRequest] = useState<{ layout: WeatherRoute; forecast: RouteForecast | null } | null>(null);
+  const hours = canFetch ? journeyForecastHours(Math.max(start, cutoff), Math.min(end, lastForecastTime - 1)) : null;
+  const startHour = hours?.startHour;
+  const endHour = hours?.endHour;
+  const [request, setRequest] = useState<{
+    layout: WeatherRoute; startHour: number; endHour: number; forecast: RouteForecast | null;
+  } | null>(null);
 
   useEffect(() => {
-    if (!enabled && request?.forecast === null) {
-      setRequest(null);
-      return;
-    }
-    if (!canFetch || request?.layout === layout) return;
+    if (startHour === undefined || endHour === undefined) return;
     const controller = new AbortController();
+    setRequest(previous => previous?.forecast ? previous : null);
     // Defer starting so a discarded mount can cancel before issuing a request.
     void Promise.resolve().then(async () => {
       if (controller.signal.aborted) return;
-      const forecast = await fetchRouteWeather(layout.stops, controller.signal, { journeySky: true }).catch(() => null);
-      if (!controller.signal.aborted) setRequest({ layout, forecast });
+      const forecast = await fetchRouteWeather(layout.stops, controller.signal, {
+        journeySky: true,
+        hours: { startHour, endHour },
+      }).catch(() => null);
+      if (!controller.signal.aborted) setRequest({ layout, startHour, endHour, forecast });
     });
     return () => controller.abort();
-  }, [enabled, canFetch, layout, request]);
+  }, [layout, startHour, endHour]);
 
   return useMemo<JourneyRain>(() => {
     if (!enabled) return { status: 'off', rainAt: noRainData, weatherAt: noWeatherData, stale: false };
     if (historical) return { status: 'historical', rainAt: noRainData, weatherAt: noWeatherData, stale: false };
     if (!canFetch) return { status: 'unavailable', rainAt: noRainData, weatherAt: noWeatherData, stale: false };
-    if (request?.layout !== layout) return { status: 'loading', rainAt: noRainData, weatherAt: noWeatherData, stale: false };
+    if (request?.layout !== layout || request.startHour !== startHour || request.endHour !== endHour) {
+      return { status: 'loading', rainAt: noRainData, weatherAt: noWeatherData, stale: false };
+    }
     const { forecast } = request;
     if (!forecast) return { status: 'unavailable', rainAt: noRainData, weatherAt: noWeatherData, stale: false };
 
@@ -89,5 +96,5 @@ export function useJourneyRain(
       weatherAt,
       stale: forecast.stale === true,
     };
-  }, [enabled, historical, canFetch, request, layout, start, end, cutoff, lastForecastTime, model]);
+  }, [enabled, historical, canFetch, request, layout, start, end, cutoff, lastForecastTime, model, startHour, endHour]);
 }

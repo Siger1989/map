@@ -181,7 +181,7 @@ export function SkyViewer({
   const day = useMemo(() => getLocalDayBounds(date, zone), [date, zone]);
   const solarDay = useSolarDay(day, observer, terrain);
   const sky = useMemo(() => getSkyPosition(time, observer), [time, observer]);
-  const [target,setTarget]=useState(previewNight==null?'moon':'milky-way');
+  const [target,setTarget]=useState(previewNight==null?'sun':'milky-way');
   const [following,setFollowing]=useState(previewNight!=null);
   const [showStars,setShowStars]=useState(true);
   const [showGalaxy,setShowGalaxy]=useState(true);
@@ -401,7 +401,8 @@ export function SkyViewer({
   return (
     <section
       className="sky-viewer"
-      data-live={cameraLive && camera.status === 'ready'}
+      data-camera-mode={cameraLive}
+      data-native-preview={cameraLive && camera.source === 'native' && camera.status === 'ready'}
       role="dialog"
       aria-modal="true"
       aria-label="日月观景"
@@ -526,6 +527,9 @@ export function SkyViewer({
             </div>
           )}
         </div>
+        <SkyTargetControls guide={guide} id={target} label={targetLabel} following={following} searching={searching}
+          cameraLive={cameraLive} faint={faint} showStars={showStars} showGalaxy={showGalaxy} onSelect={selectTarget}
+          onFind={findTarget} onStars={()=>setShowStars(v=>!v)} onGalaxy={()=>setShowGalaxy(v=>!v)}/>
       </div>
       <div className="sky-bottom">
         {!cameraLive && <small className="sky-satellite-credit">{textureStatus==='ready'?'天地图卫星影像':textureStatus==='partial'?'天地图卫星影像 · 部分覆盖':textureStatus==='loading'?'加载天地图卫星影像…':'天地图卫星影像未就绪 · 地形轮廓'}</small>}
@@ -535,9 +539,6 @@ export function SkyViewer({
           </div>
         )}
         <div className="sky-dock">
-        <SkyTargetControls guide={guide} id={target} label={targetLabel} following={following} searching={searching}
-          cameraLive={cameraLive} faint={faint} showStars={showStars} showGalaxy={showGalaxy} onSelect={selectTarget}
-          onFind={findTarget} onStars={()=>setShowStars(v=>!v)} onGalaxy={()=>setShowGalaxy(v=>!v)}/>
         <div className="sky-readout">
           <span>
             {cameraLive && !sensorPose

@@ -26,7 +26,11 @@
   --sky-divider: var(--ui-glass-line, var(--ui-line));
 }
 
-.sky-viewer[data-live='true'] {
+.sky-viewer[data-camera-mode='true'] {
+  background: #000;
+}
+
+.sky-viewer[data-native-preview='true'] {
   background: transparent;
 }
 
@@ -55,6 +59,10 @@ html[data-ui-personal-material] .sky-viewer {
 
 .sky-viewport [hidden] {
   display: none !important;
+}
+
+.sky-viewport {
+  overflow: hidden;
 }
 
 .sky-head,
@@ -208,6 +216,12 @@ html[data-ui-personal-material] .sky-viewer {
 
 .sky-target-controls {
   min-width: 0;
+}
+
+.sky-head .sky-target-controls {
+  border-top: 1px solid var(--sky-divider);
+  margin-top: 4px;
+  padding-top: 5px;
 }
 
 .sky-target-row,

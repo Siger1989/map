@@ -731,7 +731,7 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
     return () => window.clearTimeout(timer);
   }, [lockedMarkerNotice, focusLock.locked, recorder.record.phase]);
   const pendingPositionFocus = useRef(false);
-  const startupCameraStatus = useRef<'pending' | 'applied' | 'cancelled'>('pending');
+  const startupCameraStatus = useRef<'pending' | 'applied' | 'cancelled'>(weatherPreview ? 'cancelled' : 'pending');
   const startupSavedCamera = useRef<boolean | null>(null);
   const cancelStartupCamera = useCallback(() => {
     if (startupCameraStatus.current === 'pending')

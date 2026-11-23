@@ -31,7 +31,7 @@ test('wrapped and unwrapped views share canonical weather IDs but preserve map p
 });
 
 test('a single batched request preserves per-location missing data and rejects shortened responses', async (t) => {
-  const samples = planWeatherRegions([103.5, 31, 103.625, 31.0625]);
+  const samples = planWeatherRegions([103.5, 31, 103.625, 31.0625]).slice(0, 2);
   const valid = { current: { rain: 0, showers: 0.2, snowfall: 0, cloud_cover: 40, is_day: 1, time: 1780000000, interval: 900 } };
   const request = t.mock.method(globalThis, 'fetch', async () => Response.json([null, valid]));
   const controller = new AbortController();
