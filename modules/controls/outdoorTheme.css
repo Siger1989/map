@@ -42,7 +42,6 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .weather-summ
   html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] { --home-layer-control-width: 48px; }
 }
 
-/* The two tool groups read as rails, with no border around every action. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'] {
   --tool-panel-gap:4px;
   --map-panel-max-width:232px;
@@ -54,6 +53,23 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
   top: auto;
   bottom: calc(var(--home-footer) + 16px);
   left:var(--home-floating-left,16px); right:auto;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools']:has(> .dock-content > .tool-grid) {
+  --map-panel-max-width:292px;
+  --tool-side-reserve:62px;
+  width:min(var(--map-panel-max-width),calc(100% - var(--home-floating-left,16px) - var(--home-right) - var(--tool-side-reserve)));
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'] > .dock-content:has(> .tool-grid) {
+  overflow:visible;
+  flex-shrink:0;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'] .tool-grid > button {
+  gap:3px;
+  padding-inline:2px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'] .tool-grid > button svg {
+  width:14px;
+  height:14px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'] > .dock-heading:not(.map-panel-header) { height:28px; min-height:28px; gap:var(--tool-panel-gap); margin:0; padding:0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'] > .dock-heading:not(.map-panel-header) h2 { margin:0; font-size:13px; line-height:20px; }
@@ -247,9 +263,36 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
     display: grid; grid-template-columns: repeat(2,44px); width: 96px;
     top: calc(var(--home-top) + var(--home-header-height) + 88px); bottom: auto;
   }
+  html[data-ui-theme]:not([data-shantu-layout-band='tall']):not([data-shantu-keyboard='open']) .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools']:has(> .dock-content > .tool-grid) {
+    --tool-side-reserve:98px;
+  }
   html[data-ui-theme]:not([data-shantu-layout-band='tall']):not([data-shantu-keyboard='open']) .observatory.home-map[data-ui-style='outdoor'] #map-control-panel:has(.route-panel) { --map-panel-max-width: min(276px, calc(100vw - var(--home-floating-left) - var(--home-right) - 104px)); }
   html[data-ui-theme]:not([data-shantu-layout-band='tall']):not([data-shantu-keyboard='open']) .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-camera-control { top: auto; bottom: calc(var(--home-footer) + 4px); right: var(--home-right); }
   html[data-ui-theme]:not([data-shantu-layout-band='tall']):not([data-shantu-keyboard='open']) .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock { width: min(300px,calc(100vw - var(--home-floating-left) - var(--home-right) - 104px)); max-height: min(200px,calc(100dvh - var(--home-top) - var(--home-header-height) - 108px - var(--home-footer) - 8px)); }
+}
+@media (orientation:portrait) and (max-width:400px) and (min-height:440px) and (max-height:680px), (max-width:400px) and (max-height:439px) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'] .tool-grid > button {
+    flex-direction:column;
+    gap:0;
+    line-height:12px;
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'] .tool-grid > button svg {
+    width:12px;
+    height:12px;
+  }
+}
+@media (max-width:400px) and (max-height:439px) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel.control-popover[data-panel-kind='tools']:has(> .dock-content > .tool-grid) {
+    --tool-side-reserve:calc(max(72px,var(--home-tool-rail-width,50px)) + 8px + 96px + 6px);
+    --map-panel-max-height:calc(100dvh - var(--home-footer) - 16px - var(--home-top) - var(--home-header-height));
+    padding:4px !important;
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools']:has(> .dock-content > .tool-grid) > .map-panel-header {
+    height:36px;
+    min-height:36px;
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'] > .dock-content:has(> .tool-grid) { padding-top:0; }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel[data-panel-kind='tools'] .tool-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 /* Leave the actions and their measured scale in the outer column. */
 @media (orientation: landscape) and (max-height: 680px), (max-height: 439px) {

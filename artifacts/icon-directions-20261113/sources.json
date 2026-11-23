@@ -1,0 +1,107 @@
+[
+  {
+    "family": "Material Symbols Rounded · Filled",
+    "package": "material-symbols",
+    "names": [
+      "radio-button-checked-rounded",
+      "route-rounded",
+      "edit-rounded",
+      "star-rounded",
+      "grid-view-rounded",
+      "search-rounded",
+      "layers-rounded",
+      "navigation-rounded",
+      "my-location-rounded",
+      "location-on-rounded",
+      "photo-camera-rounded",
+      "download-rounded",
+      "share-rounded",
+      "delete-rounded",
+      "settings-rounded",
+      "folder-rounded",
+      "close-rounded",
+      "expand-more-rounded",
+      "play-arrow-rounded",
+      "pause-rounded"
+    ],
+    "license": {
+      "title": "Apache 2.0",
+      "spdx": "Apache-2.0",
+      "url": "https://github.com/google/material-design-icons/blob/master/LICENSE"
+    },
+    "author": {
+      "name": "Google",
+      "url": "https://github.com/google/material-design-icons"
+    }
+  },
+  {
+    "family": "Phosphor · Fill",
+    "package": "ph",
+    "names": [
+      "record-fill",
+      "path-fill",
+      "pencil-simple-fill",
+      "star-fill",
+      "squares-four-fill",
+      "magnifying-glass-fill",
+      "stack-fill",
+      "navigation-arrow-fill",
+      "crosshair-fill",
+      "map-pin-fill",
+      "camera-fill",
+      "download-simple-fill",
+      "share-network-fill",
+      "trash-fill",
+      "gear-six-fill",
+      "folder-fill",
+      "x-fill",
+      "caret-down-fill",
+      "play-fill",
+      "pause-fill"
+    ],
+    "license": {
+      "title": "MIT",
+      "spdx": "MIT",
+      "url": "https://github.com/phosphor-icons/core/blob/main/LICENSE"
+    },
+    "author": {
+      "name": "Phosphor Icons",
+      "url": "https://github.com/phosphor-icons/core"
+    }
+  },
+  {
+    "family": "Remix Icon · Fill",
+    "package": "ri",
+    "names": [
+      "record-circle-fill",
+      "route-fill",
+      "pencil-fill",
+      "star-fill",
+      "grid-fill",
+      "search-fill",
+      "stack-fill",
+      "navigation-fill",
+      "crosshair-fill",
+      "map-pin-fill",
+      "camera-fill",
+      "download-fill",
+      "share-fill",
+      "delete-bin-fill",
+      "settings-fill",
+      "folder-fill",
+      "close-fill",
+      "arrow-down-s-fill",
+      "play-fill",
+      "pause-fill"
+    ],
+    "license": {
+      "title": "Apache 2.0",
+      "spdx": "Apache-2.0",
+      "url": "https://github.com/cyberalien/RemixIcon/blob/master/License"
+    },
+    "author": {
+      "name": "Remix Design",
+      "url": "https://github.com/cyberalien/RemixIcon"
+    }
+  }
+]
