@@ -17,4 +17,4 @@ APK 165,949,044 字节。SHA-256 `8cca61c208c514532df295c40aaeba32108b2a8676bbb2
 
 本机归档文件名 `Shantu-0.2.217-oldengine-private.apk`，旁附 `.sha256` 文件。[对应源码](https://github.com/Siger1989/map/commit/858c31134f2dc0e073158f7e887ecf9d60627b00)。
 
-源码已推送至 `codex/old-engine-tilt-dual-20261105`。私人 Release 的两次上传分别在传输约 2.74 MB 与 4.21 MB 时超时，远端仍是无附件草稿。安装使用已核验的本机归档。
+源码已推送至 `codex/old-engine-tilt-dual-20261105`。首次直接上传超时，随后使用 27 个分卷发布到私人 Release。已从 GitHub 下载全部分卷并合成 APK，完整 SHA-256 与本机归档一致。[私人交付页](https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.217-private) · [下载与合并](handoff-20261123-home.md#下载与查看)。
