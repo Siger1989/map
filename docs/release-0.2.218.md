@@ -8,6 +8,10 @@ Android 8.0 及以上。包名 `com.shantu.oldengine`，版本 `0.2.218-test`，
 
 APK 165,949,316 字节。SHA-256 `dcbd9ac86ab14c25ac30b27e48aba46cbbbf9b6ce2a1c7f167a4c2538f0a5f31`。原签名、ZIP CRC、64 位库与 APK 的 16 KiB 对齐通过。1,944 项网页资源与最终构建逐项匹配，39 项私人图源、注册天地图和私人预览一致。0.2.217 归档校验通过并保留。
 
+私人 GitHub Release 有 27 个带校验的分卷，已经完整下载回读并核对 APK 哈希。下载页提供 `download-shantu-218.ps1`，可用已登录的 GitHub CLI 自动取回并合并。[私人下载页](https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.218-private) · [构建源码](https://github.com/Siger1989/map/commit/857c110bc876ea7c592b812710f82b2ed6e4c6fb)
+
+TypeScript 和 42 项定向测试通过。以签名包中的网页资源验证了新装默认必应、路线详情、实际必应行程画面与切换纯地形保留进度。隔离 Android 35 模拟器一直处于 ADB 离线，设备性能仍待验证。
+
 ## 网页交互复测
 
 桌面 Chrome 手机尺寸，计时自浏览器点击事件起算。表中用时对应指定样本。
