@@ -159,7 +159,7 @@ test('rapid independent switch updates send only changed keys and preserve both 
   assert.equal(native.outdoorContours, true, 'legacy native state may remain stored while the new UI ignores it');
 });
 
-test('route sidebar only fetches while the native window is enabled and does not resend on unchanged GPS progress', async (t) => {
+test('route sidebar keeps markers without fetching, even with a legacy enabled setting, and drops passed markers', async (t) => {
   const native = { available: true, enabled: true, visible: false, mode: 'north', windowEnabled: false, routeEventsSupported: true };
   const updated = [];
   const bridge = {
@@ -174,8 +174,7 @@ test('route sidebar only fetches while the native window is enabled and does not
   let fetchCount = 0;
   globalThis.fetch = async () => {
     fetchCount++;
-    const nextHour = (Math.floor(Date.now() / 3_600_000) + 1) * 3600;
-    return { ok: true, json: async () => ({ hourly: { time: [nextHour, nextHour + 3600], rain: [0.2, 0.2], showers: [0, 0] } }) };
+    throw new Error('the floating navigation hook must never fetch forecasts');
   };
   t.after(() => { globalThis.fetch = previousFetch; });
   const coordinates = [[103, 30], [103.01, 30]];
@@ -189,12 +188,15 @@ test('route sidebar only fetches while the native window is enabled and does not
   assert.equal(fetchCount, 0);
   native.windowEnabled = true;
   await React.act(async () => window.dispatchEvent(new window.Event('shantu:floating-navigation')));
-  assert.equal(fetchCount, 1);
-  assert.deepEqual(updated.at(-1).events.map(event => event.kind), ['rain', 'marker']);
+  assert.equal(fetchCount, 0);
+  assert.deepEqual(updated.at(-1).events.map(event => event.kind), ['marker']);
   const before = updated.length;
   await render(1);
   assert.equal(updated.length, before);
   await render(1, false);
+  assert.equal(updated.length, before, 'retired flags do not affect marker events');
   assert.deepEqual(updated.at(-1).events.map(event => event.kind), ['marker']);
-  assert.equal(fetchCount, 1);
+  await render(800);
+  assert.deepEqual(updated.at(-1).events, []);
+  assert.equal(fetchCount, 0);
 });

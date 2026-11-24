@@ -330,7 +330,7 @@ export function PhotoPanel({
         <button disabled={savedIndex >= savedPages - 1} onClick={() => setSavedPage(savedIndex + 1)}>下一页</button>
       </div>}
       <p className="route-note">
-        原图不变，照片单独存储，不含在GPX/JSON备份中。按时间、位置查询天气，不上传图片。
+        原图不变，照片单独存储，不含在GPX/JSON备份中，不上传图片。
       </p>
       </>}
       {(message || photos.error) && (

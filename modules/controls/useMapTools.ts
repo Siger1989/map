@@ -31,6 +31,7 @@ export function mapViewSnapshot(value: unknown): unknown {
   if (snapshot.layers && typeof snapshot.layers === 'object' && !Array.isArray(snapshot.layers)) {
     const layers = { ...(snapshot.layers as Record<string, unknown>) };
     for (const key of RETIRED_MAP_KEYS) delete layers[key];
+    if (layers.imageryMode === 'latest') layers.imageryMode = 'detail';
     snapshot.layers = layers;
   }
   return snapshot;
@@ -56,12 +57,12 @@ export function useMapTools(actions: Actions) {
       {
         name: MAP_TOOL_NAMES[1],
         title: '调整地图视角和图层',
-        description: 'Set visible map layers, satellite mode and camera pitch/bearing.',
+        description: 'Set visible map layers and camera pitch/bearing.',
         inputSchema: {
           type: 'object',
           properties: {
             ...Object.fromEntries(booleans.map((k) => [k, { type: 'boolean' }])),
-            imageryMode: { type: 'string', enum: ['detail', 'latest'] },
+            imageryMode: { type: 'string', enum: ['detail'] },
             geologyOpacity: { type: 'number', minimum: 0.15, maximum: 1 },
             elevationColorsOpacity: { type: 'number', minimum: 0, maximum: 1 },
             pitch: { type: 'number', minimum: 0, maximum: 80 },
@@ -81,7 +82,7 @@ export function useMapTools(actions: Actions) {
             patch[key] = args[key];
           }
           if ('imageryMode' in args) {
-            if (args.imageryMode !== 'detail' && args.imageryMode !== 'latest') throw new Error('Invalid imagery mode');
+            if (args.imageryMode !== 'detail') throw new Error('Invalid imagery mode');
             patch.imageryMode = args.imageryMode;
           }
           for (const [key, min, max] of [

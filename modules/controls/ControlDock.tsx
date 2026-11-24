@@ -16,7 +16,6 @@ import {
   PictureInPicture2,
   Images,
   Sunrise,
-  CloudSun,
 } from 'lucide-react';
 import { DocumentTextIcon, MapIcon as SolidMapIcon, PencilIcon, StarIcon, BriefcaseIcon } from '@heroicons/react/24/solid';
 import { MapPanelHeader } from '../ui/MapPanelHeader';
@@ -71,7 +70,6 @@ export function ControlDock({
   floatingNavigation,
   onPhotoMarkers,
   onSky,
-  liveWeather,
 }: {
   active: ControlPanel;
   onActive: (panel: ControlPanel) => void;
@@ -96,7 +94,6 @@ export function ControlDock({
   floatingNavigation?: ReactNode;
   onPhotoMarkers?: () => void;
   onSky?: () => void;
-  liveWeather?: { enabled: boolean; onToggle: () => void };
 }) {
   const [floatingOpen, setFloatingOpen] = useState(false);
   const floatingSubview = active === 'tools' && floatingOpen && !!floatingNavigation;
@@ -196,9 +193,6 @@ export function ControlDock({
                   </button>
                 )}
                 {onSky && <button onClick={onSky}><Sunrise size={18}/>日月观景</button>}
-                {liveWeather && <button type="button" aria-pressed={liveWeather.enabled} onClick={liveWeather.onToggle}>
-                  <CloudSun size={18} aria-hidden="true"/>实时天气
-                </button>}
                 <FullscreenButton />
                 {onMeasure && (
                   <button onClick={onMeasure}>

@@ -44,8 +44,7 @@ function rasterForJourney(
 export function journeySourceChoices(settings: LayerSettings, source: MapSource | null, maps: MapSource[]): JourneySourceChoice[] {
   const config = basemapConfiguration();
   const current = rasterForJourney(settings, source, config);
-  const name = source?.name ?? current?.name ??
-    (settings.satellite && settings.imageryMode === 'latest' ? '最新云况' : '开源道路地形');
+  const name = source?.name ?? current?.name ?? '开源道路地形';
   const choices: JourneySourceChoice[] = [{ id: 'current', name, group: '当前', source: current }];
   const listed = new Set(current ? [current.id] : []);
   for (const choice of comparisonChoices(settings, source, name, maps, config.domestic)) {

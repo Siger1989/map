@@ -15,8 +15,6 @@ export function LayerWindow({
   onChange,
   customSource,
   onOpenSources,
-  satelliteDate,
-  satelliteStatus,
   mapStatus,
   detail,
   onDetailBack,
@@ -28,8 +26,6 @@ export function LayerWindow({
   onChange: (patch: Partial<LayerSettings>) => void;
   customSource?: string;
   onOpenSources: () => void;
-  satelliteDate?: string;
-  satelliteStatus?: string;
   mapStatus: string;
   detail?: ReactNode;
   onDetailBack?: () => void;
@@ -133,8 +129,6 @@ export function LayerWindow({
               onOpenSources={onOpenSources}
               settings={settings}
               onChange={onChange}
-              satelliteDate={satelliteDate}
-              satelliteStatus={satelliteStatus}
               onGeologyDetails={onGeologyDetails ? openGeologyDetails : undefined}
             />
 

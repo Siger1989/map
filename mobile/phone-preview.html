@@ -8,6 +8,7 @@
 <script type="module">
 import { installPhonePreviewKeyboard } from './phonePreviewKeyboard.js';
 import { installPhonePreviewMaterial } from './phonePreviewMaterial.js';
+import { phonePreviewRoute } from './phone-preview-routing.js';
 const phone=document.querySelector('#phone'),frame=document.querySelector('iframe');
 // Keep the right-side preview fixed by default; named sizes are for separate QA tabs.
 // Pura X presets reproduce the official 1320:2120 inner-screen shape.
@@ -31,26 +32,15 @@ frame.style.width=width+'px';frame.style.height=height+'px';
 let keyboard,material;
 function fit(){const stage=document.querySelector('#preview-stage').getBoundingClientRect();const availableWidth=Math.max(1,stage.width-16),availableHeight=Math.max(1,stage.height-16);const scale=Math.min(1,availableWidth/width,availableHeight/screenHeight);phone.style.width=width*scale+'px';phone.style.height=screenHeight*scale+'px';frame.style.top=statusBarHeight*scale+'px';frame.style.transform='scale('+scale+')';keyboard?.setScale(scale)}
 const params=new URLSearchParams(location.search);
-const scene=params.get('scene');
-const demo=params.get('weather-demo');
-const weatherDemo=demo==='snow'||demo==='cloud' ? demo : null;
-const scenePreview=scene==='sky'||scene==='journey'||scene==='marker'||scene==='weather'||scene==='live-weather'||scene==='floating-nav';
+const preview=phonePreviewRoute(params);
+const scenePreview=preview.scenePreview;
 if(scenePreview) {
-  document.title=scene==='floating-nav'?'山兔 · 悬浮窗口布局':scene==='live-weather'?'山兔 · 地图实时天气':scene==='weather'?'山兔 · 沿途天气':scene==='journey'?'山兔 · 第三人称行程模拟':scene==='marker'?'山兔 · 标记点观景':'山兔 · 青城山日月观景';
+  document.title=preview.title;
   document.querySelector('#preview-material').hidden=true;
   document.body.style.display='block';
   document.querySelector('#preview-stage').style.height='100%';
 }
-const route=params.get('route');
-const journeyParams=new URLSearchParams();
-if(route==='road'||route==='winding')journeyParams.set('route',route);
-if(params.has('rain'))journeyParams.set('rain','1');
-if(weatherDemo)journeyParams.set('weather-demo',weatherDemo);
-const journeyPage='/journey-preview.html'+(journeyParams.size?'?'+journeyParams:'');
-const skyPage=params.has('night')?'/sky-preview.html?night=1':'/sky-preview.html';
-frame.src=(scene==='floating-nav'?'/floating-navigation-preview.html':scene==='live-weather'?(weatherDemo?'/?weather-demo='+weatherDemo:'/'):
-  scene==='weather'?'/journey-preview.html?route=winding&weather=1':scene==='journey'?journeyPage:
-  scene==='marker'?'/sky-preview.html?marker=1':scene==='sky'?skyPage:'/')+location.hash;
+frame.src=preview.page+location.hash;
 frame.addEventListener('load',()=>{const sync=()=>history.replaceState(null,'',location.pathname+location.search+frame.contentWindow.location.hash);frame.contentWindow.addEventListener('hashchange',sync);sync()});
 keyboard=installPhonePreviewKeyboard({phone,frame,width,height});
 if(!scenePreview)material=installPhonePreviewMaterial({frame,onLayoutChange:fit});

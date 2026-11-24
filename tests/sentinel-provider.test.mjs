@@ -19,5 +19,5 @@ test('manual Tianditu and existing package selection remain explicit and reversi
   assert.equal(usesSentinel(sentinel), true);
   assert.equal(usesTianditu(sentinel, true), false);
   assert.equal(usesSentinel({...sentinel, offlineBasemap:true}), false);
-  assert.equal(usesSentinel({...sentinel, imageryMode:'latest'}), false);
+  assert.equal(usesSentinel({...sentinel, imageryMode:'latest'}), true);
 });

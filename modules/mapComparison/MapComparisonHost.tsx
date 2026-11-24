@@ -9,7 +9,6 @@ import { RouteNameInput } from '../navigation/RouteNameInput';
 import { RouteRemovalControl } from '../navigation/RouteRemovalControl';
 import type { ViewState } from '../map/types';
 import { applyLayerPatch, type LayerSettings } from '../map/types';
-import type { SatelliteState } from '../satellite/satellite';
 import { ComparisonLayerWindow } from './ComparisonLayerWindow';
 import { CameraGizmo } from '../controls/CameraGizmo';
 import { FullscreenButton } from '../controls/FullscreenButton';
@@ -118,7 +117,6 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
   const lastFollowClick = useRef(0);
   const [layerPane, setLayerPane] = useState<0 | 1 | null>(null);
   const [paneSettings, setPaneSettings] = useState<[Record<string, LayerSettings>, Record<string, LayerSettings>]>([{}, {}]);
-  const [satellite, setSatellite] = useState<[SatelliteState | null, SatelliteState | null]>([null, null]);
   const layerToggle = useRef<HTMLButtonElement>(null);
   const sourceControls = useRef<[HTMLButtonElement | null, HTMLButtonElement | null]>([null, null]);
   const [landscape, setLandscape] = useState(false);
@@ -145,7 +143,6 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
     setNotice('');
     setLayerPane(null);
     setPaneSettings([{}, {}]);
-    setSatellite([null, null]);
     setEditorPane(1);
     close.current?.focus({ preventScroll: true });
   }, [session]);
@@ -211,7 +208,6 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
       });
     }
     setSelected(old => index === 0 ? [id, old[1]] : [old[0], id]);
-    setSatellite(old => index === 0 ? [null, old[1]] : [old[0], null]);
     report(index, '正在加载地图…');
   };
   const step = (index: 0 | 1, direction: -1 | 1) => {
@@ -290,7 +286,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
     },
     onSourceStatus: message => report(index, message),
     onStatus: message => report(index, message),
-    onSatellite: value => setSatellite(old => index === 0 ? [value, old[1]] : [old[0], value]),
+    onSatellite: noop,
   });
   // Selection can disappear after deleting a marker; its host must disappear too.
   const markerWorkspace = properties === 'marker' ? markerEditor?.(() => setProperties(null)) : null;
@@ -371,7 +367,6 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
         {editorDialog}
         <ComparisonLayerWindow open={layerPane !== null} pane={layerPane ?? 0} onPane={setLayerPane} choice={choice(layerPane ?? 0)} side={side}
           onChange={patch => { if (layerPane !== null) changeLayers(layerPane, patch); }} onClose={closeLayers} status={status[layerPane ?? 0]}
-          satelliteDate={satellite[layerPane ?? 0]?.date} satelliteStatus={satellite[layerPane ?? 0]?.status}
           onSource={() => { const index = layerPane; setLayerPane(null); if (index !== null) sourceControls.current[index]?.focus({ preventScroll: true }); }} />
         {mode === 'draw' && operations?.drawingEnabled !== false && <div className="map-comparison-drawing-mode" aria-label="画线吸附设置">
           <button type="button" title="节点吸附" aria-label="节点吸附" aria-pressed={operations?.snapping ?? false} disabled={!operations} onClick={() => operations?.onSnappingChange(!operations.snapping)}>点吸附</button>

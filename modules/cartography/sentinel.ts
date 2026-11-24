@@ -6,4 +6,4 @@ export const SENTINEL_TILES = ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless
 export const SENTINEL_CREDIT = '<a href="https://cloudless.eox.at" target="_blank">EOxCloudless https://cloudless.eox.at</a> by <a href="https://eox.at" target="_blank">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data 2025) · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a>';
 /** Provider choice is explicit. Missing values belong to the new free default. */
 export const usesTianditu = (s: LayerSettings, configured: boolean) => configured && !s.offlineBasemap && s.satelliteProvider === 'tianditu';
-export const usesSentinel = (s: LayerSettings) => !s.offlineBasemap && s.satellite && s.imageryMode === 'detail' && s.satelliteProvider !== 'tianditu';
+export const usesSentinel = (s: LayerSettings) => !s.offlineBasemap && s.satellite && s.satelliteProvider !== 'tianditu';

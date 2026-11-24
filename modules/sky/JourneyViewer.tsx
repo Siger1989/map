@@ -254,7 +254,7 @@ export function JourneyViewer({journey,sourceChoices,onClose}:{
   const degraded=buffer?.frameReady && buffer.frameDegraded;
   const missingAhead=!!buffer?.unavailableTiles && buffer.status==='degraded';
   const terrainOnlyText=sourceChoice?.id==='terrain-only'?'仅地形预览':'当前图源暂无可用贴图 · 地形预览';
-  const fallbackText=buffer?.frameTerrainOnly ? (source?'影像暂不可用 · 地形预览':terrainOnlyText) : buffer && buffer.detailLoaded<buffer.detailTotal
+  const fallbackText=buffer?.frameTerrainOnly ? (source?'地形预览 · 卫星影像尚未就绪':terrainOnlyText) : buffer && buffer.detailLoaded<buffer.detailTotal
     ? '此段高清影像暂缺，显示较低分辨率影像' : '此段部分地图数据使用较低精度';
   const status=imagery==='error'?'当前设备无法绘制行程画面':missing?'当前路段缺少可用地形':
     phase==='arming'&&!prepared?'正在为录像预载沿途地图'+count:

@@ -35,10 +35,7 @@ import { addContours, syncContourInterval, baseStyle } from '../terrain/terrain'
 import { contourInterval } from '../terrain/contourInterval';
 import { contourColorExpressionForInterval, elevationFillExpression, highContrastContourColorExpression } from '../terrain/elevationColors';
 import { readElevation } from '../terrain/elevation';
-import {
-  loadLatestSatellite,
-  type SatelliteState,
-} from '../satellite/satellite';
+import type { SatelliteState } from '../satellite/satellite';
 import {
   addCartography,
   cartographySettingsForDisplay,
@@ -108,7 +105,7 @@ import { SENTINEL_CREDIT, SENTINEL_MAXZOOM, SENTINEL_NAME, SENTINEL_TILES } from
 import { RasterLevelLock } from '../cartography/RasterLevelLock';
 import { RasterQuality } from '../cartography/RasterQuality';
 import { applyClearDaySky } from './sky';
-import { imageryDateLabel, imageryDateSourceKey } from './imageryDateLabel';
+import { imageryDateLabel } from './imageryDateLabel';
 import './imageryDateLabel.css';
 import { PhotoLayer } from '../photos/PhotoLayer';
 import type { VisiblePhoto } from '../photos/storage';
@@ -318,14 +315,9 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const sourceProtocolScheme = useRef<string | null>(null);
     if (!sourceProtocolScheme.current) sourceProtocolScheme.current = `shantu-map-${++terrainMapProtocolInstance}`;
     const [contextEpoch, setContextEpoch] = useState(0);
-    const [satelliteDateState, setSatelliteDateState] = useState<{
-      key: string;
-      state: SatelliteState;
-    } | null>(null);
     const boxGestureActive = useRef<boolean>(false);
     // Updated synchronously by the app before React propagates the new layer props.
     const terrainMode = useRef(settings.terrain);
-    const satelliteAnchor = useRef<[number, number]>(INITIAL_VIEW.center);
     const diagnostics = useRef<ReturnType<typeof observeMapRendering> | null>(
       null,
     );
@@ -375,7 +367,6 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const projectionListeners = useRef(
       new Set<(frame: ProjectionFrame) => void>(),
     );
-    const satelliteAbort = useRef<AbortController | null>(null);
     const terrainAbort = useRef<AbortController | null>(null);
     const loaded = useRef(false);
     const applyCameraToMap = (map: Map, camera: CameraSnapshot) => cameraSync.current.apply(map, camera);
@@ -424,64 +415,15 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     };
     const domestic = basemapConfiguration().domestic;
     const syncSatellite = () => {
-      const map = mapRef.current;
-      if (!map || !loaded.current) return;
-      const dateKey = imageryDateSourceKey(
-        latest.current.settings,
-        latest.current.mapSource,
-        domestic,
-      );
-      satelliteAbort.current?.abort();
-      const abort = new AbortController();
-      satelliteAbort.current = abort;
-      const center = map.getCenter();
-      if (map.getLayer('satellite')) map.removeLayer('satellite');
-      if (map.getSource('satellite')) map.removeSource('satellite');
-      if (
-        latest.current.mapSource ||
-        usesTianditu(latest.current.settings, domestic) ||
-        !latest.current.settings.satellite ||
-        latest.current.settings.imageryMode !== 'latest'
-      ) {
-        const state = {
-          date: '',
-          ready: false,
-          status: usesSentinel(latest.current.settings)
-            ? 'Sentinel-2 · 2025年少云合成 · 约10米，非实时影像'
-            : usesTianditu(latest.current.settings, domestic)
-            ? '天地图地表影像，非实时云况；拍摄日期由图源提供'
-            : '选择最新云况影像时获取卫星观测',
-        };
-        setSatelliteDateState(dateKey ? { key: dateKey, state } : null);
-        latest.current.onSatellite(state);
-        return;
-      }
-      const pending = {
+      if (!loaded.current) return;
+      const { settings, mapSource, onSatellite } = latest.current;
+      onSatellite({
         date: '',
         ready: false,
-        status: '正在检查当前位置最新可用卫星影像…',
-      };
-      setSatelliteDateState(dateKey ? { key: dateKey, state: pending } : null);
-      latest.current.onSatellite(pending);
-      loadLatestSatellite(map, center.lng, center.lat, abort.signal)
-        .then((result) => {
-          if (!abort.signal.aborted) {
-            setSatelliteDateState(dateKey ? { key: dateKey, state: result } : null);
-            latest.current.onSatellite(result);
-            sync();
-          }
-        })
-        .catch((e) => {
-          if (!abort.signal.aborted) {
-            const failed = {
-              date: '',
-              ready: false,
-              status: e instanceof Error ? e.message : '卫星影像暂不可用',
-            };
-            setSatelliteDateState(dateKey ? { key: dateKey, state: failed } : null);
-            latest.current.onSatellite(failed);
-          }
-        });
+        status: mapSource?.name ?? (usesSentinel(settings)
+          ? 'Sentinel-2 · 2025年合成 · 约10米'
+          : usesTianditu(settings, domestic) ? `天地图${TIANDITU_LAYERS[tiandituBase(settings)].name}` : ''),
+      });
     };
     const syncRasterLock = () => {
       const map = mapRef.current;
@@ -490,7 +432,7 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       const domesticMap = usesTianditu(s, domestic);
       const ids = mapSource ? mapSource.kind === 'image' ? [] : mapSource.ovmap?.layers.length ? ovmapSourceIds(mapSource) : [SOURCE_ID]
         : usesSentinel(s) ? ['sentinel'] : domesticMap ? [TDT_SOURCE_IDS[tiandituBase(s)]]
-        : s.satellite ? [s.imageryMode === 'detail' ? 'detail' : 'satellite'] : [];
+        : s.satellite ? ['detail'] : [];
       const datum = s.rasterDatums?.[rasterDatumKey(s, mapSource?.id)] ?? defaultRasterDatum(mapSource);
       coordinatesRef.current?.sync(!mapSource && domesticMap ? tiandituLayers(s).map(id => TDT_SOURCE_IDS[id]) : ids, datum);
       const rasterCap = s.offlineMaxZoom == null
@@ -569,21 +511,13 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       }
       map.setLayoutProperty('sentinel', 'visibility', !custom && usesSentinel(s) ? 'visible' : 'none');
       map.setLayoutProperty(SATELLITE_UNDERLAY, 'visibility', showSatelliteUnderlay(s, custom) ? 'visible' : 'none');
-      for (const id of ['relief', 'detail', 'satellite'])
+      for (const id of ['relief', 'detail'])
         if (map.getLayer(id))
           map.setLayoutProperty(
             id,
             'visibility',
-            !custom && !usesSentinel(s) && (!domestic || useDomestic || id === 'satellite') &&
-              (useDomestic && id !== 'satellite'
-                ? id === 'relief'
-                  ? !s.satellite
-                  : s.satellite
-                : s.satellite &&
-                  (id === 'relief' ||
-                    (id === 'detail'
-                      ? s.imageryMode === 'detail'
-                      : s.imageryMode === 'latest')))
+            !custom && !usesSentinel(s) && (!domestic || useDomestic) &&
+              (useDomestic && id === 'relief' ? !s.satellite : s.satellite)
               ? 'visible'
               : 'none',
           );
@@ -647,10 +581,6 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       latest.current.onCenter?.(m.getCenter().wrap().toArray());
       syncTracks(latest.current.trackOverlay);
       const p = m.getCenter();
-      if (Math.abs(p.lng - satelliteAnchor.current[0]) + Math.abs(p.lat - satelliteAnchor.current[1]) > 0.6 && Math.abs(p.lat) < 75) {
-        satelliteAnchor.current = [Number(p.lng.toFixed(2)), Number(p.lat.toFixed(2))];
-        syncSatellite();
-      }
       latest.current.onView({ bearing: m.getBearing(), pitch: m.getPitch(), zoom: m.getZoom() });
     };
     useImperativeHandle(
@@ -686,7 +616,7 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
               const layer = settings.satellite ? 'img' : 'vec';
               target = { id: 'probe-tianditu', name: '天地图', kind: 'online', format: 'WMTS', attribution: '天地图',
                 minzoom: 1, maxzoom: 18, tileSize: 256, scheme: 'xyz', bytes: 0, tiles: tiandituTiles(layer, cfg.token) };
-            } else if (!settings.offlineBasemap && settings.satellite && settings.satelliteProvider !== 'tianditu' && settings.imageryMode === 'detail') {
+            } else if (usesSentinel(settings)) {
               target = { id: 'probe-sentinel', name: SENTINEL_NAME, kind: 'online', format: 'XYZ', attribution: SENTINEL_CREDIT,
                 minzoom: 0, maxzoom: SENTINEL_MAXZOOM, tileSize: 256, scheme: 'xyz', bytes: 0, tiles: SENTINEL_TILES };
             }
@@ -1474,7 +1404,6 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             if (latestQueuedCamera) applyCameraToMap(map, latestQueuedCamera);
             const initialCenter = map.getCenter();
             latest.current.onCenter?.(initialCenter.wrap().toArray());
-            satelliteAnchor.current = initialCenter.toArray();
             publishView({
               pitch: map.getPitch(),
               bearing: map.getBearing(),
@@ -1675,19 +1604,6 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             if (!('positionFollow' in event && event.positionFollow))
               refreshCameraOverlays.request(cameraSync.current.isProgrammatic(map));
             else areaRef.current?.sync(latest.current.areaOverlay);
-            const p = map.getCenter();
-            if (
-              Math.abs(p.lng - satelliteAnchor.current[0]) +
-                Math.abs(p.lat - satelliteAnchor.current[1]) >
-                0.6 &&
-              Math.abs(p.lat) < 75
-            ) {
-              satelliteAnchor.current = [
-                Number(p.lng.toFixed(2)),
-                Number(p.lat.toFixed(2)),
-              ];
-              syncSatellite();
-            }
           });
           map.on('error', (event) => {
             if ('sourceId' in event && ['elevation', 'shading'].includes(String(event.sourceId))) {
@@ -1736,7 +1652,6 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         loaded.current = false;
         cancelAnimationFrame(cameraFrame);
         refreshCameraOverlays.cancel();
-        satelliteAbort.current?.abort();
         terrainAbort.current?.abort();
         geologyRef.current?.dispose();
         geologyRef.current = null;
@@ -1810,7 +1725,7 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     }, [props.sectionCursor]);
     useEffect(() => {
       syncSatellite();
-    }, [settings.imageryMode, settings.satellite, settings.satelliteProvider, settings.offlineBasemap, props.mapSource]);
+    }, [settings.satellite, settings.satelliteProvider, settings.tiandituBase, settings.offlineBasemap, props.mapSource]);
     useEffect(() => {
       if (loaded.current) routeRef.current?.sync(props.routeOverlay);
     }, [props.routeOverlay]);
@@ -1870,15 +1785,7 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       const map = mapRef.current;
       if (map && !settings.terrain) map.easeTo({ pitch: 0, duration: 750 });
     }, [settings.terrain]);
-    const sourceKey = imageryDateSourceKey(settings, props.mapSource, domestic);
-    const dateLabel = imageryDateLabel(
-      settings,
-      props.mapSource,
-      domestic,
-      sourceKey && satelliteDateState?.key === sourceKey
-        ? satelliteDateState.state
-        : null,
-    );
+    const dateLabel = imageryDateLabel(settings, props.mapSource, domestic);
     return (
       <div
         ref={container}

@@ -4,10 +4,9 @@ import type { GuidanceSession } from './session';
 export type FloatingNavigationMode = 'north' | 'motion' | 'compass';
 export type FloatingNavigationKind = 'position' | 'route';
 export type FloatingNavigationRouteEvent = {
-  kind: 'rain' | 'marker';
+  kind: 'marker';
   distanceM: number;
   label: string;
-  validUntilMs?: number;
 };
 
 export type FloatingNavigationStatus = {
@@ -123,6 +122,10 @@ export function validateFloatingNavigationInput(
 }
 
 export function serializeFloatingNavigationPayload(payload: FloatingNavigationPayload) {
+  // Drop retired events from an older in-memory payload without changing the route.
+  if (Array.isArray(payload.events)) payload = {
+    ...payload, events: payload.events.filter(event => (event as { kind?: unknown })?.kind !== 'rain'),
+  };
   validateFloatingNavigationInput(payload.mode, payload.label, payload.coordinates, payload.kind);
   if (payload.segments !== undefined) {
     if (payload.kind === 'position' || !Array.isArray(payload.segments) || !payload.segments.length || payload.segments.length > FLOATING_NAVIGATION_MAX_POINTS)
@@ -146,11 +149,10 @@ export function serializeFloatingNavigationPayload(payload: FloatingNavigationPa
       throw new Error('悬浮导航路线事件无效');
     }
     for (const event of payload.events) {
-      if (!event || (event.kind !== 'rain' && event.kind !== 'marker') ||
+      if (!event || event.kind !== 'marker' ||
           !Number.isFinite(event.distanceM) || event.distanceM < 0 ||
           typeof event.label !== 'string' || !event.label.trim() || event.label.length > 80 || /[\u0000-\u001f\u007f-\u009f]/.test(event.label) ||
-          (event.kind === 'rain' && (!Number.isSafeInteger(event.validUntilMs) || event.validUntilMs! <= 0)) ||
-          (event.kind === 'marker' && event.validUntilMs !== undefined)) {
+          (event as { validUntilMs?: unknown }).validUntilMs !== undefined) {
         throw new Error('悬浮导航路线事件无效');
       }
     }

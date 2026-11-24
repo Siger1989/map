@@ -18,8 +18,6 @@ export function ComparisonLayerWindow({
   onSource,
   onClose,
   status,
-  satelliteDate,
-  satelliteStatus,
 }: {
   open: boolean;
   pane: 0 | 1;
@@ -30,8 +28,6 @@ export function ComparisonLayerWindow({
   onSource: () => void;
   onClose: () => void;
   status: string;
-  satelliteDate?: string;
-  satelliteStatus?: string;
 }) {
   const closeButton = useRef<HTMLButtonElement>(null);
   const root = useRef<HTMLElement>(null);
@@ -103,8 +99,6 @@ export function ComparisonLayerWindow({
             onChange={onChange}
             customSource={choice.source ? choice.name : undefined}
             onOpenSources={onSource}
-            satelliteDate={satelliteDate}
-            satelliteStatus={satelliteStatus}
           />
           {status && (
             <p className="map-status" role="status">

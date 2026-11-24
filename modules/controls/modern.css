@@ -376,7 +376,6 @@
     .tool-grid button,
     .view-presets button,
     .route-modes button,
-    .imagery-selector button,
     .track-actions button,
     .annotation-panel button,
     .photo-actions button,
@@ -601,10 +600,6 @@
 .observatory .switch span,
 .observatory .switch[aria-checked='true'] span {
   background: white;
-}
-.observatory .imagery-selector {
-  margin-top: 6px;
-  padding: 2px;
 }
 .observatory .panel-sliders {
   margin-top: 8px;

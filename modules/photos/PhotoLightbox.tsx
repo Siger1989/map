@@ -3,13 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import type { VisiblePhoto } from './storage';
 import {
   altitudeLabel,
-  weatherSource,
   type PhotoDetails,
   type PhotoEdits,
   type PhotoStroke,
 } from './details';
 import { PhotoStage } from './PhotoStage';
-import { deliverPhoto, renderPhotoExport, weatherLabel } from './export';
+import { deliverPhoto, renderPhotoExport } from './export';
 export function PhotoLightbox({
   photo,
   onClose,
@@ -152,7 +151,6 @@ export function PhotoLightbox({
               {photoTimeLabel(photo)} ·{' '}
               {altitudeLabel(photo.altitude)}
             </p>
-            <p>{weatherLabel(photo)}</p>
           </div>
           <nav className="photo-action-bar" aria-label="照片操作">
             <button onClick={() => edit('edit')}>编辑</button>
@@ -250,22 +248,6 @@ export function PhotoLightbox({
             {photoLocationLabel(photo)}{photo.locationSource === 'camera' && Number.isFinite(photo.locationAccuracy) ? ` · ±${Math.round(photo.locationAccuracy!)} 米` : ''}{photo.timeSourceDetail === 'return-estimate' ? ' · 相机返回时间（估计）' : photo.timeSource === 'camera' && ' · 时间取自拍摄会话'}
           </p>
           <p>{altitudeLabel(photo.altitude)}</p>
-          <p>{weatherLabel(photo)}</p>
-          {photo.weather && (
-            <>
-              <p>{weatherSource(photo.weather)} · 非现场实测</p>
-              <p>
-                天气时次 {new Date(photo.weather.time).toLocaleString('zh-CN')}
-                <br />
-                获取于{' '}
-                {new Date(photo.weather.fetchedAt).toLocaleString('zh-CN')}
-              </p>
-              <p>
-                最近整点天气；降水为该时次前1小时累计。数据：Open-Meteo，CC BY
-                4.0。
-              </p>
-            </>
-          )}
 <p>
             {photo.detail
               ? '查看副本最长边2560px，原图文件未改动。'
@@ -286,7 +268,7 @@ export function PhotoLightbox({
                 setFile(null);
               }}
             />
-            附上拍摄时间、位置、海拔、天气和备注
+            附上拍摄时间、位置、海拔和备注
           </label>
           <p>生成带标记的图片副本，预览后自行选择分享对象。</p>
           {exportUrl ? (

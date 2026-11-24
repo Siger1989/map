@@ -72,15 +72,15 @@ test('a journey draws imagery or real relief, switches providers and rejects mis
     {longitude:frame.cameraCoordinates[0],latitude:frame.cameraCoordinates[1]},
     {azimuth:frame.headingDeg,altitude:0,roll:0}, optics, 390, 704, undefined, {model,frame},
   );
-  const settle = async (ready = state => state.status !== 'loading') => {
+  const settle = async (ready = state => state.status !== 'loading', delayMs = 0) => {
     draw();
     for (let i=0; i<100; i++) {
-      await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => delayMs ? setTimeout(resolve, delayMs) : setImmediate(resolve));
       draw();
       const state = renderer.journeyBuffer();
       if (ready(state)) return state;
     }
-    assert.fail('controlled tile requests did not settle');
+    assert.fail('controlled tile requests did not settle: ' + JSON.stringify(renderer.journeyBuffer()));
   };
   try {
     renderer = createSatelliteTerrain(canvas, () => {});
@@ -135,6 +135,17 @@ test('a journey draws imagery or real relief, switches providers and rejects mis
     assert.ok(fixture.sourceRequests.every(request => request.id === 'first'));
 
     let releaseDelayedTiles;
+    fixture.delayedTiles = new Promise(resolve => { releaseDelayedTiles = resolve; });
+    renderer.setJourneySource(source('delayed'));
+    draw();
+    const waitingForTexture = await settle(state => state.frameReady, 25);
+    assert.equal(waitingForTexture.frameTerrainOnly, true);
+    assert.equal(waitingForTexture.frameHasImagery, false);
+    releaseDelayedTiles();
+    const lateTexture = await settle(state => state.frameHasImagery);
+    assert.equal(lateTexture.frameReady, true);
+
+    fixture.delayedSignals.length = 0;
     fixture.delayedTiles = new Promise(resolve => { releaseDelayedTiles = resolve; });
     renderer.setJourneySource(source('delayed'));
     assert.equal(renderer.journeyBuffer().frameHasImagery, false);

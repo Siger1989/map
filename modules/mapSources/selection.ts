@@ -51,7 +51,7 @@ export function settingsForBasemapSource(
     tiandituBoundaries: current.tiandituBoundaries,
     exaggeration: current.exaggeration,
   };
-  return { ...target, ...overlays };
+  return { ...target, ...overlays, imageryMode: 'detail' };
 }
 
 /** Apply source-panel changes without treating its layer controls as a basemap switch. */

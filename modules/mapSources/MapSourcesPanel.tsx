@@ -56,8 +56,8 @@ export function MapSourcesPanel({
   onCaptureProbeView,
 }: {
   sources: ReturnType<typeof useMapSources>;
-  builtin: 'terrain' | 'detail' | 'latest';
-  onBuiltin: (id: 'terrain' | 'detail' | 'latest') => void;
+  builtin: 'terrain' | 'detail';
+  onBuiltin: (id: 'terrain' | 'detail') => void;
   onFocus: (bounds: Bounds) => void;
   onNavigation?: (navigation: MapSourcesNavigation | null) => void;
   onRouteQr?: (text: string) => void;
@@ -175,7 +175,6 @@ export function MapSourcesPanel({
       : [
           { id: 'builtin:terrain', label: '地形地图', source: null, skipped: '地形底图没有可独立测试的在线瓦片模板' },
           { id: 'builtin:sentinel', label: SENTINEL_NAME, source: { id: 'batch-sentinel', name: SENTINEL_NAME, kind: 'online' as const, format: 'XYZ', tiles: SENTINEL_TILES, scheme: 'xyz' as const, minzoom: 0, maxzoom: SENTINEL_MAXZOOM, tileSize: 256, bytes: 0, attribution: SENTINEL_CREDIT, datum: 'wgs84' as const } },
-          { id: 'builtin:latest', label: '最新云况', source: null, skipped: '云况图层没有可独立测试的固定瓦片模板' },
         ];
     const candidates = mapSourceBatchItems(sources.maps, sources.source, false, builtinCandidates);
     let snapshot: CameraSnapshot | null;
@@ -383,7 +382,7 @@ export function MapSourcesPanel({
           <button data-group="saved" aria-pressed={category === 'saved'} onClick={() => setCategory('saved')}>我的图源{sources.maps.length ? ` · ${sources.maps.length}` : ''}</button>
           <button data-group="public" aria-pressed={category === 'library'} onClick={() => { setError(''); setCategory('library'); }}>公共库</button>
         </div>
-        <p className="map-source-current">当前：{sources.source?.name ?? (settings?.satelliteProvider === 'tianditu' ? '天地图' : builtin === 'detail' ? 'Sentinel-2 2025' : builtin === 'latest' ? '最新云况' : '地形地图')}</p>
+        <p className="map-source-current">当前：{sources.source?.name ?? (settings?.satelliteProvider === 'tianditu' ? '天地图' : builtin === 'detail' ? 'Sentinel-2 2025' : '地形地图')}</p>
         {onProbeMapSource && <div className="map-source-health"><div className="map-source-health__actions">
           <button type="button" disabled={!sources.ready || batchBusy} onClick={() => { if (probeBusy) activeProbe.current?.abort(); else void probe(sources.source); }}> {probeBusy ? '取消测试' : '测试当前位置'}</button>
           <button type="button" disabled={!sources.ready || (!batchBusy && probeBusy)} onClick={() => { if (batchBusy) activeBatch.current?.abort(); else void runBatch(); }}>{batchBusy ? '停止全部' : batchEntries.length ? '重试全部' : '全部测试'}</button>
@@ -419,17 +418,10 @@ export function MapSourcesPanel({
               [
                 ['terrain', domestic ? '天地图矢量' : '地形地图'],
                 ['detail', 'Sentinel-2 2025'],
-                ['latest', '最新云况'],
               ] as const
             ).map(([id, label]) => (
               <div className="map-source-choice" key={id}>
               <button
-                disabled={id === 'latest' && domestic}
-                title={
-                  id === 'latest' && domestic
-                    ? '当前天地图配置不提供最新云况影像'
-                    : undefined
-                }
                 aria-pressed={!sources.selected && builtin === id}
                 onClick={() => onBuiltin(id)}
               >

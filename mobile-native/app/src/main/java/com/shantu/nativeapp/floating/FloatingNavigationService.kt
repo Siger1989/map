@@ -413,17 +413,15 @@ class FloatingNavigationService : Service(), LocationListener {
                     for (i in 0 until values.length()) {
                         val item = values.optJSONObject(i) ?: throw IllegalArgumentException("前方提示格式无效")
                         val eventKind = item.optString("kind")
-                        require(eventKind == "rain" || eventKind == "marker") { "前方提示类型无效" }
+                        // Ignore retired events retained by an older React payload.
+                        if (eventKind == "rain") continue
+                        require(eventKind == "marker") { "前方提示类型无效" }
                         val distance = (item.opt("distanceM") as? Number)?.toDouble()
                         require(distance != null && distance.isFinite() && distance >= 0.0) { "前方提示距离无效" }
                         val eventLabel = (item.opt("label") as? String)?.trim()
                         require(eventLabel != null && eventLabel.length in 1..80 && eventLabel.none(Char::isISOControl)) { "前方提示名称无效" }
-                        val validUntil = optionalDimension(item, "validUntilMs", 1.0..9_007_199_254_740_991.0)
-                        require(if (eventKind == "rain") validUntil != null && validUntil % 1.0 == 0.0 else validUntil == null) {
-                            "前方提示有效时限无效"
-                        }
+                        require(!item.has("validUntilMs")) { "前方标记不支持有效时限" }
                         val normalized = JSONObject().put("kind", eventKind).put("distanceM", distance).put("label", eventLabel)
-                        if (validUntil != null) normalized.put("validUntilMs", validUntil.toLong())
                         put(normalized)
                     }
                 }
@@ -478,8 +476,7 @@ class FloatingNavigationService : Service(), LocationListener {
             val events = safe.optJSONArray("events")?.let { values ->
                 List(values.length()) { i ->
                     val item = values.getJSONObject(i)
-                    FloatingRouteEvent(item.getString("kind"), item.getDouble("distanceM"), item.getString("label"),
-                        item.optLong("validUntilMs", 0L).takeIf { item.has("validUntilMs") })
+                    FloatingRouteEvent(item.getString("kind"), item.getDouble("distanceM"), item.getString("label"))
                 }
             }.orEmpty()
             return ParsedSession(safe.getString("kind"), safe.getString("mode"), safe.getString("label"), points,

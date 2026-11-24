@@ -1,7 +1,5 @@
 import type { Annotation } from '../annotations/data';
-import { analyzeWeatherRoute, buildWeatherRoute, type WeatherRoute } from '../journey/routeWeatherAnalysis.ts';
-import type { RouteForecast } from '../journey/weatherProvider.ts';
-import { coordinate, type PlannedRoute, type RoutePlace } from '../navigation/types.ts';
+import { coordinate, type RoutePlace } from '../navigation/types.ts';
 import { project, type Path } from './geometry.ts';
 import type { FloatingNavigationRouteEvent } from './floatingNavigation';
 
@@ -9,8 +7,6 @@ export type FloatingNavigationMark = Pick<Annotation, 'kind' | 'visible' | 'coor
 
 const markerToleranceM = 40;
 const chunkEdges = 128;
-const hourMs = 3_600_000;
-const forecastLifetimeMs = 2 * hourMs;
 
 function labelOf(name: string, fallback: string) {
   return (name.replace(/[\s\u0000-\u001f\u007f-\u009f]+/g, ' ').trim() || fallback).slice(0, 80);
@@ -68,38 +64,4 @@ export function buildFloatingMarkerEvents(
     events.push({ kind: 'marker', distanceM, label });
   }
   return events.sort((first, second) => first.distanceM - second.distanceM);
-}
-
-export function buildFloatingWeatherRoute(coordinates: PlannedRoute['coordinates'], durationSeconds: number) {
-  return buildWeatherRoute([{ coordinates, durationSeconds }]);
-}
-
-export function buildFloatingRainEvents(
-  route: WeatherRoute,
-  forecast: RouteForecast,
-  progressM: number,
-  now: number,
-): FloatingNavigationRouteEvent[] {
-  const validForecastUntil = forecast.fetchedAt + forecastLifetimeMs;
-  if (validForecastUntil <= now || route.totalMeters <= 0 || route.durationSeconds <= 0) return [];
-  const progress = Math.min(progressM, route.totalMeters);
-  const departure = now - progress / route.totalMeters * route.durationSeconds * 1000;
-  const events: FloatingNavigationRouteEvent[] = [];
-  let previousWetEnd = -1;
-  let activeEvent: FloatingNavigationRouteEvent | undefined;
-  for (const piece of analyzeWeatherRoute(route, forecast, departure).segments) {
-    if (piece.endMeters <= progress || !(piece.rain && piece.rain > 0)) continue;
-    const forecastHour = forecast.points[piece.sampleIndex]?.find(hour => piece.arrival >= hour.time - hourMs && piece.arrival < hour.time);
-    if (!(forecastHour?.liquidRain && forecastHour.liquidRain > 0)) continue;
-    const validUntilMs = Math.min(validForecastUntil, forecastHour.time);
-    if (validUntilMs <= now) continue;
-    if (previousWetEnd === piece.startMeters && activeEvent) {
-      previousWetEnd = piece.endMeters;
-      continue;
-    }
-    activeEvent = { kind: 'rain', distanceM: Math.floor(Math.max(piece.startMeters, progress)), label: '前方有雨', validUntilMs };
-    events.push(activeEvent);
-    previousWetEnd = piece.endMeters;
-  }
-  return events;
 }

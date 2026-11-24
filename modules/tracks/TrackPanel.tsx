@@ -217,7 +217,7 @@ export function TrackPanel({
             <button
               onClick={() => setDetails(details === 'draft' ? null : 'draft')}
             >
-              {details === 'draft' ? '收起统计' : '统计 / 天气'}
+              {details === 'draft' ? '收起统计' : '查看统计'}
             </button>
           </div>
           {details === 'draft' && (
@@ -323,7 +323,7 @@ export function TrackPanel({
             <button
               onClick={() => setDetails(details === track.id ? null : track.id)}
             >
-              {details === track.id ? '收起详情' : '统计 / 天气 / 样式'}
+              {details === track.id ? '收起详情' : '统计 / 样式'}
             </button>
             <button
               onClick={() => {

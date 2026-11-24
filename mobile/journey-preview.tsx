@@ -2,15 +2,13 @@ import { useMemo, useState } from 'react';
 import {createRoot} from 'react-dom/client';
 import {AppearanceProvider} from '../modules/appearance/AppearanceProvider';
 import {JourneyViewer} from '../modules/sky/JourneyViewer';
-import {JourneyWeather} from '../modules/journey/JourneyWeather';
-import {createJourneyPlayback, type SkyJourney} from '../modules/sky/journeyPlayback';
+import type {SkyJourney} from '../modules/sky/journeyPlayback';
 import {journeySourceChoices} from '../modules/sky/journeySourceChoices';
 import {readLayerPreferences} from '../modules/map/layerPreferences';
 import {DEFAULT_LAYERS} from '../modules/map/types';
 import {readRasterDatums} from '../modules/mapSources/coordinates';
 import {useMapSources} from '../modules/mapSources/useMapSources';
 import windingRoad from './preview-data/qingcheng-winding-road.json';
-import { findWeatherDemo } from './preview-data/weather-demos';
 import '../app/globals.css';
 
 // Preview-only examples. The road follows the visible satellite imagery near Qingcheng Mountain.
@@ -28,31 +26,23 @@ const road: [number, number][] = [
   [103.588414,30.898386],
 ];
 const query = new URLSearchParams(location.search);
-const showWeather = query.has('weather');
-const demo = findWeatherDemo(query.get('weather-demo'));
 const sample = query.get('route');
-const points: [number, number][] = demo?.points ?? (sample==='winding'
-  ? windingRoad.coordinates.map(([longitude,latitude])=>[longitude,latitude]) : sample==='road' ? road : mountain);
-const tomorrowInChina = new Date(Date.now() + 32 * 3600000).toISOString().slice(0, 10);
-const start = demo ? Math.ceil(Date.now() / 60_000) * 60_000 : showWeather
-  ? Date.parse(tomorrowInChina + 'T11:00+08:00') : Date.UTC(2026, 10, 20, 2);
-const durationHours = demo ? 2 : showWeather ? 3 : 1;
+const points: [number, number][] = sample==='winding'
+  ? windingRoad.coordinates.map(([longitude,latitude])=>[longitude,latitude]) : sample==='road' ? road : mountain;
+const start = Date.UTC(2026, 10, 20, 2);
+const durationHours = 1;
 const journey: SkyJourney = {
-  name: demo ? `${demo.name} · © OpenStreetMap 贡献者` : sample==='winding' ? '青城山盘山路 · © OpenStreetMap 贡献者' : sample==='road' ? '青城山 · 公路示例' : '青城山 · 示例轨迹',
+  name: sample==='winding' ? '青城山盘山路 · © OpenStreetMap 贡献者' : sample==='road' ? '青城山 · 公路示例' : '青城山 · 示例轨迹',
   segments: [points.map((coordinates, index) => ({
     coordinates,
     timeMs: start + durationHours * 3600000 * index / (points.length - 1),
   }))],
 };
-const weatherModel = showWeather ? createJourneyPlayback(journey) : null;
 function JourneyPreview() {
-  const [weather, setWeather] = useState(showWeather);
   const { source, maps, ready } = useMapSources();
   const [layers] = useState(() => readLayerPreferences({ ...DEFAULT_LAYERS, satellite: true, rasterDatums: readRasterDatums() }));
   const choices = useMemo(() => journeySourceChoices(layers, source, maps), [layers, source, maps]);
-  return weather && weatherModel
-    ? <JourneyWeather name={journey.name} model={weatherModel} initialDuration={durationHours * 3600} onBack={() => setWeather(false)} />
-    : ready ? <JourneyViewer journey={journey} sourceChoices={choices} onClose={() => window.location.assign('/')} />
+  return ready ? <JourneyViewer journey={journey} sourceChoices={choices} onClose={() => window.location.assign('/')} />
       : <div className="journey-viewer" role="status">正在读取当前图源…</div>;
 }
 

@@ -37,79 +37,12 @@ test('rejects untrusted URLs, invalid ids, future frames and malformed responses
   assert.throws(() => buildRadarRequestUrl('20260230'));
 });
 
-function observedFixture() {
-  const observed = new Date(Date.now() - 10 * 60_000);
-  const beijing = new Date(observed.getTime() + 8 * 60 * 60_000);
-  const part = (n) => String(n).padStart(2, '0');
-  const date = `${beijing.getUTCFullYear()}${part(beijing.getUTCMonth() + 1)}${part(beijing.getUTCDate())}`;
-  const time = `${date}${part(beijing.getUTCHours())}${part(beijing.getUTCMinutes())}${part(beijing.getUTCSeconds())}`;
-  const utcDate = `${observed.getUTCFullYear()}${part(observed.getUTCMonth() + 1)}${part(observed.getUTCDate())}`;
-  const name = `Z_RADA_C_BABJ_${utcDate}120000_P_DOR_ACHN_CREF_${utcDate}_000000.png`;
-  return { date, time, name, imageUrl: `http://image.data.cma.cn/vis/RAD__B0_CR/${utcDate}/${name}` };
-}
-
-test('radar route rejects empty, repeated and unknown query parameters without upstream calls', async () => {
-  const oldFetch = globalThis.fetch;
-  let calls = 0;
-  globalThis.fetch = async () => { calls++; throw new Error('must not fetch'); };
+test('the retired radar endpoint responds locally for all old requests', () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = () => assert.fail('a retired endpoint must not contact providers');
   try {
-    for (const query of ['?date=', '?frame=', '?date=20261006&date=20261006', '?frame=a&frame=b', '?url=https://evil.test']) {
-      const result = await radarRoute(new Request(`http://localhost/api/radar${query}`));
-      assert.equal(result.status, 400, query);
+    for (const query of ['', '?date=20261006', '?date=20261006&frame=abc_2']) {
+      assert.equal(radarRoute(new Request('http://localhost/api/radar' + query)).status, 410);
     }
-    assert.equal(calls, 0);
-  } finally { globalThis.fetch = oldFetch; }
-});
-
-test('radar image route binds IDs to the validated duplicate-safe HTTPS official record', async () => {
-  const fixture = observedFixture();
-  const valid = {
-    id: 'same_id', dataCode: 'RAD__B0_CR', vshijian: fixture.time,
-    cfname: fixture.name, fileURL: fixture.imageUrl,
-  };
-  const rows = [valid, { ...valid, fileURL: 'http://evil.example/replacement.png' }];
-  const png = Uint8Array.from([137,80,78,71,13,10,26,10]);
-  const oldFetch = globalThis.fetch;
-  let directoryRequests = 0, imageRequests = 0, imageReferer = '', imageProtocol = '';
-  globalThis.fetch = async (input, init) => {
-    const requestUrl = new URL(input instanceof Request ? input.url : String(input));
-    if (requestUrl.hostname === 'data.cma.cn') {
-      directoryRequests++;
-      return new Response(JSON.stringify({ code: '200', data: { data: rows } }), { headers: { 'Content-Type': 'application/json' } });
-    }
-    imageRequests++;
-    imageReferer = new Headers(init?.headers).get('Referer') ?? '';
-    imageProtocol = requestUrl.protocol;
-    assert.equal(requestUrl.hostname, 'image.data.cma.cn');
-    return new Response(png, { headers: { 'Content-Type': 'application/octet-stream' } });
-  };
-  try {
-    const result = await radarRoute(new Request(`http://localhost/api/radar?date=${fixture.date}&frame=same_id`));
-    assert.equal(result.status, 200);
-    assert.equal(result.headers.get('Content-Type'), 'image/png');
-    assert.equal(directoryRequests, 1);
-    assert.equal(imageRequests, 1);
-    assert.equal(imageProtocol, 'https:');
-    assert.equal(imageReferer, 'https://data.cma.cn/');
-    assert.deepEqual([...new Uint8Array(await result.arrayBuffer())], [...png]);
-  } finally { globalThis.fetch = oldFetch; }
-});
-
-test('server directory cache remains bounded to three distinct dates', async () => {
-  const oldFetch = globalThis.fetch;
-  let calls = 0;
-  globalThis.fetch = async () => {
-    calls++;
-    return new Response(JSON.stringify({ code: '200', data: { data: [] } }), { headers: { 'Content-Type': 'application/json' } });
-  };
-  try {
-    for (const date of ['20260101', '20260102', '20260103', '20260104']) {
-      const response = await radarRoute(new Request(`http://localhost/api/radar?date=${date}`));
-      assert.equal(response.status, 200);
-    }
-    assert.equal(calls, 4);
-    const evicted = await radarRoute(new Request('http://localhost/api/radar?date=20260101'));
-    assert.equal(evicted.status, 200);
-    assert.equal(calls, 5);
-  } finally { globalThis.fetch = oldFetch; }
+  } finally { globalThis.fetch = original; }
 });

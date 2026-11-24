@@ -76,16 +76,12 @@ const ITEMS = [
 export function LayerPanel({
   settings,
   onChange,
-  satelliteDate,
-  satelliteStatus,
   onOpenSources,
   customSource,
   onGeologyDetails,
 }: {
   settings: LayerSettings;
   onChange: (patch: Partial<LayerSettings>) => void;
-  satelliteDate?: string;
-  satelliteStatus?: string;
   onOpenSources?: () => void;
   customSource?: string;
   onGeologyDetails?: () => void;
@@ -168,23 +164,6 @@ export function LayerPanel({
           </p>
         </div>
       )}
-      {key === 'satellite' && !customSource && settings.satellite && (
-        <div className="imagery-selector" aria-label="卫星影像类型">
-          <button
-            aria-pressed={settings.imageryMode === 'detail'}
-            onClick={() => onChange({ imageryMode: 'detail', satellite: true })}
-          >
-            高清地表
-          </button>
-          <button
-            aria-pressed={settings.imageryMode === 'latest'}
-            disabled={domestic}
-            onClick={() => onChange({ imageryMode: 'latest', satellite: true })}
-          >
-            最新云况影像
-          </button>
-        </div>
-      )}
       {key === 'geology' && settings.geology && (
         <>
           <div className="geology-opacity">
@@ -255,7 +234,6 @@ export function LayerPanel({
               key === 'roads' ||
               ([
                 'terrain',
-                'satellite',
                 'elevationColors',
                 'contours',
                 'geology',
@@ -282,17 +260,9 @@ export function LayerPanel({
                     </label>
                     {key === 'satellite' && settings.satellite && (
                       <p>
-                        {key === 'satellite'
-                          ? settings.imageryMode === 'detail'
-                            ? usesSentinel(settings)
-                              ? 'Sentinel-2 · 2025年合成 · 约10米'
-                              : domestic
-                                ? '天地图地表影像 · 非实时云况'
-                                : '10 米级地表 · 2025 年合成'
-                            : satelliteDate
-                              ? `影像日期 ${satelliteDate}`
-                              : '正在获取最新可用日期'
-                          : detail}
+                        {usesSentinel(settings)
+                          ? 'Sentinel-2 · 2025年合成 · 约10米'
+                          : domestic ? '天地图地表影像' : detail}
                       </p>
                     )}
                     {key === 'outdoorContours' && settings.outdoorContours && (
@@ -355,9 +325,7 @@ export function LayerPanel({
           <p className="satellite-note" role="status">
             {domestic
               ? '底图与中文标注：天地图。道路吸附及区域外高程仍可能需要境外连接。'
-              : settings.imageryMode === 'detail'
-                ? 'EOX / Sentinel-2 · 2025 年少云合成，约10米，非实时影像。免账号，CC BY-NC-SA 4.0非商业使用；区域下载待接入。'
-                : `${satelliteStatus || '正在查询卫星影像…'}。此观测包含真实云层，云多时会遮住地表；看山体纹理请选择高清地表。`}
+              : 'EOX / Sentinel-2 · 2025 年合成，约10米。免账号，CC BY-NC-SA 4.0非商业使用；区域下载待接入。'}
           </p>
         </details>
       </div>

@@ -40,10 +40,12 @@ test('map layer preferences round-trip actual user selections', () => {
     saveLayerPreferences(selected);
     const { rasterDatums: _datumPreferences, offlineMaxZoom: _retiredLimit, ...expected } = selected;
     expected.geologySource = 'world';
+    expected.imageryMode = 'detail';
     assert.deepEqual(readLayerPreferences(), expected);
     const persisted = JSON.parse(values.get(LAYER_PREFERENCES_KEY));
     assert.equal(persisted.version, 1);
     assert.equal(persisted.layers.geologySource, 'world', 'retired detailed source migrates without changing unrelated preferences');
+    assert.equal(persisted.layers.imageryMode, 'detail');
     assert.equal('rasterDatums' in persisted.layers, false, 'datum choices remain in their existing preference key');
     for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) assert.equal(key in persisted.layers, false, key + ' is retired');
   } finally {
@@ -53,7 +55,7 @@ test('map layer preferences round-trip actual user selections', () => {
 });
 
 test('legacy weather preferences and patches are ignored without losing other settings', () => {
-  const legacy = { ...DEFAULT_LAYERS, terrain: false, satellite: true, roadsOpacity: 0.4,
+  const legacy = { ...DEFAULT_LAYERS, terrain: false, satellite: true, roadsOpacity: 0.4, imageryMode: 'latest',
     clouds: true, cloudOpacity: 0.2, cloudTime: '202610030600', rain: true, temperature: true, opacity: 0.2 };
   const parsed = parseLayerPreferences(JSON.stringify({ version: 1, layers: legacy }), legacy);
   for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) {
@@ -61,14 +63,16 @@ test('legacy weather preferences and patches are ignored without losing other se
   }
   assert.equal(parsed.terrain, false);
   assert.equal(parsed.satellite, true);
+  assert.equal(parsed.imageryMode, 'detail');
   assert.equal(parsed.roadsOpacity, 0.4);
 
-  const patched = applyLayerPatch(legacy, { clouds: true, cloudOpacity: 1, cloudTime: '20261003', rain: true, temperature: true, opacity: 1 });
+  const patched = applyLayerPatch(legacy, { clouds: true, cloudOpacity: 1, cloudTime: '20261003', rain: true, temperature: true, opacity: 1, imageryMode: 'latest' });
   for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) {
     assert.equal(key in patched, false, key + ' cannot be restored by an external patch');
   }
   assert.equal(patched.roadsOpacity, 0.4);
   assert.equal(patched.satellite, true);
+  assert.equal(patched.imageryMode, 'detail');
 });
 
 test('geology and elevation colours remain mutually exclusive', () => {
@@ -87,7 +91,7 @@ test('outdoor contour presentation is an independent persisted preference defaul
 });
 
 test('legacy detailed geology preference migrates to world while preserving neighboring settings', () => {
-  const legacy = { ...DEFAULT_LAYERS, geology: true, geologySource: 'geocloud20w', geologyOpacity: 0.55, satellite: true, roads: false };
+  const legacy = { ...DEFAULT_LAYERS, geology: true, geologySource: 'geocloud20w', geologyOpacity: 0.55, satellite: true, roads: false, imageryMode: 'latest' };
   const parsed = parseLayerPreferences(JSON.stringify({ version: 1, layers: legacy }));
   assert.equal(parsed?.geologySource, 'world');
   assert.equal(parsed?.geology, true);
@@ -106,6 +110,7 @@ test('legacy detailed geology preference migrates to world while preserving neig
     assert.equal(readLayerPreferences().geologySource, 'world');
     const migrated = JSON.parse(values.get(LAYER_PREFERENCES_KEY));
     assert.equal(migrated.layers.geologySource, 'world');
+    assert.equal(migrated.layers.imageryMode, 'detail');
     assert.equal(migrated.layers.unrelatedLegacySetting, 'keep');
     assert.equal(migrated.unrelatedEnvelopeData, 7);
   } finally {
@@ -254,7 +259,7 @@ test('changing a basemap keeps user layer choices while adopting target source s
   assert.equal(switched.geologySource, 'world', 'the retired detailed source does not return when switching basemaps');
   assert.equal(switched.satelliteProvider, 'tianditu');
   assert.equal(switched.tiandituBase, 'img');
-  assert.equal(switched.imageryMode, 'latest');
+  assert.equal(switched.imageryMode, 'detail');
   assert.equal(switched.rasterLevel, 12);
   assert.deepEqual(switched.rasterDatums, { 'source-b': 'gcj02' });
 });

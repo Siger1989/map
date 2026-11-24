@@ -217,18 +217,10 @@
   transform: translateX(14px);
   background: #173b2f;
 }
-.imagery-selector,
 .view-shortcuts {
   display: flex;
   gap: 6px;
 }
-.imagery-selector {
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  margin-top: 16px;
-}
-.imagery-selector button,
 .view-shortcuts button {
   flex: 1;
   min-height: 44px;
@@ -238,7 +230,6 @@
   font-size: 12px;
   color: var(--muted);
 }
-.imagery-selector button[aria-pressed='true'],
 .view-shortcuts button[aria-pressed='true'] {
   background: #9de8c41a;
   color: var(--accent);

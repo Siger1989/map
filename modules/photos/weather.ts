@@ -61,33 +61,11 @@ export function parsePhotoWeather(
     throw new Error('该拍摄时次没有有效天气数据');
   return w;
 }
-const cache = new Map<string, { payload: unknown; fetchedAt: number }>();
+/** Retired transport. Legacy parsing stays available for older stored metadata. */
 export async function fetchPhotoWeather(
-  time: number,
-  coordinates: Coordinate,
-  signal: AbortSignal,
-) {
-  const request = photoWeatherRequest(time, coordinates);
-  let cached = cache.get(request.url);
-  if (!cached || Date.now() - cached.fetchedAt > 15 * 60000) {
-    const r = await fetch(request.url, {
-      signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
-    });
-    if (!r.ok)
-      throw new Error(
-        r.status === 429
-          ? '天气请求较多，请稍后重试'
-          : '拍摄天气暂不可用，可稍后重试',
-      );
-    cached = { payload: await r.json(), fetchedAt: Date.now() };
-  }
-  const weather = parsePhotoWeather(
-    cached.payload,
-    request.hour,
-    request.source,
-    cached.fetchedAt,
-  );
-  if (cache.size >= 32) cache.delete(cache.keys().next().value!);
-  cache.set(request.url, cached);
-  return weather;
+  _time: number,
+  _coordinates: Coordinate,
+  _signal: AbortSignal,
+): Promise<PhotoWeather> {
+  throw new Error('拍摄天气功能已移除');
 }

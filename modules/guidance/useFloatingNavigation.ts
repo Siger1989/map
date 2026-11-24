@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GuidanceSession } from './session';
-import { fetchRouteWeather, type RouteForecast } from '../journey/weatherProvider';
-import { buildFloatingMarkerEvents, buildFloatingRainEvents, buildFloatingWeatherRoute, type FloatingNavigationMark } from './floatingRouteEvents';
+import { buildFloatingMarkerEvents, type FloatingNavigationMark } from './floatingRouteEvents';
 import {
   buildFloatingNavigationPayload,
   FLOATING_NAVIGATION_MAX_EVENTS,
@@ -28,8 +27,6 @@ const emptyStatus: FloatingNavigationStatus = {
 };
 
 const noMarks: readonly FloatingNavigationMark[] = [];
-const forecastRefreshMs = 15 * 60_000;
-const rainProgressStepM = 250;
 
 /** React UI for the native cross-app map. Native preferences remain the only saved source. */
 export function useFloatingNavigation(
@@ -37,55 +34,21 @@ export function useFloatingNavigation(
   options: {
     manageSession?: boolean;
     observe?: boolean;
-    showWeather?: boolean;
     marks?: readonly FloatingNavigationMark[];
   } = {},
 ) {
   const [status, setStatus] = useState(emptyStatus);
   const [localMessage, setLocalMessage] = useState('');
   const [foregroundEpoch, setForegroundEpoch] = useState(0);
-  const [pageVisible, setPageVisible] = useState(() => typeof document !== 'undefined' && document.visibilityState === 'visible');
-  const [weatherTime, setWeatherTime] = useState(Date.now);
-  const [request, setRequest] = useState<{ layout: ReturnType<typeof buildFloatingWeatherRoute>; forecast: RouteForecast } | null>(null);
   const canSendEvents = options.manageSession !== false && status.routeEventsSupported === true;
   // A temporary return-to-route line has its own geometry and no matching traversal estimate.
   const path = canSendEvents && session?.route.coordinates === session?.path?.points ? session?.path : undefined;
-  const coordinates = path?.points;
   const stops = path ? session?.route.stops : undefined;
   const marks = options.marks ?? noMarks;
   const markerEvents = useMemo(() => path ? buildFloatingMarkerEvents(path, stops, marks) : [], [path, stops, marks]);
-  const duration = path ? session?.route.duration ?? 0 : 0;
-  const weatherEnabled = options.showWeather === true && status.enabled && status.windowEnabled && status.overlayAllowed !== false && pageVisible;
-  const weatherLayout = useMemo(() => coordinates && duration > 0
-    ? buildFloatingWeatherRoute(coordinates, duration)
-    : null, [coordinates, duration]);
-  const forecastPeriod = Math.floor(weatherTime / forecastRefreshMs);
-
-  useEffect(() => {
-    if (!weatherEnabled || !weatherLayout?.stops.length) return;
-    const controller = new AbortController();
-    void Promise.resolve().then(async () => {
-      if (controller.signal.aborted || document.visibilityState !== 'visible') return;
-      const forecast = await fetchRouteWeather(weatherLayout.stops, controller.signal, { liquidRain: true }).catch(() => null);
-      if (!controller.signal.aborted && forecast) setRequest({ layout: weatherLayout, forecast });
-    });
-    return () => controller.abort();
-  }, [weatherEnabled, weatherLayout, forecastPeriod]);
-
-  useEffect(() => {
-    if (!weatherEnabled || !weatherLayout) return;
-    setWeatherTime(Date.now());
-    const timer = window.setInterval(() => setWeatherTime(Date.now()), 60_000);
-    return () => window.clearInterval(timer);
-  }, [weatherEnabled, weatherLayout]);
-
   const progressM = path ? session?.progress ?? 0 : 0;
-  const rainProgressM = Math.floor(progressM / rainProgressStepM) * rainProgressStepM;
-  const rainEvents = useMemo(() => options.showWeather && status.windowEnabled && weatherLayout && request?.layout === weatherLayout
-    ? buildFloatingRainEvents(weatherLayout, request.forecast, rainProgressM, weatherTime)
-    : [], [options.showWeather, status.windowEnabled, weatherLayout, request, rainProgressM, weatherTime]);
   const upcomingEvents = canSendEvents && session && status.windowEnabled
-    ? [...markerEvents.filter(event => event.distanceM >= progressM - 10), ...rainEvents]
+    ? markerEvents.filter(event => event.distanceM >= progressM - 10)
         .sort((first, second) => first.distanceM - second.distanceM)
         .slice(0, FLOATING_NAVIGATION_MAX_EVENTS)
     : undefined;
@@ -188,7 +151,6 @@ export function useFloatingNavigation(
     };
     const onVisibility = () => {
       const visible = document.visibilityState === 'visible';
-      setPageVisible(visible);
       if (visible) {
         refresh();
         restore();

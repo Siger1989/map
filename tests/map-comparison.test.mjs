@@ -848,7 +848,7 @@ test('source changes keep pane overlays while restoring only the target source b
   assert.equal(upper.satellite, true);
   assert.equal(upper.satelliteProvider, 'tianditu');
   assert.equal(upper.tiandituBase, 'img');
-  assert.equal(upper.imageryMode, 'latest');
+  assert.equal(upper.imageryMode, 'detail');
   assert.equal(upper.rasterLevel, 12);
   assert.deepEqual(upper.rasterDatums, { 'source-b': 'GCJ02' });
   assert.equal(counters.latest['map-comparison-secondary'].settings, lowerBefore, 'switching the upper pane leaves lower pane settings untouched');

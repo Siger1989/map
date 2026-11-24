@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ArrowUpLeft, CircleDot, CloudRain, MapPin, Minus, Plus, X } from 'lucide-react';
+import { ArrowUpLeft, CircleDot, MapPin, Minus, Plus, X } from 'lucide-react';
 import { AppearanceProvider } from '../modules/appearance/AppearanceProvider';
 import { pathOf, pointAt } from '../modules/guidance/geometry';
 import type { Coordinate } from '../modules/navigation/types';
-import { MapSwitch } from '../modules/ui/MapSwitch';
 import road from './preview-data/qingcheng-winding-road.json';
 import '../app/globals.css';
 import './floating-navigation-preview.css';
@@ -14,9 +13,9 @@ const positionM = 3120;
 const current = pointAt(path, positionM);
 const remainingM = path.length - positionM;
 const examples = [
-  { distanceM: 5520, label: '小雨预报', weather: true },
-  { distanceM: 3920, label: '小雨预报', weather: true },
-  { distanceM: 4620, label: '观景台', weather: false },
+  { distanceM: 5520, label: '岔路口' },
+  { distanceM: 3920, label: '桥' },
+  { distanceM: 4620, label: '观景台' },
 ];
 
 function distanceKm(meters: number) {
@@ -85,14 +84,12 @@ function RouteSketch({ zoom, motion }: { zoom: number; motion: boolean }) {
 
 function FloatingNavigationPreview() {
   const [open, setOpen] = useState(true);
-  const [weather, setWeather] = useState(true);
   const [motion, setMotion] = useState(true);
   const [zoom, setZoom] = useState(0);
-  const upcoming = examples.filter(item => item.distanceM >= positionM && (weather || !item.weather))
+  const upcoming = examples.filter(item => item.distanceM >= positionM)
     .sort((a, b) => a.distanceM - b.distanceM);
   return <main className="floating-layout-preview">
     <header><h1>悬浮小地图</h1><span>布局示例</span></header>
-    <MapSwitch label="天气提示" checked={weather} onChange={setWeather} size="setting"/>
     {open ? <section className="floating-layout-window" aria-label="悬浮窗口">
       <div className="floating-layout-body">
         <div className="floating-layout-left">
@@ -113,9 +110,9 @@ function FloatingNavigationPreview() {
           <RouteProgress/>
         </div>
         <aside aria-label="前方路段和标记，由近到远">
-          <ol>{upcoming.map(item => <li key={item.distanceM} data-weather={item.weather}>
+          <ol>{upcoming.map(item => <li key={item.distanceM}>
             <strong>{((item.distanceM - positionM) / 1000).toFixed(1)} 公里</strong>
-            <span>{item.weather ? <CloudRain size={12}/> : <MapPin size={12}/>} {item.label}</span>
+            <span><MapPin size={12}/> {item.label}</span>
           </li>)}</ol>
           <span className="floating-preview-location"><i/>当前位置</span>
         </aside>

@@ -23,6 +23,7 @@ export type LayerSettings = {
   rasterQuality?: 'standard' | 'high';
   labels: boolean;
   exaggeration: number;
+  /** The old 'latest' storage value is accepted by migration and treated as detail. */
   imageryMode: 'detail' | 'latest';
 };
 export const DEFAULT_TIANDITU_LABELS = 'vector' as const;
@@ -58,13 +59,13 @@ export function applyLayerPatch(
 ): LayerSettings {
   const next = { ...current, ...patch } as LayerSettings & Record<string, unknown>;
   for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) delete next[key];
+  next.imageryMode = 'detail';
   // Geology source selection is retired; old settings/clients always resolve
   // to the public global geology layer.
   next.geologySource = 'world';
   if (patch.tiandituBase) {
     next.satelliteProvider = patch.satelliteProvider ?? 'tianditu';
     next.satellite = patch.tiandituBase === 'img';
-    next.imageryMode = 'detail';
     next.offlineBasemap = patch.offlineBasemap ?? false;
   } else if (patch.satellite !== undefined) next.tiandituBase = patch.satellite ? 'img' : 'vec';
   if (patch.satellite === true && patch.offlineBasemap !== true) next.offlineBasemap = false;

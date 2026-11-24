@@ -14,7 +14,7 @@ import kotlin.math.*
 
 internal data class FloatingRouteSegment(val access: Boolean, val coordinates: List<FloatingCoordinate>)
 
-internal data class FloatingRouteEvent(val kind: String, val distanceMeters: Double, val label: String, val validUntilMs: Long?)
+internal data class FloatingRouteEvent(val kind: String, val distanceMeters: Double, val label: String)
 
 internal data class FloatingTileGeometry(val z: Int, val x: Int, val y: Int, val features: List<NativeMvtFeature>)
 internal data class FloatingTileRenderCounters(
@@ -398,12 +398,11 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         canvas.drawRect(left, top, left + px(1f), bottom, p)
         canvas.drawRect(left + inset, footerTop, width - inset, footerTop + px(1f), p)
         val progress = routeProgressMeters
-        val now = System.currentTimeMillis()
         var y = top + px(2f)
         if (kind == "route" && progress != null) {
             val ahead = routeEvents.mapNotNull { event ->
                 val distance = event.distanceMeters - progress
-                if (distance < 0.0 || (event.kind == "rain" && (event.validUntilMs ?: 0L) <= now)) null
+                if (distance < 0.0 || event.kind != "marker") null
                 else event to distance
             }.sortedBy { (_, distance) -> distance }
             for ((event, distance) in ahead) {
@@ -413,7 +412,7 @@ internal class FloatingNavigationView(context: Context) : View(context) {
                 text(canvas, value, left + inset, y + px(if (narrow) 9f else 12f), if (narrow) 8f else 11f,
                     0xffeaffc2.toInt(), maxWidthPx = textWidth)
                 text(canvas, event.label, left + inset, y + px(if (narrow) 19f else 25f), if (narrow) 7f else 9f,
-                    if (event.kind == "rain") 0xff91d9ff.toInt() else 0xffffdf4f.toInt(), maxWidthPx = textWidth)
+                    0xffffdf4f.toInt(), maxWidthPx = textWidth)
                 y += rowHeight
             }
         }

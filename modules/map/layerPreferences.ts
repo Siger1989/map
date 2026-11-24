@@ -7,6 +7,7 @@ type PersistedLayers = Omit<LayerSettings, 'rasterDatums' | 'offlineMaxZoom'>;
 function withoutRetiredWeather(settings: LayerSettings): LayerSettings {
   const result = { ...settings } as LayerSettings & Record<string, unknown>;
   for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) delete result[key];
+  result.imageryMode = 'detail';
   return result;
 }
 function bounded(value: unknown, min: number, max: number): value is number {
@@ -31,7 +32,6 @@ export function parseLayerPreferences(raw: string | null, fallback: LayerSetting
     // Retain the legacy field in the versioned format for compatibility, but
     // migrate its retired detailed source choice back to the public world map.
     result.geologySource = 'world';
-    if (value.imageryMode === 'detail' || value.imageryMode === 'latest') result.imageryMode = value.imageryMode;
     if (value.contourInterval === 30 || value.contourInterval === 50 || value.contourInterval === 100 || value.contourInterval === 200) result.contourInterval = value.contourInterval;
     if (bounded(value.elevationColorsOpacity, 0, 1)) result.elevationColorsOpacity = value.elevationColorsOpacity;
     if (bounded(value.geologyOpacity, 0, 1)) result.geologyOpacity = value.geologyOpacity;
@@ -49,7 +49,7 @@ export function readLayerPreferences(fallback: LayerSettings = DEFAULT_LAYERS): 
   try {
     const raw = localStorage.getItem(LAYER_PREFERENCES_KEY);
     const settings = parseLayerPreferences(raw, fallback) ?? withoutRetiredWeather(fallback);
-    // Rewrite only this retired field in place, preserving unknown/future user
+    // Migrate retired values in place, preserving unknown/future user
     // settings and the existing preference envelope.
     if (raw) {
       try {
@@ -58,8 +58,11 @@ export function readLayerPreferences(fallback: LayerSettings = DEFAULT_LAYERS): 
           const envelope = stored as { version?: unknown; layers?: unknown };
           if (envelope.version === 1 && envelope.layers && typeof envelope.layers === 'object' && !Array.isArray(envelope.layers)) {
             const layers = envelope.layers as Record<string, unknown>;
-            if (layers.geologySource === 'geocloud20w') {
-              localStorage.setItem(LAYER_PREFERENCES_KEY, JSON.stringify({ ...envelope, layers: { ...layers, geologySource: 'world' } }));
+            const patch: Partial<LayerSettings> = {};
+            if (layers.geologySource === 'geocloud20w') patch.geologySource = 'world';
+            if (layers.imageryMode === 'latest') patch.imageryMode = 'detail';
+            if (Object.keys(patch).length) {
+              localStorage.setItem(LAYER_PREFERENCES_KEY, JSON.stringify({ ...envelope, layers: { ...layers, ...patch } }));
             }
           }
         }
@@ -83,8 +86,7 @@ export function saveLayerPreferences(settings: LayerSettings): void {
         if (typeof version === 'number' && Number.isFinite(version) && version > CURRENT_VERSION) return;
       } catch { /* Corrupt current data is safe to replace with a valid snapshot. */ }
     }
-    const persisted = { ...layers, geologySource: 'world' } as PersistedLayers & Record<string, unknown>;
-    for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) delete persisted[key];
+    const persisted: PersistedLayers = { ...withoutRetiredWeather(layers), geologySource: 'world' };
     localStorage.setItem(LAYER_PREFERENCES_KEY, JSON.stringify({ version: CURRENT_VERSION, layers: persisted satisfies PersistedLayers }));
   }
   catch { /* A full or disabled store must not interrupt map controls. */ }

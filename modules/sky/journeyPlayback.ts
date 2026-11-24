@@ -142,7 +142,12 @@ export function createJourneyPlayback(journey: SkyJourney): JourneyPlaybackModel
     }
     finishSegment();
   }
-  return { totalDistanceM, segments, pointCount };
+  // Isolated points still support a static preview, but cannot anchor a moving camera.
+  return {
+    totalDistanceM,
+    segments: totalDistanceM > 0 ? segments.filter(segment => segment.endDistanceM > segment.startDistanceM) : segments,
+    pointCount,
+  };
 }
 
 function interpolateCoordinates(from: SkyJourneyCoordinate, to: SkyJourneyCoordinate, ratio: number): [number, number] {

@@ -22,6 +22,7 @@ export interface SatelliteTerrainCamera {
 export type SatelliteTerrainStatus = 'loading' | 'ready' | 'partial' | 'unavailable' | 'error';
 const rad = Math.PI / 180;
 const workers = 4;
+const maxJourneyTileJobs = 48;
 const maxResident = 48;
 const maxJourneyResident = 144;
 const initialNear = 0.75;
@@ -241,6 +242,9 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
   const resident = new Map<string, Mesh>();
   const fallbacks = new Map<string,Tile>();
   const pending = new Map<string, AbortController>();
+  const preparingTerrain = new Set<AbortController>();
+  const queuedImagery = new Set<() => void>();
+  let activeImagery = 0;
   const failed = new Map<string, number>();
   const demCache = new Map<string, Float32Array>();
   const failedDem = new Map<string, number>();
@@ -256,6 +260,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     journeySource = next;
     for (const controller of pending.values()) controller.abort();
     pending.clear();
+    preparingTerrain.clear();
     fallbacks.clear();
     failed.clear();
     refreshImagery.clear();
@@ -396,14 +401,45 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
 
   function schedule() {
     if (!active) return;
+    const splitRequests = !!windowPlan && !!journeySource;
     for (const tile of (fallbacks.size ? [...fallbacks.values(),...requests] : requests)) {
-      if (pending.size >= workers) break;
+      if (pending.size >= (splitRequests ? maxJourneyTileJobs : workers) || preparingTerrain.size >= workers) break;
       if ((!refreshDem.has(tile.key) && !refreshImagery.has(tile.key) && (resident.has(tile.key) || staged.has(tile.key) && !gpuRequired.has(tile.key))) || pending.has(tile.key) ||
           (failed.get(tile.key) ?? 0) > Date.now()) continue;
       const controller = new AbortController();
       pending.set(tile.key, controller);
+      preparingTerrain.add(controller);
       void read(tile, controller);
     }
+  }
+
+  function scheduleImagery() {
+    while (active && activeImagery < workers && queuedImagery.size) {
+      const start = queuedImagery.values().next().value!;
+      queuedImagery.delete(start);
+      start();
+    }
+  }
+
+  function readQueuedImagery(source: MapSource, tile: Tile, signal: AbortSignal, remember: (image: Blob) => void) {
+    return new Promise<ImageBitmap | null>((resolve, reject) => {
+      const cancel = () => {
+        queuedImagery.delete(start);
+        resolve(null);
+      };
+      const start = () => {
+        signal.removeEventListener('abort', cancel);
+        activeImagery++;
+        void loadJourneyImageryTile(source, tile, signal, remember).then(resolve, reject).finally(() => {
+          activeImagery--;
+          scheduleImagery();
+        });
+      };
+      if (signal.aborted) return resolve(null);
+      signal.addEventListener('abort', cancel, { once: true });
+      queuedImagery.add(start);
+      scheduleImagery();
+    });
   }
 
   function failedTile(tile: Tile) {
@@ -428,59 +464,88 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
     if (!resident.has(parent.key)) fallbacks.set(parent.key,parent);
   }
 
-  async function read(tile: Tile, controller: AbortController) {
-    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]);
-    // Await both outcomes so a failed DEM cannot orphan a decoded bitmap.
-    const saved = staged.get(tile.key);
-    const journey = !!windowPlan;
-    const source = journey ? journeySource : undefined;
-    let image=saved?.image ?? null;
-    const refreshing=refreshDem.delete(tile.key);
-    const retryImage=refreshImagery.delete(tile.key);
-    const remember = (value: Blob) => { image = value; };
-    let imageRequest: Promise<ImageBitmap | null> = Promise.resolve(null);
-    if (image) imageRequest = createImageBitmap(image);
-    else if (!saved || retryImage) {
-      if (source === undefined) imageRequest = loadSatelliteTile(tile, signal, remember, journey);
-      else if (source && tile.z >= source.minzoom && tile.z <= source.maxzoom)
-        imageRequest = loadJourneyImageryTile(source, tile, signal, remember);
+  function stageTile(tile: Tile, heights: Float32Array, bitmap: ImageBitmap | null, image: Blob | null, preview = false) {
+    let complete: boolean;
+    if (!windowPlan || gpuRequired.has(tile.key)) {
+      const mesh = loadGpu(tile, heights, bitmap);
+      if (!mesh) return false;
+      const previous = resident.get(tile.key);
+      if (previous) drop(previous);
+      resident.set(tile.key, mesh);
+      complete = mesh.complete;
+    } else {
+      let all = completeDem.get(heights);
+      if (all === undefined) {
+        all = heights.every(Number.isFinite);
+        completeDem.set(heights, all);
+      }
+      if (all) complete = true;
+      else {
+        const mesh = buildSatelliteMesh(tile, heights);
+        complete = mesh.indices.length === mesh.steps * mesh.steps * 6;
+      }
     }
-    const [dem, imagery] = await Promise.allSettled([
-      saved && !refreshing ? Promise.resolve(saved.heights) : readDem(tile), imageRequest,
-    ]);
-    const bitmap = imagery.status === 'fulfilled' ? imagery.value : null;
+    if (windowPlan && (desired.has(tile.key) || fallbacks.has(tile.key))) staged.set(tile.key, { image, heights, complete });
+    if (!complete) requestParent(tile);
+    else if (!bitmap && !preview) requestParent(tile, true);
+    revision++;
+    trim();
+    return true;
+  }
+
+  async function read(tile: Tile, controller: AbortController) {
+    let bitmap: ImageBitmap | null = null;
+    let reliefTimer: ReturnType<typeof setTimeout> | undefined;
+    let showingRelief = false;
+    const current = () => active && !controller.signal.aborted && pending.get(tile.key) === controller;
     try {
-      if (!active || controller.signal.aborted) return;
-      const heights=dem.status==='fulfilled' ? dem.value : null;
-      if (heights && (bitmap || journey)) {
-        let complete:boolean;
-        if (!windowPlan || gpuRequired.has(tile.key)) {
-          const mesh=loadGpu(tile,heights,bitmap);
-          if(!mesh){failedTile(tile);return;}
-          const previous=resident.get(tile.key);if(previous)drop(previous);
-          resident.set(tile.key,mesh);
-          complete=mesh.complete;
-        } else {
-          let all=completeDem.get(heights);
-          if(all===undefined){all=heights.every(Number.isFinite);completeDem.set(heights,all);}
-          if(all)complete=true;
-          else {
-            const mesh=buildSatelliteMesh(tile,heights);
-            complete=mesh.indices.length===mesh.steps*mesh.steps*6;
-          }
-        }
-        if (windowPlan && (desired.has(tile.key)||fallbacks.has(tile.key))) staged.set(tile.key,{image:bitmap ? image : null,heights,complete});
-        if (!complete) requestParent(tile);
-        else if (!bitmap) requestParent(tile, true);
-        revision++;
-        trim();
-      } else {
+      const saved = staged.get(tile.key);
+      const journey = !!windowPlan;
+      // Journey imagery owns its request budget, including the Android gateway.
+      const signal = journey ? controller.signal : AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]);
+      const source = journey ? journeySource : undefined;
+      let image = saved?.image ?? null;
+      const refreshing = refreshDem.delete(tile.key);
+      const retryImage = refreshImagery.delete(tile.key);
+      const remember = (value: Blob) => { image = value; };
+      let imageRequest: Promise<ImageBitmap | null> = Promise.resolve(null);
+      if (image) imageRequest = createImageBitmap(image);
+      else if (!saved || retryImage) {
+        if (source === undefined) imageRequest = loadSatelliteTile(tile, signal, remember, journey);
+        else if (source && tile.z >= source.minzoom && tile.z <= source.maxzoom)
+          imageRequest = readQueuedImagery(source, tile, signal, remember);
+      }
+      let imageSettled = false;
+      const imageryResult = imageRequest.finally(() => { imageSettled = true; });
+      const heightsResult = saved && !refreshing ? Promise.resolve(saved.heights) : readDem(tile);
+      // Let existing terrain show behind slow satellite imagery, then replace its texture.
+      if (source) {
+        const freeTerrainSlot = () => { if (preparingTerrain.delete(controller)) schedule(); };
+        void heightsResult.then(freeTerrainSlot, freeTerrainSlot);
+        reliefTimer = setTimeout(() => {
+          void heightsResult.then(heights => {
+            if (!heights || imageSettled || !current() ||
+                (saved && (resident.has(tile.key) || !gpuRequired.has(tile.key)))) return;
+            showingRelief = stageTile(tile, heights, null, null, true);
+            if (showingRelief) notify();
+          }).catch(() => {});
+        }, 450);
+      }
+      const [dem, imagery] = await Promise.allSettled([heightsResult, imageryResult]);
+      bitmap = imagery.status === 'fulfilled' ? imagery.value : null;
+      if (!current()) return;
+      const heights = dem.status === 'fulfilled' ? dem.value : null;
+      if (showingRelief && !bitmap) {
+        requestParent(tile, true);
+      } else if (!heights || (!bitmap && !journey) || !stageTile(tile, heights, bitmap, bitmap ? image : null)) {
         failedTile(tile);
       }
     } catch {
-      if (active && !controller.signal.aborted) failedTile(tile);
+      if (current()) failedTile(tile);
     } finally {
+      if (reliefTimer !== undefined) clearTimeout(reliefTimer);
       bitmap?.close();
+      preparingTerrain.delete(controller);
       if (pending.get(tile.key) === controller) {
         pending.delete(tile.key);
         schedule();
@@ -671,7 +736,7 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
         readyThroughDistanceM = checkpoint.distanceM;
       }
     }
-    const prepared=loaded+unavailableTiles===total && total>0;
+    const prepared=loaded+unavailableTiles===total && total>0 && !activeImagery && !queuedImagery.size;
     const status = frameUnavailable ? 'unavailable' : frameReady && (prepared || !pending.size) ? (unavailableTiles||degraded||frameDegraded||!prepared ? 'degraded' : 'ready') : pending.size ? 'loading' : 'unavailable';
     return {status, loaded, total, unavailableTiles, frameReady, frameDegraded, frameTerrainOnly, frameHasImagery, detailLoaded, detailTotal:nearTiles.length, minDetailZoom, throughDistanceM:windowPlan?.end ?? 0, readyThroughDistanceM};
   }
@@ -834,6 +899,8 @@ export function createSatelliteTerrain(canvas: HTMLCanvasElement, notify: () => 
   function dispose() {
     active = false;
     for (const controller of pending.values()) controller.abort();
+    pending.clear();
+    preparingTerrain.clear();
     for (const { controller } of incomingDem.values()) controller.abort();
     demCache.clear();
     staged.clear();

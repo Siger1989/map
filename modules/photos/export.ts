@@ -1,16 +1,8 @@
 import type { TripPhoto } from './storage';
 import { photoLocationLabel, photoTimeLabel } from './association';
 import { PRODUCT_NAME, EXPORT_PREFIX } from '../../config/product';
-import { altitudeLabel, weatherSource } from './details';
-import { describeWeather } from '../weather/data';
+import { altitudeLabel } from './details';
 import { deliverMacFile } from '../platform/macNative.ts';
-export function weatherLabel(photo: TripPhoto) {
-  const w = photo.weather;
-  if (!w) return `拍摄天气：${photo.weatherError || '未记录'}`;
-  const number = (v: number | null, suffix: string) =>
-    v === null ? '未提供' : `${v.toFixed(1)}${suffix}`;
-  return `${describeWeather(w.code)} · ${number(w.temperature, '℃')} · 风 ${number(w.wind, 'm/s')} · 小时降水 ${number(w.precipitation, 'mm')}`;
-}
 export async function renderPhotoExport(
   photo: TripPhoto,
   includeInfo: boolean,
@@ -33,14 +25,6 @@ export async function renderPhotoExport(
           altitudeLabel(photo.altitude),
           `${photo.coordinates[1].toFixed(5)}, ${photo.coordinates[0].toFixed(5)} · ${photoLocationLabel(photo)}`,
           ...(photo.timeSource === 'camera' ? ['时间取自相机启动时刻'] : []),
-          weatherLabel(photo),
-          ...(photo.weather
-            ? [
-                weatherSource(photo.weather),
-                `天气时次 ${new Date(photo.weather.time).toLocaleString('zh-CN')} · 非现场实测`,
-                'Open-Meteo.com · CC BY 4.0 · 降水为该时次前1小时累计',
-              ]
-            : []),
           photo.note || '',
         ].filter(Boolean)
       : [];

@@ -73,7 +73,6 @@ import { basemapConfiguration } from '@/modules/cartography/basemaps';
 import { usesSentinel, usesTianditu, SENTINEL_MAXZOOM, SENTINEL_NAME } from '@/modules/cartography/sentinel';
 import { tiandituBase, TIANDITU_LAYERS } from '@/modules/cartography/tianditu';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
-import { LiveMapWeather } from '@/modules/weather/LiveMapWeather';
 import { INDUSTRY_TOOLS_ENABLED, mountIndustryToolsPanel, showIndustryToolsEntry } from '@/config/features';
 import { createIndustryToolsState, IndustryTools, type IndustryToolsState } from '@/modules/industry/IndustryTools';
 import { MapActions } from '@/modules/controls/MapActions';
@@ -232,9 +231,7 @@ import {
 const JourneyViewer = lazy(() => import('@/modules/sky/JourneyViewer').then(module => ({default:module.JourneyViewer})));
 const SkyViewer = lazy(() => import('@/modules/sky/SkyViewer').then(module => ({ default: module.SkyViewer })));
 
-const liveMapWeatherStorageKey = 'shantu:map:live-weather';
-
-export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapshot } = {}) {
+export default function Home() {
   const [skyJourney,setSkyJourney]=useState<import('@/modules/sky/journeyPlayback').SkyJourney|null>(null);
   useEffect(()=>{
     const open=(event:Event)=>{
@@ -352,11 +349,6 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
   const [sourcesNavigation, setSourcesNavigation] =
     useState<MapSourcesNavigation | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
-  const [liveMapWeather, setLiveMapWeather] = useState(Boolean(weatherPreview));
-  useEffect(() => {
-    if (weatherPreview) return;
-    try { setLiveMapWeather(localStorage.getItem(liveMapWeatherStorageKey) === 'true'); } catch { /* Optional preference. */ }
-  }, [weatherPreview]);
   const [view, setView] = useState<ViewState>(INITIAL_VIEW);
   const [mapReadyEpoch, setMapReadyEpoch] = useState(0);
   const outdoorCameraApplied = useRef(false);
@@ -396,14 +388,14 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
   const [favoriteSourceOpen, setFavoriteSourceOpen] = useState(false);
   const domesticBasemap = usesTianditu(layers, basemapConfiguration().domestic);
   const rasterMaxLevel = mapSources.source ? mapSources.source.kind === 'image' ? 0 : mapSources.source.maxzoom
-    : usesSentinel(layers) ? SENTINEL_MAXZOOM : domesticBasemap ? TIANDITU_LAYERS[tiandituBase(layers)].maxzoom : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
-  const rasterName = mapSources.source?.name ?? (usesSentinel(layers) ? `${SENTINEL_NAME} · 约10米` : domesticBasemap ? `天地图${TIANDITU_LAYERS[tiandituBase(layers)].name}` : layers.satellite ? layers.imageryMode === 'detail' ? '地表影像' : '最新云况影像' : '开源道路地形');
+    : domesticBasemap ? TIANDITU_LAYERS[tiandituBase(layers)].maxzoom : layers.satellite ? SENTINEL_MAXZOOM : 0;
+  const rasterName = mapSources.source?.name ?? (usesSentinel(layers) ? `${SENTINEL_NAME} · 约10米` : domesticBasemap ? `天地图${TIANDITU_LAYERS[tiandituBase(layers)].name}` : layers.satellite ? '地表影像' : '开源道路地形');
   const sourceChoices = useMemo(() => comparisonChoices(layers, mapSources.source, rasterName, mapSources.maps), [layers, mapSources.source, rasterName, mapSources.maps]);
   const journeyChoices = useMemo(() => skyJourney ? journeySourceChoices(layers, mapSources.source, mapSources.maps) : [],
     [skyJourney, layers, mapSources.source, mapSources.maps]);
   const favoriteSourceId = mapSources.source
     ? sourceChoices.find(choice => choice.id !== 'current' && choice.source?.id === mapSources.source?.id)?.id ?? 'current'
-    : domesticBasemap ? `tdt-${tiandituBase(layers)}` : !layers.satellite ? 'terrain' : layers.imageryMode === 'latest' ? 'latest' : 'sentinel';
+    : domesticBasemap ? `tdt-${tiandituBase(layers)}` : layers.satellite ? 'sentinel' : 'terrain';
   const rasterSelectionSignature = useRef<string | null>(null);
   useEffect(() => {
     if (!mapSources.ready) return;
@@ -426,7 +418,7 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
     return { ...session, route: { ...session.route, coordinates: rejoin.route.coordinates, segments: rejoin.route.segments,
       stops: [{ name: '返回原路线', coordinates: rejoin.target.point }] } };
   }, [guidance.session, guidance.rejoin]);
-  const floatingNavigation = useFloatingNavigation(floatingSession, { showWeather: liveMapWeather, marks: annotations.items });
+  const floatingNavigation = useFloatingNavigation(floatingSession, { marks: annotations.items });
   useEffect(() => {
     if (!guidance.active) searchNavigationDraft.clear();
   }, [guidance.active, searchNavigationDraft]);
@@ -734,7 +726,7 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
     return () => window.clearTimeout(timer);
   }, [lockedMarkerNotice, focusLock.locked, recorder.record.phase]);
   const pendingPositionFocus = useRef(false);
-  const startupCameraStatus = useRef<'pending' | 'applied' | 'cancelled'>(weatherPreview ? 'cancelled' : 'pending');
+  const startupCameraStatus = useRef<'pending' | 'applied' | 'cancelled'>('pending');
   const startupSavedCamera = useRef<boolean | null>(null);
   const cancelStartupCamera = useCallback(() => {
     if (startupCameraStatus.current === 'pending')
@@ -2298,8 +2290,6 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
           },
         }}>
         <TerrainMap
-          initialCamera={weatherPreview}
-          persistCamera={!weatherPreview}
           onReady={() => setMapReadyEpoch((epoch) => epoch + 1)}
           mapSource={mapSources.source}
           onSourceStatus={mapSources.setStatus}
@@ -3283,8 +3273,6 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
             setSourcesNavigation(null);
             setPanel('sources');
           }}
-          satelliteDate={satellite.date}
-          satelliteStatus={satellite.status}
           mapStatus={mapStatus}
         />
         {boxSelecting && (
@@ -3493,7 +3481,6 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
                 }
               })
           )}
-        {liveMapWeather && mapReadyEpoch > 0 && !comparison && !skyOrigin && !skyJourney && <LiveMapWeather key={mapReadyEpoch} mapRef={map} />}
         <ControlDock
           floatingNavigation={floatingNavigation.supported || process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW === '1' ? <FloatingNavigationControls controls={floatingNavigation} preview={process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW === '1'} /> : undefined}
           industryEnabled={showIndustryToolsEntry(INDUSTRY_TOOLS_ENABLED)}
@@ -3542,13 +3529,6 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
               position.locate();
             }
           }}
-          liveWeather={{ enabled: liveMapWeather, onToggle: () => {
-            const enabled = !liveMapWeather;
-            setLiveMapWeather(enabled);
-            if (!weatherPreview) {
-              try { localStorage.setItem(liveMapWeatherStorageKey, String(enabled)); } catch { /* Optional preference. */ }
-            }
-          } }}
           onPhotoMarkers={() => { gpsPhotoPoints.current = []; }}
           onSection={TERRAIN_SECTION_ENABLED ? toggleSection : undefined}
           sectionActive={sectionEditing || survey.active}
@@ -3687,14 +3667,13 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
               }}
               onNavigation={setSourcesNavigation}
               sources={mapSources}
-              builtin={!layers.satellite ? 'terrain' : layers.imageryMode}
+              builtin={layers.satellite ? 'detail' : 'terrain'}
               onBuiltin={(id) => {
                 mapSources.select('');
                 const target = applyLayerPatch(layers, {
                   offlineBasemap: false,
                   satellite: id !== 'terrain',
                   satelliteProvider: 'sentinel',
-                  ...(id !== 'terrain' ? { imageryMode: id } : {}),
                 });
                 update(settingsForBasemapSource(target, layers));
               }}

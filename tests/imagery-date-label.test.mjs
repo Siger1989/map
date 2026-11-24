@@ -1,40 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_LAYERS, applyLayerPatch } from '../modules/map/types.ts';
-import {
-  imageryDateLabel,
-  imageryDateSourceKey,
-} from '../modules/map/imageryDateLabel.ts';
+import { imageryDateLabel } from '../modules/map/imageryDateLabel.ts';
 
-test('built-in imagery labels distinguish an annual composite from an observation date', () => {
+test('built-in imagery labels retain the annual composite date for retired imagery preferences', () => {
   const eox = applyLayerPatch(DEFAULT_LAYERS, { satellite: true, imageryMode: 'detail' });
-  assert.deepEqual(imageryDateLabel(eox, null, false, null), {
+  const label = {
     text: '影像日期：2025年合成', kind: 'imagery',
-  });
-
-  const latest = { ...eox, imageryMode: 'latest' };
-  assert.deepEqual(imageryDateLabel(latest, null, false, {
-    date: '2026-09-28', ready: true, status: '最新可用',
-  }), { text: '影像日期：2026-09-28', kind: 'imagery' });
-  assert.equal(imageryDateLabel(latest, null, false, {
-    date: '2026-09-28', ready: false, status: '卫星影像暂不可用',
-  })?.text, '影像日期：未提供');
+  };
+  assert.deepEqual(imageryDateLabel(eox, null, false), label);
+  assert.deepEqual(imageryDateLabel({ ...eox, imageryMode: 'latest' }, null, false), label);
 });
 
-test('date labels clear on source changes and do not infer custom source dates', () => {
-  const latest = { ...DEFAULT_LAYERS, satellite: true, imageryMode: 'latest' };
-  const oldSourceKey = imageryDateSourceKey(latest, null, false);
+test('date labels do not infer dates when switching to a custom source', () => {
+  const settings = { ...DEFAULT_LAYERS, satellite: true };
   const custom = {
     id: 'local-1', name: '卫星2024', kind: 'online', format: 'xyz',
     attribution: '', minzoom: 0, maxzoom: 18, tileSize: 256, bytes: 0,
     tiles: ['https://example.invalid/2024/{z}/{x}/{y}.jpg'],
   };
-  const newSourceKey = imageryDateSourceKey(latest, custom, false);
-  assert.notEqual(newSourceKey, oldSourceKey);
-  assert.equal(imageryDateLabel(latest, custom, false, {
-    date: '2026-09-28', ready: true, status: 'latest',
-  })?.text, '图源日期：未提供');
-  assert.equal(imageryDateLabel(DEFAULT_LAYERS, null, false, null), null);
+  assert.equal(imageryDateLabel(settings, custom, false)?.text, '图源日期：未提供');
+  assert.equal(imageryDateLabel(DEFAULT_LAYERS, null, false), null);
 });
 
 test('image-only custom sources use an image date label without guessing a date', () => {
@@ -42,6 +28,6 @@ test('image-only custom sources use an image date label without guessing a date'
     id: 'image-1', name: 'Raster', kind: 'image', format: 'png',
     attribution: '', minzoom: 0, maxzoom: 18, tileSize: 256, bytes: 0,
   };
-  assert.equal(imageryDateLabel(DEFAULT_LAYERS, image, false, null)?.text,
+  assert.equal(imageryDateLabel(DEFAULT_LAYERS, image, false)?.text,
     '影像日期：未提供');
 });

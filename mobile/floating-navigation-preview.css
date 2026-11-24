@@ -34,6 +34,5 @@
 .floating-layout-body li + li { border-top: 1px solid #2b4838; }
 .floating-layout-body li strong { font-weight: 700; font-variant-numeric: tabular-nums; }
 .floating-layout-body li span { display: flex; align-items: center; gap: 2px; color: #e5c186; white-space: nowrap; }
-.floating-layout-body li[data-weather='true'] span { color: #9edaf3; }
 .floating-preview-location { display: flex; align-items: center; gap: 4px; min-height: 25px; padding-inline: 6px; border-top: 1px solid #395347; color: #adf0ef; font-size: 11px; white-space: nowrap; }
 .floating-preview-location i { width: 6px; height: 6px; border-radius: 50%; background: #5de1f4; }

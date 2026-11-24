@@ -64,6 +64,25 @@ test("empty and singleton routes never fake motion or direction", () => {
   assert.equal(frame.cameraElevationM, null);
 });
 
+test("a moving journey ignores isolated or repeated-point segments without adding a connection", () => {
+  const moving = [point(103.5, 30.9), point(103.51, 30.9)];
+  const source = { name: "multi-part", segments: [
+    [point(104, 31)],
+    [point(105, 31), point(105, 31)],
+    moving,
+    [point(106, 31)],
+  ] };
+  const model = createJourneyPlayback(source);
+  assert.equal(model.segments.length, 1);
+  assert.equal(source.segments.length, 4);
+  assert.equal(model.totalDistanceM, metresBetween(moving[0].coordinates, moving[1].coordinates));
+  const first = getJourneyPlaybackFrame(model, 0);
+  assert.deepEqual(first.coordinates, moving[0].coordinates);
+  assert.notEqual(first.headingDeg, null);
+  assert.notDeepEqual(first.cameraCoordinates, first.coordinates);
+  assert.deepEqual(getJourneyPlaybackFrame(model, model.totalDistanceM).coordinates, moving[1].coordinates);
+});
+
 test("invalid coordinates separate valid segments rather than joining across missing points", () => {
   const model = createJourneyPlayback({
     name: "gap", segments: [[point(0, 0), point(0, 0.001), point(181, 0), point(20, 30), point(20, 30.001)]],

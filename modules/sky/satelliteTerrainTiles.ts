@@ -12,7 +12,11 @@ import type { Tile } from './satelliteTerrainGeometry';
 import { loadExactJourneyRaster } from './journeyImagery';
 
 const tileSize = 256;
-const journeyImageryBudgetMs = 3500;
+function journeyImagerySignal(signal: AbortSignal) {
+  // The Android asset gateway can spend up to 12 seconds on a tile.
+  const budgetMs = location.hostname === 'appassets.androidplatform.net' ? 13_000 : 3_500;
+  return AbortSignal.any([signal, AbortSignal.timeout(budgetMs)]);
+}
 let nativeImageryRetryAt = 0;
 let terrainStore: ReturnType<typeof createBrowserTileCache> | undefined;
 
@@ -68,7 +72,7 @@ export async function loadSatelliteTile(tile: Tile, signal: AbortSignal, remembe
   const url = expand(template, tile);
   const key = 'tdt-img/' + tile.key;
   let fetched = false;
-  const imagerySignal = journey ? AbortSignal.any([signal, AbortSignal.timeout(journeyImageryBudgetMs)]) : signal;
+  const imagerySignal = journey ? journeyImagerySignal(signal) : signal;
   const response = location.hostname === 'appassets.androidplatform.net'
     ? await cachedMapFetch(url,imagerySignal,undefined,true,async (request,requestSignal) => {
       const hit = await store().get(key);
@@ -119,9 +123,8 @@ function fetchJourneyRaster(url: string, signal: AbortSignal) {
   });
 }
 
-export function loadJourneyImageryTile(source: MapSource, tile: Tile, signal: AbortSignal, remember?: (image: Blob) => void) {
-  const boundedSignal = AbortSignal.any([signal, AbortSignal.timeout(journeyImageryBudgetMs)]);
-  return loadExactJourneyRaster(source, tile, fetchJourneyRaster, boundedSignal, remember);
+export async function loadJourneyImageryTile(source: MapSource, tile: Tile, signal: AbortSignal, remember?: (image: Blob) => void) {
+  return loadExactJourneyRaster(source, tile, fetchJourneyRaster, journeyImagerySignal(signal), remember);
 }
 
 export async function loadSatelliteDem(tile: Tile, signal: AbortSignal) {

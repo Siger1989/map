@@ -33,7 +33,7 @@ export function FloatingNavigationControls({ controls, preview = false }: { cont
         授权并启用
       </button>}
     <details className="floating-navigation-controls__message"><summary>显示选项与地图说明</summary>
-      <p>导航时，小窗右栏显示前方标记和沿途距离。打开工具里的「实时天气」后，也会显示预计遇雨的路段。</p>
+      <p>导航时，小窗右栏显示前方标记和沿途距离。</p>
       <p>小窗与锁屏地图共用真实高程；路线、实走轨迹和中央实际方向继续显示。缺少高程的区域暂时留黑，不补画地形。</p>
       <p>节能仅在熄屏时降低浮窗定位频率；屏幕亮起恢复高频定位。启用常亮时会调暗锁屏地图，但不能承诺整机省电。锁屏地图需已开启；不会主动唤醒屏幕或绕过解锁。</p>
       <p>罗盘使用手机传感器；若精度不足会提示校准，不会拿路线方向代替罗盘。</p>
