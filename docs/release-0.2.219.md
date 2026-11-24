@@ -16,3 +16,9 @@ Android 行程影像现在给原生网关留出完整请求时间。先绘制可
 | 手机实际网络、渲染及用户轨迹 | 待真机验证。上述受控实测验证了两类可复现故障。 |
 
 Android 8.0 及以上，包名 `com.shantu.oldengine`，版本 `0.2.219-test`，构建号 226。覆盖安装前请保存记录和草稿。HarmonyOS 6.1 原生 HAP 尚未交付。
+
+APK 165,936,340 字节，SHA-256 `2c728e279e10858339fa431129815ac5edf09be83b0b30524e1164b6ae3b2202`。原签名、ZIP CRC、16 KiB 对齐、1,944 项网页资源、39 项私人图源以及注册天地图核验通过。本机保留 0.2.218 归档。[对应源码](https://github.com/Siger1989/map/commit/003dfe7a33f3e678c8b3977ac6790f957a21faa3)
+
+签名包网页资源复测用时 0.80 秒显示地形、5.19 秒补上必应卫星影像。实际点击播放推进到 1.17%，暂停切换仅地形保留原进度。旧天气开关预置为打开，仍无气象请求。TypeScript、61 项定向测试和 Android 编译通过。
+
+私人 GitHub 发行附件已回读。27 个分卷合成的 APK 与本机归档 SHA-256 一致，发布前后均验证仓库为 PRIVATE。下载页的 `download-shantu-219.ps1` 使用 GitHub CLI 取回并核对分卷。[私人下载页](https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.219-private)
