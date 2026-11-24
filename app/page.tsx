@@ -574,8 +574,8 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
     suspendPanelForDialog();
     setRouteImportOpen(true);
   };
-  const openRouteShareDialog = (target: ShareRoute) => {
-    suspendPanelForDialog();
+  const openRouteShareDialog = (target: ShareRoute, keepPanel = false) => {
+    if (!keepPanel) suspendPanelForDialog();
     setShareTarget(target);
   };
   const openPlaceShareDialog = (target: NonNullable<typeof placeShareTarget>) => {
@@ -2631,10 +2631,10 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
           !routeChild &&
           !selectedPhoto &&
           !navigationTarget &&
-          !shareTarget && (
+          (!shareTarget || routeWindow === 'details') && (
             <>
               {(routeWindow === 'card' || routeWindow === 'display') && !guidance.active && !measurement.active && !sectionEditing && <SelectedRouteInfo track={routeWindow === 'display' ? routeDisplay.target ?? railTrack : railTrack} preferences={routeDisplay.preferences} reversed={routeReversed} point={routeProfilePoint} />}
-              {routeWindow === 'card' && (
+              {(routeWindow === 'card' || routeWindow === 'details') && (
                 <>
                 <RouteCard
                   key={railTrack.id}
@@ -2700,6 +2700,8 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
                   onMarker={() => setRouteWindow('marker')}
                   onEdit={() => beginRouteEdit(railTrack)}
                   onDetails={() => setRouteWindow('details')}
+                  onSimulate={() => requestSkyJourney(savedTrackSkyJourney(railTrack))}
+                  onShare={() => shareTrackById(railTrack.id)}
                   onCache={() => {
                     setRouteCacheTarget({ routeId: railTrack.id === DRAFT_ID ? 'draft' : railTrack.id, tab: 'setup', returnPanel: null });
                     setPanel('cache');
@@ -2718,6 +2720,7 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
               )}
               {routeWindow === 'details' && (
                 <RouteDetails
+                  open={!shareTarget && !placeShareTarget}
                   onAppearance={(style) => {
                     let ok = true;
                     if (railTrack.id === DRAFT_ID) tracks.setStyle(style);
@@ -4016,6 +4019,7 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
           )}
           {panel === 'route' && (
             <RoutePanel
+              detailsCovered={Boolean(shareTarget)}
               onCache={() => {
                 setRouteCacheTarget({ routeId: 'planned', tab: 'setup', returnPanel: 'route' });
                 setPanel('cache');
@@ -4027,9 +4031,9 @@ export default function Home({ weatherPreview }: { weatherPreview?: CameraSnapsh
               onImport={openRouteImportDialog}
               onEditPoints={editPlannedPoints}
               onCancel={stopNavigation}
-              onShare={() => {
+              onShare={(keepOverview) => {
                 if (navigation.route)
-                  openRouteShareDialog(sharePlanned(navigation.route));
+                  openRouteShareDialog(sharePlanned(navigation.route), keepOverview);
               }}
               navigation={navigation}
               previewMode={routePreviewMode}

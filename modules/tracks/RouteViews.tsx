@@ -18,6 +18,7 @@ import { RoutePointMarkerFields, type PointMarkerInput } from './RoutePointMarke
 import { displayedPointColor } from './displayColors';
 import { resolvedRouteTerminals } from './routeTerminals';
 import { RouteEndpointActions } from './RouteEndpointActions';
+import { RouteBack, RouteDetailsDialog } from './RouteDetailsDialog';
 import { isDesktopShell } from '../platform/desktop';
 import {
   ArrowLeft,
@@ -26,7 +27,6 @@ import {
   GitBranch,
   Undo2,
   Save,
-  Share2,
   Box,
   Cylinder,
   Circle,
@@ -58,19 +58,9 @@ import { withTerrainProfileSamples } from './terrainProfileSamples.ts';
 import { requestSkyJourney, savedTrackSkyJourney } from '../sky/journeyPlayback';
 import './routeWindows.css';
 
-export function RouteBack({ onBack }: { onBack: () => void }) {
-  return (
-    <button className="route-back" onClick={onBack}>
-      <ArrowLeft size={16} />
-      返回
-    </button>
-  );
-}
+export { RouteBack } from './RouteDetailsDialog';
 export { HomeRouteCard as RouteCard } from './HomeRouteCard';
-const formatCoordinate = (p: Coordinate | undefined) =>
-  p
-    ? `${Math.abs(p[1]).toFixed(5)}°${p[1] < 0 ? 'S' : 'N'}，${Math.abs(p[0]).toFixed(5)}°${p[0] < 0 ? 'W' : 'E'}`
-    : '—';
+
 export function RouteDetails({
   track,
   alternative,
@@ -90,6 +80,7 @@ export function RouteDetails({
   onAppearance,
   onSource,
   sourceName,
+  open = true,
 }: {
   track: ManualTrack;
   alternative: string;
@@ -109,6 +100,7 @@ export function RouteDetails({
   onAppearance?: (style: TrackStyle) => boolean;
   onSource?: () => void;
   sourceName?: string;
+  open?: boolean;
 }) {
   const [name, setName] = useState<string | null>(null);
   const [nameError, setNameError] = useState('');
@@ -132,9 +124,6 @@ export function RouteDetails({
       : null;
     return snapshot ? withTerrainProfileSamples(track, snapshot.lines, snapshot.samples) : track;
   };
-  const root = useRouteDialogFocus(() =>
-    confirmDelete ? setConfirmDelete(false) : onBack(),
-  );
   const variants = useMemo(
     () =>
       trackAlternatives(track.segments, normalizeTrackStyle(track.style).color),
@@ -142,41 +131,101 @@ export function RouteDetails({
   );
   const current = variants.find((v) => v.id === alternative) ?? variants[0];
   const lines = current ? [current.coordinates] : track.segments;
-  const [routeStart,routeEnd]=resolvedRouteTerminals(track);
+  const [routeStart, routeEnd] = resolvedRouteTerminals(track);
   const linked = linkedRouteMarkers(track, markers)
     .map((marker) => ({ marker, ...markerChainage(lines, marker.coordinates) }))
     .sort((a, b) => a.distance - b.distance);
   const pictures = photosForTrack(track, photos);
+  const timed = track.source === 'recorded' || hasTrackTime(track);
+  const startName = track.sharedRoute?.stops[0]?.name;
+  const endName = routeEnd ? track.sharedRoute?.stops.at(-1)?.name : undefined;
   return (
-    <div className="route-window-backdrop">
-      <section
-        ref={root}
-        className="route-surface route-details"
-        role="dialog"
-        aria-modal="true"
-        aria-label="路线详情"
-      >
-        <header>
-          {onHide && (track.source === 'recorded' || hasTrackTime(track)) && (
-            <button className="route-hide" aria-label={`${track.hidden ? '显示' : '隐藏'}实走行程`} title={`${track.hidden ? '显示' : '隐藏'}实走行程`} aria-pressed={!track.hidden} onClick={onHide}>
-              {track.hidden ? '显示' : '隐藏'}
-            </button>
-          )}
-          <RouteBack
-            onBack={() => (confirmDelete ? setConfirmDelete(false) : onBack())}
-          />
-          <strong>路线详情</strong>
-          <button
-            className="route-solid"
-            disabled={track.segments.reduce((count, line) => count + line.length, 0) < 2}
-            onClick={() => onShare(trackWithProfile())}
-          >
-            <Share2 size={16} />
-            分享
+    <RouteDetailsDialog
+      open={open}
+      name={track.name}
+      start={{ name: startName, coordinate: routeStart }}
+      end={{ name: endName, coordinate: routeEnd }}
+      endpointActions={(routeStart || routeEnd) && <>
+        {routeStart && <div className="route-detail-endpoint-action">
+          <span>起点</span>
+          <RouteEndpointActions routeName={track.name} label="起点" stopName={startName} point={routeStart} onShare={onPointShare} />
+        </div>}
+        {routeEnd && <div className="route-detail-endpoint-action">
+          <span>终点</span>
+          <RouteEndpointActions routeName={track.name} label="终点" stopName={endName} point={routeEnd} onShare={onPointShare} />
+        </div>}
+      </>}
+      onBack={() => confirmDelete ? setConfirmDelete(false) : onBack()}
+      onShare={() => onShare(trackWithProfile())}
+      shareDisabled={track.segments.reduce((count, line) => count + line.length, 0) < 2}
+      profile={timed ? <>
+        <RecordedProfile track={track} />
+        <RecordedDetails track={track} />
+      </> : <TrackColorProfile track={track} lines={lines} onCondition={onCondition} onSamples={onProfileSamples} />}
+    >
+      <section className="route-detail-group route-detail-stats-group" aria-label="路线资料">
+        {!timed && <p className="route-origin-note">{trackSourceLabel(track)}{onSource && <button type="button" onClick={onSource}>查看实走原件：{sourceName}</button>}</p>}
+        <RouteAnalysisSummary track={track} onShowMetric={onShowMetric} />
+        {track.id !== DRAFT_ID && track.segments.some(line => line.length > 0) && (
+          <button type="button" className="route-solid" onClick={() => requestSkyJourney(savedTrackSkyJourney(trackWithProfile()))}>
+            轨迹模拟
           </button>
-        </header>
-        <div className="route-details-body route-details-groups">
-          <section className="route-detail-group route-detail-name-group" aria-label="名称编辑">
+        )}
+        <details className="route-detail-basic-more">
+          <summary>基本资料与路线组成</summary>
+          <dl className="route-data-rows">
+            {[
+              ['来源', trackSourceLabel(track)],
+              ['创建', drawingTime(track.createdAt)],
+              ['更新', track.updatedAt ? drawingTime(track.updatedAt) : '—'],
+              ['节点', `${new Set(track.segments.flat().map((p) => p.join(','))).size}个 · ${routeConnectionLabel(track)}`],
+            ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+          </dl>
+          <div className="route-composition">
+            {variants.map((variant) => (
+              <div key={variant.id}>
+                <i style={{ background: variant.color }} />
+                <span>{variant.label}</span>
+                <span>{formatDistance(variant.distance)}{variant.id !== 'main' ? ' · 替代中间路段' : ''}</span>
+              </div>
+            ))}
+          </div>
+        </details>
+      </section>
+      {(linked.length > 0 || pictures.length > 0) && (
+        <section className="route-detail-group route-detail-media-group" aria-label="沿途标记与关联照片">
+          {linked.length > 0 && <>
+            <h3>沿途标记 · {linked.length}个</h3>
+            <div className="route-detail-markers">
+              {linked.map(({ marker, distance, offset }) => (
+                <button type="button" key={marker.id} onClick={() => onMarker(marker.id)}>
+                  <MapPin size={16} color={marker.color} />
+                  <span>{marker.name || '未命名标记'}</span>
+                  <small>{offset > 30 ? '其他路段' : formatDistance(distance)}</small>
+                </button>
+              ))}
+            </div>
+          </>}
+          {pictures.length > 0 && <>
+            <h3>关联照片 · {pictures.length}张</h3>
+            <div className="route-detail-photos">
+              {pictures.map((photo) => (
+                <button type="button" key={photo.id} onClick={() => onPhoto(photo.id)}>
+                  <img src={photo.url} alt={photo.title || photo.name} />
+                  <small>{new Date(photo.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</small>
+                </button>
+              ))}
+            </div>
+          </>}
+        </section>
+      )}
+      <details className="route-detail-group route-detail-settings">
+        <summary>路线设置</summary>
+        {onHide && timed && (
+          <button type="button" aria-pressed={!track.hidden} onClick={onHide}>
+            {track.hidden ? '显示' : '隐藏'}实走行程
+          </button>
+        )}
           <form className="route-details-name" aria-label="修改路线名称" onSubmit={(event) => {
             event.preventDefault();
             const value = (name ?? track.name).trim();
@@ -188,7 +237,7 @@ export function RouteDetails({
             setNameSaved(true);
           }}>
             <label htmlFor="route-details-name">路线名称</label>
-            <SmartInput id="route-details-name" value={name ?? track.name} maxLength={60}
+            <SmartInput id="route-details-name" aria-label="路线名称" value={name ?? track.name} maxLength={60}
               onChange={(event) => { setName(event.target.value); setNameError(''); setNameSaved(false); }} />
             <div>
               <button type="button" onClick={() => { setName(null); setNameError(''); setNameSaved(false); }}>取消修改</button>
@@ -197,35 +246,6 @@ export function RouteDetails({
             {nameError && <p role="alert">{nameError}</p>}
             {nameSaved && <p role="status">名称已保存</p>}
           </form>
-          </section>
-          <section className="route-detail-group route-detail-profile-group" aria-label="海拔曲线与采样点">
-          {(track.source === 'recorded' || hasTrackTime(track)) ? <RecordedProfile track={track} /> : <TrackColorProfile
-            track={track}
-            lines={lines}
-            onCondition={onCondition}
-            onSamples={onProfileSamples}
-          />}
-          </section>
-          <section className="route-detail-group route-detail-stats-group" aria-label="路线统计">
-          {(track.source === 'recorded' || hasTrackTime(track)) ? <RecordedDetails track={track} /> : <p className="route-origin-note">{trackSourceLabel(track)} · 不包含实走用时、速度记录。{onSource && <button onClick={onSource}>查看实走原件：{sourceName}</button>}</p>}
-          <RouteAnalysisSummary track={track} onShowMetric={onShowMetric} />
-          {track.id !== DRAFT_ID && track.segments.some(line => line.length > 0) && (
-            <button type="button" className="route-solid" onClick={() => requestSkyJourney(savedTrackSkyJourney(trackWithProfile()))}>
-              轨迹模拟
-            </button>
-          )}
-          <details className="route-detail-basic-more">
-          <summary>基本资料</summary>
-          <dl className="route-data-rows">
-            {[
-              ['来源', trackSourceLabel(track)],
-              ['创建', drawingTime(track.createdAt)],
-              ['更新', track.updatedAt ? drawingTime(track.updatedAt) : '—'],
-              ['节点', `${new Set(track.segments.flat().map((p) => p.join(','))).size}个 · ${routeConnectionLabel(track)}`],
-            ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
-          </dl>
-          </details>
-          </section>
           {onAppearance && <section className="route-detail-group route-detail-appearance-group" aria-label="整条路线外观"><h3>整条路线外观</h3><div className="route-appearance-row">{TRACK_COLORS.map((color,i) => <button key={color} aria-label={`路线${['红色','蓝色','绿色','紫色','橙色','粉色'][i]}`} aria-pressed={track.style?.color === color} onClick={() => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), color, colorMode: 'solid' }) ? '路线颜色已保存' : '保存失败，请重试')}><i style={{background:color}} /></button>)}<input type="color" aria-label="自定义整条路线颜色" value={track.style?.color ?? '#ffb477'} onChange={e => setAppearanceMessage(onAppearance({...normalizeTrackStyle(track.style), color:e.target.value, colorMode:'solid'}) ? '路线颜色已保存' : '保存失败，请重试')} /></div>
             <label className="route-width-control">粗细<select aria-label="整条路线线宽" value={normalizeTrackStyle(track.style).width} onChange={e => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), width: Number(e.target.value) }) ? '路线粗细已保存' : '保存失败，请重试')}>
               {TRACK_WIDTHS.map(width => <option key={width} value={width}>{width} px</option>)}
@@ -235,79 +255,6 @@ export function RouteDetails({
               {Object.entries(TRAVEL_MODES).map(([id,label]) => <option key={id} value={id}>{label}</option>)}
             </select><small>用于速度配色，不改变实走数据。</small></label>
           </section>}
-          <section className="route-detail-group route-detail-composition-group" aria-label="起终点与路线组成">
-          <h3>起终点</h3>
-          <dl className="route-data-rows">
-            {[
-              ['起点', track.sharedRoute?.stops[0]?.name, routeStart],
-              [
-                '终点',
-                routeEnd ? track.sharedRoute?.stops.at(-1)?.name : undefined,
-                routeEnd,
-              ],
-            ].map(([label, name, coordinate]) => (
-              <div key={String(label)}>
-                <dt>{String(label)}</dt>
-                <dd>
-                  {name ? <span>{String(name)}</span> : null}
-                  <small className="route-endpoint-value">
-                    {coordinate ? formatCoordinate(coordinate as Coordinate) : '未设置'}
-                  </small>
-                  {coordinate && <RouteEndpointActions routeName={track.name} label={String(label)} stopName={name ? String(name) : undefined} point={coordinate as Coordinate} onShare={onPointShare}/>}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          <h3>路线组成</h3>
-          <div className="route-composition">
-            {variants.map((v) => (
-              <div key={v.id}>
-                <i style={{ background: v.color }} />
-                <span>{v.label}</span>
-                <span>
-                  {formatDistance(v.distance)}
-                  {v.id !== 'main' ? ' · 替代中间路段' : ''}
-                </span>
-              </div>
-            ))}
-          </div>
-          </section>
-          <section className="route-detail-group route-detail-media-group" aria-label="沿途标记与关联照片">
-          <h3>沿途标记 · {linked.length}个</h3>
-          <div className="route-detail-markers">
-            {linked.length ? (
-              linked.map(({ marker, distance, offset }) => (
-                <button key={marker.id} onClick={() => onMarker(marker.id)}>
-                  <MapPin size={16} color={marker.color} />
-                  <span>{marker.name || '未命名标记'}</span>
-                  <small>
-                    {offset > 30 ? '其他路段' : formatDistance(distance)}
-                  </small>
-                </button>
-              ))
-            ) : (
-              <p>暂无关联标记</p>
-            )}
-          </div>
-          <h3>关联照片 · {pictures.length}张</h3>
-          <div className="route-detail-photos">
-            {pictures.length ? (
-              pictures.map((p) => (
-                <button key={p.id} onClick={() => onPhoto(p.id)}>
-                  <img src={p.url} alt={p.title || p.name} />
-                  <small>
-                    {new Date(p.time).toLocaleTimeString('zh-CN', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </small>
-                </button>
-              ))
-            ) : (
-              <p>暂无关联照片</p>
-            )}
-          </div>
-          </section>
           {track.id !== DRAFT_ID && (
             <section className="route-detail-group route-detail-delete-group" aria-label="删除路线">
             <div className="route-delete-area">
@@ -338,9 +285,8 @@ export function RouteDetails({
             </div>
             </section>
           )}
-        </div>
-      </section>
-    </div>
+      </details>
+    </RouteDetailsDialog>
   );
 }
 export function RouteEditToolbar({

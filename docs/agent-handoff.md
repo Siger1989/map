@@ -1,3 +1,9 @@
+> **2026-11-24 0.2.218 交付**。路线动作样式在 `routeActionGroups.css`，新装默认图源在 `mapSources/selection.ts`。有旧图层或图源偏好时优先恢复。独立网页测到收藏进入路线的绘制延迟，设备性能待验。见 [实测](release-0.2.218.md)。
+
+> **2026-11-24 路线详情统一**。`RouteResultSummary` 和 `RouteDetails` 复用 `RouteDetailsDialog`。分享关闭后回详情，详情返回各自入口。轨迹管理中的扫码导入工作流沿用原入口。见 [验收](ui-quality-gate.md#2026-11-24--路线详情统一)。
+
+> **2026-11-23 路线概览合并**。`RouteResultSummary` 直接列出路线操作，详情在卡内展开。`HomeRouteCard` 复用 `RouteActionGroups`。规划、收藏和导入 GPX 采用后的导航前界面一致。右侧本地画板改用新截图，0.2.217 私人 APK 对应前一轮交付。见 [验收](ui-quality-gate.md#2026-11-23--路线概览合并)。
+
 > **2026-11-23 回家接续**。按 [跨电脑交接](handoff-20261123-home.md) 读取当前源码分支、私人 APK 和 21 窗口 UI 画板。先让用户看整体和确认优先级，再改应用。
 
 > **2026-11-23 主图「工具」去滚动**。`homeMap.css` 与 `outdoorTheme.css` 调整工具网格与窄屏定位避让。七个私人网页尺寸显示全部 11 项。触控真机与新 APK 待验。见 [验收](ui-quality-gate.md#2026-11-23--主图工具菜单一屏显示)。

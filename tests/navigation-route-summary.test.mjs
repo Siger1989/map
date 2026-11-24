@@ -4,7 +4,7 @@ import { build } from 'esbuild';
 import { parseHTML } from 'linkedom';
 import { mkdir } from 'node:fs/promises';
 
-test('route details show the bounded elevation profile without turn instructions and retain it when collapsed', async () => {
+test('the route details dialog loads a bounded profile and retains it when closed', async () => {
   const { window } = parseHTML('<html><body><div id="root"></div></body></html>');
   Object.assign(globalThis, {
     window,
@@ -93,39 +93,34 @@ test('route details show the bounded elevation profile without turn instructions
   };
 
   await act(async () => root.render(React.createElement(RouteResultSummary, props)));
-  const more = host.querySelector('[aria-controls="route-summary-more"]');
-  const details = host.querySelector('[aria-controls="route-summary-detail"]');
-  assert.equal(more.textContent, '更多');
-  assert.equal(host.querySelector('#route-summary-more').hidden, true);
-  assert.equal(host.querySelector('.route-summary-metrics').textContent.includes('驾车'), true);
-  await act(async () => more.click());
-  assert.equal(host.querySelector('.route-elevation'), null, 'opening more does not request the profile');
+  const details = host.querySelector('[aria-haspopup="dialog"]');
+  const dialog = () => document.querySelector('[role="dialog"][aria-label="路线详情"]');
+  assert.equal(details.textContent, '路线详情');
+  assert.equal(host.querySelector('.route-summary-modes button[aria-pressed="true"]').textContent, '驾车');
+  assert.equal(dialog(), null, 'opening the summary does not request the profile');
   await act(async () => details.click());
-  assert.equal(host.querySelector('.route-endpoint-start')?.nextElementSibling.textContent, '绿色起点');
-  assert.equal(host.querySelector('.route-endpoint-end')?.nextElementSibling.textContent, '红色终点');
-  await act(async () => host.querySelector('[aria-label="交换起点和终点"]').click());
-  assert.equal(swapCalls, 1, 'endpoint exchange stays on the route card');
-  const modeSelect = host.querySelector('[aria-label="当前导航方式"]');
-  Object.defineProperty(modeSelect, 'value', { configurable: true, value: 'bicycle' });
-  await act(async () => modeSelect.dispatchEvent(new window.Event('change', { bubbles: true })));
+  assert.deepEqual([...dialog().querySelectorAll('.route-data-rows dd')].map(row => row.textContent), ['绿色起点', '红色终点']);
+  await act(async () => dialog().querySelector('[aria-label="交换起点和终点"]').click());
+  assert.equal(swapCalls, 1, 'endpoint exchange uses the existing planning callback');
+  await act(async () => host.querySelector('.route-summary-modes button[aria-label="骑行"]').click());
   assert.deepEqual(appliedModes, ['bicycle'], 'mode selection is wired to automatic replanning');
 
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
-  assert.equal(details.textContent, '收起详情');
+  assert.equal(details.textContent, '路线详情');
   assert.equal(profileRequests.length, 1);
   assert.ok(profileRequests[0].length > 100 && profileRequests[0].length <= 192, 'long routes use the bounded sample count');
-  assert.equal(host.querySelector('[data-testid="profile-chart"]') !== null, true, 'available height still renders a profile');
-  assert.match(host.textContent, /部分海拔缺失/);
-  assert.match(host.textContent, /最高海拔.*9\d+ m/);
-  assert.doesNotMatch(host.textContent, /出发|沿虚线前往道路接入点|左转/);
-  assert.equal(host.querySelector('[aria-label="沿途天气"]'), null);
+  assert.ok(dialog().querySelector('[data-testid="profile-chart"]'), 'available height renders a profile');
+  assert.match(dialog().textContent, /部分海拔缺失/);
+  assert.match(dialog().textContent, /最高海拔.*9\d+ m/);
+  assert.doesNotMatch(dialog().textContent, /出发|沿虚线前往道路接入点|左转/);
+  assert.equal(dialog().querySelector('[aria-label="沿途天气"]'), null);
   assert.equal(showCalls, 0, 'opening details does not move the map');
   assert.equal(JSON.stringify(route), originalRoute, 'the planned route stays unchanged');
 
+  await act(async () => dialog().querySelector('.route-back').click());
+  assert.equal(dialog().parentElement.hidden, true);
   await act(async () => details.click());
-  assert.equal(host.querySelector('#route-summary-detail').hidden, true);
-  await act(async () => details.click());
-  assert.equal(host.querySelector('#route-summary-detail').hidden, false);
+  assert.equal(dialog().parentElement.hidden, false);
   assert.equal(profileRequests.length, 1, 'closing and reopening retains the loaded elevation profile');
   assert.equal(showCalls, 0);
   await act(async () => root.unmount());

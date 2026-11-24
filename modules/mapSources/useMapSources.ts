@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { addMaps, ensureDefaultMaps, listMaps, removeMap } from './storage';
 import type { MapDraft, MapSource, StoredMap } from './types';
 import { freeMap } from './presets';
-import { resolveAvailableMapSelection } from './selection';
+import { resolveAvailableMapSelection, resolveInitialMapSelection } from './selection';
 import { loadDefaultSeedBundle, seedThenList } from './defaultSeeds';
+import { LAYER_PREFERENCES_KEY } from '../map/layerPreferences';
 
 const SELECTED = 'shantu-selected-map';
 export { resolveAvailableMapSelection } from './selection';
@@ -13,6 +14,11 @@ export function useMapSources(restoreSelection = true) {
   const [status, setStatus] = useState('');
   const [ready, setReady] = useState(false);
   const [revision, setRevision] = useState(0);
+  // Read before the main map writes its initial layer settings on first mount.
+  const [hasLayerPreferences] = useState(() => {
+    try { return localStorage.getItem(LAYER_PREFERENCES_KEY) !== null; }
+    catch { return true; }
+  });
   useEffect(() => {
     let alive = true;
     const changed = () => { void listMaps().then(items => {
@@ -39,8 +45,9 @@ export function useMapSources(restoreSelection = true) {
         try {
           const id = localStorage.getItem(SELECTED);
           if (restoreSelection) {
-            const available = resolveAvailableMapSelection(id, items);
+            const available = resolveInitialMapSelection(id, items, hasLayerPreferences);
             setSelected(available);
+            if (id === null && available) localStorage.setItem(SELECTED, available);
             if (!available && id) localStorage.removeItem(SELECTED);
           }
         } catch {}
@@ -54,14 +61,14 @@ export function useMapSources(restoreSelection = true) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [hasLayerPreferences, restoreSelection]);
   const select = useCallback((id: string) => {
     setSelected(id);
     setRevision((n) => n + 1);
     setStatus('');
     try {
-      if (id) localStorage.setItem(SELECTED, id);
-      else localStorage.removeItem(SELECTED);
+      // An empty value is an explicit selection of the provider in layer settings.
+      localStorage.setItem(SELECTED, id);
     } catch {
       setStatus('当前选择未能保存，重启后需重新选择');
     }

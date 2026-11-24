@@ -56,10 +56,11 @@ export function useOfflineMapMode(
         try { localStorage.setItem(OFFLINE_MAP_KEY, 'false'); } catch {}
       }
       setOfflineMapOnly(only);
-      let sourceId=''; try { sourceId=localStorage.getItem('shantu-selected-map')??''; } catch {}
+      let sourceId: string | null = null;
+      try { sourceId=localStorage.getItem('shantu-selected-map'); } catch {}
       // Re-selecting the same ID advances useMapSources' revision and rebuilds
-      // the raster source so cache-only changes take effect immediately.
-      callbacks.current.clearSource(sourceId);
+      // the raster source. An unset source is still being initialized on first run.
+      if (sourceId !== null) callbacks.current.clearSource(sourceId);
       callbacks.current.change({ offlineMaxZoom:only ? trip?.zoom ?? trip?.display?.offlineMaxZoom ?? 14 : null });
     };
     refresh();

@@ -57,6 +57,7 @@ export function RoutePanel({
   waitingForPosition = false,
   planningPositionStatus = '',
   quickRouteControls,
+  detailsCovered,
 }: {
   navigation: NavigationState;
   near: Coordinate;
@@ -70,7 +71,7 @@ export function RoutePanel({
   onStartNavigation: () => void;
   navigating: boolean;
   guidanceError: string;
-  onShare: () => void;
+  onShare: (keepOverview?: boolean) => void;
   onCache?: () => void;
   onEditPoints?: () => void; onCancel?: () => boolean | void;
   onImport?: () => void;
@@ -83,6 +84,7 @@ export function RoutePanel({
   waitingForPosition?: boolean;
   planningPositionStatus?: string;
   quickRouteControls?: ReactNode;
+  detailsCovered?: boolean;
 }) {
   const [editing, setEditing] = useState(() => !n.route);
   const previousRoute = useRef(n.route?.createdAt);
@@ -272,7 +274,8 @@ export function RoutePanel({
       setAnnouncement(`已移到${stopLabel(d.to, n.stops.length)}`);
     }
   };
-  if (n.route && !editing && n.picking === null) return <RouteResultSummary
+  if (n.route && !editing && n.picking === null) return <RouteResultSummary key={n.route.createdAt}
+    detailsCovered={detailsCovered}
     start={n.start} end={n.end} mode={n.mode} loading={n.loading}
     planningError={n.error}
     planningPositionStatus={planningPositionStatus}

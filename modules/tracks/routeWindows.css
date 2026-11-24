@@ -68,10 +68,6 @@
 .route-back {
   flex-shrink: 0;
 }
-.route-details header .route-hide {
-  flex-shrink: 0;
-  min-width: 44px;
-}
 .route-card {
   position: absolute;
   z-index: 40;
@@ -117,9 +113,12 @@
   z-index: 115;
   background: #12211865;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 10px;
+  padding: calc(12px + env(safe-area-inset-top)) 10px calc(12px + env(safe-area-inset-bottom));
+}
+.route-window-backdrop[hidden] {
+  display: none;
 }
 /* These route dialogs are sometimes portaled to body, outside the map skin's
    .observatory subtree; keep their radius and control focus tied to root tokens. */
@@ -147,7 +146,7 @@ html[data-ui-theme] :is(.route-dialog-backdrop, .observatory.home-map[data-ui-st
   flex-direction: column;
   overflow: hidden;
 }
-.route-details header {
+.route-details > header {
   flex-shrink: 0;
 }
 .route-details-body {
@@ -159,7 +158,7 @@ html[data-ui-theme] :is(.route-dialog-backdrop, .observatory.home-map[data-ui-st
 .route-details h2 {
   font-size: 17px;
   line-height: 1.3;
-  margin: 10px 0;
+  margin: 0 0 8px;
   overflow-wrap: anywhere;
 }
 .route-details h3 {
@@ -190,7 +189,9 @@ html[data-ui-theme] :is(.route-dialog-backdrop, .observatory.home-map[data-ui-st
 }
 .route-endpoint-value { user-select: all; }
 .route-endpoint-actions { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
-.route-details .route-endpoint-actions button { width: 52px; min-height: 36px; padding: 4px; font-size: 12px; }
+.route-details .route-endpoint-actions button { min-height: 36px; padding: 4px 8px; font-size: 12px; }
+.route-detail-endpoint-action { display: flex; align-items: center; gap: 8px; }
+.route-detail-endpoint-action > span:first-child { flex: 0 0 auto; }
 .route-endpoint-feedback { flex-basis: 100%; font-size: 11px; }
 .route-endpoint-feedback:empty { display: none; }
 .route-composition > div {
@@ -687,7 +688,17 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-d
 .observatory .recorded-more-stats > summary { min-height:32px; display:flex; align-items:center; color:var(--ui-accent); cursor:pointer; font-size:12px; }
 .observatory .route-detail-basic-more[open] > summary,
 .observatory .recorded-more-stats[open] > summary { margin-bottom:4px; }
+.observatory .route-details :is(.route-detail-basic-more, .recorded-more-stats) > summary::after {
+  content: '›';
+  margin-left: auto;
+}
+.observatory .route-details :is(.route-detail-basic-more, .recorded-more-stats)[open] > summary::after {
+  transform: rotate(90deg);
+}
 .observatory .route-detail-group .route-details-name { margin:0; gap:4px; }
+.observatory .route-detail-settings[open] > :not(summary) { margin-top: 8px; }
+.observatory .route-detail-profile-group > .route-elevation { border: 0; padding-top: 0; }
+.observatory .route-detail-profile-group .route-elevation-chart-empty { margin: 4px 0; }
 .observatory .route-detail-group .route-details-name input { border-color:var(--ui-line); border-radius:var(--ui-radius-control,4px); background:var(--ui-field); color:var(--ui-ink); }
 .observatory .route-detail-group .route-details-name label,
 .observatory .route-detail-group .route-travel-mode { font-size:12px; }
@@ -767,6 +778,26 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-d
 .observatory .recorded-speed-legend span { display:flex; align-items:center; gap:3px; }
 .observatory .recorded-speed-legend i { width:10px; height:4px; }
 .observatory .recorded-point-info { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; padding:4px; margin-top:4px; background:#edf5ef; font-size:11px; overflow-wrap:anywhere; }
+html[data-ui-theme] .observatory .route-details .route-detail-profile-group :is(.route-elevation-chart, .recorded-profile svg, .color-elevation svg, .recorded-point-info) {
+  background: var(--ui-field);
+  color: var(--ui-ink);
+  border-color: var(--ui-line);
+  border-radius: var(--ui-radius-control);
+}
+.observatory .route-details .route-detail-profile-group :is(.recharts-cartesian-axis-tick-value, .recorded-profile svg text, .color-elevation svg text) {
+  fill: var(--ui-muted);
+}
+.observatory .route-details .recorded-details > .recorded-stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0;
+}
+.observatory .route-details .recorded-details > .recorded-stats-grid > div {
+  padding: 6px;
+  background: var(--ui-button);
+  border: 0;
+  border-radius: var(--ui-radius-control);
+}
 
 /* Stable first-level route editing: selection changes enable controls only. */
 .observatory.home-map .route-edit-dock[data-view] {

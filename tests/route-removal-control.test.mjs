@@ -48,7 +48,7 @@ const routeProps = onCancel => ({
   saveMessage: '', onCancel,
 });
 
-test('planned route summary places removal under more and cancelling preserves the plan', async t => {
+test('planned route summary keeps removal in the utility row and cancelling preserves the plan', async t => {
   setupDom();
   const React = await import('react');
   const { createRoot } = await import('react-dom/client');
@@ -60,11 +60,9 @@ test('planned route summary places removal under more and cancelling preserves t
   t.after(async () => React.act(async () => root.unmount()));
   await React.act(async () => root.render(React.createElement(RouteResultSummary, routeProps(() => { removals++; }))));
 
-  assert.equal(host.querySelector('#route-summary-more').hidden, true);
-  await React.act(async () => host.querySelector('[aria-controls="route-summary-more"]').click());
-  const secondary = host.querySelector('.route-summary-actions-secondary');
+  const secondary = host.querySelector('nav[aria-label="路线操作"]');
   assert.ok(secondary);
-  assert.deepEqual([...secondary.querySelectorAll('button')].map(button => button.textContent), ['收藏', '分享', '路线详情', '清除当前规划']);
+  assert.deepEqual([...secondary.querySelectorAll('button')].map(button => button.textContent), ['开始导航', '看全程', '编辑', '路线详情', '轨迹模拟', '分享', '收藏', '清除当前规划']);
   await React.act(async () => secondary.querySelector('[aria-label="清除当前规划"]').click());
   const dialog = host.querySelector('[role="alertdialog"][aria-label="确认删除当前规划路线"]');
   assert.ok(dialog);

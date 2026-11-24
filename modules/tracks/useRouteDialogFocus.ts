@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
-export function useRouteDialogFocus(onBack: () => void, scopeSelector?: string) {
+export function useRouteDialogFocus(onBack: () => void, scopeSelector?: string, open = true) {
   const root = useRef<HTMLElement>(null),
     back = useRef(onBack);
   back.current = onBack;
   useEffect(() => {
+    if (!open) return;
     const previous =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
@@ -11,7 +12,7 @@ export function useRouteDialogFocus(onBack: () => void, scopeSelector?: string) 
     const node = (scopeSelector ? root.current?.closest<HTMLElement>(scopeSelector) : root.current) ?? root.current;
     node?.setAttribute('data-app-back', '100');
     node
-      ?.querySelector<HTMLElement>('button,select,input,[tabindex="0"]')
+      ?.querySelector<HTMLElement>('button:not(:disabled),select:not(:disabled),input:not(:disabled),summary,[tabindex="0"]')
       ?.focus({ preventScroll: true });
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -22,7 +23,7 @@ export function useRouteDialogFocus(onBack: () => void, scopeSelector?: string) 
       if (event.key !== 'Tab' || !node) return;
       const controls = [
         ...node.querySelectorAll<HTMLElement>(
-          'button:not(:disabled),select:not(:disabled),input:not(:disabled),[tabindex="0"]',
+          'button:not(:disabled),select:not(:disabled),input:not(:disabled),summary,[tabindex="0"]',
         ),
       ].filter((e) => e.getClientRects().length > 0);
       const first = controls[0],
@@ -49,6 +50,6 @@ export function useRouteDialogFocus(onBack: () => void, scopeSelector?: string) 
       node?.removeAttribute('data-app-back');
       if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
-  }, []);
+  }, [open, scopeSelector]);
   return root;
 }

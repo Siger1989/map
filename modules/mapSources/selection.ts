@@ -7,6 +7,12 @@ export function resolveAvailableMapSelection(id: string | null, maps: MapSource[
   return id && (freeMap(id) || maps.some((map) => map.id === id)) ? id : '';
 }
 
+/** The private bundle includes two Bing entries; 201 is the existing satellite preset. */
+export function resolveInitialMapSelection(id: string | null, maps: MapSource[], hasLayerPreferences: boolean): string {
+  if (id !== null || hasLayerPreferences) return resolveAvailableMapSelection(id, maps);
+  return maps.find(map => map.kind === 'online' && map.ovmap?.sourceId === 201 && map.name === '必应卫星图（19级）')?.id ?? '';
+}
+
 type BasemapOverlays = Pick<LayerSettings,
   | 'terrain'
   | 'contours'

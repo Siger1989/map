@@ -38,7 +38,7 @@ export function TiandituSources({
           </div>
         ))}
       </div>
-      <small>{settings.satelliteProvider === 'tianditu' ? usesVectorPlaceLabels(settings) ? '地名：OpenStreetMap · 覆盖可能不同' : '天地图 · 高清备用 · 有每日额度' : '默认 · 约10米 · 非商业使用 · 下载待接入'}</small>
+      <small>{settings.satelliteProvider === 'tianditu' ? usesVectorPlaceLabels(settings) ? '地名：OpenStreetMap · 覆盖可能不同' : '天地图 · 高清备用 · 有每日额度' : 'Sentinel-2 · 约10米 · 非商业使用 · 下载待接入'}</small>
       {settings.satelliteProvider === 'tianditu' && <div className="tianditu-options">
         <span className="tianditu-option-caption">地名注记</span>
           <select

@@ -2,7 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_LAYERS, applyLayerPatch, usesHighRasterQuality } from '../modules/map/types.ts';
 import { LAYER_PREFERENCES_KEY, parseLayerPreferences, readLayerPreferences, saveLayerPreferences } from '../modules/map/layerPreferences.ts';
-import { resolveAvailableMapSelection, settingsForBasemapSource, sourcePanelSettings } from '../modules/mapSources/selection.ts';
+import { resolveAvailableMapSelection, resolveInitialMapSelection, settingsForBasemapSource, sourcePanelSettings } from '../modules/mapSources/selection.ts';
+
+test('fresh sources prefer the bundled Bing satellite entry and restore previous selections', () => {
+  const aerial = { id: 'aerial', name: '必应Aerial（19级）', kind: 'online', ovmap: { sourceId: 222 } };
+  const satellite = { id: 'satellite', name: '必应卫星图（19级）', kind: 'online', ovmap: { sourceId: 201 } };
+  const maps = [aerial, satellite];
+  assert.equal(resolveInitialMapSelection(null, maps, false), 'satellite');
+  assert.equal(resolveInitialMapSelection(null, [aerial], false), '');
+  assert.equal(resolveInitialMapSelection('aerial', maps, false), 'aerial');
+  assert.equal(resolveInitialMapSelection('builtin-osm', maps, true), 'builtin-osm');
+  assert.equal(resolveInitialMapSelection('', maps, false), '');
+  assert.equal(resolveInitialMapSelection(null, maps, true), '');
+});
 
 test('map layer preferences round-trip actual user selections', () => {
   const values = new Map();
