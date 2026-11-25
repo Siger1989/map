@@ -1,3 +1,5 @@
+> **2026-11-25 / Android 地形文件区段传输**。Android WebView 的拦截流会对带 Range 的请求再次定位。旧实现从 NASA 取回已截好的数据后，WebView 可在该片段上再次跳过开头字节。新版仅原生到 NASA 的请求带 Range，网页到本地网关以查询参数传起止，按普通 200 响应收完整片段。两端验证区段和长度后再交给 GeoTIFF。投影复核可由原生直接读 GeoKeyDirectory、栅格原点和步长。
+
 > **2026-11-25 / 珠峰 DEM 坐标复核**。峰顶落在 HMA 677 瓦片，实测坐标参数与项目的 WGS84 Albers 定义一致。Android 按字节范围区分本地资源地址，并核对返回长度。坐标校验失败时，有授权的读取路径会重开文件并以 128 KiB 分块复核一次。持续不符时记录瓦片名、字段和读值。峰顶周围还存在原始数据缺测，模拟器和用户原选区的真机流程待验。
 
 > **2026-11-25 / Earthdata 本机私人授权**。`localEarthdataTokenFile` 只在 isolatedOldEngine 的特定本机包中生成 Android raw 资源。`TerrainPrintSource.java` 优先接收手动授权，未手动输入时在原生 NSIDC Range 请求中使用包内令牌。原生网关验证 NSIDC 返回的签名下载地址，仅转发 Range。网页不会收到包内令牌。未配置私密输入的常规构建清理旧资源。含真实令牌的包仅在本机归档。

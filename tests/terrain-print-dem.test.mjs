@@ -262,3 +262,38 @@ test('POST reports malformed or oversize input and sets no-store', async () => {
     assert.equal((await response.json()).code, 'INVALID_SELECTION');
   }
 });
+
+test('an independent native TIFF header must confirm the projection, dimensions and resolution', async () => {
+  const good = createTile(), bad = createTile(87);
+  const reader = await fromArrayBuffer(good);
+  const image = await reader.getImage();
+  const [originX, originY] = image.getOrigin();
+  const [pixelWidth, pixelHeight] = image.getResolution();
+  const header = { ...image.getGeoKeys(), width: image.getWidth(), height: image.getHeight(), originX, originY, pixelWidth, pixelHeight };
+  await reader.close();
+
+  async function sample(bytes, nativeHeader) {
+    return getTerrainPrintDem(selection, {
+      useTransportAuthorization: true, nativeHeader,
+      fetch: async (url, init) => {
+        if (String(url).startsWith('https://cmr.earthdata.nasa.gov/')) return catalog();
+        const [, first, last] = /^bytes=(\d+)-(\d+)$/.exec(new Headers(init.headers).get('Range'));
+        const start = Number(first), end = Math.min(Number(last), bytes.byteLength - 1);
+        return new Response(bytes.slice(start, end + 1), { status: 206, headers: { 'Content-Range': 'bytes ' + start + '-' + end + '/' + bytes.byteLength } });
+      },
+    });
+  }
+  const expected = await sample(good, () => assert.fail('A matching CRS needs no native fallback'));
+  let reads = 0;
+  const recovered = await sample(bad, async (url, signal) => {
+    assert.equal(url, file);
+    assert.equal(signal.aborted, false);
+    reads++;
+    return header;
+  });
+  assert.equal(reads, 1);
+  assert.deepEqual(recovered.elevations, expected.elevations);
+  for (const fields of [{ width: header.width + 1 }, { pixelHeight: -9 }, { ProjNatOriginLongGeoKey: 87 }]) {
+    await assert.rejects(sample(bad, async () => ({ ...header, ...fields })), { code: 'DEM_UNAVAILABLE' });
+  }
+});

@@ -48,6 +48,7 @@ export type TerrainPrintDemOptions = {
   useTransportAuthorization?: boolean;
   signal?: AbortSignal;
   fetch?: typeof fetch;
+  nativeHeader?: (url: string, signal: AbortSignal) => Promise<Record<string, unknown>>;
   cachedTile?: (filename: string, signal: AbortSignal) => Promise<GeoTIFF | null>;
 };
 
@@ -225,7 +226,7 @@ const expectedProjection = {
 
 class ProjectionMismatch extends TerrainPrintDemError {}
 
-function verifyProjection(filename: string, keys: ReturnType<Awaited<ReturnType<GeoTIFF['getImage']>>['getGeoKeys']>) {
+function verifyProjection(filename: string, keys: Record<string, unknown> | null) {
   for (const field of Object.keys(expectedProjection) as (keyof typeof expectedProjection)[]) {
     const value = keys?.[field];
     const expected = expectedProjection[field];
@@ -239,12 +240,29 @@ function verifyProjection(filename: string, keys: ReturnType<Awaited<ReturnType<
 
 async function addTileSamples(
   filename: string, tiff: GeoTIFF, grid: RasterGrid, projectedX: Float64Array, projectedY: Float64Array, signal: AbortSignal,
+  nativeHeader?: () => Promise<Record<string, unknown>>,
 ) {
   signal.throwIfAborted();
   const image = await tiff.getImage();
-  verifyProjection(filename, image.getGeoKeys());
-  const [originX, originY] = image.getOrigin();
-  const [pixelWidth, pixelHeight] = image.getResolution();
+  let originX: number, originY: number, pixelWidth: number, pixelHeight: number;
+  if (nativeHeader) {
+    const header = await nativeHeader();
+    verifyProjection(filename, header);
+    if (header.width !== image.getWidth() || header.height !== image.getHeight() ||
+        typeof header.originX !== 'number' || !Number.isFinite(header.originX) ||
+        typeof header.originY !== 'number' || !Number.isFinite(header.originY) ||
+        typeof header.pixelWidth !== 'number' || typeof header.pixelHeight !== 'number') {
+      throw unavailable('原生读取的高程范围与瓦片尺寸不一致。');
+    }
+    originX = header.originX;
+    originY = header.originY;
+    pixelWidth = header.pixelWidth;
+    pixelHeight = header.pixelHeight;
+  } else {
+    verifyProjection(filename, image.getGeoKeys());
+    [originX, originY] = image.getOrigin();
+    [pixelWidth, pixelHeight] = image.getResolution();
+  }
   if (pixelWidth !== SAMPLE_METERS || pixelHeight !== -SAMPLE_METERS || image.getSamplesPerPixel() !== 1) {
     throw unavailable('NASA 高程文件的像元并非预期的 8 米。');
   }
@@ -326,9 +344,9 @@ export async function getTerrainPrintDem(input: unknown, options: TerrainPrintDe
         const sourceOptions = { maxRanges: 0, blockSize };
         return fromCustomClient(new AuthenticatedTile(url, token, fetcher, signal, budget), sourceOptions, signal);
       };
-      const read = async (tiff: GeoTIFF) => {
+      const read = async (tiff: GeoTIFF, nativeHeader?: () => Promise<Record<string, unknown>>) => {
         try {
-          await addTileSamples(filename, tiff, grid, projectedX, projectedY, signal);
+          await addTileSamples(filename, tiff, grid, projectedX, projectedY, signal, nativeHeader);
         } finally {
           await tiff.close();
         }
@@ -341,7 +359,8 @@ export async function getTerrainPrintDem(input: unknown, options: TerrainPrintDe
         if (!(error instanceof ProjectionMismatch) || !authorized) throw error;
         signal.throwIfAborted();
         // Validate independently of the first reader and its cached byte ranges.
-        await read(await remote(131_072));
+        const nativeHeader = options.nativeHeader;
+        await read(await remote(131_072), nativeHeader && (() => nativeHeader(url, signal)));
       }
     }
     if (grid.elevations.every((value) => value === null)) {
