@@ -35,7 +35,28 @@ val webAssets = rootProject.file("../mobile/dist-hybrid")
 val mergedAssets = file("$buildStage/hybrid/generated/combinedAssets")
 val sharedCadJni = file("$buildStage/hybrid/generated/cadJni")
 val selectedTests = file("$buildStage/hybrid/generated/selectedTests")
+val localTerrainResources = file("$buildStage/hybrid/generated/localTerrainResources")
+val localTerrainToken = providers.gradleProperty("localEarthdataTokenFile").orNull?.let(::File)
+check(localTerrainToken == null || isolatedOldEngine) { "Earthdata can only be embedded in a local old-engine build." }
 layout.buildDirectory.set(file("$buildStage/hybrid"))
+
+val prepareLocalTerrainResources by tasks.registering {
+    outputs.dir(localTerrainResources)
+    outputs.cacheIf { false }
+    outputs.upToDateWhen { false }
+    doLast {
+        val output = localTerrainResources.resolve("raw/local_earthdata_terrain.txt")
+        if (localTerrainToken == null) {
+            check(!output.exists() || output.delete()) { "Could not clear the previous local Earthdata build resource." }
+        } else {
+            check(localTerrainToken.isFile && localTerrainToken.length() in 1..4096) { "Invalid local Earthdata token file." }
+            val token = localTerrainToken.readText(Charsets.US_ASCII).trim()
+            check(token.length in 1..4089 && token.matches(Regex("[A-Za-z0-9._~-]+"))) { "Invalid local Earthdata token format." }
+            output.parentFile.mkdirs()
+            output.writeText(token, Charsets.US_ASCII)
+        }
+    }
+}
 
 val verifyReactAssets by tasks.registering {
     inputs.dir(webAssets)
@@ -201,6 +222,7 @@ android {
         java.srcDir("../../mobile/android/src")
         res.srcDir("../app/src/main/res")
         res.srcDir("../../mobile/android/res")
+        res.srcDir(localTerrainResources)
         assets.setSrcDirs(listOf(mergedAssets))
         jniLibs.srcDir(sharedCadJni)
     }
@@ -215,7 +237,7 @@ android {
 }
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 tasks.named("preBuild").configure {
-    dependsOn(prepareHybridAssets, prepareSharedCadJni)
+    dependsOn(prepareHybridAssets, prepareSharedCadJni, prepareLocalTerrainResources)
 }
 tasks.matching { it.name in setOf("preDebugUnitTestBuild", "compileDebugUnitTestKotlin", "compileDebugUnitTestJavaWithJavac",
     "preOptimizedUnitTestBuild", "compileOptimizedUnitTestKotlin", "compileOptimizedUnitTestJavaWithJavac") }

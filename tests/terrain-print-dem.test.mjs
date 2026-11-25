@@ -89,6 +89,26 @@ test('missing coverage, missing login and remote auth redirect have distinct err
   }), rejectCode('AUTH_INVALID'));
 });
 
+test('Android gateway can authorize protected TIFF downloads without exposing a token to JavaScript', async () => {
+  const tiff = createTile();
+  const gateway = (status = 206) => async (url, options) => {
+    assert.equal(new Headers(options?.headers).get('Authorization'), null);
+    if (String(url).startsWith('https://cmr.earthdata.nasa.gov/')) return catalog();
+    assert.equal(url, file);
+    if (status !== 206) return new Response(null, { status });
+    const [, first, last] = /^bytes=(\d+)-(\d+)$/.exec(new Headers(options.headers).get('Range'));
+    const start = Number(first), end = Math.min(Number(last), tiff.byteLength - 1);
+    return new Response(tiff.slice(start, end + 1), {
+      status,
+      headers: { 'Content-Range': `bytes ${start}-${end}/${tiff.byteLength}` },
+    });
+  };
+  const getGrid = fetch => getTerrainPrintDem(selection, { useTransportAuthorization: true, fetch });
+  assert.ok((await getGrid(gateway())).elevations.every(Number.isFinite));
+  await assert.rejects(getGrid(gateway(428)), { code: 'AUTH_REQUIRED' });
+  await assert.rejects(getGrid(gateway(401)), { code: 'AUTH_INVALID' });
+});
+
 test('rejects out-of-policy catalog URLs and ranges too big to model', async () => {
   await assert.rejects(
     getTerrainPrintDem(selection, { fetch: async () => catalog(['https://example.org/tile-592.tif']) }),

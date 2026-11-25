@@ -16,5 +16,5 @@ const nativeFetch: typeof fetch = (input, init) => {
 
 export async function loadNativeTerrainPrintDem(selection: TerrainPrintSelection, token: string, signal: AbortSignal) {
   const { getTerrainPrintDem } = await import('./dem');
-  return getTerrainPrintDem(selection, { token, signal, fetch: nativeFetch });
+  return getTerrainPrintDem(selection, { token, signal, fetch: nativeFetch, useTransportAuthorization: true });
 }

@@ -1,3 +1,5 @@
+> **2026-11-25 / Earthdata 本机私人授权**。`localEarthdataTokenFile` 只在 isolatedOldEngine 的特定本机包中生成 Android raw 资源。`TerrainPrintSource.java` 优先接收手动授权，未手动输入时在原生 NSIDC Range 请求中使用包内令牌。原生网关验证 NSIDC 返回的签名下载地址，仅转发 Range。网页不会收到包内令牌。未配置私密输入的常规构建清理旧资源。含真实令牌的包仅在本机归档。
+
 > **2026-11-25 / 地形打印选区调整**。首次框选沿用地图绘制输入，选区控制点使用带 `data-native-map-ui` 的独立触控区域，投影与主图同源。拖动取消保留原选区。DEM 在 8 米源上按网格预算自动采样，按 TIFF 块读取，单边上限 64 公里，并保留缺测检查。收藏网格兼容旧记录和新增的 `sampleSpacingMeters`。
 
 > **2026-11-25 / 收藏模型预览**。收藏入口位于 `CollectionsPanel.tsx`，预览和底座设置位于 `modules/terrainPrint`。IndexedDB 保存选区、网格和底座参数，旧记录无高程网格时可按原选区补读。更换底座复用已有影像和高程。FBX 工作线程嵌入选定影像，Android 通过 `ArchiveOutput.java` 和 `ArchiveTransfer.java` 分块保存。0.2.221 已签名归档，真机待验。见[版本说明](release-0.2.221.md)和[收藏验收](ui-quality-gate.md#2026-11-25--收藏模型预览)。

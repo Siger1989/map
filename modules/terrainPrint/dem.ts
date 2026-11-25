@@ -45,6 +45,7 @@ type RasterGrid = {
 
 export type TerrainPrintDemOptions = {
   token?: string;
+  useTransportAuthorization?: boolean;
   signal?: AbortSignal;
   fetch?: typeof fetch;
   cachedTile?: (filename: string, signal: AbortSignal) => Promise<GeoTIFF | null>;
@@ -109,6 +110,10 @@ function authInvalid() {
   return new TerrainPrintDemError('AUTH_INVALID', 401, 'NASA 未接受 Earthdata 令牌，请确认令牌有效且账户已授权 NSIDC 高程下载。');
 }
 
+function authRequired() {
+  return new TerrainPrintDemError('AUTH_REQUIRED', 401, '自动下载 8 米 DEM 需要有效的 NASA Earthdata 令牌。');
+}
+
 async function findTiles(bounds: TerrainPrintBounds, fetcher: typeof fetch, signal: AbortSignal) {
   const url = new URL(NASA_CATALOG_URL);
   url.searchParams.set('collection_concept_id', HMA_MOSAIC_COLLECTION);
@@ -155,12 +160,12 @@ class ByteRangeResponse extends BaseResponse {
 type RemoteBudget = { bytes: number; requests: number };
 
 class AuthenticatedTile extends BaseClient {
-  private readonly token: string;
+  private readonly token: string | undefined;
   private readonly fetcher: typeof fetch;
   private readonly signal: AbortSignal;
   private readonly budget: RemoteBudget;
 
-  constructor(url: string, token: string, fetcher: typeof fetch, signal: AbortSignal, budget: RemoteBudget) {
+  constructor(url: string, token: string | undefined, fetcher: typeof fetch, signal: AbortSignal, budget: RemoteBudget) {
     super(url);
     this.token = token;
     this.fetcher = fetcher;
@@ -179,12 +184,16 @@ class AuthenticatedTile extends BaseClient {
     }
     this.budget.bytes -= bytes;
     this.budget.requests--;
-    headers.set('Authorization', 'Bearer ' + this.token);
+    if (this.token) headers.set('Authorization', 'Bearer ' + this.token);
     const response = await this.fetcher(this.url, {
       headers,
       redirect: 'manual',
       signal: AbortSignal.any(options.signal ? [this.signal, options.signal] : [this.signal]),
     });
+    if (response.status === 428 && !this.token) {
+      await response.body?.cancel();
+      throw authRequired();
+    }
     if ([301, 302, 303, 307, 308, 401, 403].includes(response.status) || response.type === 'opaqueredirect') {
       await response.body?.cancel();
       throw authInvalid();
@@ -297,7 +306,7 @@ export async function getTerrainPrintDem(input: unknown, options: TerrainPrintDe
       if (grid.elevations.every((value) => value !== null)) break;
       let tiff = await options.cachedTile?.(filename, signal);
       if (!tiff) {
-        if (!token) throw new TerrainPrintDemError('AUTH_REQUIRED', 401, '自动下载 8 米 DEM 需要有效的 NASA Earthdata 令牌。');
+        if (!token && !options.useTransportAuthorization) throw authRequired();
         tiff = await fromCustomClient(new AuthenticatedTile(url, token, fetcher, signal, budget), { maxRanges: 0 }, signal);
       }
       try {

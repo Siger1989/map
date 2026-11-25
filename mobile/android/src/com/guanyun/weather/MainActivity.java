@@ -98,6 +98,7 @@ public class MainActivity extends Activity {
         locationPermissions = new LocationPermissions(this, appFiles);
         webView.setWebChromeClient(locationPermissions);
         final LocalGateway gateway = new LocalGateway(getApplicationContext());
+        final TerrainPrintSource terrainPrintSource = new TerrainPrintSource(getApplicationContext());
         webView.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 bridgePageState.page(url);
@@ -112,7 +113,7 @@ public class MainActivity extends Activity {
                 android.net.Uri uri = request.getUrl();
                 if ("GET".equals(request.getMethod()) && "https".equals(uri.getScheme()) &&
                         LocalGateway.HOST.equals(uri.getHost()) && TerrainPrintSource.PATH.equals(uri.getPath())) {
-                    return TerrainPrintSource.fetch(uri, request.getRequestHeaders());
+                    return terrainPrintSource.fetch(uri, request.getRequestHeaders());
                 }
                 return gateway.intercept(uri, request.getMethod());
             }
