@@ -195,23 +195,6 @@ export function LayerPanel({
           </div>
         </>
       )}
-      {key === 'terrain' && settings.terrain && (
-        <div className="panel-sliders">
-          <label className="slider-label" htmlFor="terrain-exaggeration">
-            地形起伏增强 <span>{settings.exaggeration.toFixed(1)}×</span>
-          </label>
-          <input
-            id="terrain-exaggeration"
-            type="range"
-            min="1"
-            max="2"
-            step="0.1"
-            disabled={!settings.terrain}
-            value={settings.exaggeration}
-            onChange={(e) => onChange({ exaggeration: Number(e.target.value) })}
-          />
-        </div>
-      )}
     </div>
   );
   return (
@@ -233,7 +216,6 @@ export function LayerPanel({
             const hasParameters =
               key === 'roads' ||
               ([
-                'terrain',
                 'elevationColors',
                 'contours',
                 'geology',

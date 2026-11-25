@@ -12,6 +12,7 @@ import { GET as geocloud } from '../app/api/geology/geocloud/route';
 import { GET as mapTile } from '../app/api/map-tile/route';
 import { GET as ipLocation } from '../app/api/location/ip/route';
 import { GET as radar } from '../app/api/radar/route';
+import { POST as terrainPrint } from '../app/api/terrain-print/route';
 import { APP_VERSION } from '../config/product';
 
 const mime: Record<string, string> = {
@@ -29,7 +30,7 @@ const mime: Record<string, string> = {
   '.woff2': 'font/woff2',
   '.pbf': 'application/x-protobuf',
 };
-/** Local delivery adapter. Reuses the application's four APIs and serves only bundled public files. */
+/** Local delivery adapter. Reuses the application's APIs and serves only bundled public files. */
 export function createDesktopServer(root: string) {
   const publicRoot = resolve(root);
   return createServer(async (req, res) => {
@@ -51,12 +52,13 @@ export function createDesktopServer(root: string) {
         res.writeHead(403).end();
         return;
       }
-      if (req.method !== 'GET' && req.method !== 'HEAD') {
-        res.writeHead(405, { Allow: 'GET, HEAD' }).end();
-        return;
-      }
       const url = new URL(req.url ?? '/', `http://127.0.0.1:${port}`);
       const pathname = decodeURIComponent(url.pathname);
+      const isTerrainPrint = pathname === '/api/terrain-print';
+      if (isTerrainPrint ? req.method !== 'POST' : req.method !== 'GET' && req.method !== 'HEAD') {
+        res.writeHead(405, { Allow: isTerrainPrint ? 'POST' : 'GET, HEAD' }).end();
+        return;
+      }
       let result: Response | undefined;
       if (pathname === '/__shantu__/status') {
         res.writeHead(200, {
@@ -76,7 +78,26 @@ export function createDesktopServer(root: string) {
       const tile = pathname.match(
         /^\/api\/(terrain|geology\/tiles)\/([^/]+)\/([^/]+)\/([^/]+)$/,
       );
-      if (tile) {
+      if (isTerrainPrint) {
+        const parts: Buffer[] = [];
+        let byteCount = 0;
+        for await (const chunk of req.iterator({ destroyOnReturn: false }) as AsyncIterable<Buffer>) {
+          byteCount += chunk.length;
+          if (byteCount > 8192) {
+            res.writeHead(413).end();
+            return;
+          }
+          parts.push(chunk);
+        }
+        const abort = new AbortController();
+        res.once('close', () => abort.abort());
+        result = await terrainPrint(new Request(url, {
+          method: 'POST',
+          headers: { 'Content-Type': req.headers['content-type'] ?? '' },
+          body: new Uint8Array(Buffer.concat(parts)),
+          signal: abort.signal,
+        }));
+      } else if (tile) {
         const context = {
           params: Promise.resolve({ z: tile[2], x: tile[3], y: tile[4] }),
         };

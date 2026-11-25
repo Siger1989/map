@@ -27,6 +27,7 @@ export type LayerSettings = {
   imageryMode: 'detail' | 'latest';
 };
 export const DEFAULT_TIANDITU_LABELS = 'vector' as const;
+export const TRUE_TERRAIN_SCALE = 1;
 export const DEFAULT_LAYERS: LayerSettings = {
   terrain: true,
   satellite: false,
@@ -45,19 +46,19 @@ export const DEFAULT_LAYERS: LayerSettings = {
   rasterQuality: 'high',
   labels: true,
   tiandituLabels: DEFAULT_TIANDITU_LABELS,
-  exaggeration: 1,
+  exaggeration: TRUE_TERRAIN_SCALE,
   imageryMode: 'detail',
 };
 /** Fixed raster levels take precedence; otherwise missing preferences use the high detail default. */
 export function usesHighRasterQuality(settings: Pick<LayerSettings, 'rasterLevel' | 'rasterQuality'>): boolean {
   return settings.rasterLevel == null && (settings.rasterQuality ?? 'high') === 'high';
 }
-/** Apply map display changes while refusing retired weather-layer keys from old clients. */
+/** Apply display changes, keeping the original DEM scale and dropping retired weather controls. */
 export function applyLayerPatch(
   current: LayerSettings,
   patch: Partial<LayerSettings>,
 ): LayerSettings {
-  const next = { ...current, ...patch } as LayerSettings & Record<string, unknown>;
+  const next = { ...current, ...patch, exaggeration: TRUE_TERRAIN_SCALE } as LayerSettings & Record<string, unknown>;
   for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) delete next[key];
   next.imageryMode = 'detail';
   // Geology source selection is retired; old settings/clients always resolve

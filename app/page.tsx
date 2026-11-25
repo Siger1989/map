@@ -50,6 +50,9 @@ import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
 import { isDesktopShell } from '@/modules/platform/desktop';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { MapComparisonHost, type ComparisonSession } from '@/modules/mapComparison/MapComparisonHost';
+import { TerrainPrintPanel } from '@/modules/terrainPrint/TerrainPrintPanel';
+import { TerrainPrintSelectionOverlay, useTerrainPrintSelection } from '@/modules/terrainPrint/selection';
+import { loadNativeTerrainPrintDem } from '@/modules/terrainPrint/nativeDem';
 import { createComparisonExitGate } from '@/modules/mapComparison/comparisonExitGate';
 import { comparisonChoices } from '@/modules/mapComparison/choices';
 import { journeySourceChoices } from '@/modules/sky/journeySourceChoices';
@@ -252,6 +255,7 @@ export default function Home() {
     return () => window.removeEventListener('shantu-app-back', back);
   }, []);
   const map = useRef<MapHandle>(null);
+  const terrainPrint = useTerrainPrintSelection(map);
   useEffect(() => {
     const focusCad = (event: Event) => {
       const points = (event as CustomEvent<Coordinate[]>).detail;
@@ -1848,7 +1852,7 @@ export default function Home() {
     sectionEditing,
     navigation: guidance.active,
     comparison: !!comparison,
-    boxSelection: boxSelecting,
+    boxSelection: boxSelecting || terrainPrint.open,
     sectionList: sectionListOpen,
     annotationDetails: panel === 'annotations' && !!selectedAnnotation,
     photoDetails: !!selectedPhoto,
@@ -2068,6 +2072,12 @@ export default function Home() {
         data-placing-annotation={Boolean(annotations.picking)}
         onKeyDown={(event) => {
           if (event.key !== 'Escape' || event.defaultPrevented) return;
+          if (terrainPrint.open) {
+            event.preventDefault();
+            if (terrainPrint.shape) terrainPrint.cancelPicking();
+            else terrainPrint.close();
+            return;
+          }
           if (comparison) { event.preventDefault(); setComparison(null); return; }
           if (navigation.picking !== null) {
             event.preventDefault();
@@ -2338,13 +2348,13 @@ export default function Home() {
             recenterObject(target);
           }}
           drawingActive={
-            (branchEditing || tracks.drawing || areas.drawing) && panel === null
+            (terrainPrint.shape !== null || branchEditing || tracks.drawing || areas.drawing) && panel === null
           }
-          onDrawingInput={(event) =>
-            areas.drawing
-              ? areaDrawing.current?.input(event)
-              : drawing.current?.input(event)
-          }
+          onDrawingInput={(event) => {
+            if (terrainPrint.shape) terrainPrint.input(event);
+            else if (areas.drawing) areaDrawing.current?.input(event);
+            else drawing.current?.input(event);
+          }}
           collectionPreviewActive={panel === 'favorites' && !boxSelecting && collectionSelectedKeys.length === 0}
           photos={photoOverlay}
           onPhotoSelect={(ids) => {
@@ -2582,7 +2592,7 @@ export default function Home() {
             setQuickAdd(value);
           }}
           onMapPick={(coordinates) => {
-            if (survey.pick(coordinates)) return;
+            if (terrainPrint.shape || survey.pick(coordinates)) return;
             if (measurement.active) {
               if (measurement.adding)
                 measurement.add(
@@ -2614,6 +2624,12 @@ export default function Home() {
           }}
         />
         </MapComparisonHost>
+        {terrainPrint.open && <>
+          <TerrainPrintSelectionOverlay map={map} selection={terrainPrint.selection} anchor={terrainPrint.anchor} previewListener={terrainPrint.previewListener} />
+          <TerrainPrintPanel selection={terrainPrint.selection} picking={terrainPrint.shape !== null}
+            onPick={terrainPrint.pick} onCancelPick={terrainPrint.cancelPicking} onClose={terrainPrint.close}
+            loadDem={typeof window !== 'undefined' && window.GuanyunNative ? loadNativeTerrainPrintDem : undefined} />
+        </>}
         {routeVisible &&
           railTrack &&
           panel === null &&
@@ -3454,6 +3470,7 @@ export default function Home() {
           }}
         />
         {!desktopShell && panel === null &&
+          !terrainPrint.open &&
           !survey.active &&
           !sectionEditing &&
           !tracks.drawing &&
@@ -3486,6 +3503,25 @@ export default function Home() {
           industryEnabled={showIndustryToolsEntry(INDUSTRY_TOOLS_ENABLED)}
           showRecordingEntry={!desktopShell}
           onArea={TERRAIN_SECTION_ENABLED ? startArea : undefined}
+          onTerrainPrint={() => {
+            if (!prepareFeatureSwitch(false) || !annotations.select(null)) return;
+            userBrowse();
+            map.current?.stop();
+            tracks.pause();
+            areas.pause();
+            areas.select(null);
+            setAreaEditing(false);
+            measurement.close();
+            survey.close();
+            setSectionEditing(false);
+            setSectionListOpen(false);
+            setBoxSelecting(false);
+            navigation.setPicking(null);
+            annotations.setPicking(null);
+            clearObjectSelection();
+            setPanelPrepared(null);
+            terrainPrint.show();
+          }}
           onCompare={() => {
             const camera = map.current?.cameraSnapshot();
             if (!camera) return;
@@ -3588,6 +3624,7 @@ export default function Home() {
               setTrackLinePoint(null);
               return;
             }
+            if (next !== null && terrainPrint.open) terrainPrint.close();
             // Persist active route edits and line drafts before another feature
             // takes over. A failed write leaves the current operation open.
             if (next !== null && !prepareFeatureSwitch(next !== 'track', next !== 'track')) return;

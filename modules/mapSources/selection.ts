@@ -1,6 +1,6 @@
 import { freeMap } from './presets.ts';
 import type { MapSource } from './types.ts';
-import { applyLayerPatch, type LayerSettings } from '../map/types.ts';
+import { applyLayerPatch, TRUE_TERRAIN_SCALE, type LayerSettings } from '../map/types.ts';
 
 /** Restore a selected built-in or local map only while its definition still exists. */
 export function resolveAvailableMapSelection(id: string | null, maps: MapSource[]): string {
@@ -27,7 +27,6 @@ type BasemapOverlays = Pick<LayerSettings,
   | 'labels'
   | 'tiandituLabels'
   | 'tiandituBoundaries'
-  | 'exaggeration'
 >;
 
 /** Switch source-owned basemap settings while retaining this map's independent layers. */
@@ -49,9 +48,8 @@ export function settingsForBasemapSource(
     labels: current.labels,
     tiandituLabels: current.tiandituLabels,
     tiandituBoundaries: current.tiandituBoundaries,
-    exaggeration: current.exaggeration,
   };
-  return { ...target, ...overlays, imageryMode: 'detail' };
+  return { ...target, ...overlays, exaggeration: TRUE_TERRAIN_SCALE, imageryMode: 'detail' };
 }
 
 /** Apply source-panel changes without treating its layer controls as a basemap switch. */

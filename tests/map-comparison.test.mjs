@@ -827,8 +827,10 @@ test('source changes keep pane overlays while restoring only the target source b
   });
 
   await f.act(async () => f.host.querySelector('[aria-label="对比图层"]').click());
-  assert.equal(f.host.querySelector('#contours-toggle').getAttribute('aria-checked'), 'true');
-  await f.act(async () => f.host.querySelector('#contours-toggle').click());
+  const contourSwitch = f.host.querySelector('#contours-toggle');
+  assert.equal(contourSwitch.closest('label').dataset.checked, 'true');
+  const switchProps = contourSwitch[Object.keys(contourSwitch).find(key => key.startsWith('__reactProps$'))];
+  await f.act(async () => switchProps.onChange({ currentTarget: { checked: false } }));
   const lowerBefore = counters.latest['map-comparison-secondary'].settings;
   assert.equal(counters.latest['map-comparison-primary'].settings.contours, false);
 
@@ -839,7 +841,7 @@ test('source changes keep pane overlays while restoring only the target source b
   assert.equal(upper.elevationColors, true);
   assert.equal(upper.elevationColorsOpacity, 0.35);
   assert.equal(upper.terrain, false, 'basemap selection keeps the pane 3D toggle');
-  assert.equal(upper.exaggeration, 1.7, 'basemap selection keeps terrain exaggeration');
+  assert.equal(upper.exaggeration, 1, 'basemap selection retains the original DEM scale');
   assert.equal(upper.roads, false);
   assert.equal(upper.roadsOpacity, 0.4);
   assert.equal(upper.labels, false);

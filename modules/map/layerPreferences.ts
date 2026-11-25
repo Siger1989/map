@@ -1,11 +1,11 @@
-import { DEFAULT_LAYERS, type LayerSettings } from './types.ts';
+import { DEFAULT_LAYERS, TRUE_TERRAIN_SCALE, type LayerSettings } from './types.ts';
 
 export const LAYER_PREFERENCES_KEY = 'shantu.map.layer-preferences.v1';
 const CURRENT_VERSION = 1;
 type PersistedLayers = Omit<LayerSettings, 'rasterDatums' | 'offlineMaxZoom'>;
 
-function withoutRetiredWeather(settings: LayerSettings): LayerSettings {
-  const result = { ...settings } as LayerSettings & Record<string, unknown>;
+function normalizeLayerPreferences(settings: LayerSettings): LayerSettings {
+  const result = { ...settings, exaggeration: TRUE_TERRAIN_SCALE } as LayerSettings & Record<string, unknown>;
   for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) delete result[key];
   result.imageryMode = 'detail';
   return result;
@@ -23,7 +23,7 @@ export function parseLayerPreferences(raw: string | null, fallback: LayerSetting
     const envelope = parsed as { version?: unknown; layers?: unknown };
     if (envelope.version !== 1 || !envelope.layers || typeof envelope.layers !== 'object' || Array.isArray(envelope.layers)) return null;
     const value = envelope.layers as Record<string, unknown>;
-    const result = withoutRetiredWeather(fallback) as LayerSettings & Record<string, unknown>;
+    const result = normalizeLayerPreferences(fallback);
     const booleans = ['terrain', 'satellite', 'offlineBasemap', 'tiandituBoundaries', 'contours', 'outdoorContours', 'elevationColors', 'geology', 'roads', 'labels'] as const;
     for (const key of booleans) if (typeof value[key] === 'boolean') Object.assign(result, { [key]: value[key] });
     if (value.satelliteProvider === 'sentinel' || value.satelliteProvider === 'tianditu') result.satelliteProvider = value.satelliteProvider;
@@ -36,7 +36,6 @@ export function parseLayerPreferences(raw: string | null, fallback: LayerSetting
     if (bounded(value.elevationColorsOpacity, 0, 1)) result.elevationColorsOpacity = value.elevationColorsOpacity;
     if (bounded(value.geologyOpacity, 0, 1)) result.geologyOpacity = value.geologyOpacity;
     if (bounded(value.roadsOpacity, 0, 1)) result.roadsOpacity = value.roadsOpacity;
-    if (bounded(value.exaggeration, 0.1, 5)) result.exaggeration = value.exaggeration;
     if (value.rasterLevel === null || bounded(value.rasterLevel, 0, 24)) result.rasterLevel = value.rasterLevel;
     if (value.rasterQuality === 'standard' || value.rasterQuality === 'high') result.rasterQuality = value.rasterQuality;
     // Retired weather keys and offline package caps are intentionally ignored.
@@ -48,7 +47,7 @@ export function parseLayerPreferences(raw: string | null, fallback: LayerSetting
 export function readLayerPreferences(fallback: LayerSettings = DEFAULT_LAYERS): LayerSettings {
   try {
     const raw = localStorage.getItem(LAYER_PREFERENCES_KEY);
-    const settings = parseLayerPreferences(raw, fallback) ?? withoutRetiredWeather(fallback);
+    const settings = parseLayerPreferences(raw, fallback) ?? normalizeLayerPreferences(fallback);
     // Migrate retired values in place, preserving unknown/future user
     // settings and the existing preference envelope.
     if (raw) {
@@ -61,6 +60,7 @@ export function readLayerPreferences(fallback: LayerSettings = DEFAULT_LAYERS): 
             const patch: Partial<LayerSettings> = {};
             if (layers.geologySource === 'geocloud20w') patch.geologySource = 'world';
             if (layers.imageryMode === 'latest') patch.imageryMode = 'detail';
+            if ('exaggeration' in layers && layers.exaggeration !== TRUE_TERRAIN_SCALE) patch.exaggeration = TRUE_TERRAIN_SCALE;
             if (Object.keys(patch).length) {
               localStorage.setItem(LAYER_PREFERENCES_KEY, JSON.stringify({ ...envelope, layers: { ...layers, ...patch } }));
             }
@@ -70,7 +70,7 @@ export function readLayerPreferences(fallback: LayerSettings = DEFAULT_LAYERS): 
     }
     return { ...settings, geologySource: 'world' };
   }
-  catch { return { ...withoutRetiredWeather(fallback), geologySource: 'world' }; }
+  catch { return { ...normalizeLayerPreferences(fallback), geologySource: 'world' }; }
 }
 
 export function saveLayerPreferences(settings: LayerSettings): void {
@@ -86,7 +86,7 @@ export function saveLayerPreferences(settings: LayerSettings): void {
         if (typeof version === 'number' && Number.isFinite(version) && version > CURRENT_VERSION) return;
       } catch { /* Corrupt current data is safe to replace with a valid snapshot. */ }
     }
-    const persisted: PersistedLayers = { ...withoutRetiredWeather(layers), geologySource: 'world' };
+    const persisted: PersistedLayers = { ...normalizeLayerPreferences(layers), geologySource: 'world' };
     localStorage.setItem(LAYER_PREFERENCES_KEY, JSON.stringify({ version: CURRENT_VERSION, layers: persisted satisfies PersistedLayers }));
   }
   catch { /* A full or disabled store must not interrupt map controls. */ }

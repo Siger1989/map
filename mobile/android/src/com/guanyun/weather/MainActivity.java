@@ -109,7 +109,12 @@ public class MainActivity extends Activity {
                 bridgePageState.page(url);
             }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return gateway.intercept(request.getUrl(), request.getMethod());
+                android.net.Uri uri = request.getUrl();
+                if ("GET".equals(request.getMethod()) && "https".equals(uri.getScheme()) &&
+                        LocalGateway.HOST.equals(uri.getHost()) && TerrainPrintSource.PATH.equals(uri.getPath())) {
+                    return TerrainPrintSource.fetch(uri, request.getRequestHeaders());
+                }
+                return gateway.intercept(uri, request.getMethod());
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();

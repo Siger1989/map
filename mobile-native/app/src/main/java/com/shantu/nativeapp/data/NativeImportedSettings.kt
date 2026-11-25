@@ -29,7 +29,6 @@ data class NativeRuntimeSettings(
     val rasterZoom: Int = -1,
     val rasterQuality: String = "standard",
     val terrainEnabled: Boolean = false,
-    val terrainExaggeration: Float = 1f,
     val contoursEnabled: Boolean = false,
     val contourInterval: Int = 30,
     val elevationColorsEnabled: Boolean = false,
@@ -151,7 +150,6 @@ object NativeImportedSettings {
                 satelliteEnabled = layers.optBooleanIfPresent("satellite", out.satelliteEnabled),
                 offlineBasemap = layers.optBooleanIfPresent("offlineBasemap", out.offlineBasemap),
                 tiandituBoundaries = layers.optBooleanIfPresent("tiandituBoundaries", out.tiandituBoundaries),
-                terrainExaggeration = layers.optFloat("exaggeration", out.terrainExaggeration).coerceIn(.1f, 5f),
                 elevationOpacity = layers.optFloat("elevationColorsOpacity", out.elevationOpacity).coerceIn(0f, 1f),
                 geologyOpacity = layers.optFloat("geologyOpacity", out.geologyOpacity).coerceIn(0f, 1f),
                 roadsOpacity = layers.optFloat("roadsOpacity", out.roadsOpacity).coerceIn(0f, 1f),
@@ -204,7 +202,6 @@ object NativeImportedSettings {
             rasterZoom = preferences.getInt("raster-z", -1),
             rasterQuality = preferences.getString("quality", "standard") ?: "standard",
             terrainEnabled = preferences.getBoolean("terrain", false),
-            terrainExaggeration = preferences.getFloat("terrain-exaggeration", 1f),
             contoursEnabled = preferences.getBoolean("contours", false),
             contourInterval = preferences.getInt("contour-interval", 30),
             elevationColorsEnabled = preferences.getBoolean("elevation-colors", false),
@@ -249,7 +246,6 @@ object NativeImportedSettings {
             .putInt("raster-z", runtime.rasterZoom)
             .putString("quality", runtime.rasterQuality)
             .putBoolean("terrain", runtime.terrainEnabled)
-            .putFloat("terrain-exaggeration", runtime.terrainExaggeration)
             .putBoolean("contours", runtime.contoursEnabled)
             .putInt("contour-interval", runtime.contourInterval)
             .putBoolean("elevation-colors", runtime.elevationColorsEnabled)

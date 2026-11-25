@@ -41,11 +41,13 @@ test('map layer preferences round-trip actual user selections', () => {
     const { rasterDatums: _datumPreferences, offlineMaxZoom: _retiredLimit, ...expected } = selected;
     expected.geologySource = 'world';
     expected.imageryMode = 'detail';
+    expected.exaggeration = 1;
     assert.deepEqual(readLayerPreferences(), expected);
     const persisted = JSON.parse(values.get(LAYER_PREFERENCES_KEY));
     assert.equal(persisted.version, 1);
     assert.equal(persisted.layers.geologySource, 'world', 'retired detailed source migrates without changing unrelated preferences');
     assert.equal(persisted.layers.imageryMode, 'detail');
+    assert.equal(persisted.layers.exaggeration, 1);
     assert.equal('rasterDatums' in persisted.layers, false, 'datum choices remain in their existing preference key');
     for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) assert.equal(key in persisted.layers, false, key + ' is retired');
   } finally {
@@ -90,15 +92,17 @@ test('outdoor contour presentation is an independent persisted preference defaul
   assert.equal(malformed.outdoorContours, false);
 });
 
-test('legacy detailed geology preference migrates to world while preserving neighboring settings', () => {
-  const legacy = { ...DEFAULT_LAYERS, geology: true, geologySource: 'geocloud20w', geologyOpacity: 0.55, satellite: true, roads: false, imageryMode: 'latest' };
+test('legacy geology and terrain scaling migrate while preserving neighboring settings', () => {
+  const legacy = { ...DEFAULT_LAYERS, geology: true, geologySource: 'geocloud20w', geologyOpacity: 0.55, satellite: true, roads: false, imageryMode: 'latest', exaggeration: 2 };
   const parsed = parseLayerPreferences(JSON.stringify({ version: 1, layers: legacy }));
   assert.equal(parsed?.geologySource, 'world');
   assert.equal(parsed?.geology, true);
   assert.equal(parsed?.geologyOpacity, 0.55);
   assert.equal(parsed?.satellite, true);
   assert.equal(parsed?.roads, false);
+  assert.equal(parsed?.exaggeration, 1);
   assert.equal(applyLayerPatch(legacy, { geologySource: 'geocloud20w' }).geologySource, 'world');
+  assert.equal(applyLayerPatch(legacy, { exaggeration: 0.5 }).exaggeration, 1);
 
   const values = new Map([[LAYER_PREFERENCES_KEY, JSON.stringify({ version: 1, layers: { ...legacy, unrelatedLegacySetting: 'keep' }, unrelatedEnvelopeData: 7 })]]);
   const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
@@ -111,6 +115,7 @@ test('legacy detailed geology preference migrates to world while preserving neig
     const migrated = JSON.parse(values.get(LAYER_PREFERENCES_KEY));
     assert.equal(migrated.layers.geologySource, 'world');
     assert.equal(migrated.layers.imageryMode, 'detail');
+    assert.equal(migrated.layers.exaggeration, 1);
     assert.equal(migrated.layers.unrelatedLegacySetting, 'keep');
     assert.equal(migrated.unrelatedEnvelopeData, 7);
   } finally {
@@ -254,8 +259,9 @@ test('changing a basemap keeps user layer choices while adopting target source s
   for (const key of [
     'terrain', 'contours', 'contourInterval', 'elevationColors', 'elevationColorsOpacity',
     'geology', 'geologyOpacity', 'roads', 'roadsOpacity', 'labels',
-    'tiandituLabels', 'tiandituBoundaries', 'exaggeration',
+    'tiandituLabels', 'tiandituBoundaries',
   ]) assert.equal(switched[key], current[key], key + ' is pane-local');
+  assert.equal(switched.exaggeration, 1);
   assert.equal(switched.geologySource, 'world', 'the retired detailed source does not return when switching basemaps');
   assert.equal(switched.satelliteProvider, 'tianditu');
   assert.equal(switched.tiandituBase, 'img');

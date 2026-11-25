@@ -646,6 +646,7 @@ class NativeMapController internal constructor(
     internal fun setImageryStatusListener(listener:((NativeImageryStatus)->Unit)?){imageryStatusListener=listener}
 
     init {
+        worldWindow.engine.globe.verticalExaggeration = TERRAIN_VERTICAL_SCALE
         // Keep oblique imagery readable instead of isotropic mipmaps smearing it into bands.
         Texture.anisotropicFiltering = AFLevel.AF8X
         // WorldWind 2.1.1's RenderResourceCache remote lane is a separate admission cap from our
@@ -903,7 +904,6 @@ class NativeMapController internal constructor(
         val range=span/(2*kotlin.math.tan(Math.toRadians(45.0)/2))
         restoreCamera(NativeCameraSnapshot(lat,center.getDouble(0),range,value.optDouble("bearing",0.0),value.optDouble("pitch",0.0)))
     }
-    fun setTerrainExaggeration(value:Double){require(value.isFinite()&&value in .1..5.0);worldWindow.engine.globe.verticalExaggeration=value;worldWindow.requestRedraw()}
 
     /** Locks raster requests to one source zoom without touching camera/terrain state. Null restores adaptive detail. */
     fun setFixedRasterZoom(zoom: Int?) {
@@ -2062,6 +2062,7 @@ class NativeMapController internal constructor(
         tiandituTileUrl(layerName, x, y, z, encodedKey)
 
     companion object {
+        internal const val TERRAIN_VERTICAL_SCALE = 1.0
         private const val MAX_TILE_FOOTPRINTS = 1024
         private const val MAX_NAMESPACE_HASHES = 256
         const val SOURCE_IMAGERY = "tianditu-imagery"

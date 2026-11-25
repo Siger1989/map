@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, Mountain, X } from 'lucide-react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Camera, MapPin, Maximize, Minimize, Mountain, X } from 'lucide-react';
 import {
   getLocalDayBounds,
   getObserverTimeZone,
@@ -292,6 +292,11 @@ export function SkyViewer({
     }
   }, [solarDay.data, observer, loading]);
   const [notice, setNotice] = useState('');
+  const [fullscreen, setFullscreen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const locationId = useId();
+  const locationButton = useRef<HTMLButtonElement>(null);
+  const fullscreenButton = useRef<HTMLButtonElement>(null);
   const exitRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     exitRef.current?.focus({ preventScroll: true });
@@ -403,6 +408,7 @@ export function SkyViewer({
       className="sky-viewer"
       data-camera-mode={cameraLive}
       data-native-preview={cameraLive && camera.source === 'native' && camera.status === 'ready'}
+      data-fullscreen={fullscreen}
       role="dialog"
       aria-modal="true"
       aria-label="日月观景"
@@ -410,7 +416,15 @@ export function SkyViewer({
         if (e.key === 'Escape') {
           e.preventDefault();
           e.stopPropagation();
-          onClose();
+          if (fullscreen) {
+            setFullscreen(false);
+            fullscreenButton.current?.focus({ preventScroll: true });
+          } else if (locationOpen) {
+            setLocationOpen(false);
+            locationButton.current?.focus({ preventScroll: true });
+          } else {
+            onClose();
+          }
         }
       }}
     >
@@ -499,11 +513,36 @@ export function SkyViewer({
             <Mountain size={16} />
             模拟
           </button></div>}
-          <button className="sky-close" aria-label="退出日月观景" ref={exitRef} onClick={onClose}>
+          <button
+            type="button"
+            className="sky-location-toggle"
+            aria-label="观测位置"
+            title="观测位置"
+            aria-controls={locationId}
+            aria-expanded={locationOpen}
+            ref={locationButton}
+            onClick={() => setLocationOpen(open => !open)}
+          >
+            <MapPin size={16} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="sky-fullscreen-toggle"
+            aria-label={fullscreen ? '退出全屏' : '全屏观景'}
+            title={fullscreen ? '退出全屏' : '全屏观景'}
+            ref={fullscreenButton}
+            onClick={() => setFullscreen(active => !active)}
+          >
+            {fullscreen ? <Minimize size={18} aria-hidden="true" /> : <Maximize size={18} aria-hidden="true" />}
+          </button>
+          <button type="button" className="sky-close" aria-label="退出日月观景" ref={exitRef} onClick={onClose}>
             <X size={18} />
           </button>
         </div>
-        <div className="sky-info">
+        <SkyTargetControls guide={guide} id={target} label={targetLabel} following={following} searching={searching}
+          cameraLive={cameraLive} faint={faint} showStars={showStars} showGalaxy={showGalaxy} onSelect={selectTarget}
+          onFind={findTarget} onStars={()=>setShowStars(v=>!v)} onGalaxy={()=>setShowGalaxy(v=>!v)}/>
+        <div className="sky-info" id={locationId} hidden={!locationOpen}>
           <span className="sky-location">
             <span>{markerName || (actual
               ? `定位 ±${Math.round(actual.accuracy)} m`
@@ -527,9 +566,6 @@ export function SkyViewer({
             </div>
           )}
         </div>
-        <SkyTargetControls guide={guide} id={target} label={targetLabel} following={following} searching={searching}
-          cameraLive={cameraLive} faint={faint} showStars={showStars} showGalaxy={showGalaxy} onSelect={selectTarget}
-          onFind={findTarget} onStars={()=>setShowStars(v=>!v)} onGalaxy={()=>setShowGalaxy(v=>!v)}/>
       </div>
       <div className="sky-bottom">
         {!cameraLive && <small className="sky-satellite-credit">{textureStatus==='ready'?'天地图卫星影像':textureStatus==='partial'?'天地图卫星影像 · 部分覆盖':textureStatus==='loading'?'加载天地图卫星影像…':'天地图卫星影像未就绪 · 地形轮廓'}</small>}

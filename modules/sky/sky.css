@@ -13,8 +13,8 @@
   grid-template-rows: auto minmax(64px, 1fr) minmax(0, auto);
   grid-template-columns: minmax(0, 510px);
   justify-content: center;
-  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
-    max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   overflow: hidden;
   background: #142331;
   color: var(--ui-glass-ink, var(--ui-ink));
@@ -86,7 +86,7 @@ html[data-ui-personal-material] .sky-viewer {
 .sky-head {
   grid-row: 1;
   background-color: var(--ui-material-topbar, var(--ui-glass-surface, var(--ui-surface)));
-  padding: 6px 8px 8px;
+  padding: 3px 6px 5px;
 }
 
 .sky-bottom {
@@ -104,8 +104,8 @@ html[data-ui-personal-material] .sky-viewer {
 
 .sky-dock {
   display: grid;
-  gap: 6px;
-  padding: 8px 10px;
+  gap: 4px;
+  padding: 5px 8px;
   background-color: var(--ui-material-bottom, var(--ui-glass-surface, var(--ui-surface)));
 }
 
@@ -124,13 +124,14 @@ html[data-ui-personal-material] .sky-viewer {
 }
 
 .sky-bar {
-  padding-left: 2px;
+  padding-left: 4px;
 }
 
 .sky-bar strong {
   flex: 1;
+  min-width: 0;
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 650;
 }
 
@@ -162,13 +163,53 @@ html[data-ui-personal-material] .sky-viewer {
   background: transparent;
 }
 
-.sky-viewer .sky-close {
+.sky-viewer .sky-mode button {
+  min-height: 32px;
+  padding-inline: 6px;
+}
+
+.sky-viewer :is(.sky-close, .sky-fullscreen-toggle, .sky-location-toggle) {
   flex: 0 0 36px;
   width: 36px;
   height: 36px;
-  margin-left: 4px;
   padding: 0;
+}
+
+.sky-viewer .sky-close {
   color: var(--ui-close);
+}
+
+.sky-viewer .sky-location-toggle[aria-expanded='true'] {
+  background: var(--ui-selected);
+  color: var(--ui-selected-ink, var(--ui-active-ink));
+}
+
+.sky-viewer[data-fullscreen='true'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sky-viewer[data-fullscreen='true'] .sky-head {
+  justify-self: end;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.sky-viewer[data-fullscreen='true'] .sky-bar {
+  padding: 0;
+}
+
+.sky-viewer[data-fullscreen='true'] :is(
+  .sky-bar > :not(.sky-fullscreen-toggle), .sky-info, .sky-target-controls, .sky-dock
+) {
+  display: none;
+}
+
+.sky-viewer[data-fullscreen='true'] .sky-fullscreen-toggle {
+  background: var(--sky-field-backdrop, var(--ui-field));
+  color: var(--ui-input-ink, var(--ui-ink));
 }
 
 .sky-viewer button:disabled {
@@ -197,6 +238,10 @@ html[data-ui-personal-material] .sky-viewer {
   overflow-wrap: anywhere;
 }
 
+.sky-info[hidden] {
+  display: none;
+}
+
 .sky-readout > span + span,
 .sky-target-note,
 .sky-time-panel small,
@@ -219,20 +264,12 @@ html[data-ui-personal-material] .sky-viewer {
 }
 
 .sky-head .sky-target-controls {
-  border-top: 1px solid var(--sky-divider);
-  margin-top: 4px;
-  padding-top: 5px;
+  margin-top: 2px;
 }
 
 .sky-target-row,
 .sky-readout {
   flex-wrap: wrap;
-}
-
-.sky-target-row > label {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .sky-target-picker,
@@ -295,7 +332,7 @@ html[data-ui-personal-material] .sky-viewer {
 
 .sky-target-note {
   display: block;
-  margin-top: 3px;
+  margin: 2px 4px 0;
   overflow-wrap: anywhere;
 }
 
@@ -328,12 +365,17 @@ html[data-ui-personal-material] .sky-viewer {
 
 .sky-time-panel {
   min-width: 0;
-  padding-top: 6px;
+  padding-top: 4px;
   border-top: 1px solid var(--sky-divider);
 }
 
 .sky-date-row input[type='date'] {
+  min-height: 32px;
   max-width: 48%;
+}
+
+.sky-viewer :is(.sky-date-row, .sky-events, .sky-readout) button {
+  min-height: 32px;
 }
 
 .sky-date-row strong {
@@ -345,12 +387,12 @@ html[data-ui-personal-material] .sky-viewer {
 
 .sky-rail {
   position: relative;
-  height: 32px;
+  height: 28px;
 }
 
 .sky-track {
   position: absolute;
-  top: 13px;
+  top: 11px;
   height: 6px;
   left: 8px;
   right: 8px;
@@ -416,7 +458,7 @@ html[data-ui-personal-material] .sky-viewer {
 
 .sky-events {
   flex-wrap: wrap;
-  margin: 4px 0 3px;
+  margin: 3px 0 2px;
   font-size: 12px;
 }
 
@@ -429,7 +471,7 @@ html[data-ui-personal-material] .sky-viewer {
   --sky-chart-moon: color-mix(in srgb, #c1d5ff 63%, var(--ui-ink));
   display: block;
   width: 100%;
-  height: 55px;
+  height: 46px;
   margin-top: 4px;
   border-radius: var(--sky-control-radius);
   background: var(--ui-field);

@@ -362,7 +362,6 @@ class MainActivity : Activity(), LocationListener, android.hardware.SensorEventL
             contourInterval=preferences.getInt("contour-interval",30).takeIf { it in setOf(30,50,100,200) } ?: 30
             map.setTerrainOverlay(contours,elevationColors,contourInterval)
             terrain=preferences.getBoolean("terrain",true);map.setTerrain(terrain);chrome.setTerrainButton(terrain)
-            map.setTerrainExaggeration(preferences.getFloat("terrain-exaggeration",1f).toDouble())
             renderWorkspace()
             renderDrawingPreview()
         }.onFailure { chrome.status.text = "部分原生存档未能读取，原文件已保留。" }
@@ -1883,7 +1882,7 @@ class MainActivity : Activity(), LocationListener, android.hardware.SensorEventL
         terrain=preferences.getBoolean("terrain",true);contours=preferences.getBoolean("contours",false);elevationColors=preferences.getBoolean("elevation-colors",false);contourInterval=preferences.getInt("contour-interval",30)
         applySavedAppearance();chrome.setTerrainButton(terrain)
         for(target in listOfNotNull(map,secondaryMap)){
-            target.setTerrain(terrain);target.setTerrainExaggeration(preferences.getFloat("terrain-exaggeration",1f).toDouble());target.setTerrainOverlay(contours,elevationColors,contourInterval,preferences.getFloat("elevation-opacity",1f).toDouble());applyRasterPreferences(target);applyGeology(target)
+            target.setTerrain(terrain);target.setTerrainOverlay(contours,elevationColors,contourInterval,preferences.getFloat("elevation-opacity",1f).toDouble());applyRasterPreferences(target);applyGeology(target)
             val id=preferences.getString("source",NativeMapController.SOURCE_IMAGERY)!!
             if(id in NativeMapController.SOURCE_IDS)target.setSource(id)else(sourceCatalog.sources+publicSourceCatalog.sources).find{it.id==id}?.let(target::setCustomSource)
             target.setQuality(if(preferences.getString("quality","high")=="standard")NativeMapQuality.STANDARD else NativeMapQuality.HIGH)

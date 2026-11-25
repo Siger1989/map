@@ -67,7 +67,7 @@ class NativeImportedSettingsTest {
         assertEquals(-1, runtime.rasterZoom) // null means automatic; zero is a valid fixed zoom.
         assertEquals("high", runtime.rasterQuality)
         assertTrue(runtime.terrainEnabled)
-        assertEquals(2.4f, runtime.terrainExaggeration, .001f)
+        assertFalse(prefs.contains("terrain-exaggeration"))
         assertTrue(runtime.contoursEnabled)
         assertEquals(50, runtime.contourInterval)
         assertTrue(runtime.elevationColorsEnabled)

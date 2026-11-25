@@ -160,7 +160,6 @@ class NativeReactMapHost(
         var pendingCamera: JSONObject? = null,
         var renderRevision: Long = Long.MIN_VALUE,
         var renderState: JSONObject = JSONObject(),
-        @Volatile var renderExaggeration: Double = 1.0,
         var renderInteraction: CachedInteractionState = CachedInteractionState(),
         var cameraRevision: Long = 0L,
         val cameraOrigin: NativeBridgeCameraOrigin = NativeBridgeCameraOrigin(),
@@ -786,7 +785,6 @@ class NativeReactMapHost(
         val settings = incomingSettings
         val effectiveSettings = NativeBridgeSectionTerrain.effective(settings ?: JSONObject(), input.optJSONObject("section"))
         val previousEffectiveSettings = NativeBridgeSectionTerrain.effective(previous.optJSONObject("settings") ?: JSONObject(), previous.optJSONObject("section"))
-        val nextRenderExaggeration = effectiveSettings.optDouble("exaggeration", 1.0).takeIf { it.isFinite() } ?: 1.0
         val nextRenderInteraction = CachedInteractionState.from(input.optJSONObject("interaction"))
         if (entry.renderInteraction.drawingActive && !nextRenderInteraction.drawingActive) {
             entry.drawingMoveCoalescer?.discard()
@@ -827,7 +825,6 @@ class NativeReactMapHost(
         if (input.optJSONObject("position")?.toString() != previous.optJSONObject("position")?.toString() ||
             input.opt("positionHeading") != previous.opt("positionHeading") || input.opt("positionNavigating") != previous.opt("positionNavigating")) applyPosition(entry, input)
         applySection(entry, input)
-        entry.renderExaggeration = nextRenderExaggeration
         entry.renderInteraction = nextRenderInteraction
         entry.renderRevision = revision
         entry.renderState = input
@@ -936,7 +933,6 @@ class NativeReactMapHost(
         }
         map.setLegacyRasterLayersVisible(activeCustom || tdt)
         settings.optBoolean("terrain").let(map::setTerrain)
-        settings.optDouble("exaggeration", 1.0).takeIf(Double::isFinite)?.let(map::setTerrainExaggeration)
         syncTerrainOverlay(entry, settings, cameraJson(entry).optDouble("zoom", Double.NaN))
         val labelsVisible = settings.optBoolean("labelsEnabled", settings.optBoolean("labels", true))
         val roadsOpacity = settings.optDouble("roadsOpacity", 1.0).coerceIn(0.0, 1.0)
@@ -1292,10 +1288,8 @@ class NativeReactMapHost(
             "setTerrainMode" -> {
                 val section = entry.renderState.optJSONObject("section")
                 val requested = JSONObject().put("terrain", payload.optBoolean("enabled", payload.optBoolean("terrain", payload.optString("mode") in setOf("3d", "terrain"))))
-                payload.optDouble("exaggeration", Double.NaN).takeIf(Double::isFinite)?.let { requested.put("exaggeration", it) }
                 val effective = NativeBridgeSectionTerrain.effective(requested, section)
                 controller.setTerrain(effective.optBoolean("terrain"))
-                effective.optDouble("exaggeration", Double.NaN).takeIf(Double::isFinite)?.let(controller::setTerrainExaggeration)
             }
             "fitRoute", "fitCollection", "previewRoute", "previewNavigation" -> {
                 val coords = readCoordinates(payload.optJSONArray("coordinates") ?: payload.optJSONObject("route")?.optJSONArray("coordinates") ?: JSONArray())
@@ -1777,7 +1771,7 @@ class NativeReactMapHost(
                 cssWidth = currentRect.optDouble("width", 0.0), cssHeight = currentRect.optDouble("height", 0.0),
                 cssScale = cssScale(entry), nativeWidth = engineViewport.width, nativeHeight = engineViewport.height,
                 terrainEnabled = entry.controller.isTerrainEnabled(),
-                exaggeration = entry.renderExaggeration, demRevision = entry.controller.demRevision(),
+                exaggeration = NativeMapController.TERRAIN_VERTICAL_SCALE, demRevision = entry.controller.demRevision(),
                 snapRevision = entry.snapRevision, capturedAt = System.currentTimeMillis(),
             )
             entry.frameCaptureGate.markCaptured(android.os.SystemClock.elapsedRealtime())
@@ -1927,11 +1921,9 @@ class NativeReactMapHost(
             cssScale(entry) == metadata.cssScale && entry.controller.isTerrainEnabled() == metadata.terrainEnabled &&
             entry.controller.worldWindowForBridge().engine.viewport.width == metadata.nativeWidth &&
             entry.controller.worldWindowForBridge().engine.viewport.height == metadata.nativeHeight &&
-            entry.renderExaggeration == metadata.exaggeration && entry.controller.demRevision() == metadata.demRevision &&
+            entry.controller.demRevision() == metadata.demRevision &&
             entry.snapRevision == metadata.snapRevision
     }
-
-    private fun privateExaggeration(entry: MapEntry): Double = entry.renderExaggeration
 
     private fun scheduleSnapPublish(entry: MapEntry) {
         if (entry.snapPublishScheduled) return
@@ -2050,7 +2042,6 @@ class NativeReactMapHost(
         val geoidCacheScheme = "${geoid.displayName}/${System.identityHashCode(geoid)}/offset-cm-v1"
         if (engine.viewport.width != width || engine.viewport.height != height) return
         val terrainEnabled = entry.controller.isTerrainEnabled()
-        val exaggeration = privateExaggeration(entry)
         val revision = entry.controller.demRevision().coerceAtLeast(0)
         val inputs = NativeBridgeDemSamplingGate.Inputs(
             camera = NativeBridgeDemSamplingGate.cameraFingerprint(
@@ -2061,7 +2052,7 @@ class NativeReactMapHost(
                 bearing = camera.optDouble("bearing", Double.NaN),
             ), viewportWidth = width, viewportHeight = height,
             cssScale = cssScale(entry), terrainEnabled = terrainEnabled,
-            exaggeration = exaggeration, demRevision = revision,
+            exaggeration = NativeMapController.TERRAIN_VERTICAL_SCALE, demRevision = revision,
         )
         val inputKey = inputs.fingerprint()
         val geometryKey = inputs.geometryFingerprint()
@@ -2183,7 +2174,7 @@ class NativeReactMapHost(
                     viewportHeight = entry.controller.worldWindowForBridge().engine.viewport.height,
                     cssScale = cssScale(entry),
                     terrainEnabled = entry.controller.isTerrainEnabled(),
-                    exaggeration = privateExaggeration(entry),
+                    exaggeration = NativeMapController.TERRAIN_VERTICAL_SCALE,
                     demRevision = entry.controller.demRevision().coerceAtLeast(0),
                 )
                 if (latestInputs.geometryFingerprint() == geometryKey && latestInputs.fingerprint() != inputKey) {

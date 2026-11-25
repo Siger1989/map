@@ -213,19 +213,20 @@ test('each parameter group follows its layer and opening another preserves exist
     onChange: patch => changes.push(patch), onOpenSources() {},
     onGeologyDetails: () => legends++, mapStatus: 'ready',
   })));
-  for (const [key, id] of [['terrain', 'terrain-exaggeration'], ['elevationColors', 'elevation-colors-opacity'], ['contours', 'contour-interval'], ['geology', 'geology-opacity'], ['roads', 'roads-opacity']]) {
+  for (const [key, id] of [['elevationColors', 'elevation-colors-opacity'], ['contours', 'contour-interval'], ['geology', 'geology-opacity'], ['roads', 'roads-opacity']]) {
     assert.equal(document.getElementById(id).closest('.layer-item').getAttribute('data-layer'), key);
     assert.ok(document.querySelector(`[data-layer="${key}"] [aria-controls="${key}-parameters"]`));
   }
-  assert.equal(document.querySelector('[data-layer="satellite"] .imagery-selector').getAttribute('aria-label'), '卫星影像类型');
+  assert.equal(document.querySelector('[data-layer="satellite"] .imagery-selector'), null);
   assert.equal(document.querySelector('[data-layer="outdoorContours"] .layer-parameters-toggle'), null, 'no empty settings entry');
   assert.equal(document.querySelector('[data-layer="labels"] .layer-parameters-toggle'), null, 'no invented independent label opacity');
-  await React.act(async () => document.querySelector('[aria-controls="terrain-parameters"]').click());
-  assert.equal(document.getElementById('terrain-parameters').hidden, false);
+  assert.equal(document.querySelector('[data-layer="terrain"] .layer-parameters-toggle'), null);
+  assert.equal(document.getElementById('terrain-exaggeration'), null);
+  await React.act(async () => document.querySelector('[aria-controls="elevationColors-parameters"]').click());
+  assert.equal(document.getElementById('elevationColors-parameters').hidden, false);
   await React.act(async () => document.querySelector('[aria-controls="geology-parameters"]').click());
-  assert.equal(document.getElementById('terrain-parameters').hidden, true, 'only one inline group is expanded');
+  assert.equal(document.getElementById('elevationColors-parameters').hidden, true, 'only one inline group is expanded');
   assert.equal(document.getElementById('geology-parameters').hidden, false);
-  assert.equal(document.getElementById('terrain-exaggeration').getAttribute('value'), '1.2');
   assert.deepEqual(changes, [], 'disclosures never rewrite stored layer preferences');
   const legend = document.querySelector('[data-layer="geology"] .layer-geology-detail');
   await React.act(async () => legend.click());
@@ -237,13 +238,14 @@ test('each parameter group follows its layer and opening another preserves exist
 
 test('comparison inline settings change only the selected pane and retain values across pane switches', async t => {
   const { React, root, ComparisonLayerWindow } = await renderHarness(t);
-  const initial = [settings({ roadsOpacity: 0.75 }), settings({ roadsOpacity: 0.9, exaggeration: 1.5 })];
+  const initial = [settings({ roadsOpacity: 0.75 }), settings({ roadsOpacity: 0.9 })];
   let current;
   function Harness() {
     const [pane, setPane] = React.useState(0);
     const [values, setValues] = React.useState(initial);
     current = values;
     return React.createElement(ComparisonLayerWindow, {
+      open: true,
       pane, onPane: setPane, choice: { name: '内置地图', settings: values[pane] },
       side: index => index === 0 ? '上' : '下',
       onChange: patch => setValues(previous => previous.map((value, index) => index === pane ? { ...value, ...patch } : value)),
@@ -258,10 +260,12 @@ test('comparison inline settings change only the selected pane and retain values
   assert.equal(current[1].roadsOpacity, 0.9);
   await React.act(async () => document.querySelector('.comparison-layer-tabs button:nth-child(2)').click());
   assert.equal(document.getElementById('roads-parameters').hidden, true, 'new pane starts with closed parameter groups');
-  await React.act(async () => document.querySelector('[aria-controls="terrain-parameters"]').click());
-  await React.act(async () => renderedProps(document.getElementById('terrain-exaggeration')).onChange({ target: { value: '1.8' } }));
-  assert.equal(current[0].exaggeration, 1.2);
-  assert.equal(current[1].exaggeration, 1.8);
+  assert.equal(document.querySelector('[data-layer="terrain"] .layer-parameters-toggle'), null);
+  assert.equal(document.getElementById('terrain-exaggeration'), null);
+  await React.act(async () => document.querySelector('[aria-controls="roads-parameters"]').click());
+  await React.act(async () => renderedProps(document.getElementById('roads-opacity')).onChange({ target: { value: '0.8' } }));
+  assert.equal(current[0].roadsOpacity, 0.4);
+  assert.equal(current[1].roadsOpacity, 0.8);
   await React.act(async () => document.querySelector('.comparison-layer-tabs button:nth-child(1)').click());
   assert.equal(document.getElementById('roads-opacity').getAttribute('value'), '0.4');
   assert.equal(document.querySelector('.layer-display-settings'), null);

@@ -16,6 +16,7 @@ import {
   PictureInPicture2,
   Images,
   Sunrise,
+  Box,
 } from 'lucide-react';
 import { DocumentTextIcon, MapIcon as SolidMapIcon, PencilIcon, StarIcon, BriefcaseIcon } from '@heroicons/react/24/solid';
 import { MapPanelHeader } from '../ui/MapPanelHeader';
@@ -63,6 +64,7 @@ export function ControlDock({
   onMeasure,
   onCompare,
   onArea,
+  onTerrainPrint,
   industryEnabled = false,
   showRecordingEntry = true,
   keepOpenOnMapInteraction = false,
@@ -87,6 +89,7 @@ export function ControlDock({
   onMeasure?: () => void;
   onCompare?: () => void;
   onArea?: () => void;
+  onTerrainPrint?: () => void;
   industryEnabled?: boolean;
   showRecordingEntry?: boolean;
   keepOpenOnMapInteraction?: boolean;
@@ -214,6 +217,7 @@ export function ControlDock({
                 )}
                 {onCompare && <button onClick={onCompare}><PanelsTopLeft size={18} />双图源对比</button>}
                 {onArea && <button onClick={onArea}>▱ 划区域</button>}
+                {onTerrainPrint && <button onClick={onTerrainPrint}><Box size={18} />地形打印</button>}
                 {floatingNavigation && <button onClick={() => setFloatingOpen(true)}><PictureInPicture2 size={18} />悬浮小地图</button>}
                 {industryEnabled && <button onClick={() => onActive('industry')} aria-label="行业工具">行业工具</button>}
               </div>
