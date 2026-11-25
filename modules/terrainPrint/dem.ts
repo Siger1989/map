@@ -210,22 +210,39 @@ class AuthenticatedTile extends BaseClient {
   }
 }
 
-function verifyProjection(keys: ReturnType<Awaited<ReturnType<GeoTIFF['getImage']>>['getGeoKeys']>) {
-  if (
-    !keys || keys.ProjectedCSTypeGeoKey !== 32767 || keys.GeographicTypeGeoKey !== 4326 ||
-    keys.ProjCoordTransGeoKey !== 11 || keys.ProjLinearUnitsGeoKey !== 9001 ||
-    keys.ProjNatOriginLatGeoKey !== 36 || keys.ProjNatOriginLongGeoKey !== 85 ||
-    keys.ProjStdParallel1GeoKey !== 25 || keys.ProjStdParallel2GeoKey !== 47 ||
-    keys.ProjFalseEastingGeoKey !== 0 || keys.ProjFalseNorthingGeoKey !== 0
-  ) throw unavailable('NASA 高程文件的坐标参考与 HMA 8 米产品不符。');
+const expectedProjection = {
+  ProjectedCSTypeGeoKey: 32767,
+  GeographicTypeGeoKey: 4326,
+  ProjCoordTransGeoKey: 11,
+  ProjLinearUnitsGeoKey: 9001,
+  ProjNatOriginLatGeoKey: 36,
+  ProjNatOriginLongGeoKey: 85,
+  ProjStdParallel1GeoKey: 25,
+  ProjStdParallel2GeoKey: 47,
+  ProjFalseEastingGeoKey: 0,
+  ProjFalseNorthingGeoKey: 0,
+} as const;
+
+class ProjectionMismatch extends TerrainPrintDemError {}
+
+function verifyProjection(filename: string, keys: ReturnType<Awaited<ReturnType<GeoTIFF['getImage']>>['getGeoKeys']>) {
+  for (const field of Object.keys(expectedProjection) as (keyof typeof expectedProjection)[]) {
+    const value = keys?.[field];
+    const expected = expectedProjection[field];
+    if (value !== expected) {
+      const actual = value == null ? '缺失' : typeof value === 'number' ? String(value) : '非数值';
+      throw new ProjectionMismatch('DEM_UNAVAILABLE', 502,
+        `NASA 高程瓦片 ${filename} 的坐标参考与 HMA 8 米产品不符（${field} 实际为${actual}，应为 ${expected}）。`);
+    }
+  }
 }
 
 async function addTileSamples(
-  tiff: GeoTIFF, grid: RasterGrid, projectedX: Float64Array, projectedY: Float64Array, signal: AbortSignal,
+  filename: string, tiff: GeoTIFF, grid: RasterGrid, projectedX: Float64Array, projectedY: Float64Array, signal: AbortSignal,
 ) {
   signal.throwIfAborted();
   const image = await tiff.getImage();
-  verifyProjection(image.getGeoKeys());
+  verifyProjection(filename, image.getGeoKeys());
   const [originX, originY] = image.getOrigin();
   const [pixelWidth, pixelHeight] = image.getResolution();
   if (pixelWidth !== SAMPLE_METERS || pixelHeight !== -SAMPLE_METERS || image.getSamplesPerPixel() !== 1) {
@@ -304,15 +321,27 @@ export async function getTerrainPrintDem(input: unknown, options: TerrainPrintDe
     }
     for (const [filename, url] of tiles) {
       if (grid.elevations.every((value) => value !== null)) break;
-      let tiff = await options.cachedTile?.(filename, signal);
-      if (!tiff) {
-        if (!token && !options.useTransportAuthorization) throw authRequired();
-        tiff = await fromCustomClient(new AuthenticatedTile(url, token, fetcher, signal, budget), { maxRanges: 0 }, signal);
-      }
+      const authorized = Boolean(token || options.useTransportAuthorization);
+      const remote = (blockSize?: number) => {
+        const sourceOptions = { maxRanges: 0, blockSize };
+        return fromCustomClient(new AuthenticatedTile(url, token, fetcher, signal, budget), sourceOptions, signal);
+      };
+      const read = async (tiff: GeoTIFF) => {
+        try {
+          await addTileSamples(filename, tiff, grid, projectedX, projectedY, signal);
+        } finally {
+          await tiff.close();
+        }
+      };
+      const cached = await options.cachedTile?.(filename, signal);
+      if (!cached && !authorized) throw authRequired();
       try {
-        await addTileSamples(tiff, grid, projectedX, projectedY, signal);
-      } finally {
-        await tiff.close();
+        await read(cached ?? await remote());
+      } catch (error) {
+        if (!(error instanceof ProjectionMismatch) || !authorized) throw error;
+        signal.throwIfAborted();
+        // Validate independently of the first reader and its cached byte ranges.
+        await read(await remote(131_072));
       }
     }
     if (grid.elevations.every((value) => value === null)) {

@@ -21,6 +21,7 @@ final class TerrainPrintSource {
     private static final Pattern FILE = Pattern.compile(
         "^/nsidc-cumulus-prod-protected/HMA/HMA_DEM8m_MOS/1/[0-9]{4}/[0-9]{2}/[0-9]{2}/HMA_DEM8m_MOS_[0-9]{8}_tile-[0-9]{3}\\.tif$");
     private static final Pattern RANGE = Pattern.compile("^bytes=([0-9]{1,10})-([0-9]{1,10})$");
+    private static final Pattern CONTENT_RANGE = Pattern.compile("bytes ([0-9]+)-([0-9]+)/([0-9]+)");
     private static final Pattern BEARER = Pattern.compile("Bearer [A-Za-z0-9._~-]+");
     private static final int MAX_RANGE = 16 * 1024 * 1024;
 
@@ -63,6 +64,8 @@ final class TerrainPrintSource {
             long start = Long.parseLong(bytes.group(1)), end = Long.parseLong(bytes.group(2));
             if (start > end || end - start >= MAX_RANGE) return respond(416, "text/plain", null, null);
             range = bytes.group();
+            String requestedRange = request.getQueryParameter("range");
+            if (requestedRange != null && !range.equals(requestedRange)) return respond(416, "text/plain", null, null);
             authorization = header(headers, "Authorization");
             if (authorization.isEmpty()) authorization = packagedAuthorization;
             if (authorization.isEmpty()) return respond(428, "text/plain", null, null);
@@ -90,11 +93,20 @@ final class TerrainPrintSource {
             if (status == 429) return respond(429, "text/plain", null, null);
             if (status != (catalog ? 200 : 206)) return respond(502, "text/plain", null, null);
             String contentRange = catalog ? null : connection.getHeaderField("Content-Range");
-            if (!catalog && (contentRange == null || !contentRange.matches("bytes [0-9]+-[0-9]+/[0-9]+"))) {
+            if (!catalog && (contentRange == null)) {
                 return respond(502, "text/plain", null, null);
             }
             try (InputStream stream = connection.getInputStream()) {
                 byte[] body = DataTransport.readLimited(stream, catalog ? 1024 * 1024 : MAX_RANGE);
+                if (!catalog) {
+                    Matcher interval = CONTENT_RANGE.matcher(contentRange);
+                    if (!interval.matches()) return respond(502, "text/plain", null, null);
+                    long first = Long.parseLong(interval.group(1)), last = Long.parseLong(interval.group(2));
+                    long total = Long.parseLong(interval.group(3));
+                    if (last >= total || last < first || last - first + 1 != body.length) {
+                        return respond(502, "text/plain", null, null);
+                    }
+                }
                 return respond(status, catalog ? "application/json" : "image/tiff", body, contentRange);
             }
         } catch (Exception error) {

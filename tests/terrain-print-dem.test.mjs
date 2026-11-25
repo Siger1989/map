@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { writeArrayBuffer } from 'geotiff';
+import { fromArrayBuffer, writeArrayBuffer } from 'geotiff';
 import proj4 from 'proj4';
 import { getTerrainPrintDem, TerrainPrintDemError } from '../modules/terrainPrint/dem.ts';
 import { POST } from '../app/api/terrain-print/route.ts';
@@ -15,7 +15,7 @@ const catalog = (links = [file]) => Response.json({
   },
 });
 
-function createTile() {
+function createTile(originLongitude = 85) {
   const convert = proj4('EPSG:4326', '+proj=aea +lat_1=25 +lat_2=47 +lat_0=36 +lon_0=85 +x_0=0 +y_0=0 +datum=WGS84 +units=m');
   const [x, y] = convert.forward([bounds.west, bounds.north]);
   const data = Float32Array.from({ length: 4096 }, (_, index) => 3000 + Math.floor(index / 64) * 100 + index % 64);
@@ -41,7 +41,7 @@ function createTile() {
       3082, 34736, 1, 4,
       3083, 34736, 1, 5,
     ],
-    GeoDoubleParams: [25, 47, 85, 36, 0, 0],
+    GeoDoubleParams: [25, 47, originLongitude, 36, 0, 0],
   });
 }
 
@@ -76,6 +76,38 @@ test('a bounded selection queries NASA, range-reads a real TIFF and builds a nor
   assert.ok(grid.elevations.every(Number.isFinite));
   assert.ok(grid.elevations.at(-1) > grid.elevations[0]);
   assert.ok(ranges >= 1);
+});
+
+test('a CRS mismatch gets exactly one independent header read before raster sampling', async () => {
+  for (const scenario of ['remote recovery', 'cache recovery', 'persistent mismatch']) {
+    const bad = createTile(87), good = createTile();
+    const headerRanges = [];
+    const options = {
+      useTransportAuthorization: true,
+      cachedTile: scenario === 'cache recovery' ? () => fromArrayBuffer(bad) : undefined,
+      fetch: async (url, init) => {
+        if (String(url).startsWith('https://cmr.earthdata.nasa.gov/')) return catalog();
+        const range = new Headers(init.headers).get('Range');
+        const [, first, last] = /^bytes=(\d+)-(\d+)$/.exec(range);
+        if (Number(first) === 0) headerRanges.push(range);
+        const source = scenario === 'persistent mismatch' ||
+          (scenario === 'remote recovery' && headerRanges.length === 1) ? bad : good;
+        const end = Math.min(Number(last), source.byteLength - 1);
+        return new Response(source.slice(Number(first), end + 1), {
+          status: 206, headers: { 'Content-Range': `bytes ${first}-${end}/${source.byteLength}` },
+        });
+      },
+    };
+    const grid = getTerrainPrintDem(selection, options);
+    if (scenario === 'persistent mismatch') {
+      await assert.rejects(grid, e => e.code === 'DEM_UNAVAILABLE' &&
+        /tile-592.*ProjNatOriginLongGeoKey.*87.*85/.test(e.message));
+    } else {
+      assert.ok((await grid).elevations.every(Number.isFinite));
+    }
+    assert.equal(headerRanges.length, scenario === 'cache recovery' ? 1 : 2);
+    assert.equal(new Set(headerRanges).size, headerRanges.length);
+  }
 });
 
 test('missing coverage, missing login and remote auth redirect have distinct errors', async () => {
