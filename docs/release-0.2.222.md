@@ -7,3 +7,9 @@
 Android 8.0 及以上，包名 `com.shantu.oldengine`，版本 `0.2.222-test`，构建号 229。覆盖安装前请保存记录和草稿。Android 真机触感及受保护 DEM 在线下载待验，HarmonyOS 6.1 原生 HAP 目前未交付。
 
 浏览器三种手机尺寸均已实测。18 项地形相关检查、32 项原生 UI 区域路由与投影检查通过。
+
+从签名包提取网页资源，验证矩形移动和缩放、圆形控制点、36 米采样提示、1 倍真实起伏和 80 × 160 毫米 STL。收藏黑底模型、可调底座和 FBX 导出也通过回归验证。
+
+APK 沿用 0.2.221 的签名，16 KiB 对齐、1,968 项网页资源、39 项私人图源和已注册天地图核验通过。APK 166,081,490 字节，SHA-256 `3a643146b6f4384d34d60a0a22a3d0c75bc9b4e34cec21c9d3aba7c334e40ce2`。[对应源码](https://github.com/Siger1989/map/commit/c2476c3ce23934cdd13f52793e3e924bffb7e1fb)
+
+私人发行的 27 个分卷已下载并合成，完整包校验值与本机归档一致。[私人下载页](https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.222-private)
