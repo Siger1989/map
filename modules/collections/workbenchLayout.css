@@ -22,7 +22,7 @@
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-.observatory :where(.control-popover)[data-panel-kind='favorites'] .dock-heading,
+.observatory :where(.control-popover)[data-panel-kind='favorites'] > .dock-heading,
 .observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .topbar,
 .observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .map-toolbar,
 .observatory:has(:where(.control-popover)[data-panel-kind='favorites']) .camera-gizmo {

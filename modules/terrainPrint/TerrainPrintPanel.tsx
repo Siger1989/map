@@ -4,7 +4,9 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Circle, Download, RectangleHorizontal } from 'lucide-react';
 import { deliverFile } from '../files/delivery';
 import { MapPanelHeader } from '../ui/MapPanelHeader';
-import { terrainPrintStl, type TerrainPrintGrid } from './mesh';
+import { terrainPrintStl } from './mesh';
+import type { TerrainPrintRecord } from './modelStore';
+import { requestTerrainPrintDem } from './requestDem';
 import './terrainPrint.css';
 
 type PrintShape = 'rectangle' | 'circle';
@@ -19,25 +21,6 @@ const SHAPES = [
   { value: 'circle', label: '圆形', icon: Circle, direction: '从圆心拖到边缘，或依次点击圆心和边缘。' },
 ] as const;
 
-type TerrainPrintResponse = TerrainPrintGrid & {
-  error?: string;
-  code?: string;
-};
-
-async function fetchTerrainPrintDem(selection: TerrainPrintSelection, token: string, signal: AbortSignal): Promise<TerrainPrintGrid> {
-  const response = await fetch('/api/terrain-print', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...selection, token: token || undefined }),
-    signal,
-  });
-  const data = await response.json().catch(() => null) as TerrainPrintResponse | null;
-  if (!response.ok || !data) {
-    throw Object.assign(new Error(data?.error || '高程服务暂时无法完成，请稍后重试。'), { code: data?.code });
-  }
-  return data;
-}
-
 export function TerrainPrintPanel({
   selection,
   picking,
@@ -45,7 +28,7 @@ export function TerrainPrintPanel({
   onClose,
   onCancelPick,
   onExport,
-  loadDem = fetchTerrainPrintDem,
+  onFavorite,
 }: {
   selection: TerrainPrintSelection | null;
   picking: boolean;
@@ -53,10 +36,12 @@ export function TerrainPrintPanel({
   onClose: () => void;
   onCancelPick?: () => void;
   onExport?: (name: string, blob: Blob) => Promise<void> | void;
-  loadDem?: (selection: TerrainPrintSelection, token: string, signal: AbortSignal) => Promise<TerrainPrintGrid>;
+  onFavorite?: (model: TerrainPrintRecord) => Promise<void>;
 }) {
   const titleId = useId();
   const request = useRef<AbortController | null>(null);
+  const [generated, setGenerated] = useState<TerrainPrintRecord | null>(null);
+  const [savingFavorite, setSavingFavorite] = useState(false);
   const [activeShape, setActiveShape] = useState<PrintShape>('rectangle');
   const [widthMm, setWidthMm] = useState('160');
   const [baseMm, setBaseMm] = useState('4');
@@ -74,6 +59,7 @@ export function TerrainPrintPanel({
 
   function pick(next: PrintShape) {
     setActiveShape(next);
+    setGenerated(null);
     setNotice('');
     setError('');
     onPick(next);
@@ -83,6 +69,7 @@ export function TerrainPrintPanel({
     event.preventDefault();
     if (!selection || picking || request.current) return;
 
+    const favoriteDirectly = (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') === 'favorite';
     const modelWidth = Number(widthMm);
     const bottomThickness = Number(baseMm);
     const rimWidth = withRim ? Number(rimMm) : 0;
@@ -95,10 +82,11 @@ export function TerrainPrintPanel({
     const controller = new AbortController();
     request.current = controller;
     setPending(true);
+    setGenerated(null);
     setError('');
     setNotice('正在查找并下载选区的 8 米高程数据…');
     try {
-      const data = await loadDem(selection, token.trim(), controller.signal);
+      const data = await requestTerrainPrintDem(selection, token.trim(), controller.signal);
       controller.signal.throwIfAborted();
       setNotice('正在生成封闭模型…');
       const stl = terrainPrintStl(data, {
@@ -109,6 +97,18 @@ export function TerrainPrintPanel({
       });
       const name = `Shantu-terrain-${selection.shape}-${Date.now()}.stl`;
       const file = new File([stl], name, { type: 'model/stl' });
+      if (onFavorite) {
+        const createdAt = Date.now();
+        const suffix = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(createdAt);
+        const model: TerrainPrintRecord = {
+          id: crypto.randomUUID(),
+          name: (selection.shape === 'circle' ? '圆形地形 ' : '矩形地形 ') + suffix,
+          createdAt, selection, stl, grid: data,
+          options: { shape: selection.shape, widthMm: modelWidth, baseMm: bottomThickness, rimMm: rimWidth },
+        };
+        if (favoriteDirectly) { await onFavorite(model); return; }
+        setGenerated(model);
+      }
       if (onExport) {
         await onExport(name, file);
         setNotice('已发起 STL 保存。');
@@ -133,6 +133,14 @@ export function TerrainPrintPanel({
         setPending(false);
       }
     }
+  }
+
+  async function favorite() {
+    if (!generated || !onFavorite || savingFavorite) return;
+    setSavingFavorite(true);
+    try { await onFavorite(generated); }
+    catch { setError('无法保存模型到收藏，请检查设备存储空间。'); }
+    finally { setSavingFavorite(false); }
   }
 
   return (
@@ -220,10 +228,19 @@ export function TerrainPrintPanel({
                 取消生成
               </button>
             ) : (
-              <button type="submit" className="terrain-print-action is-primary">
-                <Download size={17} aria-hidden="true" />生成并导出 STL
-              </button>
+              <div className="terrain-print-actions">
+                <button type="submit" className="terrain-print-action is-primary">
+                  <Download size={17} aria-hidden="true" />生成并导出 STL
+                </button>
+                {onFavorite && !generated && <button type="submit" value="favorite" className="terrain-print-action">
+                  生成并收藏
+                </button>}
+              </div>
             )}
+            {generated && !pending && <button type="button" className="terrain-print-action"
+              onClick={() => void favorite()} disabled={savingFavorite}>
+              {savingFavorite ? '正在保存…' : '保存到收藏'}
+            </button>}
           </form>
         )}
       </div>

@@ -1,3 +1,15 @@
+## 2026-11-25 / 收藏模型预览
+
+| 验收项 | 结果 |
+| --- | --- |
+| 收藏入口与底座 | 浏览器从真实 8 米 DEM 选区直接生成收藏，打开纯黑预览，进入底座设置并从平底改为外围包边。6 mm 底厚和每侧 6 mm 包边保存成功，重进读回设置，编辑期间复用原高程。 |
+| 手机尺寸与操作 | 390×857、360×780、390×480 的预览和导出按钮均可达，矮屏可滚动。验证画布旋转、底座切换、返回和重进。 |
+| 图源与 FBX | 必应与天地图卫星影像分别生成带内嵌贴图的 FBX，Blender 确认封闭三角网格、独立底座材质及不同贴图。ArcGIS 在所测选区缺瓦片并提示失败。 |
+| 构建与签名资源 | TypeScript、15 项定向检查、私人网页生产构建与 0.2.221 Android 构建通过。提取签名包网页资源在 Chromium 实测黑色画布可旋转、调节并保存底座及通过 Worker 导出 FBX 7400。 |
+| Android 真机 | 仍待验证原生地图框选、在线 DEM 和系统文件保存。 |
+
+见[底座设置](../artifacts/screenshots/terrain-library-base-options.png)、[标准屏](../artifacts/screenshots/terrain-library-black-390x857.png)、[窄屏](../artifacts/screenshots/terrain-library-black-360x780.png)及[矮屏](../artifacts/screenshots/terrain-library-black-390x480.png)。
+
 ## 2026-11-25 / 地形打印
 
 | 验收项 | 结果 |

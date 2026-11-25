@@ -1,6 +1,8 @@
 import { X } from 'lucide-react';
 import { SmartInput } from '../input/SmartText';
 import {
+  lazy,
+  Suspense,
   useEffect,
   useMemo,
   useRef,
@@ -39,6 +41,9 @@ import { ZIP_MIME } from '../files/archive';
 import type { TripPhoto } from '../photos/storage';
 import type { Recording } from '../outdoor/recording';
 import type { TripPackage } from '../outdoor/offline';
+import type { MapSource } from '../mapSources/types';
+
+const TerrainPrintModels = lazy(() => import('../terrainPrint/TerrainPrintModels').then(module => ({ default: module.TerrainPrintModels })));
 type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   initialFolderName?: string;
   onImport?: () => void;
@@ -65,6 +70,8 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onCacheRoutes: (keys: string[]) => void;
   onCacheFolder: () => void;
   cacheCount: number;
+  terrainModelSources?: readonly MapSource[];
+  initialTerrainModelId?: string | null;
   cachePackages?: readonly TripPackage[];
   onCachePackage?: (id: string) => void;
   recording?: Recording;
@@ -92,6 +99,8 @@ export function CollectionsPanel(props: Props) {
   const regions = useRegions(entries);
   const [boxResults, setBoxResults] = useState(!!props.initialSelectedKeys?.length);
   const [importOpen, setImportOpen] = useState(false);
+  const [terrainModelsOpen, setTerrainModelsOpen] = useState(Boolean(props.initialTerrainModelId));
+  const [terrainModelEntry, setTerrainModelEntry] = useState(props.initialTerrainModelId);
   const [legacy, setLegacy] = useState(
       !props.initialOutputKey && !props.initialSelectedKeys?.length,
     ),
@@ -238,6 +247,10 @@ export function CollectionsPanel(props: Props) {
       setBusy(false);
     }
   };
+  if (terrainModelsOpen) return <Suspense fallback={<p role="status">正在打开模型预览…</p>}>
+    <TerrainPrintModels sources={props.terrainModelSources ?? []} initialId={terrainModelEntry}
+      onBack={() => { setTerrainModelEntry(null); setTerrainModelsOpen(false); }} onClose={props.onClose} />
+  </Suspense>;
   if (boxResults && !output) return <BoxSelectionResults
     entries={entries.filter(e => props.initialSelectedKeys?.includes(e.key))}
     initialMessage={message}
@@ -266,6 +279,7 @@ export function CollectionsPanel(props: Props) {
       <WorkbenchPanel
         initialFolderName={props.initialFolderName}
         onImport={() => setImportOpen(true)}
+        onTerrainModels={() => setTerrainModelsOpen(true)}
         center={props.mapCenter}
         onClose={props.onClose}
         onLocate={(key) => {

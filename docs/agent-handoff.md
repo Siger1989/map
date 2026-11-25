@@ -1,3 +1,5 @@
+> **2026-11-25 / 收藏模型预览**。收藏入口位于 `CollectionsPanel.tsx`，预览和底座设置位于 `modules/terrainPrint`。IndexedDB 保存选区、网格和底座参数，旧记录无高程网格时可按原选区补读。更换底座复用已有影像和高程。FBX 工作线程嵌入选定影像，Android 通过 `ArchiveOutput.java` 和 `ArchiveTransfer.java` 分块保存。0.2.221 已签名归档，真机待验。见[版本说明](release-0.2.221.md)和[收藏验收](ui-quality-gate.md#2026-11-25--收藏模型预览)。
+
 > **2026-11-25 / 地形打印**。选择和输出位于 `modules/terrainPrint`，网页版使用 `POST /api/terrain-print`。原生沿用真实地图手势与分块文件保存，固定地址访问 NASA 目录和 NSIDC GeoTIFF 字节范围。网页可通过 `SHANTU_HMA_DEM_CACHE_DIR` 复用本机原始瓦片。选区上限约 24 万采样点，缺测区域拦截生成。首次访问受保护且未缓存的数据时提供 Earthdata 令牌入口。令牌和私人 DEM 不进入源码或发布产物。见[验收](ui-quality-gate.md#2026-11-25--地形打印)。
 
 > **2026-11-25 / 地形固定真实比例**。共享 LayerPanel 移除三维地形倍率参数，图层偏好、主/双图设置和换源保持 1 倍。原生地图控制器在初始化时应用 1 倍，桥接和旧工作区偏好无法重启倍率。私人网页预览来自当前工程，旧工作树同样补齐源码。见[验收](ui-quality-gate.md#2026-11-25--地形固定真实比例)。

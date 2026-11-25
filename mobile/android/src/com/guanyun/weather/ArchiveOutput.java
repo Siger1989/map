@@ -16,13 +16,15 @@ final class ArchiveOutput {
         String name = transfer.name(token);
         final boolean video = ArchiveTransfer.isSkyVideo(name);
         final boolean stl = ArchiveTransfer.isTerrainStl(name);
+        final boolean fbx = ArchiveTransfer.isTerrainFbx(name);
         if (stl && share) return "请先保存 STL 再分享";
+        if (fbx && share) return "请先保存 FBX 再分享";
         if (video && share) return "请先保存录像再分享";
         final File file;
         try { file = transfer.finish(token); }
         catch (Exception e) { return e.getMessage() == null ? "压缩包校验失败" : e.getMessage(); }
         final String extension = name.substring(name.lastIndexOf('.') + 1);
-        final String mime = video ? "video/" + extension : stl ? "application/octet-stream" : RouteShareProvider.mime(name);
+        final String mime = video ? "video/" + extension : (stl || fbx) ? "application/octet-stream" : RouteShareProvider.mime(name);
         activity.runOnUiThread(() -> {
             if (!activity.trustedForeground()) { file.delete(); return; }
             if (!share) { files.saveGenerated(name, mime, file); return; }

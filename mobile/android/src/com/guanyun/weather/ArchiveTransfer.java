@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.UUID;
@@ -12,6 +14,10 @@ import java.util.zip.ZipFile;
 /** No caller-supplied paths. One bounded, ordered transfer into private cache. */
 final class ArchiveTransfer {
     private static final int VIDEO_LIMIT = 64 * 1024 * 1024;
+    private static final int FBX_LIMIT = 128 * 1024 * 1024;
+    private static final int FBX_MINIMUM = 40; // 27-byte header and one 13-byte FBX 7400 node record.
+    private static final int FBX_VERSION = 7400;
+    private static final byte[] FBX_MAGIC = "Kaydara FBX Binary  \0\032\0".getBytes(StandardCharsets.US_ASCII);
     static final int LIMIT = 256 * 1024 * 1024;
     private final File directory;
     private String token, name;
@@ -27,11 +33,12 @@ final class ArchiveTransfer {
         boolean text = name != null && name.matches("(Shantu-workspace\\.json|Shantu-(route-coordinates-[0-9]{1,16}|coordinates-[0-9]{4}-[0-9]{2}-[0-9]{2})\\.(json|csv))");
         boolean video = isSkyVideo(name);
         boolean stl = isTerrainStl(name);
-        if ((!zip && !text && !video && !stl) || size < (zip ? 22 : video ? 12 : stl ? 134 : 2)
-                || size > (zip ? LIMIT : video ? VIDEO_LIMIT : stl ? 32 * 1024 * 1024 : 100 * 1024 * 1024)) return "文件名称或大小无效";
+        boolean fbx = isTerrainFbx(name);
+        if ((!zip && !text && !video && !stl && !fbx) || size < (zip ? 22 : video ? 12 : stl ? 134 : fbx ? FBX_MINIMUM : 2)
+                || size > (zip ? LIMIT : video ? VIDEO_LIMIT : stl ? 32 * 1024 * 1024 : fbx ? FBX_LIMIT : 100 * 1024 * 1024)) return "文件名称或大小无效";
         try {
             if (!directory.isDirectory() && !directory.mkdirs()) throw new Exception();
-            File[] old = directory.listFiles(f -> f.getName().matches("[a-f0-9-]{36}\\.(zip|json|csv|webm|mp4|stl)") && System.currentTimeMillis() - f.lastModified() > 86400000L);
+            File[] old = directory.listFiles(f -> f.getName().matches("[a-f0-9-]{36}\\.(zip|json|csv|webm|mp4|stl|fbx)") && System.currentTimeMillis() - f.lastModified() > 86400000L);
             if (old != null) for (File f : old) f.delete();
             token = UUID.randomUUID().toString(); this.name = name; expected = size; written = 0;
             file = new File(directory, token + name.substring(name.lastIndexOf('.'))); stream = new FileOutputStream(file); touched = System.currentTimeMillis();
@@ -55,6 +62,7 @@ final class ArchiveTransfer {
             stream.close(); stream = null;
             if (isSkyVideo(name)) validateVideo(file, name);
             if (isTerrainStl(name)) validateTerrainStl(file);
+            if (isTerrainFbx(name)) validateTerrainFbx(file);
             if (name.endsWith(".zip")) try (ZipFile zip = new ZipFile(file)) {
                 if (zip.size() == 0 || zip.size() > 4000) throw new Exception("压缩包条目数量无效");
                 java.util.Enumeration<? extends java.util.zip.ZipEntry> entries = zip.entries();
@@ -74,6 +82,17 @@ final class ArchiveTransfer {
     }
     static boolean isTerrainStl(String name) {
         return name != null && name.matches("Shantu-terrain-(rectangle|circle)-[0-9]{1,16}\\.stl");
+    }
+    static boolean isTerrainFbx(String name) {
+        return name != null && name.matches("Shantu-terrain-(rectangle|circle)-[0-9]{1,16}\\.fbx");
+    }
+    private static void validateTerrainFbx(File file) throws Exception {
+        try (DataInputStream input = new DataInputStream(new FileInputStream(file))) {
+            byte[] magic = new byte[FBX_MAGIC.length];
+            input.readFully(magic);
+            if (Arrays.equals(magic, FBX_MAGIC) && Integer.reverseBytes(input.readInt()) == FBX_VERSION) return;
+        }
+        throw new Exception("FBX 模型格式无效");
     }
     private static void validateTerrainStl(File file) throws Exception {
         try (DataInputStream input = new DataInputStream(new FileInputStream(file))) {

@@ -5,6 +5,7 @@ import {
   Eye,
   EyeOff,
   Bookmark,
+  Box,
   ChevronDown,
   ChevronRight,
   Folder,
@@ -60,6 +61,7 @@ import type { TripPackage } from '../outdoor/offline';
 type Props = {
   initialFolderName?: string;
   onImport?: () => void;
+  onTerrainModels?: () => void;
   center: [number, number];
   onClose: () => void;
   onLocate: (key: string) => void;
@@ -571,6 +573,7 @@ export function WorkbenchPanel(props: Props) {
               </small>
             </div>
             {props.onImport && <button aria-label="导入收藏文件" onClick={props.onImport}>导入</button>}
+            {props.onTerrainModels && <button type="button" aria-label="模型预览" title="模型预览" onClick={props.onTerrainModels}><Box size={17} /></button>}
             <button
               aria-label={batch ? '完成多选' : '进入多选'}
               aria-pressed={batch}

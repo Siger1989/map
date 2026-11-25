@@ -52,7 +52,7 @@ import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { MapComparisonHost, type ComparisonSession } from '@/modules/mapComparison/MapComparisonHost';
 import { TerrainPrintPanel } from '@/modules/terrainPrint/TerrainPrintPanel';
 import { TerrainPrintSelectionOverlay, useTerrainPrintSelection } from '@/modules/terrainPrint/selection';
-import { loadNativeTerrainPrintDem } from '@/modules/terrainPrint/nativeDem';
+import { saveTerrainPrintModel } from '@/modules/terrainPrint/modelStore';
 import { createComparisonExitGate } from '@/modules/mapComparison/comparisonExitGate';
 import { comparisonChoices } from '@/modules/mapComparison/choices';
 import { journeySourceChoices } from '@/modules/sky/journeySourceChoices';
@@ -256,6 +256,7 @@ export default function Home() {
   }, []);
   const map = useRef<MapHandle>(null);
   const terrainPrint = useTerrainPrintSelection(map);
+  const [initialTerrainModelId, setInitialTerrainModelId] = useState<string | null>(null);
   useEffect(() => {
     const focusCad = (event: Event) => {
       const points = (event as CustomEvent<Coordinate[]>).detail;
@@ -397,6 +398,9 @@ export default function Home() {
   const sourceChoices = useMemo(() => comparisonChoices(layers, mapSources.source, rasterName, mapSources.maps), [layers, mapSources.source, rasterName, mapSources.maps]);
   const journeyChoices = useMemo(() => skyJourney ? journeySourceChoices(layers, mapSources.source, mapSources.maps) : [],
     [skyJourney, layers, mapSources.source, mapSources.maps]);
+  const terrainModelSources = useMemo(() => panel === 'favorites' ? journeySourceChoices(layers, mapSources.source, mapSources.maps)
+    .flatMap(choice => choice.source ? [choice.source] : []) : [], [panel, layers, mapSources.source, mapSources.maps]);
+  useEffect(() => { if (panel !== 'favorites') setInitialTerrainModelId(null); }, [panel]);
   const favoriteSourceId = mapSources.source
     ? sourceChoices.find(choice => choice.id !== 'current' && choice.source?.id === mapSources.source?.id)?.id ?? 'current'
     : domesticBasemap ? `tdt-${tiandituBase(layers)}` : layers.satellite ? 'sentinel' : 'terrain';
@@ -2628,7 +2632,12 @@ export default function Home() {
           <TerrainPrintSelectionOverlay map={map} selection={terrainPrint.selection} anchor={terrainPrint.anchor} previewListener={terrainPrint.previewListener} />
           <TerrainPrintPanel selection={terrainPrint.selection} picking={terrainPrint.shape !== null}
             onPick={terrainPrint.pick} onCancelPick={terrainPrint.cancelPicking} onClose={terrainPrint.close}
-            loadDem={typeof window !== 'undefined' && window.GuanyunNative ? loadNativeTerrainPrintDem : undefined} />
+            onFavorite={async model => {
+              await saveTerrainPrintModel(model);
+              terrainPrint.close();
+              setInitialTerrainModelId(model.id);
+              setPanelPrepared('favorites');
+            }} />
         </>}
         {routeVisible &&
           railTrack &&
@@ -3841,6 +3850,8 @@ export default function Home() {
           )}
           {panel === 'favorites' && (
             <CollectionsPanel
+              initialTerrainModelId={initialTerrainModelId}
+              terrainModelSources={terrainModelSources}
               initialFolderName={photoCollectionOpen ? '照片' : undefined}
               recording={recorder.record}
               onCacheRoutes={keys => {

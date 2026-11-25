@@ -1,13 +1,15 @@
 import { sendArchive, type ArchiveBridge } from './nativeArchive.ts';
 import { deliverMacFile, isMacNativeSupported } from '../platform/macNative.ts';
 const streamedText = (name: string) => /^(Shantu-workspace\.json|Shantu-(route-coordinates-\d{1,16}|coordinates-\d{4}-\d{2}-\d{2})\.(json|csv))$/.test(name);
-const streamedStl = (name: string) => /^Shantu-terrain-(rectangle|circle)-\d{1,16}\.stl$/.test(name);
+const streamedTerrain = (name: string) => /^Shantu-terrain-(rectangle|circle)-\d{1,16}\.(stl|fbx)$/.test(name);
+const fbxLimit = 128 * 1024 * 1024;
 const streamedVideo = (name: string) => /^Shantu-sky-journey-\d{1,16}\.(mp4|webm)$/.test(name);
 /** Shared generated-file boundary; Android retains explicit read-only picker/share grants. */
 export function canShareGeneratedFile(name: string, mime: string) {
   if (isMacNativeSupported()) return true;
   if (typeof window !== 'undefined' && window.GuanyunNative) {
     const native = window.GuanyunNative;
+    if (streamedTerrain(name)) return false;
     return name.endsWith('.zip') || streamedText(name)
       ? !!(native.archiveBegin && native.archiveAppend && native.archiveFinish && native.archiveCancel)
       : !!native.routeOutput;
@@ -32,7 +34,7 @@ export async function deliverFile(
     return result === 'shared' ? '已完成系统分享' : '已保存文件';
   }
   if (window.GuanyunNative) {
-    if (file.name.endsWith('.zip') || streamedText(file.name) || streamedVideo(file.name) || streamedStl(file.name)) {
+    if (file.name.endsWith('.zip') || streamedText(file.name) || streamedVideo(file.name) || streamedTerrain(file.name)) {
       const native = window.GuanyunNative;
       if (
         !native.archiveBegin ||
@@ -42,7 +44,10 @@ export async function deliverFile(
       )
         throw new Error('此 APK 尚不支持完整文件输出，请安装新版');
       if (streamedVideo(file.name) && share) throw new Error('请先保存录像再分享');
-      if (streamedStl(file.name) && share) throw new Error('请先保存 STL 再分享');
+      if (streamedTerrain(file.name) && share)
+        throw new Error(file.name.endsWith('.fbx') ? '请先保存 FBX 再分享' : '请先保存 STL 再分享');
+      if (streamedTerrain(file.name) && file.name.endsWith('.fbx') && file.size > fbxLimit)
+        throw new Error('FBX 文件超过 128 MB');
       if (streamedText(file.name) && file.size > 100 * 1024 * 1024)
         throw new Error('工程文件超过 100 MB');
       return sendArchive(file, share, native as ArchiveBridge, signal);
