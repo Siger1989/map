@@ -2629,7 +2629,8 @@ export default function Home() {
         />
         </MapComparisonHost>
         {terrainPrint.open && <>
-          <TerrainPrintSelectionOverlay map={map} selection={terrainPrint.selection} anchor={terrainPrint.anchor} previewListener={terrainPrint.previewListener} />
+          <TerrainPrintSelectionOverlay map={map} selection={terrainPrint.selection} anchor={terrainPrint.anchor}
+            previewListener={terrainPrint.previewListener} editable={terrainPrint.shape === null} onAdjust={terrainPrint.setSelection} />
           <TerrainPrintPanel selection={terrainPrint.selection} picking={terrainPrint.shape !== null}
             onPick={terrainPrint.pick} onCancelPick={terrainPrint.cancelPicking} onClose={terrainPrint.close}
             onFavorite={async model => {

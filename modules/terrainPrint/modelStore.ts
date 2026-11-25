@@ -87,7 +87,7 @@ function attachModel(metadata: TerrainPrintRecordMeta, { stl, grid }: ModelBytes
 }
 
 function modelGrid(grid: TerrainPrintGrid): TerrainPrintGrid {
-  const { width, height, eastWestMeters, northSouthMeters, elevations } = grid;
+  const { width, height, eastWestMeters, northSouthMeters, sampleSpacingMeters, elevations } = grid;
   const count = width * height;
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 2 || height < 2 ||
       count > maxGridSamples ||
@@ -103,7 +103,8 @@ function modelGrid(grid: TerrainPrintGrid): TerrainPrintGrid {
     hasElevation = true;
   }
   if (!hasElevation) throw new Error('地形模型缺少有效高程。');
-  return { width, height, eastWestMeters, northSouthMeters, elevations };
+  return { width, height, eastWestMeters, northSouthMeters, elevations,
+    ...(typeof sampleSpacingMeters === 'number' && Number.isFinite(sampleSpacingMeters) && sampleSpacingMeters >= 8 ? { sampleSpacingMeters } : {}) };
 }
 
 export async function listTerrainPrintModelMetas(): Promise<TerrainPrintRecordMeta[]> {

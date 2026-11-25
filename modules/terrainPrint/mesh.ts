@@ -4,6 +4,7 @@ export type TerrainPrintGrid = {
   height: number;
   eastWestMeters: number;
   northSouthMeters: number;
+  sampleSpacingMeters?: number;
   elevations: (number | null)[];
 };
 

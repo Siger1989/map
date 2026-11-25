@@ -1,3 +1,57 @@
+.terrain-print-selection {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.terrain-print-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--ui-accent);
+  touch-action: none;
+  pointer-events: auto;
+  user-select: none;
+  cursor: grab;
+}
+
+.terrain-print-handle[hidden] {
+  display: none;
+}
+
+.terrain-print-handle span,
+.terrain-print-handle svg {
+  box-sizing: content-box;
+  display: block;
+  border: 2px solid var(--ui-accent);
+  background: var(--ui-surface, #252626);
+  box-shadow: 0 0 0 1px #111b;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.terrain-print-handle span {
+  width: 8px;
+  height: 8px;
+}
+
+.terrain-print-handle svg {
+  padding: 4px;
+}
+
+[data-dragging='true'] > .terrain-print-handle {
+  cursor: grabbing;
+}
+
 .observatory.home-map .terrain-print-panel.control-popover {
   top: auto;
   right: auto;

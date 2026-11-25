@@ -7,14 +7,11 @@ import { MapPanelHeader } from '../ui/MapPanelHeader';
 import { terrainPrintStl } from './mesh';
 import type { TerrainPrintRecord } from './modelStore';
 import { requestTerrainPrintDem } from './requestDem';
+import { selectionGroundSize, type PrintSelection } from './selection';
 import './terrainPrint.css';
 
-type PrintShape = 'rectangle' | 'circle';
-
-export type TerrainPrintSelection = {
-  bounds: { west: number; south: number; east: number; north: number };
-  shape: PrintShape;
-};
+type PrintShape = PrintSelection['shape'];
+export type TerrainPrintSelection = PrintSelection;
 
 const SHAPES = [
   { value: 'rectangle', label: '矩形', icon: RectangleHorizontal, direction: '拖出矩形，或依次点击两个对角。' },
@@ -54,8 +51,16 @@ export function TerrainPrintPanel({
   const [error, setError] = useState('');
   const shape = picking ? activeShape : selection?.shape;
   const baseFootprint = Number(widthMm) + 2 * Number(rimMm);
+  const groundSize = selection ? selectionGroundSize(selection) : null;
+  const resolutionText = (spacing?: number) => spacing && spacing > 8.05 ? `模型采样约 ${Math.round(spacing)} 米，真实起伏 1 倍。` : '8 米高程，真实起伏 1 倍。';
 
   useEffect(() => () => request.current?.abort(), []);
+  useEffect(() => {
+    request.current?.abort();
+    setGenerated(null);
+    setNotice('');
+    setError('');
+  }, [selection]);
 
   function pick(next: PrintShape) {
     setActiveShape(next);
@@ -70,10 +75,10 @@ export function TerrainPrintPanel({
     if (!selection || picking || request.current) return;
 
     const favoriteDirectly = (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') === 'favorite';
-    const modelWidth = Number(widthMm);
+    const modelSize = Number(widthMm);
     const bottomThickness = Number(baseMm);
     const rimWidth = withRim ? Number(rimMm) : 0;
-    if (modelWidth < 20 || modelWidth > 400 || bottomThickness < 1 || bottomThickness > 40 ||
+    if (modelSize < 20 || modelSize > 400 || bottomThickness < 1 || bottomThickness > 40 ||
       (withRim && (rimWidth < 1 || rimWidth > 40))) {
       setError('请检查模型宽度、底厚和包边宽度。');
       return;
@@ -88,7 +93,10 @@ export function TerrainPrintPanel({
     try {
       const data = await requestTerrainPrintDem(selection, token.trim(), controller.signal);
       controller.signal.throwIfAborted();
-      setNotice('正在生成封闭模型…');
+      const modelWidth = selection.shape === 'circle' ? modelSize :
+        modelSize * (data.eastWestMeters / Math.max(data.eastWestMeters, data.northSouthMeters));
+      const resolution = resolutionText(data.sampleSpacingMeters);
+      setNotice(`正在生成封闭模型。${resolution}`);
       const stl = terrainPrintStl(data, {
         shape: selection.shape,
         widthMm: modelWidth,
@@ -111,9 +119,9 @@ export function TerrainPrintPanel({
       }
       if (onExport) {
         await onExport(name, file);
-        setNotice('已发起 STL 保存。');
+        setNotice(`已发起 STL 保存。${resolution}`);
       } else {
-        setNotice(await deliverFile(file, false, controller.signal));
+        setNotice(`${await deliverFile(file, false, controller.signal)}。${resolution}`);
       }
       setNeedsAuth(false);
       setToken('');
@@ -180,12 +188,16 @@ export function TerrainPrintPanel({
             {onCancelPick && <button type="button" onClick={onCancelPick}>取消框选</button>}
           </div>
         ) : !selection ? (
-          <p className="terrain-print-status">框选范围后，使用 8 米高程和 1 倍真实起伏。</p>
+          <p className="terrain-print-status">优先使用 8 米高程，较大范围自动调整采样，真实起伏始终为 1 倍。</p>
         ) : (
           <form className="terrain-print-form" onSubmit={generate}>
+            {groundSize && <p className="terrain-print-status" aria-label="选区实际尺寸">
+              {selection.shape === 'circle' ? `直径 ${formatDistance(Math.min(groundSize.width, groundSize.height))}` :
+                `${formatDistance(groundSize.width)} × ${formatDistance(groundSize.height)}`} · 拖中心移动，拖控制点调整
+            </p>}
             <div className="terrain-print-dimensions">
               <label>
-                <span>{selection.shape === 'circle' ? '山体直径' : '山体宽度'}（mm）</span>
+                <span>{selection.shape === 'circle' ? '山体直径' : '模型长边'}（mm）</span>
                 <input type="number" min="20" max="400" step="1" required value={widthMm} disabled={pending}
                   onChange={(event) => setWidthMm(event.target.value)} />
               </label>
@@ -207,7 +219,7 @@ export function TerrainPrintPanel({
                     onChange={(event) => setRimMm(event.target.value)} />
                 </label>
                 {widthMm && rimMm && Number.isFinite(baseFootprint) && (
-                  <output>{selection.shape === 'circle' ? '底座外径' : '底座外宽'} {Number(baseFootprint.toFixed(1))} mm</output>
+                  <output>{selection.shape === 'circle' ? '底座外径' : '底座长边'} {Number(baseFootprint.toFixed(1))} mm</output>
                 )}
               </div>
             )}
@@ -246,4 +258,8 @@ export function TerrainPrintPanel({
       </div>
     </section>
   );
+}
+
+function formatDistance(meters: number) {
+  return meters < 1000 ? `${Math.round(meters)} 米` : `${Number((meters / 1000).toFixed(2))} 公里`;
 }

@@ -6,6 +6,7 @@ import { getTerrainPrintDem, TerrainPrintDemError } from '../modules/terrainPrin
 import { POST } from '../app/api/terrain-print/route.ts';
 
 const file = 'https://data.nsidc.earthdatacloud.nasa.gov/nsidc-cumulus-prod-protected/HMA/HMA_DEM8m_MOS/1/2002/01/28/HMA_DEM8m_MOS_20170716_tile-592.tif';
+const eastFile = file.replace('tile-592.tif', 'tile-593.tif');
 const bounds = { west: 101.8788, south: 29.5952, east: 101.87895, north: 29.59534 };
 const selection = { bounds, shape: 'rectangle' };
 const catalog = (links = [file]) => Response.json({
@@ -70,6 +71,7 @@ test('a bounded selection queries NASA, range-reads a real TIFF and builds a nor
   });
   assert.equal(grid.width, 3);
   assert.equal(grid.height, 3);
+  assert.equal(grid.sampleSpacingMeters, 8);
   assert.equal(grid.elevations.length, 9);
   assert.ok(grid.elevations.every(Number.isFinite));
   assert.ok(grid.elevations.at(-1) > grid.elevations[0]);
@@ -93,10 +95,106 @@ test('rejects out-of-policy catalog URLs and ranges too big to model', async () 
     (error) => error.code === 'DEM_UNAVAILABLE',
   );
   await assert.rejects(
-    getTerrainPrintDem({ ...selection, bounds: { ...bounds, east: 102, north: 30 } }, {
+    getTerrainPrintDem({ ...selection, bounds: { ...bounds, east: 103, north: 30 } }, {
       fetch: async () => assert.fail('oversize requests must not call the provider'),
     }),
     (error) => error.code === 'AREA_TOO_LARGE',
+  );
+});
+
+function createTiledDemFixture(bounds) {
+  const convert = proj4('EPSG:4326', '+proj=aea +lat_1=25 +lat_2=47 +lat_0=36 +lon_0=85 +x_0=0 +y_0=0 +datum=WGS84 +units=m');
+  const corners = [[bounds.west, bounds.north], [bounds.east, bounds.north], [bounds.west, bounds.south], [bounds.east, bounds.south]].map(point => convert.forward(point));
+  const left = Math.floor(Math.min(...corners.map(([x]) => x)) / 8) * 8 - 24;
+  const top = Math.ceil(Math.max(...corners.map(([, y]) => y)) / 8) * 8 + 24;
+  const width = Math.ceil((Math.max(...corners.map(([x]) => x)) - left) / 8) + 4;
+  const height = Math.ceil((top - Math.min(...corners.map(([, y]) => y))) / 8) + 4;
+  const split = Math.floor(width / 2);
+  const readWindows = [];
+
+  function tile(offset, width, value) {
+    return {
+      close() {},
+      getImage() {
+        return {
+          getGeoKeys: () => ({
+            ProjectedCSTypeGeoKey: 32767,
+            GeographicTypeGeoKey: 4326,
+            ProjCoordTransGeoKey: 11,
+            ProjLinearUnitsGeoKey: 9001,
+            ProjNatOriginLatGeoKey: 36,
+            ProjNatOriginLongGeoKey: 85,
+            ProjStdParallel1GeoKey: 25,
+            ProjStdParallel2GeoKey: 47,
+            ProjFalseEastingGeoKey: 0,
+            ProjFalseNorthingGeoKey: 0,
+          }),
+          getOrigin: () => [left + offset * 8, top],
+          getResolution: () => [8, -8],
+          getSamplesPerPixel: () => 1,
+          getWidth: () => width, getHeight: () => height,
+          getTileWidth: () => 256, getTileHeight: () => 256,
+          getGDALNoData: () => -9999,
+          readRasters: async ({ window }) => {
+            const [x0, y0, x1, y1] = window;
+            assert.ok(x0 >= 0 && x1 <= width && y0 >= 0 && y1 <= height);
+            const pixels = (x1 - x0) * (y1 - y0);
+            assert.ok(pixels <= 1_048_576, 'native source raster windows stay bounded');
+            readWindows.push({ value, pixels });
+            return new Float32Array(pixels).fill(value);
+          },
+        };
+      },
+    };
+  }
+
+  return {
+    readWindows,
+    async fetch() { return catalog([file, eastFile]); },
+    async cachedTile(filename) {
+      return filename.endsWith('tile-592.tif') ? tile(0, split, 1111) : tile(split, width - split, 2222);
+    },
+  };
+}
+
+test('larger rectangles automatically coarsen the output grid and preserve elevations across TIFFs', async () => {
+  const wideBounds = { west: 101.83, south: 29.55, east: 101.94, north: 29.65 };
+  const fixture = createTiledDemFixture(wideBounds);
+  const grid = await getTerrainPrintDem({ shape: 'rectangle', bounds: wideBounds }, fixture);
+  assert.ok(grid.eastWestMeters > 10_000 && grid.eastWestMeters < 11_000);
+  assert.ok(grid.northSouthMeters > 11_000 && grid.northSouthMeters < 12_000);
+  assert.ok(grid.width * grid.height <= 240_000);
+  assert.ok(grid.sampleSpacingMeters > 8 && grid.sampleSpacingMeters < 25);
+  assert.ok(grid.elevations.every(value => value === 1111 || value === 2222));
+  assert.equal(grid.elevations[0], 1111);
+  assert.equal(grid.elevations[grid.width - 1], 2222);
+  assert.deepEqual(new Set(fixture.readWindows.map(item => item.value)), new Set([1111, 2222]));
+  assert.ok(fixture.readWindows.length > 2, 'large source TIFFs are read in batches');
+});
+
+test('wide strips and circular square bounds respect grid side and padded mesh budgets', async () => {
+  const stripBounds = { west: 101.73, south: 29.595, east: 102.03, north: 29.5954 };
+  const strip = await getTerrainPrintDem({ shape: 'rectangle', bounds: stripBounds }, createTiledDemFixture(stripBounds));
+  assert.ok(strip.eastWestMeters > 25_000 && strip.width <= 1600 && strip.sampleSpacingMeters > 8);
+  assert.ok(strip.elevations.every(Number.isFinite));
+
+  const center = (bounds.east + bounds.west) / 2;
+  const latitude = 29.6;
+  const halfDegrees = 0.03;
+  const longitudeDelta = halfDegrees / Math.cos(latitude * Math.PI / 180);
+  const circleBounds = { west: center - longitudeDelta, south: latitude - halfDegrees, east: center + longitudeDelta, north: latitude + halfDegrees };
+  const round = await getTerrainPrintDem({ shape: 'circle', bounds: circleBounds }, createTiledDemFixture(circleBounds));
+  assert.ok(round.sampleSpacingMeters > 8);
+  assert.ok(Math.abs(round.eastWestMeters / round.northSouthMeters - 1) < 0.01);
+  const paddedSide = (n) => Math.max(17, n + (n % 2 === 0 ? 1 : 0));
+  assert.ok(paddedSide(round.width) * paddedSide(round.height) <= 250_000);
+  assert.ok(round.elevations.every(Number.isFinite));
+});
+
+test('the provider still enforces the maximum catalogue footprint', async () => {
+  await assert.rejects(
+    getTerrainPrintDem(selection, { fetch: async () => catalog(Array(9).fill(file)) }),
+    (error) => error.code === 'AREA_TOO_LARGE' && error.status === 422,
   );
 });
 

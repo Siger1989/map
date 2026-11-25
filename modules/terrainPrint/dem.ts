@@ -10,8 +10,15 @@ const TILE_PATH = /^\/nsidc-cumulus-prod-protected\/HMA\/HMA_DEM8m_MOS\/1\/\d{4}
 const HMA_ALBERS = '+proj=aea +lat_1=25 +lat_2=47 +lat_0=36 +lon_0=85 +x_0=0 +y_0=0 +datum=WGS84 +units=m';
 const SAMPLE_METERS = 8;
 const MAX_SAMPLES = 240_000;
+const MAX_GRID_SIDE = 1600;
+const MAX_SELECTION_SIDE_METERS = 64_000;
+const MAX_READ_WINDOW_PIXELS = 1_048_576;
+const MAX_SOURCE_BLOCK_PIXELS = 4_194_304;
+const MAX_SOURCE_BLOCKS_PER_READ = 16;
 const MAX_TILES = 8;
 const MAX_RANGE_BYTES = 16 * 1024 * 1024;
+const MAX_REMOTE_BYTES = 256 * 1024 * 1024;
+const MAX_REMOTE_REQUESTS = 4096;
 
 type FailureCode = 'INVALID_SELECTION' | 'AREA_TOO_LARGE' | 'NO_COVERAGE' | 'AUTH_REQUIRED' | 'AUTH_INVALID' | 'DEM_UNAVAILABLE';
 
@@ -32,6 +39,7 @@ type RasterGrid = {
   height: number;
   eastWestMeters: number;
   northSouthMeters: number;
+  sampleSpacingMeters: number;
   elevations: (number | null)[];
 };
 
@@ -67,12 +75,26 @@ function printDimensions(bounds: TerrainPrintBounds) {
   const t = Math.sqrt(1 - wgs84EccentricitySquared * Math.sin(latitude) ** 2);
   const eastWestMeters = (bounds.east - bounds.west) * toRadians * wgs84A * Math.cos(latitude) / t;
   const northSouthMeters = (bounds.north - bounds.south) * toRadians * wgs84A * (1 - wgs84EccentricitySquared) / t ** 3;
-  const width = Math.max(3, Math.ceil(eastWestMeters / SAMPLE_METERS) + 1);
-  const height = Math.max(3, Math.ceil(northSouthMeters / SAMPLE_METERS) + 1);
-  if (width * height > MAX_SAMPLES || Math.max(width, height) > 1600) {
-    throw new TerrainPrintDemError('AREA_TOO_LARGE', 422, '该范围的 8 米模型过大，请缩小选区。正方形建议不超过约 3.8 公里边长。');
+  if (Math.max(eastWestMeters, northSouthMeters) > MAX_SELECTION_SIDE_METERS) {
+    throw new TerrainPrintDemError('AREA_TOO_LARGE', 422, '单边最大支持 64 公里，请缩小选区后再生成。');
   }
-  return { width, height, eastWestMeters, northSouthMeters };
+  const gridAt = (spacing: number) => ({
+    width: Math.max(3, Math.ceil(eastWestMeters / spacing) + 1),
+    height: Math.max(3, Math.ceil(northSouthMeters / spacing) + 1),
+  });
+  const fits = ({ width, height }: ReturnType<typeof gridAt>) =>
+    width * height <= MAX_SAMPLES && Math.max(width, height) <= MAX_GRID_SIDE;
+  let low = SAMPLE_METERS;
+  let high = Math.max(low, Math.ceil(Math.max(eastWestMeters, northSouthMeters)));
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (fits(gridAt(middle))) high = middle;
+    else low = middle + 1;
+  }
+  const { width, height } = gridAt(low);
+  // Endpoints remain exact, so each axis can be slightly finer than the selected target spacing.
+  const sampleSpacingMeters = Math.max(SAMPLE_METERS, eastWestMeters / (width - 1), northSouthMeters / (height - 1));
+  return { width, height, eastWestMeters, northSouthMeters, sampleSpacingMeters };
 }
 
 function unavailable(message = 'NASA 8 米高程服务暂不可用，请稍后重试。') {
@@ -101,7 +123,9 @@ async function findTiles(bounds: TerrainPrintBounds, fetcher: typeof fetch, sign
   const entries = catalog.feed?.entry;
   if (!Array.isArray(entries)) throw unavailable();
   if (entries.length === 0) throw noCoverage();
-  if (entries.length > MAX_TILES) throw unavailable('NASA 目录返回了过多瓦片，请缩小选区后再试。');
+  if (entries.length > MAX_TILES) {
+    throw new TerrainPrintDemError('AREA_TOO_LARGE', 422, '选区覆盖超过 8 张 NASA 高程瓦片，请缩小选区。');
+  }
   const tiles = new Map<string, string>();
   for (const entry of entries) {
     for (const link of Array.isArray(entry.links) ? entry.links : []) {
@@ -128,22 +152,33 @@ class ByteRangeResponse extends BaseResponse {
   getData() { return this.response.arrayBuffer(); }
 }
 
+type RemoteBudget = { bytes: number; requests: number };
+
 class AuthenticatedTile extends BaseClient {
   private readonly token: string;
   private readonly fetcher: typeof fetch;
   private readonly signal: AbortSignal;
+  private readonly budget: RemoteBudget;
 
-  constructor(url: string, token: string, fetcher: typeof fetch, signal: AbortSignal) {
+  constructor(url: string, token: string, fetcher: typeof fetch, signal: AbortSignal, budget: RemoteBudget) {
     super(url);
     this.token = token;
     this.fetcher = fetcher;
     this.signal = signal;
+    this.budget = budget;
   }
 
   async request(options: RequestInit = {}) {
     const headers = new Headers(options.headers);
     const range = /^bytes=(\d+)-(\d+)$/.exec(headers.get('Range') ?? '');
-    if (!range || Number(range[2]) - Number(range[1]) + 1 > MAX_RANGE_BYTES) throw unavailable();
+    if (!range) throw unavailable();
+    const bytes = Number(range[2]) - Number(range[1]) + 1;
+    if (bytes < 1 || bytes > MAX_RANGE_BYTES) throw unavailable();
+    if (this.budget.bytes < bytes || this.budget.requests < 1) {
+      throw new TerrainPrintDemError('AREA_TOO_LARGE', 422, '该选区的高程瓦片读取量过大，请缩小范围后重试。');
+    }
+    this.budget.bytes -= bytes;
+    this.budget.requests--;
     headers.set('Authorization', 'Bearer ' + this.token);
     const response = await this.fetcher(this.url, {
       headers,
@@ -189,29 +224,47 @@ async function addTileSamples(
   }
   const imageWidth = image.getWidth();
   const imageHeight = image.getHeight();
-  let left = imageWidth, top = imageHeight, right = 0, bottom = 0;
-  const pixelXs = new Int32Array(grid.elevations.length).fill(-1);
+  const blockWidth = image.getTileWidth(), blockHeight = image.getTileHeight();
+  if (blockWidth <= 0 || blockHeight <= 0 || blockWidth * blockHeight > MAX_SOURCE_BLOCK_PIXELS) {
+    throw unavailable('NASA 高程文件的单个数据块过大，无法安全读取。');
+  }
+  const blocksPerRead = Math.max(1, Math.min(MAX_SOURCE_BLOCKS_PER_READ, Math.floor(MAX_READ_WINDOW_PIXELS / (blockWidth * blockHeight))));
+  const blockColumns = Math.min(Math.ceil(imageWidth / blockWidth), Math.floor(Math.sqrt(blocksPerRead)));
+  const windowWidth = blockWidth * blockColumns;
+  const windowHeight = blockHeight * Math.floor(blocksPerRead / blockColumns);
+  const windows = new Map<number, { left: number; top: number; right: number; bottom: number; indices: number[] }>();
+  const windowsAcross = Math.ceil(imageWidth / windowWidth);
+  const pixelXs = new Int32Array(grid.elevations.length);
   const pixelYs = new Int32Array(grid.elevations.length);
   for (let i = 0; i < grid.elevations.length; i++) {
     if (grid.elevations[i] !== null) continue;
     const x = Math.floor((projectedX[i] - originX) / pixelWidth);
     const y = Math.floor((projectedY[i] - originY) / pixelHeight);
     if (x < 0 || x >= imageWidth || y < 0 || y >= imageHeight) continue;
-    left = Math.min(left, x);
-    top = Math.min(top, y);
-    right = Math.max(right, x + 1);
-    bottom = Math.max(bottom, y + 1);
+    const key = Math.floor(y / windowHeight) * windowsAcross + Math.floor(x / windowWidth);
+    let window = windows.get(key);
+    if (!window) {
+      window = { left: x, top: y, right: x + 1, bottom: y + 1, indices: [] };
+      windows.set(key, window);
+    }
+    window.left = Math.min(window.left, x);
+    window.top = Math.min(window.top, y);
+    window.right = Math.max(window.right, x + 1);
+    window.bottom = Math.max(window.bottom, y + 1);
+    window.indices.push(i);
     pixelXs[i] = x;
     pixelYs[i] = y;
   }
-  if (right <= left || bottom <= top) return;
-  const samples = await image.readRasters({ window: [left, top, right, bottom], interleave: true, samples: [0], signal });
+
+  // Read a bounded set of GeoTIFF tiles or strips at a time, regardless of the selected extent.
   const noData = image.getGDALNoData();
-  for (let i = 0; i < grid.elevations.length; i++) {
-    const x = pixelXs[i];
-    if (x < 0) continue;
-    const v = samples[(pixelYs[i] - top) * (right - left) + x - left];
-    if (v !== noData && Number.isFinite(v)) grid.elevations[i] = v;
+  for (const { left, top, right, bottom, indices } of windows.values()) {
+    signal.throwIfAborted();
+    const samples = await image.readRasters({ window: [left, top, right, bottom], interleave: true, samples: [0], signal });
+    for (const i of indices) {
+      const value = samples[(pixelYs[i] - top) * (right - left) + pixelXs[i] - left];
+      if (value !== noData && Number.isFinite(value)) grid.elevations[i] = value;
+    }
   }
 }
 
@@ -222,6 +275,7 @@ export async function getTerrainPrintDem(input: unknown, options: TerrainPrintDe
   const signal = AbortSignal.any([...(options.signal ? [options.signal] : []), AbortSignal.timeout(110_000)]);
   const fetcher = options.fetch ?? fetch;
   const token = requestToken || options.token;
+  const budget = { bytes: MAX_REMOTE_BYTES, requests: MAX_REMOTE_REQUESTS };
   try {
     const tiles = await findTiles(bounds, fetcher, signal);
     const grid: RasterGrid = { ...dimensions, elevations: Array(dimensions.width * dimensions.height).fill(null) };
@@ -244,7 +298,7 @@ export async function getTerrainPrintDem(input: unknown, options: TerrainPrintDe
       let tiff = await options.cachedTile?.(filename, signal);
       if (!tiff) {
         if (!token) throw new TerrainPrintDemError('AUTH_REQUIRED', 401, '自动下载 8 米 DEM 需要有效的 NASA Earthdata 令牌。');
-        tiff = await fromCustomClient(new AuthenticatedTile(url, token, fetcher, signal), { maxRanges: 0 }, signal);
+        tiff = await fromCustomClient(new AuthenticatedTile(url, token, fetcher, signal, budget), { maxRanges: 0 }, signal);
       }
       try {
         await addTileSamples(tiff, grid, projectedX, projectedY, signal);

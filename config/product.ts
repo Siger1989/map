@@ -2,5 +2,5 @@
 export const PRODUCT_NAME = '山兔';
 export const PRODUCT_DESCRIPTION = '面向全球的三维地图、轨迹与户外记录工具。';
 export const EXPORT_PREFIX = 'Shantu';
-export const APP_VERSION = '0.2.221-test';
-export const APP_VERSION_CODE = 228;
+export const APP_VERSION = '0.2.222-test';
+export const APP_VERSION_CODE = 229;
