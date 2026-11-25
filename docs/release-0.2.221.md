@@ -11,3 +11,5 @@ Android 8.0 及以上，包名 `com.shantu.oldengine`，版本 `0.2.221-test`，
 从签名 APK 提取的网页资源在 Chromium 中验证了黑底旋转、底座编辑与保存、FBX 工作线程及 7400 格式导出。
 
 APK 166,078,934 字节，SHA-256 `f62a0a3a67c94686abd2e07458a268b0f2f193525504fe3f77fd1e47cc3078f7`。
+
+私人发行的 27 个分卷已经下载、合成并与本地 APK 校验一致。发行页提供 Windows 一键下载与校验脚本。[私人下载页](https://github.com/Siger1989/shantu-private-delivery/releases/tag/v0.2.221-private) · [对应源码](https://github.com/Siger1989/map/commit/1fdf144cb16034dbf6d62f3f6e61205b8c8846fb)
