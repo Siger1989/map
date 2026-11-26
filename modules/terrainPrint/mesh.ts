@@ -19,7 +19,7 @@ const MAX_GRID_SAMPLES = 250_000;
 const MIN_CIRCLE_GRID_SIDE = 17;
 const MIN_SIZE_MM = 0.1;
 const MAX_SIZE_MM = 2000;
-const MISSING_ELEVATION = '所选范围有 8 米高程数据缺口，请缩小或更换范围。';
+const MISSING_ELEVATION = '所选范围有高程数据缺口，请缩小或更换范围。';
 
 function circleGridSide(side: number): number {
   // An odd number puts a vertex at each cardinal point, keeping the stated diameter.

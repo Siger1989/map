@@ -44,15 +44,12 @@ export function TerrainPrintPanel({
   const [baseMm, setBaseMm] = useState('4');
   const [withRim, setWithRim] = useState(false);
   const [rimMm, setRimMm] = useState('4');
-  const [token, setToken] = useState('');
-  const [needsAuth, setNeedsAuth] = useState(false);
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const shape = picking ? activeShape : selection?.shape;
   const baseFootprint = Number(widthMm) + 2 * Number(rimMm);
   const groundSize = selection ? selectionGroundSize(selection) : null;
-  const resolutionText = (spacing?: number) => spacing && spacing > 8.05 ? `模型采样约 ${Math.round(spacing)} 米，真实起伏 1 倍。` : '8 米高程，真实起伏 1 倍。';
 
   useEffect(() => () => request.current?.abort(), []);
   useEffect(() => {
@@ -89,13 +86,15 @@ export function TerrainPrintPanel({
     setPending(true);
     setGenerated(null);
     setError('');
-    setNotice('正在查找并下载选区的 8 米高程数据…');
+    setNotice('正在读取地图自带高程…');
     try {
-      const data = await requestTerrainPrintDem(selection, token.trim(), controller.signal);
+      const data = await requestTerrainPrintDem(selection, controller.signal);
       controller.signal.throwIfAborted();
       const modelWidth = selection.shape === 'circle' ? modelSize :
         modelSize * (data.eastWestMeters / Math.max(data.eastWestMeters, data.northSouthMeters));
-      const resolution = resolutionText(data.sampleSpacingMeters);
+      const resolution = data.sampleSpacingMeters
+        ? `网格间距约 ${formatDistance(data.sampleSpacingMeters)}，真实起伏 1 倍。`
+        : '真实起伏 1 倍。';
       setNotice(`正在生成封闭模型。${resolution}`);
       const stl = terrainPrintStl(data, {
         shape: selection.shape,
@@ -111,7 +110,7 @@ export function TerrainPrintPanel({
         const model: TerrainPrintRecord = {
           id: crypto.randomUUID(),
           name: (selection.shape === 'circle' ? '圆形地形 ' : '矩形地形 ') + suffix,
-          createdAt, selection, stl, grid: data,
+          createdAt, selection, stl, grid: data, elevationSource: 'built-in',
           options: { shape: selection.shape, widthMm: modelWidth, baseMm: bottomThickness, rimMm: rimWidth },
         };
         if (favoriteDirectly) { await onFavorite(model); return; }
@@ -123,16 +122,9 @@ export function TerrainPrintPanel({
       } else {
         setNotice(`${await deliverFile(file, false, controller.signal)}。${resolution}`);
       }
-      setNeedsAuth(false);
-      setToken('');
     } catch (failure) {
       if (!controller.signal.aborted) {
-        const detail = failure && typeof failure === 'object' ? failure as { code?: unknown; message?: unknown } : null;
-        if (detail?.code === 'AUTH_REQUIRED' || detail?.code === 'AUTH_INVALID') {
-          setNeedsAuth(true);
-          if (detail.code === 'AUTH_INVALID') setToken('');
-        }
-        setError(typeof detail?.message === 'string' && detail.message ? detail.message : '地形模型生成失败，请重试。');
+        setError(failure instanceof Error ? failure.message : '地形模型生成失败，请重试。');
       }
       if (request.current === controller) setNotice('');
     } finally {
@@ -188,7 +180,7 @@ export function TerrainPrintPanel({
             {onCancelPick && <button type="button" onClick={onCancelPick}>取消框选</button>}
           </div>
         ) : !selection ? (
-          <p className="terrain-print-status">优先使用 8 米高程，较大范围自动调整采样，真实起伏始终为 1 倍。</p>
+          <p className="terrain-print-status">使用地图自带 DEM，按 1 倍真实起伏生成模型。</p>
         ) : (
           <form className="terrain-print-form" onSubmit={generate}>
             {groundSize && <p className="terrain-print-status" aria-label="选区实际尺寸">
@@ -221,16 +213,6 @@ export function TerrainPrintPanel({
                 {widthMm && rimMm && Number.isFinite(baseFootprint) && (
                   <output>{selection.shape === 'circle' ? '底座外径' : '底座长边'} {Number(baseFootprint.toFixed(1))} mm</output>
                 )}
-              </div>
-            )}
-            {needsAuth && (
-              <div className="terrain-print-auth">
-                <label>
-                  <span>NASA Earthdata 访问令牌</span>
-                  <input type="password" value={token} autoComplete="off" required disabled={pending}
-                    onChange={(event) => setToken(event.target.value)} />
-                </label>
-                <a href="https://urs.earthdata.nasa.gov/profile" target="_blank" rel="noreferrer">从 Earthdata 账户获取令牌</a>
               </div>
             )}
             {error && <p className="terrain-print-error" role="alert">{error}</p>}

@@ -161,6 +161,7 @@ export function TerrainPrintModels({ sources, initialId, onBack, onClose }: {
               {sources.filter(canUseTerrainModelImagery).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </label>
+          <small>高程来源 · {record.elevationSource === 'built-in' ? '地图自带 DEM' : 'NASA HMA 8 米'}</small>
           {source && <small>{plainText(source.attribution, source.name)}</small>}
           {pending && <p role="status">正在加载选区贴图…</p>}
           <button type="button" className="is-primary terrain-library-export" onClick={() => void exportFbx()}

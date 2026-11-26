@@ -98,7 +98,6 @@ public class MainActivity extends Activity {
         locationPermissions = new LocationPermissions(this, appFiles);
         webView.setWebChromeClient(locationPermissions);
         final LocalGateway gateway = new LocalGateway(getApplicationContext());
-        final TerrainPrintSource terrainPrintSource = new TerrainPrintSource(getApplicationContext());
         webView.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 bridgePageState.page(url);
@@ -110,12 +109,7 @@ public class MainActivity extends Activity {
                 bridgePageState.page(url);
             }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                android.net.Uri uri = request.getUrl();
-                if ("GET".equals(request.getMethod()) && "https".equals(uri.getScheme()) &&
-                        LocalGateway.HOST.equals(uri.getHost()) && TerrainPrintSource.PATH.equals(uri.getPath())) {
-                    return terrainPrintSource.fetch(uri, request.getRequestHeaders());
-                }
-                return gateway.intercept(uri, request.getMethod());
+                return gateway.intercept(request.getUrl(), request.getMethod());
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();

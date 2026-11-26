@@ -12,6 +12,7 @@ export type TerrainPrintRecordMeta = {
   id: string;
   name: string;
   createdAt: number;
+  elevationSource?: 'built-in'; // Earlier records used the HMA 8 m DEM.
   selection: PrintSelection;
   options: TerrainPrintOptions;
 };
@@ -104,7 +105,7 @@ function modelGrid(grid: TerrainPrintGrid): TerrainPrintGrid {
   }
   if (!hasElevation) throw new Error('地形模型缺少有效高程。');
   return { width, height, eastWestMeters, northSouthMeters, elevations,
-    ...(typeof sampleSpacingMeters === 'number' && Number.isFinite(sampleSpacingMeters) && sampleSpacingMeters >= 8 ? { sampleSpacingMeters } : {}) };
+    ...(typeof sampleSpacingMeters === 'number' && Number.isFinite(sampleSpacingMeters) && sampleSpacingMeters > 0 ? { sampleSpacingMeters } : {}) };
 }
 
 export async function listTerrainPrintModelMetas(): Promise<TerrainPrintRecordMeta[]> {
@@ -159,6 +160,7 @@ export async function saveTerrainPrintModel(record: TerrainPrintRecord): Promise
   const grid = record.grid === undefined ? undefined : modelGrid(record.grid);
   const transaction = db.transaction([metadataStore, modelStore], 'readwrite');
   transaction.objectStore(metadataStore).put({
+    ...(record.elevationSource === 'built-in' ? { elevationSource: 'built-in' as const } : {}),
     id, name, createdAt, selection: { shape, bounds: { west, south, east, north } },
     options: { shape, widthMm, baseMm, rimMm },
   } satisfies TerrainPrintRecordMeta);

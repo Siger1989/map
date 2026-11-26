@@ -1,9 +1,9 @@
 import type { MapSource } from '../mapSources/types';
 import { mercator, type Tile } from '../sky/satelliteTerrainGeometry';
 import { loadJourneyImageryTile } from '../sky/satelliteTerrainTiles';
-import type { TerrainPrintBounds } from './dem';
+import type { PrintSelection } from './selection';
 
-type Selection = { bounds: TerrainPrintBounds; shape?: 'rectangle' | 'circle' };
+type Selection = { bounds: PrintSelection['bounds']; shape?: 'rectangle' | 'circle' };
 
 const TILE_SIZE = 256;
 const MAX_TEXTURE_EDGE = 1024;
@@ -42,7 +42,7 @@ function footprint(selection: Selection) {
   return { west, north, east, south, aspect };
 }
 
-function tileWindow(bounds: TerrainPrintBounds, z: number) {
+function tileWindow(bounds: PrintSelection['bounds'], z: number) {
   const [left, top] = mercator(bounds.west, bounds.north, z);
   const [wrappedRight, bottom] = mercator(bounds.east, bounds.south, z);
   const right = bounds.east === 180 ? 2 ** z : wrappedRight;
