@@ -53,6 +53,8 @@ import { MapComparisonHost, type ComparisonSession } from '@/modules/mapComparis
 import { TerrainPrintPanel } from '@/modules/terrainPrint/TerrainPrintPanel';
 import { TerrainPrintSelectionOverlay, useTerrainPrintSelection } from '@/modules/terrainPrint/selection';
 import { saveTerrainPrintModel } from '@/modules/terrainPrint/modelStore';
+import { selectPrintTracks, type PrintTrack } from '@/modules/terrainPrint/printTracks';
+import { draftTrackRenderItem, savedTrackRenderItem, trackLineFeatures } from '@/modules/tracks/trackFeatures';
 import { createComparisonExitGate } from '@/modules/mapComparison/comparisonExitGate';
 import { comparisonChoices } from '@/modules/mapComparison/choices';
 import { journeySourceChoices } from '@/modules/sky/journeySourceChoices';
@@ -1691,6 +1693,28 @@ export default function Home() {
     railTrack?.id ?? null,
     follow.blocked || !!editor.session || measurement.active || survey.active,
   );
+  const printTracks = useMemo(() => {
+    const output: { paths: PrintTrack[]; colors: string[] } = { paths: [], colors: [] };
+    const overlay = routeDisplay.tracks;
+    const selection = terrainPrint.selection;
+    if (!terrainPrint.open || terrainPrint.shape || !selection || !overlay.visible) return output;
+    const items = overlay.saved
+      .filter(track => !track.hidden && !track.id.startsWith('measurement:') && !track.id.startsWith('favorite:'))
+      .map(savedTrackRenderItem);
+    items.push(draftTrackRenderItem(overlay));
+    for (const item of items) {
+      for (const feature of trackLineFeatures(item, overlay)) {
+        if (feature.geometry.type !== 'MultiLineString' || typeof feature.properties?.color !== 'string') continue;
+        for (const line of feature.geometry.coordinates) {
+          for (const path of selectPrintTracks(selection, [line.map(([lng, lat]) => [lng, lat])])) {
+            output.paths.push(path);
+            output.colors.push(feature.properties.color);
+          }
+        }
+      }
+    }
+    return output;
+  }, [terrainPrint.open, terrainPrint.shape, terrainPrint.selection, routeDisplay.tracks]);
   useEffect(() => {
     if (!guidance.active || panel || quickAdd || editor.session || measurement.active || sectionEditing)
       setNavigationDisplayOpen(false);
@@ -2632,6 +2656,7 @@ export default function Home() {
           <TerrainPrintSelectionOverlay map={map} selection={terrainPrint.selection} anchor={terrainPrint.anchor}
             previewListener={terrainPrint.previewListener} editable={terrainPrint.shape === null} onAdjust={terrainPrint.setSelection} />
           <TerrainPrintPanel selection={terrainPrint.selection} picking={terrainPrint.shape !== null}
+            tracks={printTracks.paths} trackColors={printTracks.colors}
             onPick={terrainPrint.pick} onCancelPick={terrainPrint.cancelPicking} onClose={terrainPrint.close}
             onFavorite={async model => {
               await saveTerrainPrintModel(model);

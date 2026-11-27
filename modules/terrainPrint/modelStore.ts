@@ -1,3 +1,4 @@
+import type { TerrainPrintTracks } from './trackRelief.ts';
 import type { TerrainPrintGrid } from './mesh.ts';
 import type { PrintSelection } from './selection.tsx';
 
@@ -17,9 +18,9 @@ export type TerrainPrintRecordMeta = {
   options: TerrainPrintOptions;
 };
 
-export type TerrainPrintRecord = TerrainPrintRecordMeta & { stl: ArrayBuffer; grid?: TerrainPrintGrid };
+export type TerrainPrintRecord = TerrainPrintRecordMeta & { stl: ArrayBuffer; grid?: TerrainPrintGrid; tracks?: TerrainPrintTracks; trackColors?: readonly string[] };
 
-type ModelBytes = Pick<TerrainPrintRecord, 'id' | 'stl' | 'grid'>;
+type ModelBytes = Pick<TerrainPrintRecord, 'id' | 'stl' | 'grid' | 'tracks' | 'trackColors'>;
 const maxGridSamples = 250_000;
 const maxTerrainExtent = 40_100_000;
 const maxAbsoluteElevation = 12_000;
@@ -83,8 +84,8 @@ function recentFirst(a: TerrainPrintRecordMeta, b: TerrainPrintRecordMeta) {
   return b.createdAt - a.createdAt || a.id.localeCompare(b.id);
 }
 
-function attachModel(metadata: TerrainPrintRecordMeta, { stl, grid }: ModelBytes): TerrainPrintRecord {
-  return grid ? { ...metadata, stl, grid } : { ...metadata, stl };
+function attachModel(metadata: TerrainPrintRecordMeta, { stl, grid, tracks, trackColors }: ModelBytes): TerrainPrintRecord {
+  return { ...metadata, stl, ...(grid && { grid }), ...(tracks && { tracks }), ...(trackColors && { trackColors }) };
 }
 
 function modelGrid(grid: TerrainPrintGrid): TerrainPrintGrid {
@@ -164,7 +165,12 @@ export async function saveTerrainPrintModel(record: TerrainPrintRecord): Promise
     id, name, createdAt, selection: { shape, bounds: { west, south, east, north } },
     options: { shape, widthMm, baseMm, rimMm },
   } satisfies TerrainPrintRecordMeta);
-  transaction.objectStore(modelStore).put((grid ? { id, stl, grid } : { id, stl }) satisfies ModelBytes);
+  transaction.objectStore(modelStore).put({
+    id, stl, ...(grid && { grid }), ...(record.tracks?.length && {
+      tracks: record.tracks,
+      ...(record.trackColors && { trackColors: record.trackColors }),
+    }),
+  } satisfies ModelBytes);
   await done(transaction);
 }
 

@@ -1,4 +1,4 @@
-import type { terrainPrintStl } from './mesh.ts';
+import { terrainTrackPalette, type terrainPrintStl } from './mesh.ts';
 
 type TerrainPrintOptions = Parameters<typeof terrainPrintStl>[1];
 
@@ -8,6 +8,7 @@ type Point3 = [number, number, number];
 
 const MAX_TRIANGLES = 700_000;
 const FBX_VERSION = 7400;
+const FIRST_TRACK_MATERIAL_ID = 7;
 const encoder = new TextEncoder();
 
 function stlTriangles(stl: ArrayBuffer) {
@@ -187,7 +188,12 @@ function embeddedTexture(data: Texture) {
 }
 
 /** Portable FBX 7.4. Terrain and base stay welded and the selected image is embedded in the file. */
-export function exportTerrainPrintFbx(stl: ArrayBuffer, options: TerrainPrintOptions, texture?: Texture): ArrayBuffer {
+export function exportTerrainPrintFbx(
+  stl: ArrayBuffer,
+  options: TerrainPrintOptions,
+  texture?: Texture,
+  trackColors?: readonly string[],
+): ArrayBuffer {
   const { view, count } = stlTriangles(stl);
   const mapping = terrainPrintTextureMapping(stl, options);
   const vertices: number[] = [];
@@ -195,6 +201,9 @@ export function exportTerrainPrintFbx(stl: ArrayBuffer, options: TerrainPrintOpt
   const indices = new Int32Array(count * 3);
   const normals = new Float64Array(count * 3);
   const materials = new Int32Array(count);
+  const palette = trackColors ? terrainTrackPalette(trackColors) : [];
+  const trackMaterialIndices = new Map<number, number>();
+  const trackMaterials: Node[] = [];
   const welded = new Map<string, number>();
   for (let face = 0; face < count; face++) {
     const offset = 84 + 50 * face;
@@ -206,7 +215,25 @@ export function exportTerrainPrintFbx(stl: ArrayBuffer, options: TerrainPrintOpt
       throw new Error('模型包含无效坐标。');
     }
     normals.set(normal, face * 3);
-    materials[face] = mapping.isTerrainFace(a[0], a[1], b[0], b[1], c[0], c[1], normal[2]) ? 0 : 1;
+    const attribute = view.getUint16(offset + 48, true);
+    const trackIndex = attribute & 0x7fff;
+    const hex = (attribute & 0x8000) ? palette[trackIndex] : undefined;
+    if (hex) {
+      let materialIndex = trackMaterialIndices.get(trackIndex);
+      if (materialIndex === undefined) {
+        const color: Point3 = [
+          parseInt(hex.slice(1, 3), 16) / 255,
+          parseInt(hex.slice(3, 5), 16) / 255,
+          parseInt(hex.slice(5, 7), 16) / 255,
+        ];
+        materialIndex = trackMaterials.length + 2;
+        trackMaterialIndices.set(trackIndex, materialIndex);
+        trackMaterials.push(material(FIRST_TRACK_MATERIAL_ID + trackMaterials.length, `Track ${hex}`, color));
+      }
+      materials[face] = materialIndex;
+    } else {
+      materials[face] = mapping.isTerrainFace(a[0], a[1], b[0], b[1], c[0], c[1], normal[2]) ? 0 : 1;
+    }
     [a, b, c].forEach((point, corner) => {
       const key = point.join(',');
       let index = welded.get(key);
@@ -266,10 +293,12 @@ export function exportTerrainPrintFbx(stl: ArrayBuffer, options: TerrainPrintOpt
       object('Model', 1, 'ShantuTerrain', 'Mesh', [leafInt('Version', 232)]),
       material(3, 'Terrain', texture ? [1, 1, 1] : [0.44, 0.53, 0.38]),
       material(4, 'Base', [0.28, 0.25, 0.22]),
+      ...trackMaterials,
       ...(texture ? embeddedTexture(texture) : []),
     ]),
     node('Connections', [], [
       connect(1, 0), connect(2, 1), connect(3, 1), connect(4, 1),
+      ...trackMaterials.map((_, index) => connect(FIRST_TRACK_MATERIAL_ID + index, 1)),
       ...(texture ? [connect(5, 3, 'DiffuseColor'), connect(6, 5)] : []),
     ]),
   ]);

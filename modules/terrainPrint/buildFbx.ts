@@ -3,10 +3,11 @@ import type { TerrainPrintRecordMeta } from './modelStore';
 export type TerrainFbxInput = {
   stl: ArrayBuffer;
   options: TerrainPrintRecordMeta['options'];
+  trackColors?: readonly string[];
   texture?: { filename: string; bytes: ArrayBuffer; mime: 'image/png' | 'image/jpeg' };
 };
 
-export function buildTerrainPrintFbx(stl: ArrayBuffer, options: TerrainFbxInput['options'], texture: TerrainFbxInput['texture'], signal: AbortSignal): Promise<ArrayBuffer> {
+export function buildTerrainPrintFbx(stl: ArrayBuffer, options: TerrainFbxInput['options'], texture: TerrainFbxInput['texture'], signal: AbortSignal, trackColors?: readonly string[]): Promise<ArrayBuffer> {
   signal.throwIfAborted();
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('./fbx.worker.ts', import.meta.url), { type: 'module' });
@@ -24,7 +25,7 @@ export function buildTerrainPrintFbx(stl: ArrayBuffer, options: TerrainFbxInput[
     worker.onerror = () => { cleanup(); reject(new Error('无法启动 FBX 导出。')); };
     try {
       const copy = stl.slice(0);
-      worker.postMessage({ stl: copy, options, texture } satisfies TerrainFbxInput,
+      worker.postMessage({ stl: copy, options, texture, trackColors } satisfies TerrainFbxInput,
         texture ? [copy, texture.bytes] : [copy]);
     } catch (error) {
       cleanup();

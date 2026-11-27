@@ -126,7 +126,7 @@ export function TerrainPrintModels({ sources, initialId, onBack, onClose }: {
         bytes: await texture.arrayBuffer(),
         mime: texture.type === 'image/jpeg' ? 'image/jpeg' as const : 'image/png' as const,
       } : undefined;
-      const out = await buildTerrainPrintFbx(record.stl, record.options, content, controller.signal);
+      const out = await buildTerrainPrintFbx(record.stl, record.options, content, controller.signal, record.trackColors);
       const file = new File([out], `Shantu-terrain-${record.selection.shape}-${Date.now()}.fbx`, { type: 'application/octet-stream' });
       setMessage(await deliverFile(file, false, controller.signal));
     } catch (err) {

@@ -148,15 +148,20 @@
   font-size: 16px;
 }
 
-.terrain-print-panel .terrain-print-rim-option,
-.terrain-print-panel .terrain-print-rim-width {
+.terrain-print-panel .terrain-print-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.terrain-print-panel :is(.terrain-print-options label, .terrain-print-rim-width) {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 32px;
+  min-height: 36px;
 }
 
-.terrain-print-panel .terrain-print-rim-option input {
+.terrain-print-panel .terrain-print-options input {
   flex-shrink: 0;
   width: 16px;
   height: 16px;

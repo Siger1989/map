@@ -36,9 +36,16 @@ test('FBX loader imports original millimetre geometry, normals, UVs and separate
 
 test('the embedded PNG is linked to terrain only and is unchanged on reimport', async () => {
   const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAEklEQVQIHWNkYPj//z+QYABhACX2BP0mVU63AAAAAElFTkSuQmCC', 'base64');
-  const buffer = exportTerrainPrintFbx(terrainPrintStl(grid, options), options, {
+  const stl = terrainPrintStl(grid, options);
+  const data = new DataView(stl);
+  const colors = ['#ffb477', '#ffb478', '#000000'];
+  data.setUint16(84 + 48, 0x8000, true);
+  data.setUint16(84 + 50 + 48, 0x8001, true);
+  data.setUint16(84 + 100 + 48, 0x8000, true);
+  data.setUint16(84 + 150 + 48, 0x8002, true);
+  const buffer = exportTerrainPrintFbx(stl, options, {
     filename: 'source.png', bytes: Uint8Array.from(image).buffer, mime: 'image/png',
-  });
+  }, colors);
   const manager = new LoadingManager();
   let objectUrl;
   const texture = new Texture();
@@ -51,7 +58,15 @@ test('the embedded PNG is linked to terrain only and is unchanged on reimport', 
   try {
     const mesh = findMesh(new FBXLoader(manager).parse(buffer, ''));
     assert.equal(mesh.material[0].map, texture);
-    assert.equal(mesh.material[1].map, null);
+    assert.ok(mesh.material.slice(1).every(material => material.map === null));
+    assert.deepEqual(mesh.material.slice(2).map(material => material.name), colors.map(color => `Track ${color}`));
+    assert.deepEqual(mesh.material.slice(2).map(material => material.color.getHexString()), colors.map(color => color.slice(1)));
+    assert.deepEqual(mesh.geometry.groups.slice(0, 4), [
+      { start: 0, count: 3, materialIndex: 2 },
+      { start: 3, count: 3, materialIndex: 3 },
+      { start: 6, count: 3, materialIndex: 2 },
+      { start: 9, count: 3, materialIndex: 4 },
+    ]);
     assert.match(objectUrl, /^blob:/);
     const response = await fetch(objectUrl);
     assert.equal(response.headers.get('content-type'), 'image/png');

@@ -39,7 +39,7 @@ export function TerrainModelBaseEditor({ record, onApplied, onCancel }: {
       controller.signal.throwIfAborted();
       const options = { ...record.options, baseMm, rimMm };
       const next: TerrainPrintRecord = {
-        ...record, grid, options, stl: terrainPrintStl(grid, options),
+        ...record, grid, options, stl: terrainPrintStl(grid, options, record.tracks, record.trackColors),
         elevationSource: record.grid ? record.elevationSource : 'built-in',
       };
       await saveTerrainPrintModel(next);

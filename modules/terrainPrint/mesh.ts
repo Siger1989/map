@@ -1,3 +1,7 @@
+import { raiseTerrainTracks, type TerrainPrintTracks } from './trackRelief.ts';
+
+export { normalizeTerrainTrackColor, terrainTrackPalette, type TerrainPrintTracks } from './trackRelief.ts';
+
 /** Regular elevation grid. Samples are row-major from north-west to south-east. */
 export type TerrainPrintGrid = {
   width: number;
@@ -77,7 +81,9 @@ function perimeterIndices(width: number, height: number): number[] {
 }
 
 /** Export a closed binary STL in millimetres, with identical horizontal and vertical scales. */
-export function terrainPrintStl(grid: TerrainPrintGrid, options: TerrainPrintOptions): ArrayBuffer {
+export function terrainPrintStl(
+  grid: TerrainPrintGrid, options: TerrainPrintOptions, tracks?: TerrainPrintTracks, trackColors?: readonly string[],
+): ArrayBuffer {
   if (!Number.isInteger(grid.width) || !Number.isInteger(grid.height) ||
       grid.width < 2 || grid.height < 2 || grid.width * grid.height > MAX_GRID_SAMPLES ||
       grid.elevations.length !== grid.width * grid.height ||
@@ -106,9 +112,9 @@ export function terrainPrintStl(grid: TerrainPrintGrid, options: TerrainPrintOpt
   if (!Number.isFinite(depthMm) || depthMm < MIN_SIZE_MM || depthMm + 2 * rimMm > MAX_SIZE_MM) {
     throw new Error('模型进深超出 STL 导出范围。');
   }
-  const perimeter = perimeterIndices(width, height);
+  let perimeter = perimeterIndices(width, height);
   const withRim = rimMm > 0;
-  const positions = new Float32Array(3 * (sampleCount + perimeter.length * (withRim ? 3 : 1) + 1));
+  let positions = new Float32Array(3 * (sampleCount + perimeter.length * (withRim ? 3 : 1) + 1));
   const elevations = new Float64Array(sampleCount);
   let minimum = Infinity;
 
@@ -138,7 +144,15 @@ export function terrainPrintStl(grid: TerrainPrintGrid, options: TerrainPrintOpt
     if (!Number.isFinite(positions[i * 3 + 2])) throw new Error('模型高程超出 STL 数值范围。');
   }
 
-  let nextVertex = sampleCount;
+  const relief = tracks?.length ? raiseTerrainTracks(
+    positions, width, height, perimeter, tracks, grid.eastWestMeters * scale, grid.northSouthMeters * scale, withRim, trackColors,
+  ) : null;
+  if (relief) {
+    positions = relief.positions;
+    perimeter = relief.perimeter;
+  }
+
+  let nextVertex = relief?.vertexCount ?? sampleCount;
   const addVertex = (x: number, y: number, z: number) => {
     const index = nextVertex++;
     positions[index * 3] = x;
@@ -159,13 +173,14 @@ export function terrainPrintStl(grid: TerrainPrintGrid, options: TerrainPrintOpt
   const bottom = outer.map(index => addVertex(positions[index * 3], positions[index * 3 + 1], 0));
   const floorCenter = addVertex(0, 0, 0);
 
-  const maxTriangles = 2 * (width - 1) * (height - 1) + perimeter.length * (withRim ? 7 : 3);
+  const topFaces = relief ? relief.triangles.length / 3 : 2 * (width - 1) * (height - 1);
+  const maxTriangles = topFaces + perimeter.length * (withRim ? 7 : 3);
   const buffer = new ArrayBuffer(84 + maxTriangles * 50);
   new Uint8Array(buffer, 0, 80).set(new TextEncoder().encode('Shantu terrain print | millimeters | 1x relief'));
   const stl = new DataView(buffer);
   let offset = 84;
 
-  const writeTriangle = (a: number, b: number, c: number) => {
+  const writeTriangle = (a: number, b: number, c: number, color?: number) => {
     const ia = a * 3;
     const ib = b * 3;
     const ic = c * 3;
@@ -189,15 +204,23 @@ export function terrainPrintStl(grid: TerrainPrintGrid, options: TerrainPrintOpt
       stl.setFloat32(offset + 24 + 4 * j, positions[ib + j], true);
       stl.setFloat32(offset + 36 + 4 * j, positions[ic + j], true);
     }
+    if (color) stl.setUint16(offset + 48, color, true);
     offset += 50;
   };
 
-  for (let row = 0; row < height - 1; row++) {
-    for (let col = 0; col < width - 1; col++) {
-      const nw = row * width + col;
-      const sw = nw + width;
-      writeTriangle(nw, sw, nw + 1);
-      writeTriangle(nw + 1, sw, sw + 1);
+  if (relief) {
+    const { triangles, faceColors } = relief;
+    for (let i = 0; i < triangles.length; i += 3) {
+      writeTriangle(triangles[i], triangles[i + 1], triangles[i + 2], faceColors?.[i / 3]);
+    }
+  } else {
+    for (let row = 0; row < height - 1; row++) {
+      for (let col = 0; col < width - 1; col++) {
+        const nw = row * width + col;
+        const sw = nw + width;
+        writeTriangle(nw, sw, nw + 1);
+        writeTriangle(nw + 1, sw, sw + 1);
+      }
     }
   }
   for (let i = 0; i < perimeter.length; i++) {

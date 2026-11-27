@@ -7,6 +7,7 @@ import { MapPanelHeader } from '../ui/MapPanelHeader';
 import { terrainPrintStl } from './mesh';
 import type { TerrainPrintRecord } from './modelStore';
 import { requestTerrainPrintDem } from './requestDem';
+import type { PrintTrack } from './printTracks';
 import { selectionGroundSize, type PrintSelection } from './selection';
 import './terrainPrint.css';
 
@@ -21,6 +22,8 @@ const SHAPES = [
 export function TerrainPrintPanel({
   selection,
   picking,
+  tracks,
+  trackColors,
   onPick,
   onClose,
   onCancelPick,
@@ -29,6 +32,8 @@ export function TerrainPrintPanel({
 }: {
   selection: TerrainPrintSelection | null;
   picking: boolean;
+  tracks: readonly PrintTrack[];
+  trackColors: readonly string[];
   onPick: (shape: PrintShape) => void;
   onClose: () => void;
   onCancelPick?: () => void;
@@ -43,6 +48,7 @@ export function TerrainPrintPanel({
   const [widthMm, setWidthMm] = useState('160');
   const [baseMm, setBaseMm] = useState('4');
   const [withRim, setWithRim] = useState(false);
+  const [withTracks, setWithTracks] = useState(true);
   const [rimMm, setRimMm] = useState('4');
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState('');
@@ -71,6 +77,8 @@ export function TerrainPrintPanel({
     event.preventDefault();
     if (!selection || picking || request.current) return;
 
+    const includedTracks = withTracks && tracks.length ? tracks : undefined;
+    const includedColors = includedTracks ? trackColors : undefined;
     const favoriteDirectly = (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') === 'favorite';
     const modelSize = Number(widthMm);
     const bottomThickness = Number(baseMm);
@@ -101,9 +109,8 @@ export function TerrainPrintPanel({
         widthMm: modelWidth,
         baseMm: bottomThickness,
         rimMm: rimWidth,
-      });
+      }, includedTracks, includedColors);
       const name = `Shantu-terrain-${selection.shape}-${Date.now()}.stl`;
-      const file = new File([stl], name, { type: 'model/stl' });
       if (onFavorite) {
         const createdAt = Date.now();
         const suffix = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(createdAt);
@@ -111,11 +118,13 @@ export function TerrainPrintPanel({
           id: crypto.randomUUID(),
           name: (selection.shape === 'circle' ? '圆形地形 ' : '矩形地形 ') + suffix,
           createdAt, selection, stl, grid: data, elevationSource: 'built-in',
+          tracks: includedTracks, trackColors: includedColors,
           options: { shape: selection.shape, widthMm: modelWidth, baseMm: bottomThickness, rimMm: rimWidth },
         };
         if (favoriteDirectly) { await onFavorite(model); return; }
         setGenerated(model);
       }
+      const file = new File([includedColors ? printableStl(stl) : stl], name, { type: 'model/stl' });
       if (onExport) {
         await onExport(name, file);
         setNotice(`已发起 STL 保存。${resolution}`);
@@ -199,10 +208,23 @@ export function TerrainPrintPanel({
                   onChange={(event) => setBaseMm(event.target.value)} />
               </label>
             </div>
-            <label className="terrain-print-rim-option">
-              <input type="checkbox" checked={withRim} disabled={pending} onChange={(event) => setWithRim(event.target.checked)} />
-              <span>外围包边底座</span>
-            </label>
+            <div className="terrain-print-options">
+              <label>
+                <input type="checkbox" checked={withRim} disabled={pending} onChange={(event) => setWithRim(event.target.checked)} />
+                <span>外围包边底座</span>
+              </label>
+              {tracks.length > 0 && (
+                <label>
+                  <input type="checkbox" checked={withTracks} disabled={pending} onChange={(event) => {
+                    setWithTracks(event.target.checked);
+                    setGenerated(null);
+                    setNotice('');
+                    setError('');
+                  }} />
+                  <span>凸印轨迹</span>
+                </label>
+              )}
+            </div>
             {withRim && (
               <div className="terrain-print-rim">
                 <label className="terrain-print-rim-width">
@@ -244,4 +266,13 @@ export function TerrainPrintPanel({
 
 function formatDistance(meters: number) {
   return meters < 1000 ? `${Math.round(meters)} 米` : `${Number((meters / 1000).toFixed(2))} 公里`;
+}
+
+
+function printableStl(stl: ArrayBuffer) {
+  const output = stl.slice(0);
+  const view = new DataView(output);
+  // Reserved triangle attributes remain zero in printer-facing STL files.
+  for (let offset = 132; offset < view.byteLength; offset += 50) view.setUint16(offset, 0, true);
+  return output;
 }
